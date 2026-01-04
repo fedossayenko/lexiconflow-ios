@@ -21,11 +21,20 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
+      - name: Create iOS Simulator
+        run: |
+          xcrun simctl create "Test iPhone" "iPhone 17 Pro" "iOS 26.2"
+
+      - name: List Simulators
+        run: xcrun simctl list devices | grep "iPhone"
+
       - name: Build and Test
         working-directory: ./LexiconFlow
         run: |
+          DEVICE_ID=$(xcrun simctl list devices | grep "Test iPhone" | grep -oE "[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}" | head -1)
+          echo "Using device: $DEVICE_ID"
           xcodebuild test \
             -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
-            -sdk iphonesimulator \
+            -destination "id=$DEVICE_ID" \
             -only-testing:LexiconFlowTests
