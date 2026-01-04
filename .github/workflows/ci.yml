@@ -24,8 +24,10 @@ jobs:
         run: xcodebuild -version
 
       - name: Build and Test
+        working-directory: ./LexiconFlow
         run: |
           xcodebuild test \
+            -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
             -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' \
             -only-testing:LexiconFlowTests
@@ -44,8 +46,10 @@ jobs:
           xcode-version: '26.1.1'
 
       - name: Build and Test UI
+        working-directory: ./LexiconFlow
         run: |
           xcodebuild test \
+            -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
             -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' \
             -only-testing:LexiconFlowUITests
