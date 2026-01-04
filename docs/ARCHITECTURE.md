@@ -23,7 +23,7 @@ This document outlines the technical architecture for Lexicon Flow, a native iOS
 | **Haptics** | CoreHaptics | iOS 26 | Custom vibration patterns |
 | **Navigation** | NavigationStack + Custom | iOS 26 | Hybrid for optimal fluidity |
 | **Widgets** | WidgetKit | iOS 26 | Lock Screen, Live Activities |
-| **Testing** | XCTest | Xcode 26 | Unit + UI testing |
+| **Testing** | Swift Testing | Xcode 26 | Unit + integration testing |
 | **Minimum Target** | iOS | 26.0 | No legacy fallbacks needed |
 
 ---

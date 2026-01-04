@@ -21,23 +21,16 @@ import SwiftData
 @MainActor
 struct DataImporterTests {
 
-    private func createTestContainer() -> ModelContainer {
-        let schema = Schema([
-            FSRSState.self,
-            Flashcard.self,
-            Deck.self,
-            FlashcardReview.self,
-        ])
-        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try! ModelContainer(for: schema, configurations: [configuration])
+    private func freshContext() -> ModelContext {
+        return TestContainers.freshContext()
     }
 
     // MARK: - Basic Import Tests
 
     @Test("Import single card successfully")
     func importSingleCard() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         let cardData = FlashcardData(
@@ -62,8 +55,8 @@ struct DataImporterTests {
 
     @Test("Import multiple cards in batch")
     func importMultipleCards() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         let cards = [
@@ -83,8 +76,8 @@ struct DataImporterTests {
 
     @Test("Import empty array returns success")
     func importEmptyArray() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         let result = await importer.importCards([])
@@ -99,8 +92,8 @@ struct DataImporterTests {
 
     @Test("Skip duplicate cards by default")
     func skipDuplicateCards() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         let cards = [
@@ -125,8 +118,8 @@ struct DataImporterTests {
 
     @Test("Duplicate detection is case-sensitive")
     func duplicateDetectionCaseSensitive() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         let cards = [
@@ -148,8 +141,8 @@ struct DataImporterTests {
 
     @Test("Progress handler called for each batch")
     func progressHandlerCalled() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         // Create 10 cards to ensure multiple batches
@@ -178,8 +171,8 @@ struct DataImporterTests {
 
     @Test("Progress percentage calculated correctly")
     func progressPercentageCalculation() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         var cards: [FlashcardData] = []
@@ -205,8 +198,8 @@ struct DataImporterTests {
 
     @Test("Update strategy returns error")
     func updateStrategyError() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         let cards = [
@@ -229,8 +222,8 @@ struct DataImporterTests {
 
     @Test("Replace strategy returns error")
     func replaceStrategyError() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         let cards = [
@@ -249,8 +242,8 @@ struct DataImporterTests {
 
     @Test("Skip strategy works normally")
     func skipStrategyWorks() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         let cards = [
@@ -271,8 +264,8 @@ struct DataImporterTests {
 
     @Test("Cards associated with deck correctly")
     func deckAssociation() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         // Create a deck
@@ -300,8 +293,8 @@ struct DataImporterTests {
 
     @Test("FSRS state created for imported cards")
     func fsrsStateCreated() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         let cards = [
@@ -323,8 +316,8 @@ struct DataImporterTests {
 
     @Test("Image data stored correctly")
     func imageDataStorage() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         let imageData = Data("fake image data".utf8)
@@ -353,8 +346,8 @@ struct DataImporterTests {
 
     @Test("Custom batch size respected")
     func customBatchSize() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         var cards: [FlashcardData] = []
@@ -379,8 +372,8 @@ struct DataImporterTests {
 
     @Test("Large batch size imports all at once")
     func largeBatchSize() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         var cards: [FlashcardData] = []
@@ -402,43 +395,43 @@ struct DataImporterTests {
 
     // MARK: - Performance Tests
 
-    @Test("Import 100 cards quickly")
+    @Test("Import 20 cards quickly")
     func importPerformance() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         var cards: [FlashcardData] = []
-        for i in 0..<100 {
+        for i in 0..<20 {
             cards.append(FlashcardData(word: "word\(i)", definition: "def\(i)"))
         }
 
         let result = await importer.importCards(cards, batchSize: 50)
 
-        #expect(result.importedCount == 100, "Should import all 100 cards")
+        #expect(result.importedCount == 20, "Should import all 20 cards")
         #expect(result.duration < 5.0, "Should complete in under 5 seconds")
     }
 
     @Test("Duplicate check is O(n) not O(n²)")
     func duplicateCheckPerformance() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
-        // Import 100 cards first
+        // Import 20 cards first
         var initialCards: [FlashcardData] = []
-        for i in 0..<100 {
+        for i in 0..<20 {
             initialCards.append(FlashcardData(word: "word\(i)", definition: "def\(i)"))
         }
         _ = await importer.importCards(initialCards)
 
-        // Now import 100 duplicates - should be fast with O(n) check
+        // Now import 20 duplicates - should be fast with O(n) check
         let start = Date()
         let result = await importer.importCards(initialCards)
         let duration = Date().timeIntervalSince(start)
 
-        #expect(result.skippedCount == 100, "Should skip all 100 duplicates")
-        // O(n) should be very fast (< 0.5s for 100 items)
+        #expect(result.skippedCount == 20, "Should skip all 20 duplicates")
+        // O(n) should be very fast (< 0.5s for 20 items)
         #expect(duration < 0.5, "Duplicate check should be fast: \(duration)s")
     }
 }

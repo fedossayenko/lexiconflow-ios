@@ -22,21 +22,13 @@ struct ErrorHandlingTests {
 
     // MARK: - Test Fixtures
 
-    private func createTestContainer() -> ModelContainer {
-        let schema = Schema([
-            FSRSState.self,
-            Flashcard.self,
-            Deck.self,
-            FlashcardReview.self,
-        ])
-        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try! ModelContainer(for: schema, configurations: [configuration])
+    private func freshContext() -> ModelContext {
+        return TestContainers.freshContext()
     }
 
     private func createTestDeck(context: ModelContext, name: String = "Test Deck") -> Deck {
         let deck = Deck(name: name, icon: "test", order: 0)
         context.insert(deck)
-        try! context.save()
         return deck
     }
 
@@ -44,8 +36,8 @@ struct ErrorHandlingTests {
 
     @Test("AddDeckView save failure shows error")
     func addDeckSaveFailureShowsError() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
 
         // Create a deck
         let deck = Deck(name: "Test Deck", icon: "folder.fill", order: 0)
@@ -72,8 +64,8 @@ struct ErrorHandlingTests {
 
     @Test("AddFlashcardView save failure shows error")
     func addFlashcardSaveFailureShowsError() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let deck = createTestDeck(context: context)
 
         // Create a flashcard
@@ -141,11 +133,12 @@ struct ErrorHandlingTests {
 
     @Test("DeckRowView dueCount updates with query")
     func deckRowViewDueCountUpdatesWithQuery() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
 
         // Create a deck
         let deck = createTestDeck(context: context, name: "Test Deck")
+        try context.save()
 
         // Initially, no cards, so due count should be 0
         let states = try context.fetch(FetchDescriptor<FSRSState>())
@@ -192,11 +185,12 @@ struct ErrorHandlingTests {
 
     @Test("DeckRowView dueCount excludes new cards")
     func deckRowViewDueCountExcludesNewCards() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
 
         // Create a deck
         let deck = createTestDeck(context: context, name: "Test Deck")
+        try context.save()
 
         // Add a new card (not due)
         let card = Flashcard(word: "New Card", definition: "This card is new")
