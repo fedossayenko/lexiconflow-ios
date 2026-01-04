@@ -89,10 +89,10 @@ struct StudyView: View {
         if studyMode == .scheduled {
             dueCount = scheduler.dueCardCount()
         } else {
-            // For cram mode, show total non-new cards
+            // For cram mode, show total cards with FSRS state (including "new" cards)
             let stateDescriptor = FetchDescriptor<FSRSState>(
-                predicate: #Predicate<FSRSState> { state in
-                    state.stateEnum != "new"
+                predicate: #Predicate<FSRSState> { _ in
+                    true
                 }
             )
             do {

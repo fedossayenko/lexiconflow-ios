@@ -64,7 +64,7 @@ final class Scheduler {
 
     /// Fetch cards that are due for scheduled review
     ///
-    /// Due cards are those where dueDate <= now and state != new
+    /// Due cards are those where dueDate <= now (including "new" cards)
     ///
     /// - Parameter limit: Maximum number of cards to return
     /// - Returns: Array of due flashcards, sorted by due date ascending
@@ -76,7 +76,7 @@ final class Scheduler {
         // to avoid SwiftData key path issues with enums
         let stateDescriptor = FetchDescriptor<FSRSState>(
             predicate: #Predicate<FSRSState> { state in
-                state.dueDate <= now && state.stateEnum != "new"
+                state.dueDate <= now
             },
             sortBy: [SortDescriptor(\.dueDate, order: .forward)]
         )
@@ -104,11 +104,10 @@ final class Scheduler {
     /// - Parameter limit: Maximum number of cards to return
     /// - Returns: Array of flashcards sorted by stability ascending
     private func fetchCramCards(limit: Int) -> [Flashcard] {
-        // Fetch all cards with FSRS state (excluding new cards)
-        // Note: Using string literal "new" instead of FlashcardState.new.rawValue
+        // Fetch all cards with FSRS state (including "new" cards)
         let stateDescriptor = FetchDescriptor<FSRSState>(
-            predicate: #Predicate<FSRSState> { state in
-                state.stateEnum != "new"
+            predicate: #Predicate<FSRSState> { _ in
+                true
             },
             sortBy: [SortDescriptor(\.stability, order: .forward)]
         )
@@ -136,7 +135,7 @@ final class Scheduler {
 
         let stateDescriptor = FetchDescriptor<FSRSState>(
             predicate: #Predicate<FSRSState> { state in
-                state.dueDate <= now && state.stateEnum != "new"
+                state.dueDate <= now
             }
         )
 
