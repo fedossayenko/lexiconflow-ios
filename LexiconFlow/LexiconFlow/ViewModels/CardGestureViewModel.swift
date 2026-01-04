@@ -72,9 +72,9 @@ class CardGestureViewModel: ObservableObject {
         let horizontal = abs(translation.width)
         let vertical = abs(translation.height)
 
-        guard max(horizontal, vertical) > GestureConstants.minimumSwipeDistance else { return .none }
+        guard max(horizontal, vertical) >= GestureConstants.minimumSwipeDistance else { return .none }
 
-        if horizontal > vertical {
+        if horizontal >= vertical {
             return translation.width > 0 ? .right : .left
         } else {
             return translation.height > 0 ? .down : .up

@@ -166,7 +166,7 @@ struct CardGestureViewModelTests {
 
         #expect(viewModel.tintColor == .clear, "No direction should have clear tint")
         #expect(viewModel.rotation == 0.0, "No direction should have no rotation")
-        #expect(viewModel.scale > 1.0, "No direction should still show subtle scale feedback")
+        #expect(viewModel.scale == 1.0, "No translation should have default scale (1.0)")
     }
 
     @Test("Progress increases visual effect intensity")
@@ -206,12 +206,12 @@ struct CardGestureViewModelTests {
     func testDiagonalThreshold() {
         let viewModel = CardGestureViewModel()
 
-        // Diagonal where max distance equals threshold
-        let diag1 = CGSize(width: 71, height: 71) // sqrt(71^2 + 71^2) ≈ 100.4
+        // Diagonal where max distance equals threshold (uses max, not Euclidean)
+        let diag1 = CGSize(width: 100, height: 100) // max(100, 100) = 100
         #expect(viewModel.shouldCommitSwipe(translation: diag1) == true, "Diagonal at threshold should commit")
 
         // Diagonal below threshold
-        let diag2 = CGSize(width: 70, height: 70) // sqrt(70^2 + 70^2) ≈ 99
+        let diag2 = CGSize(width: 99, height: 99) // max(99, 99) = 99
         #expect(viewModel.shouldCommitSwipe(translation: diag2) == false, "Diagonal below threshold should not commit")
     }
 
