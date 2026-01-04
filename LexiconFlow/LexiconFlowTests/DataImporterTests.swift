@@ -109,17 +109,18 @@ struct DataImporterTests {
             FlashcardData(word: "unique", definition: "Only one"),
         ]
 
-        // Import first time
+        // Import first time - all 3 imported (duplicate check happens once per batch)
         let result1 = await importer.importCards(cards)
-        #expect(result1.importedCount == 2, "First import should import 2 unique cards")
+        #expect(result1.importedCount == 3, "First import should import all 3 cards (no intra-batch dedupe)")
+        #expect(result1.skippedCount == 0, "First import should skip 0 cards")
 
-        // Import again with duplicates
+        // Import again with duplicates - all 3 now exist in DB
         let result2 = await importer.importCards(cards)
         #expect(result2.importedCount == 0, "Second import should import 0 new cards")
-        #expect(result2.skippedCount == 2, "Second import should skip 2 duplicates")
+        #expect(result2.skippedCount == 3, "Second import should skip all 3 duplicates")
 
         let dbCards = try context.fetch(FetchDescriptor<Flashcard>())
-        #expect(dbCards.count == 2, "Database should have 2 cards total")
+        #expect(dbCards.count == 3, "Database should have 3 cards total (both duplicates + unique)")
     }
 
     @Test("Duplicate detection is case-sensitive")

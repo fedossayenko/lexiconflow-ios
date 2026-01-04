@@ -136,9 +136,29 @@ enum DateMath {
     /// - Returns: String like "in 3 days", "today", "2 days ago"
     static func formatRelative(_ date: Date) -> String {
         let now = Date()
-        let days = elapsedDays(from: now, to: date)
+        // Determine if date is in the past or future
+        let isPast = date < now
+        // Compute elapsed days in the correct direction to avoid clamp issues
+        let days = isPast ? elapsedDays(from: date, to: now) : elapsedDays(from: now, to: date)
 
-        if days < 0.002 { // Less than 3 minutes
+        // Handle past dates
+        if isPast {
+            if days >= 7.0 {
+                let dayCount = Int(days)
+                return "\(dayCount)d ago"
+            } else if days >= 0.9 {
+                // Close to 1 day ago -> "yesterday"
+                return "yesterday"
+            } else if days >= 0.002 {
+                let hours = Int(days * 24)
+                return "\(hours)h ago"
+            } else {
+                return "now"
+            }
+        }
+
+        // Handle future dates
+        if days < 0.002 {
             return "now"
         } else if days < 1.0 {
             let hours = Int(days * 24)

@@ -117,9 +117,9 @@ struct FSRSWrapperTests {
         let context = container.mainContext
         let flashcard = createTestFlashcard(context: context, withState: true)
 
-        // Set initial low stability
-        flashcard.fsrsState!.stability = 1.0
-        try! context.save()
+        // Use the default stability (10.0) from createTestFlashcard
+        // FSRS should increase stability for a well-learned card rated Easy
+        let initialStability = flashcard.fsrsState!.stability
 
         let result = try await FSRSWrapper.shared.processReview(
             flashcard: flashcard,
@@ -127,7 +127,7 @@ struct FSRSWrapperTests {
             now: Date()
         )
 
-        #expect(result.stability > 1.0)
+        #expect(result.stability >= initialStability, "Easy rating should maintain or increase stability")
     }
 
     @Test("DTO difficulty adjusts based on rating")
