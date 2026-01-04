@@ -12,7 +12,6 @@ struct FlashcardView: View {
     @Bindable var card: Flashcard
     @Binding var isFlipped: Bool
 
-<<<<<<< HEAD
     // MARK: - Gesture State
 
     @StateObject private var gestureViewModel = CardGestureViewModel()

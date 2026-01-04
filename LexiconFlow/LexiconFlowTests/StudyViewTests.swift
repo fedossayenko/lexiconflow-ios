@@ -273,7 +273,7 @@ struct StudyViewTests {
 
         // Mix of states and due dates
         createTestCard(in: context, word: "New", state: .new)
-        createTestCard(in: context, word: "Learning", state: .learning)
+        createTestCard(in: context, word: "Learning", state: .learning)  // Learning cards are always due
         createTestCard(in: context, word: "ReviewDue", dueDate: now, state: .review)
         createTestCard(in: context, word: "ReviewFuture", dueDate: now.addingTimeInterval(86400), state: .review)
 
@@ -281,7 +281,8 @@ struct StudyViewTests {
 
         let dueCount = scheduler.dueCardCount()
 
-        #expect(dueCount == 1, "Should count only the review card that's due")
+        // Learning cards are always due, plus the due review card = 2
+        #expect(dueCount == 2, "Should count learning card (always due) and the review card that's due")
     }
 
     // MARK: - Error Handling Tests
