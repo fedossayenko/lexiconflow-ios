@@ -4,13 +4,13 @@
 //
 //  Tests for HapticService including generator caching and haptic feedback.
 //
+//  NOTE: These are smoke tests that verify HapticService doesn't crash.
+//  UIKit's haptic generators don't provide observable state for verification.
+//
 
 import Testing
-@testable import LexiconFlow
 import CoreFoundation
-
-// Note: HapticService uses UIKit haptic generators which require a main thread/UI context.
-// These tests verify the service logic and generator caching without triggering actual haptics.
+@testable import LexiconFlow
 
 @MainActor
 struct HapticServiceTests {
@@ -24,63 +24,60 @@ struct HapticServiceTests {
         #expect(service1 === service2, "HapticService should return the same singleton instance")
     }
 
-    // MARK: - Swipe Direction Tests
+    // MARK: - SwipeDirection Enum Tests
 
-    @Test("Right swipe direction exists")
-    func testSwipeDirectionRight() {
+    @Test("SwipeDirection right case exists")
+    func testRightSwipeDirectionExists() {
         let direction = HapticService.SwipeDirection.right
-        // Verify the direction exists (compile-time check)
-        #expect(true, "Right swipe direction exists")
+        #expect(direction == .right, "Right swipe direction should be instantiable")
     }
 
-    @Test("Left swipe direction exists")
-    func testSwipeDirectionLeft() {
+    @Test("SwipeDirection left case exists")
+    func testLeftSwipeDirectionExists() {
         let direction = HapticService.SwipeDirection.left
-        #expect(true, "Left swipe direction exists")
+        #expect(direction == .left, "Left swipe direction should be instantiable")
     }
 
-    @Test("Up swipe direction exists")
-    func testSwipeDirectionUp() {
+    @Test("SwipeDirection up case exists")
+    func testUpSwipeDirectionExists() {
         let direction = HapticService.SwipeDirection.up
-        #expect(true, "Up swipe direction exists")
+        #expect(direction == .up, "Up swipe direction should be instantiable")
     }
 
-    @Test("Down swipe direction exists")
-    func testSwipeDirectionDown() {
+    @Test("SwipeDirection down case exists")
+    func testDownSwipeDirectionExists() {
         let direction = HapticService.SwipeDirection.down
-        #expect(true, "Down swipe direction exists")
+        #expect(direction == .down, "Down swipe direction should be instantiable")
     }
 
-    // MARK: - Progress Threshold Tests
+    // MARK: - Smoke Tests (Verify No Crashes)
 
-    @Test("Swipe below threshold does not trigger haptic")
-    func testProgressThreshold() {
+    @Test("Swipe below threshold does not crash")
+    func testProgressBelowThreshold() {
         let service = HapticService.shared
 
         // These calls should not trigger haptics (progress <= 0.3)
+        // Smoke test: verify no crash occurs
         service.triggerSwipe(direction: .right, progress: 0.0)
         service.triggerSwipe(direction: .left, progress: 0.1)
         service.triggerSwipe(direction: .up, progress: 0.2)
         service.triggerSwipe(direction: .down, progress: 0.3)
 
-        // Verify by checking no crash occurs
-        #expect(true, "Low progress haptics handled correctly")
+        #expect(true, "Low progress haptics handled without crash")
     }
 
-    @Test("Swipe above threshold triggers haptic")
+    @Test("Swipe above threshold does not crash")
     func testProgressAboveThreshold() {
         let service = HapticService.shared
 
         // These calls should trigger haptics (progress > 0.3)
+        // Smoke test: verify no crash occurs
         service.triggerSwipe(direction: .right, progress: 0.5)
         service.triggerSwipe(direction: .left, progress: 0.7)
         service.triggerSwipe(direction: .up, progress: 1.0)
 
-        // Verify by checking no crash occurs
-        #expect(true, "High progress haptics handled correctly")
+        #expect(true, "High progress haptics handled without crash")
     }
-
-    // MARK: - Notification Haptic Tests
 
     @Test("Success haptic does not crash")
     func testSuccessHaptic() {
@@ -103,9 +100,7 @@ struct HapticServiceTests {
         #expect(true, "Error haptic executed without crash")
     }
 
-    // MARK: - Reset Tests
-
-    @Test("Reset clears cached generators")
+    @Test("Reset clears cached generators and subsequent calls work")
     func testResetClearsGenerators() {
         let service = HapticService.shared
 
@@ -119,7 +114,7 @@ struct HapticServiceTests {
         // Subsequent calls should still work (re-create generators)
         service.triggerSwipe(direction: .right, progress: 0.5)
 
-        #expect(true, "Reset and subsequent haptics work correctly")
+        #expect(true, "Reset and subsequent haptics work without crash")
     }
 
     @Test("Multiple resets are safe")
@@ -134,7 +129,7 @@ struct HapticServiceTests {
         // Service should still work after multiple resets
         service.triggerSuccess()
 
-        #expect(true, "Multiple resets handled correctly")
+        #expect(true, "Multiple resets handled without crash")
     }
 
     // MARK: - Edge Cases
@@ -148,10 +143,10 @@ struct HapticServiceTests {
         service.triggerSwipe(direction: .up, progress: 1.0)
         service.triggerSwipe(direction: .down, progress: 1.0)
 
-        #expect(true, "All directions with max progress handled correctly")
+        #expect(true, "All directions with max progress handled without crash")
     }
 
-    @Test("Progress above 1.0 is clamped by generator")
+    @Test("Progress above 1.0 is handled by generator")
     func testProgressAboveOne() {
         let service = HapticService.shared
 
@@ -159,7 +154,7 @@ struct HapticServiceTests {
         service.triggerSwipe(direction: .right, progress: 1.5)
         service.triggerSwipe(direction: .left, progress: 2.0)
 
-        #expect(true, "Progress values above 1.0 handled correctly")
+        #expect(true, "Progress values above 1.0 handled without crash")
     }
 
     @Test("Zero progress is handled")
@@ -168,6 +163,16 @@ struct HapticServiceTests {
 
         service.triggerSwipe(direction: .right, progress: 0.0)
 
-        #expect(true, "Zero progress handled correctly")
+        #expect(true, "Zero progress handled without crash")
+    }
+
+    @Test("Negative progress is handled")
+    func testNegativeProgress() {
+        let service = HapticService.shared
+
+        // Negative progress should be handled gracefully
+        service.triggerSwipe(direction: .right, progress: -0.5)
+
+        #expect(true, "Negative progress handled without crash")
     }
 }

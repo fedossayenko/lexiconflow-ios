@@ -39,18 +39,20 @@ struct StudyViewTests {
         return card
     }
 
-    // MARK: - Mode Description Tests
+    // MARK: - StudyMode Enum Tests
 
-    @Test("Scheduled mode description is correct")
-    func testScheduledModeDescription() {
-        // Note: StudyView's modeDescription is a private computed property,
-        // so we verify the UI strings through the picker labels
-        #expect(true, "Scheduled mode description exists")
+    @Test("StudyMode scheduled case exists")
+    func testScheduledModeExists() {
+        // Verify the scheduled mode can be instantiated
+        let mode = StudyMode.scheduled
+        #expect(mode == .scheduled, "Scheduled mode should be equal to .scheduled")
     }
 
-    @Test("Cram mode description is correct")
-    func testCramModeDescription() {
-        #expect(true, "Cram mode description exists")
+    @Test("StudyMode cram case exists")
+    func testCramModeExists() {
+        // Verify the cram mode can be instantiated
+        let mode = StudyMode.cram
+        #expect(mode == .cram, "Cram mode should be equal to .cram")
     }
 
     // MARK: - Due Count Tests
@@ -183,11 +185,12 @@ struct StudyViewTests {
 
     // MARK: - Session Lifecycle Tests
 
-    @Test("Session start sets active state")
+    @Test("Session start creates StudySessionView")
     func testSessionStart() {
-        // Note: Session state is managed by StudyView's @State property
-        // This is verified by the UI showing StudySessionView
-        #expect(true, "Session start triggers session active state")
+        // Verify StudySessionView can be created with mode
+        let sessionView = StudySessionView(mode: .scheduled) {}
+        // Verify the mode is stored correctly
+        #expect(sessionView.mode == .scheduled, "Session mode should be .scheduled")
     }
 
     @Test("Session completion refreshes due count")
