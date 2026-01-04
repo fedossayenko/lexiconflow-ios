@@ -147,6 +147,9 @@ actor DataImporter {
 
     /// Import a single batch of cards
     ///
+    /// **Performance**: Fetches existing cards ONCE per batch (O(n) total vs O(n²)).
+    /// **Thread Safety**: Uses Set for O(1) duplicate checks, no race conditions.
+    ///
     /// - Parameters:
     ///   - cards: Cards in this batch
     ///   - deck: Optional deck to associate with
@@ -157,12 +160,14 @@ actor DataImporter {
     ) throws -> BatchStats {
         var stats = BatchStats()
 
-        for cardData in cards {
-            // Check for duplicates using fetch without predicate
-            let allCards = try modelContext.fetch(FetchDescriptor<Flashcard>())
-            let existing = allCards.first { $0.word == cardData.word }
+        // PERFORMANCE: Fetch existing cards ONCE per batch, not per card
+        // This changes from O(n²) to O(n) complexity
+        let allCards = try modelContext.fetch(FetchDescriptor<Flashcard>())
+        let existingWords = Set(allCards.map { $0.word })
 
-            if existing != nil {
+        for cardData in cards {
+            // O(1) duplicate check using Set
+            if existingWords.contains(cardData.word) {
                 stats.skipped += 1
                 continue
             }
@@ -231,8 +236,16 @@ actor DataImporter {
         _ cards: [FlashcardData],
         into deck: Deck?
     ) async -> ImportResult {
-        // TODO: Implement update strategy
-        fatalError("Not implemented")
+        // Update strategy not yet implemented
+        var result = ImportResult()
+        result.errors.append(
+            ImportError(
+                batchNumber: 0,
+                error: ImportError.unsupportedStrategy("Update strategy not yet implemented. Use .skip or .replace strategies."),
+                cardWord: nil
+            )
+        )
+        return result
     }
 
     /// Import cards replacing existing ones
@@ -240,8 +253,16 @@ actor DataImporter {
         _ cards: [FlashcardData],
         into deck: Deck?
     ) async -> ImportResult {
-        // TODO: Implement replace strategy
-        fatalError("Not implemented")
+        // Replace strategy not yet implemented
+        var result = ImportResult()
+        result.errors.append(
+            ImportError(
+                batchNumber: 0,
+                error: ImportError.unsupportedStrategy("Replace strategy not yet implemented. Use .skip strategy."),
+                cardWord: nil
+            )
+        )
+        return result
     }
 }
 
@@ -325,6 +346,15 @@ struct ImportError: Sendable {
     let batchNumber: Int
     let error: Error
     let cardWord: String?
+
+    /// Create an unsupported strategy error
+    static func unsupportedStrategy(_ message: String) -> Error {
+        NSError(
+            domain: "com.lexiconflow.importer",
+            code: 1001,
+            userInfo: [NSLocalizedDescriptionKey: message]
+        )
+    }
 }
 
 /// Strategy for handling duplicate cards

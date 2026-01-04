@@ -159,9 +159,16 @@ enum Analytics {
 ///
 /// **Usage**:
 /// ```swift
+/// // Standard usage (logs performance, returns result)
 /// let result = try await Benchmark.measure("fsrs_process") {
 ///     try await FSRSWrapper.shared.processReview(...)
 /// }
+///
+/// // Testing usage (returns duration for assertions)
+/// let duration = try await Benchmark.measureTime("fsrs_process") {
+///     try await FSRSWrapper.shared.processReview(...)
+/// }
+/// #expect(duration < 0.01)
 /// ```
 enum Benchmark {
     /// Measure async block execution time
@@ -200,5 +207,43 @@ enum Benchmark {
         Analytics.trackPerformance(name, duration: duration)
 
         return result
+    }
+
+    /// Measure async block and return duration for testing
+    ///
+    /// - Parameters:
+    ///   - name: Benchmark name
+    ///   - operation: Async operation to measure
+    /// - Returns: Duration in seconds
+    static func measureTime<T>(
+        _ name: String,
+        operation: () async throws -> T
+    ) async rethrows -> TimeInterval {
+        let start = Date()
+        _ = try await operation()
+        let duration = Date().timeIntervalSince(start)
+
+        Analytics.trackPerformance(name, duration: duration)
+
+        return duration
+    }
+
+    /// Measure synchronous block and return duration for testing
+    ///
+    /// - Parameters:
+    ///   - name: Benchmark name
+    ///   - operation: Operation to measure
+    /// - Returns: Duration in seconds
+    static func measureTime<T>(
+        _ name: String,
+        operation: () throws -> T
+    ) rethrows -> TimeInterval {
+        let start = Date()
+        _ = try operation()
+        let duration = Date().timeIntervalSince(start)
+
+        Analytics.trackPerformance(name, duration: duration)
+
+        return duration
     }
 }

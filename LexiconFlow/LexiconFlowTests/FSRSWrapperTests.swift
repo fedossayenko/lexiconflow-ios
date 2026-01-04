@@ -36,9 +36,9 @@ struct FSRSWrapperTests {
     }
 
     /// Create a test flashcard with optional FSRS state
-    private func createTestFlashcard(context: ModelContext, withState: Bool = false) -> Flashcard {
+    private func createTestFlashcard(context: ModelContext, word: String = "test", withState: Bool = false) -> Flashcard {
         let flashcard = Flashcard(
-            word: "test",
+            word: word,
             definition: "a test",
             phonetic: "tɛst"
         )

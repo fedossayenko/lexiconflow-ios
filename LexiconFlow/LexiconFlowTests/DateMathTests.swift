@@ -128,10 +128,12 @@ struct DateMathTests {
         #expect(DateMath.formatElapsed(0) == "just now")
 
         let hoursAgo = now.addingTimeInterval(-7200) // 2 hours ago
-        #expect(DateMath.formatElapsed(hoursAgo) == "2h ago")
+        let hoursElapsed = DateMath.elapsedDays(from: hoursAgo, to: now)
+        #expect(DateMath.formatElapsed(hoursElapsed) == "2h ago")
 
         let daysAgo = now.addingTimeInterval(-86400) // 1 day ago
-        #expect(DateMath.formatElapsed(daysAgo) == "yesterday")
+        let daysElapsed = DateMath.elapsedDays(from: daysAgo, to: now)
+        #expect(DateMath.formatElapsed(daysElapsed) == "yesterday")
     }
 
     // MARK: - Same Day Tests

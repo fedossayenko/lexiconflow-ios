@@ -9,6 +9,7 @@
 import Testing
 import Foundation
 import SwiftData
+import FSRS
 @testable import LexiconFlow
 
 /// Test suite for SwiftData models

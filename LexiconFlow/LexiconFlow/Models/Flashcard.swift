@@ -56,7 +56,9 @@ final class Flashcard {
     /// FSRS algorithm state for this card (one-to-one)
     /// - Inverse defined on FSRSState.card to avoid circular reference
     /// - SwiftData auto-initializes this property
-    @Relationship var fsrsState: FSRSState?
+    /// - CRITICAL: Cascade delete ensures orphaned FSRSState records are cleaned up
+    /// - NOTE: Only define inverse on ONE side (FSRSState) to avoid circular macro expansion
+    @Relationship(deleteRule: .cascade) var fsrsState: FSRSState?
 
     // MARK: - Initialization
 

@@ -34,7 +34,7 @@ struct PerformanceTests {
 
     // MARK: - FSRS Processing Performance
 
-    @Test("FSRS review processing is fast", .enabled(true))
+    @Test("FSRS review processing is fast")
     func fsrsProcessingPerformance() async throws {
         let container = createTestContainer()
         let context = container.mainContext
@@ -55,7 +55,7 @@ struct PerformanceTests {
         try! context.save()
 
         // Benchmark review processing
-        let duration = try Benchmark.measure("fsrs_review") {
+        let duration = try await Benchmark.measureTime("fsrs_review") {
             _ = await scheduler.processReview(
                 flashcard: flashcard,
                 rating: 2,
@@ -86,7 +86,7 @@ struct PerformanceTests {
         context.insert(flashcard)
         try! context.save()
 
-        let duration = try Benchmark.measure("preview_generation") {
+        let duration = try await Benchmark.measureTime("preview_generation") {
             _ = await scheduler.previewRatings(for: flashcard)
         }
 
@@ -96,7 +96,7 @@ struct PerformanceTests {
 
     // MARK: - Query Performance
 
-    @Test("Due card query scales well", .enabled(true))
+    @Test("Due card query scales well")
     func dueCardQueryPerformance() async throws {
         let container = createTestContainer()
         let context = container.mainContext
@@ -125,7 +125,7 @@ struct PerformanceTests {
         }
 
         // Benchmark query
-        let duration = try Benchmark.measure("due_card_query_1000") {
+        let duration = try Benchmark.measureTime("due_card_query_1000") {
             _ = scheduler.fetchCards(mode: .scheduled, limit: 20)
         }
 
@@ -155,7 +155,7 @@ struct PerformanceTests {
         }
         try! context.save()
 
-        let duration = try Benchmark.measure("due_card_count_500") {
+        let duration = try Benchmark.measureTime("due_card_count_500") {
             _ = scheduler.dueCardCount()
         }
 
@@ -188,7 +188,7 @@ struct PerformanceTests {
         }
         try! context.save()
 
-        let duration = try Benchmark.measure("cram_sort_500") {
+        let duration = try Benchmark.measureTime("cram_sort_500") {
             _ = scheduler.fetchCards(mode: .cram, limit: 20)
         }
 
@@ -203,7 +203,7 @@ struct PerformanceTests {
         let pastDate = Date().addingTimeInterval(-86400 * 5) // 5 days ago
         let now = Date()
 
-        let duration = try! Benchmark.measure("date_math_elapsed") {
+        let duration = try! Benchmark.measureTime("date_math_elapsed") {
             for _ in 0..<1000 {
                 _ = DateMath.elapsedDays(from: pastDate, to: now)
             }
@@ -251,7 +251,7 @@ struct PerformanceTests {
         try! context.save()
 
         // Using cached lastReviewDate should be fast
-        let duration = try Benchmark.measure("process_with_100_reviews") {
+        let duration = try await Benchmark.measureTime("process_with_100_reviews") {
             _ = await scheduler.processReview(
                 flashcard: flashcard,
                 rating: 2,
@@ -290,7 +290,7 @@ struct PerformanceTests {
         try! context.save()
 
         // Process concurrently
-        let duration = try await Benchmark.measure("concurrent_50_reviews") {
+        let duration = try await Benchmark.measureTime("concurrent_50_reviews") {
             await withTaskGroup(of: Void.self) { group in
                 for card in cards {
                     group.addTask {
