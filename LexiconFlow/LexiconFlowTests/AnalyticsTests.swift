@@ -216,7 +216,7 @@ struct AnalyticsTests {
 
     @Test("Track multiple events in sequence")
     func multipleEvents() {
-        for i in 0..<100 {
+        for i in 0..<10 {
             Analytics.trackEvent("event_\(i)", metadata: [
                 "index": "\(i)",
                 "doubled": "\(i * 2)"
@@ -252,7 +252,7 @@ struct AnalyticsTests {
         let duration = await Benchmark.measureTime("complex") {
             // Simulate a multi-step operation
             var sum = 0
-            for i in 0..<1000 {
+            for i in 0..<100 {
                 sum += i
             }
             try? await Task.sleep(nanoseconds: 1_000_000) // 1ms

@@ -24,23 +24,16 @@ struct OnboardingTests {
 
     // MARK: - Test Fixtures
 
-    private func createTestContainer() -> ModelContainer {
-        let schema = Schema([
-            FSRSState.self,
-            Flashcard.self,
-            Deck.self,
-            FlashcardReview.self,
-        ])
-        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try! ModelContainer(for: schema, configurations: [configuration])
+    private func freshContext() -> ModelContext {
+        return TestContainers.freshContext()
     }
 
     // MARK: - Sample Deck Creation Tests
 
     @Test("Complete onboarding creates sample deck")
     func completeOnboardingCreatesDeck() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
 
         // Simulate onboarding deck creation
         let sampleDeck = Deck(name: "Sample Vocabulary", icon: "star.fill", order: 0)
@@ -56,8 +49,8 @@ struct OnboardingTests {
 
     @Test("Complete onboarding creates five cards")
     func completeOnboardingCreatesFiveCards() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
 
         // Simulate onboarding - create deck and cards
         let sampleDeck = Deck(name: "Sample Vocabulary", icon: "star.fill", order: 0)
@@ -102,8 +95,8 @@ struct OnboardingTests {
 
     @Test("Onboarding cards have correct FSRS state")
     func onboardingCardsFSRSState() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
 
         // Create sample deck and card as onboarding does
         let deck = Deck(name: "Sample", icon: "star.fill", order: 0)
@@ -140,8 +133,8 @@ struct OnboardingTests {
 
     @Test("Onboarding cards linked to deck")
     func onboardingCardsLinkedToDeck() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
 
         // Create deck and cards
         let deck = Deck(name: "Sample", icon: "star.fill", order: 0)
@@ -173,8 +166,8 @@ struct OnboardingTests {
 
     @Test("Onboarding save error can be handled")
     func onboardingSaveErrorCanBeHandled() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
 
         // Create deck
         let deck = Deck(name: "Sample", icon: "star.fill", order: 0)
@@ -193,8 +186,8 @@ struct OnboardingTests {
 
     @Test("Onboarding error allows retry")
     func onboardingErrorAllowsRetry() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
 
         // First attempt
         let deck1 = Deck(name: "Sample", icon: "star.fill", order: 0)

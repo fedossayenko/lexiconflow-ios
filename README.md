@@ -10,7 +10,7 @@
 
 **Mission:** Eliminate friction from language learning by combining advanced Spaced Repetition, on-device AI, and iOS 26's "Liquid Glass" design to create a state of flow in vocabulary acquisition.
 
-**Status:** 📋 Planning / Architecture Phase
+**Status:** 🏗️ Phase 1 Foundation (90% Complete)
 
 **Target Launch:** Q2 2026 (June)
 
@@ -58,8 +58,21 @@ Lexicon Flow is a native iOS application for English vocabulary acquisition usin
 | **Audio** | AVSpeechSynthesizer | Neural TTS voices, accent selection |
 | **Haptics** | CoreHaptics | Custom vibration patterns |
 | **Widgets** | WidgetKit | Lock Screen, Live Activities |
-| **Testing** | XCTest | Unit + UI testing |
+| **Testing** | Swift Testing | Unit + integration testing |
 | **Minimum Target** | iOS 26.0 | No legacy fallbacks |
+
+---
+
+## Testing
+
+LexiconFlow uses **Swift Testing** (iOS 26+) with comprehensive test coverage:
+
+- **131 tests** across 9 test suites
+- >80% coverage target for new code
+- In-memory SwiftData for test isolation
+- CI/CD via GitHub Actions
+
+See [TESTING.md](docs/TESTING.md) for testing guide.
 
 ---
 
@@ -308,7 +321,7 @@ LexiconFlow/
 
 ## Contributing
 
-**Status:** Project is in planning phase. Contribution guidelines will be established during Phase 1.
+**Status:** See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
 
 ---
 
@@ -360,7 +373,7 @@ This project is informed by:
 
 **Last Updated:** January 2026
 
-**Project Phase:** 📋 Architecture & Planning
+**Project Phase:** 🏗️ Phase 1 Foundation (Late Stage)
 
 **Target iOS:** 26.2 (Released December 12, 2025)
 

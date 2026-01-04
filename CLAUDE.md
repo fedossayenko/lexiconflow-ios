@@ -25,20 +25,22 @@ xcodebuild build \
 
 ### Run Tests
 ```bash
-# Run all tests
+# Run all tests (serialized execution required for shared container)
 cd LexiconFlow
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
   -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1' \
-  -only-testing:LexiconFlowTests
+  -only-testing:LexiconFlowTests \
+  -parallel-testing-enabled NO
 
 # Run specific test suite
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
   -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1' \
-  -only-testing:LexiconFlowTests/ModelTests
+  -only-testing:LexiconFlowTests/ModelTests \
+  -parallel-testing-enabled NO
 ```
 
 ### Dependencies
@@ -117,6 +119,86 @@ Use string literals instead of enum raw values in `#Predicate`:
 ### 7. Timezone-Aware Date Math
 Use `DateMath.elapsedDays()` for calendar-aware calculations (handles DST, timezone boundaries)
 
+### 8. Safe View Initialization Pattern
+Use `@State` with lazy initialization instead of `@StateObject` with force unwrap:
+```swift
+// ❌ AVOID: Force unwrap in init
+struct MyView: View {
+    @StateObject private var viewModel = ViewModel(modelContext: ModelContext(try! container))
+}
+
+// ✅ CORRECT: Lazy initialization with @State
+struct MyView: View {
+    @State private var viewModel: ViewModel?
+
+    var body: some View {
+        Group {
+            if let viewModel = viewModel {
+                // content
+            }
+        }
+        .task {
+            if viewModel == nil {
+                viewModel = ViewModel(modelContext: modelContext)
+            }
+        }
+    }
+}
+```
+**Rationale**: Prevents app crashes if ModelContainer fails, follows iOS 26 best practices.
+
+### 9. Reactive Updates with @Query
+Use `@Query` for automatic SwiftData updates instead of manual refresh:
+```swift
+// ❌ AVOID: Manual refresh with .onAppear
+struct MyView: View {
+    @State private var items: [Item] = []
+
+    var body: some View {
+        List(items) { item in Text(item.name) }
+            .onAppear { loadItems() }  // Never updates!
+    }
+}
+
+// ✅ CORRECT: Automatic updates with @Query
+struct MyView: View {
+    @Query private var items: [Item]
+
+    var body: some View {
+        List(items) { item in Text(item.name) }  // Auto-updates
+    }
+}
+```
+**Rationale**: @Query automatically tracks SwiftData changes and updates the view.
+
+### 10. Error Handling with User Alerts
+Always show errors to users with Analytics tracking:
+```swift
+struct MyView: View {
+    @State private var errorMessage: String?
+    @Environment(\.modelContext) private var modelContext
+
+    var body: some View {
+        Button("Save") { save() }
+            .alert("Error", isPresented: .constant(errorMessage != nil)) {
+                Button("OK") { errorMessage = nil }
+            } message: {
+                Text(errorMessage ?? "Unknown error")
+            }
+    }
+
+    private func save() {
+        do {
+            try modelContext.save()
+        } catch {
+            errorMessage = error.localizedDescription
+            Analytics.trackError("save_failed", error: error)
+        }
+    }
+}
+```
+**Rationale**: Silent failures create poor UX. Users need to know when operations fail.
+
 ## Project Structure
 
 ```
@@ -141,8 +223,8 @@ LexiconFlow/
 
 ## Testing
 
-- **Framework**: Swift Testing (`import Testing`) + XCTest fallback
-- **Structure**: 8 test suites in `LexiconFlowTests/`
+- **Framework**: Swift Testing (`import Testing`)
+- **Structure**: 9 test suites in `LexiconFlowTests/` (ModelTests, SchedulerTests, DataImporterTests, StudySessionViewModelTests, OnboardingTests, ErrorHandlingTests, FSRSWrapperTests, DateMathTests, AnalyticsTests)
 - **Pattern**: In-memory SwiftData container for isolation
 - **Coverage Target**: >80% for new code
 
