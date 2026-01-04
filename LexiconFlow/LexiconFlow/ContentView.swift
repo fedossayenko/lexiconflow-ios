@@ -2,7 +2,8 @@
 //  ContentView.swift
 //  LexiconFlow
 //
-//  Created by Fedir Saienko on 4.01.26.
+//  Root view for the LexiconFlow app
+//  Placeholder until Phase 1, Task 1.6 (Core Views)
 //
 
 import SwiftUI
@@ -10,57 +11,32 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
-            }
-#if os(macOS)
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-#endif
-            .toolbar {
-#if os(iOS)
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-#endif
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
-            }
-        } detail: {
-            Text("Select an item")
-        }
-    }
+        NavigationStack {
+            VStack(spacing: 20) {
+                Image(systemName: "book.fill")
+                    .font(.system(size: 60))
+                    .foregroundStyle(.blue)
 
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
+                Text("Lexicon Flow")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
 
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+                Text("Phase 1: Foundation - Models Complete")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                Text("Core Views coming in Task 1.6")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
             }
+            .navigationTitle("Lexicon Flow")
         }
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .modelContainer(for: [Card.self, Deck.self, FSRSState.self, ReviewLog.self], inMemory: true)
 }
