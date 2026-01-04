@@ -11,7 +11,6 @@ import SwiftData
 struct FlashcardView: View {
     @Bindable var card: Flashcard
     @Binding var isFlipped: Bool
-    @Namespace private var flipID
 
     var body: some View {
         ZStack {

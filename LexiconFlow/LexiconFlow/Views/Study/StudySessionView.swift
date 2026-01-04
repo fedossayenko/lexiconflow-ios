@@ -9,83 +9,90 @@ import SwiftUI
 import SwiftData
 
 struct StudySessionView: View {
-    @StateObject private var viewModel: StudySessionViewModel
+    @State private var viewModel: StudySessionViewModel?
     @Environment(\.modelContext) private var modelContext
     @State private var isFlipped = false
+    @State private var showError = false
     let mode: StudyMode
     let onComplete: () -> Void
 
     init(mode: StudyMode, onComplete: @escaping () -> Void) {
         self.mode = mode
         self.onComplete = onComplete
-        // Temporarily initialize with nil modelContext, will be set in body
-        self._viewModel = StateObject(wrappedValue: StudySessionViewModel(
-            modelContext: ModelContext(try! ModelContainer(for: Flashcard.self)),
-            mode: mode
-        ))
     }
 
     var body: some View {
         Group {
-            if viewModel.isComplete {
-                sessionCompleteView
-            } else if let currentCard = viewModel.currentCard {
-                VStack(spacing: 30) {
-                    // Progress indicator
-                    Text(viewModel.progress)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.top)
+            if let viewModel = viewModel {
+                if viewModel.isComplete {
+                    sessionCompleteView(viewModel: viewModel)
+                } else if let currentCard = viewModel.currentCard {
+                    VStack(spacing: 30) {
+                        // Progress indicator
+                        Text(viewModel.progress)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(.top)
 
-                    // Flashcard
-                    FlashcardView(card: currentCard, isFlipped: $isFlipped)
-                        .frame(maxHeight: .infinity)
+                        // Flashcard
+                        FlashcardView(card: currentCard, isFlipped: $isFlipped)
+                            .frame(maxHeight: .infinity)
 
-                    // Rating buttons (show after flip)
-                    if isFlipped {
-                        RatingButtonsView { rating in
-                            Task {
-                                await viewModel.submitRating(rating.rawValue)
-                                withAnimation {
-                                    isFlipped = false
+                        // Rating buttons (show after flip)
+                        if isFlipped {
+                            RatingButtonsView { rating in
+                                Task {
+                                    await viewModel.submitRating(rating.rawValue)
+                                    withAnimation {
+                                        isFlipped = false
+                                    }
                                 }
                             }
-                        }
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                    } else {
-                        Text("Tap card to flip")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-                .padding()
-                .navigationTitle(mode == .scheduled ? "Study" : "Cram")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Exit") {
-                            onComplete()
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                        } else {
+                            Text("Tap card to flip")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
                         }
                     }
+                    .padding()
+                    .navigationTitle(mode == .scheduled ? "Study" : "Cram")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Exit") {
+                                onComplete()
+                            }
+                        }
+                    }
+                } else {
+                    ProgressView("Loading cards...")
                 }
             } else {
-                ProgressView("Loading cards...")
-                    .onAppear {
-                        let context = ModelContext(modelContext.container)
-                        let tempViewModel = StudySessionViewModel(modelContext: context, mode: mode)
-                        tempViewModel.loadCards()
-                    }
+                ProgressView("Loading session...")
             }
         }
-        .onAppear {
-            if viewModel.cards.isEmpty {
-                let context = ModelContext(modelContext.container)
+        .alert("Error", isPresented: $showError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(viewModel?.lastError?.localizedDescription ?? "An unknown error occurred")
+        }
+        .task {
+            if viewModel == nil {
+                viewModel = StudySessionViewModel(modelContext: modelContext, mode: mode)
+            }
+            if let viewModel = viewModel, viewModel.cards.isEmpty {
                 viewModel.loadCards()
+            }
+        }
+        .onChange(of: viewModel?.lastError != nil) { _, hasError in
+            if hasError {
+                showError = true
             }
         }
     }
 
-    private var sessionCompleteView: some View {
+    private func sessionCompleteView(viewModel: StudySessionViewModel) -> some View {
         VStack(spacing: 24) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 60))

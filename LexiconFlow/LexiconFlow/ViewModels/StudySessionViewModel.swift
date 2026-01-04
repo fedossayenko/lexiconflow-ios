@@ -19,6 +19,7 @@ final class StudySessionViewModel: ObservableObject {
     @Published private(set) var currentIndex = 0
     @Published private(set) var isComplete = false
     @Published private(set) var isProcessing = false
+    @Published private(set) var lastError: Error?
 
     /// The current card being displayed
     var currentCard: Flashcard? {
@@ -55,12 +56,25 @@ final class StudySessionViewModel: ObservableObject {
         isProcessing = true
         defer { isProcessing = false }
 
-        _ = await scheduler.processReview(
+        // Capture result and check for errors
+        let result = await scheduler.processReview(
             flashcard: card,
             rating: rating,
             mode: mode
         )
 
+        // Only advance if the review was saved successfully
+        guard result != nil else {
+            lastError = NSError(
+                domain: "LexiconFlow",
+                code: 1001,
+                userInfo: [NSLocalizedDescriptionKey: "Failed to save review. Please try again."]
+            )
+            return
+        }
+
+        // Clear any previous error on success
+        lastError = nil
         currentIndex += 1
 
         if currentIndex >= cards.count {

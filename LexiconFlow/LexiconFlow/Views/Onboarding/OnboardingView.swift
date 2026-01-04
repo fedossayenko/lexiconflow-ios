@@ -13,6 +13,7 @@ struct OnboardingView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var currentPage = 0
     @State private var isCreatingSampleDeck = false
+    @State private var errorMessage: String?
 
     private let pages = [
         OnboardingPage(
@@ -58,6 +59,18 @@ struct OnboardingView: View {
                     .disabled(isCreatingSampleDeck)
                 }
             }
+        }
+        .alert("Error", isPresented: .constant(errorMessage != nil)) {
+            Button("Retry", role: .cancel) {
+                errorMessage = nil
+                completeOnboarding()
+            }
+            Button("Cancel", role: .destructive) {
+                errorMessage = nil
+                isCreatingSampleDeck = false
+            }
+        } message: {
+            Text(errorMessage ?? "An unknown error occurred")
         }
     }
 
@@ -105,7 +118,8 @@ struct OnboardingView: View {
                 try modelContext.save()
                 hasCompletedOnboarding = true
             } catch {
-                print("Failed to save sample deck: \(error)")
+                Analytics.trackError("onboarding_save", error: error)
+                errorMessage = "Failed to create sample deck: \(error.localizedDescription)"
                 isCreatingSampleDeck = false
             }
         }

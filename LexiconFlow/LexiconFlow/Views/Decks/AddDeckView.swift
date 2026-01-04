@@ -15,6 +15,7 @@ struct AddDeckView: View {
 
     @State private var name = ""
     @State private var selectedIcon = "folder.fill"
+    @State private var errorMessage: String?
 
     private let deckIcons = [
         "folder.fill", "star.fill", "heart.fill", "book.fill",
@@ -74,6 +75,13 @@ struct AddDeckView: View {
                     .disabled(name.isEmpty)
                 }
             }
+            .alert("Error", isPresented: .constant(errorMessage != nil)) {
+                Button("OK", role: .cancel) {
+                    errorMessage = nil
+                }
+            } message: {
+                Text(errorMessage ?? "An unknown error occurred")
+            }
         }
     }
 
@@ -89,7 +97,8 @@ struct AddDeckView: View {
             try modelContext.save()
             dismiss()
         } catch {
-            print("Failed to save deck: \(error)")
+            Analytics.trackError("save_deck", error: error)
+            errorMessage = "Failed to save deck: \(error.localizedDescription)"
         }
     }
 }

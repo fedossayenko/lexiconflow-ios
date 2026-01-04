@@ -51,6 +51,7 @@ struct DeckListView: View {
 
     private func deleteDecks(at offsets: IndexSet) {
         for index in offsets {
+            guard index >= 0 && index < decks.count else { continue }
             modelContext.delete(decks[index])
         }
     }

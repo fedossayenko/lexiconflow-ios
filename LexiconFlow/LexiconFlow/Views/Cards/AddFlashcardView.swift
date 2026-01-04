@@ -23,6 +23,7 @@ struct AddFlashcardView: View {
     @State private var selectedImage: PhotosPickerItem?
     @State private var imageData: Data?
     @State private var isSaving = false
+    @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -106,6 +107,13 @@ struct AddFlashcardView: View {
             .onAppear {
                 selectedDeck = deck
             }
+            .alert("Error", isPresented: .constant(errorMessage != nil)) {
+                Button("OK", role: .cancel) {
+                    errorMessage = nil
+                }
+            } message: {
+                Text(errorMessage ?? "An unknown error occurred")
+            }
         }
     }
 
@@ -137,7 +145,8 @@ struct AddFlashcardView: View {
             try modelContext.save()
             dismiss()
         } catch {
-            print("Failed to save flashcard: \(error)")
+            Analytics.trackError("save_flashcard", error: error)
+            errorMessage = "Failed to save flashcard: \(error.localizedDescription)"
             isSaving = false
         }
     }

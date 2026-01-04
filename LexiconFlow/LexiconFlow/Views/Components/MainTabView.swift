@@ -12,14 +12,7 @@ struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var selectedTab = 0
     @State private var dueCardCount = 0
-
-    private let scheduler: Scheduler
-
-    init() {
-        // Temporary storage for modelContext, will be set in body
-        // Use a default that gets replaced immediately
-        self.scheduler = Scheduler(modelContext: ModelContext(try! ModelContainer(for: Flashcard.self)))
-    }
+    @State private var scheduler: Scheduler?
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -43,6 +36,9 @@ struct MainTabView: View {
                 .tag(2)
         }
         .onAppear {
+            if scheduler == nil {
+                scheduler = Scheduler(modelContext: modelContext)
+            }
             refreshDueCount()
         }
         .onChange(of: selectedTab) { _, _ in
@@ -53,9 +49,8 @@ struct MainTabView: View {
     }
 
     private func refreshDueCount() {
-        let context = ModelContext(modelContext.container)
-        let tempScheduler = Scheduler(modelContext: context)
-        dueCardCount = tempScheduler.dueCardCount()
+        guard let scheduler = scheduler else { return }
+        dueCardCount = scheduler.dueCardCount()
     }
 }
 

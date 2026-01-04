@@ -11,7 +11,7 @@ import SwiftData
 struct DeckRowView: View {
     @Bindable var deck: Deck
     @Environment(\.modelContext) private var modelContext
-    @State private var dueCount = 0
+    @Query private var states: [FSRSState]
 
     var body: some View {
         HStack(spacing: 16) {
@@ -45,22 +45,20 @@ struct DeckRowView: View {
 
             Spacer()
         }
-        .onAppear {
-            calculateDueCount()
-        }
     }
 
-    private func calculateDueCount() {
-        let scheduler = Scheduler(modelContext: modelContext)
-
-        // Count due cards for this specific deck
+    /// Computed property that calculates due count reactively
+    private var dueCount: Int {
         let now = Date()
-        let deckCards = deck.cards.filter { card in
-            guard let state = card.fsrsState else { return false }
+        return states.filter { state in
+            // Check if this state belongs to a card in this deck
+            guard let card = state.card,
+                  card.deck?.id == deck.id else {
+                return false
+            }
+            // Check if card is due and not new
             return state.dueDate <= now && state.stateEnum != FlashcardState.new.rawValue
-        }
-
-        dueCount = deckCards.count
+        }.count
     }
 }
 
