@@ -12,6 +12,26 @@ struct FlashcardView: View {
     @Bindable var card: Flashcard
     @Binding var isFlipped: Bool
 
+    /// Determines glass thickness based on FSRS stability.
+    ///
+    /// Visualizes memory strength through glass morphism:
+    /// - Thin glass (fragile) for low stability (< 10)
+    /// - Regular glass for medium stability (10-50)
+    /// - Thick glass (stable) for high stability (> 50)
+    private var glassThickness: GlassThickness {
+        guard let stability = card.fsrsState?.stability else {
+            return .thin // Default to thin for new cards
+        }
+
+        if stability < 10 {
+            return .thin
+        } else if stability <= 50 {
+            return .regular
+        } else {
+            return .thick
+        }
+    }
+
     var body: some View {
         ZStack {
             if isFlipped {
@@ -31,8 +51,7 @@ struct FlashcardView: View {
         .frame(maxWidth: .infinity)
         .frame(height: 400)
         .background(Color(.systemBackground))
-        .cornerRadius(20)
-        .shadow(radius: 10, y: 5)
+        .glassEffect(glassThickness, cornerRadius: 20)
         .onTapGesture {
             withAnimation(.easeInOut(duration: 0.3)) {
                 isFlipped.toggle()
