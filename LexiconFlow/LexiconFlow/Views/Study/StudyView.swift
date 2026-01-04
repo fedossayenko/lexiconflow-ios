@@ -89,15 +89,16 @@ struct StudyView: View {
         if studyMode == .scheduled {
             dueCount = scheduler.dueCardCount()
         } else {
-            // For cram mode, show total cards with FSRS state (including "new" cards)
+            // For cram mode, count excludes new cards (consistent with fetchCramCards)
             let stateDescriptor = FetchDescriptor<FSRSState>(
-                predicate: #Predicate<FSRSState> { _ in
-                    true
+                predicate: #Predicate<FSRSState> { state in
+                    state.stateEnum != "new"
                 }
             )
             do {
                 dueCount = try modelContext.fetchCount(stateDescriptor)
             } catch {
+                Analytics.trackError("refresh_due_count", error: error)
                 dueCount = 0
             }
         }

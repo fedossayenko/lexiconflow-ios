@@ -12,7 +12,7 @@ import OSLog
 
 /// Batch data import service with progress tracking
 ///
-/// **Architecture**: Uses actor for thread-safe bulk operations.
+/// **Architecture**: Uses @MainActor for SwiftData ModelContext access.
 /// **Performance**: Batches inserts to avoid memory pressure and maintains UI responsiveness.
 ///
 /// **Usage**:
@@ -20,7 +20,8 @@ import OSLog
 /// let importer = DataImporter(modelContext: context)
 /// let progress = await importer.importCards(cards, batchSize: 500)
 /// ```
-actor DataImporter {
+@MainActor
+final class DataImporter {
     /// Logger for import operations
     private static let logger = Logger(subsystem: "com.lexiconflow.importer", category: "DataImport")
 
@@ -335,7 +336,7 @@ struct ImportResult: Sendable {
 }
 
 /// Statistics for a single batch
-private struct BatchStats {
+private struct BatchStats: Sendable {
     var success: Int = 0
     var skipped: Int = 0
     var errors: [ImportError] = []
@@ -348,7 +349,7 @@ struct ImportError: Sendable {
     let cardWord: String?
 
     /// Create an unsupported strategy error
-    static func unsupportedStrategy(_ message: String) -> Error {
+    nonisolated(unsafe) static func unsupportedStrategy(_ message: String) -> Error {
         NSError(
             domain: "com.lexiconflow.importer",
             code: 1001,

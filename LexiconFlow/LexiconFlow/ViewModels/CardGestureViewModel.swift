@@ -34,11 +34,13 @@ class CardGestureViewModel: ObservableObject {
 
     // MARK: - Constants
 
-    /// Minimum distance to trigger swipe recognition.
-    private let minimumSwipeDistance: CGFloat = 20
-
-    /// Threshold distance for full swipe completion.
-    private let swipeThreshold: CGFloat = 100
+    /// Gesture-related constants
+    private enum GestureConstants {
+        /// Minimum distance to trigger direction-specific visual feedback
+        static let minimumSwipeDistance: CGFloat = 15
+        /// Threshold distance for full swipe completion
+        static let swipeThreshold: CGFloat = 100
+    }
 
     // MARK: - Direction Detection
 
@@ -49,6 +51,14 @@ class CardGestureViewModel: ObservableObject {
         case up      // Easy rating
         case down    // Hard rating
         case none    // No clear direction
+    }
+
+    /// Result of gesture change processing.
+    ///
+    /// Contains detected direction and progress for use in haptic feedback.
+    struct GestureResult {
+        let direction: SwipeDirection
+        let progress: CGFloat
     }
 
     /// Detects swipe direction from translation.
@@ -62,7 +72,7 @@ class CardGestureViewModel: ObservableObject {
         let horizontal = abs(translation.width)
         let vertical = abs(translation.height)
 
-        guard max(horizontal, vertical) > minimumSwipeDistance else { return .none }
+        guard max(horizontal, vertical) > GestureConstants.minimumSwipeDistance else { return .none }
 
         if horizontal > vertical {
             return translation.width > 0 ? .right : .left
@@ -82,7 +92,7 @@ class CardGestureViewModel: ObservableObject {
     func updateGestureState(translation: CGSize) {
         let direction = detectDirection(translation: translation)
         let distance = max(abs(translation.width), abs(translation.height))
-        let progress = min(distance / swipeThreshold, 1.0)
+        let progress = min(distance / GestureConstants.swipeThreshold, 1.0)
 
         offset = translation
 
@@ -109,11 +119,33 @@ class CardGestureViewModel: ObservableObject {
             // Hard rating - Orange tint, heavy effect
             scale = 1.0 + (progress * 0.05)
             tintColor = .orange.opacity(progress * 0.4)
-            opacity = 1.0 + (progress * 0.1)
+            opacity = min(1.0 + (progress * 0.1), 1.0)
 
         case .none:
-            break
+            // No clear direction yet - show subtle dragging feedback
+            // This eliminates the dead zone feeling for small movements
+            scale = 1.0 + (progress * 0.05)
+            tintColor = .clear
+            rotation = 0
         }
+    }
+
+    /// Handles gesture change and returns result for haptic feedback.
+    ///
+    /// - Parameter value: The drag gesture value
+    /// - Returns: Gesture result with direction and progress, or nil if no clear direction
+    ///
+    /// This method combines direction detection, progress calculation, and state update
+    /// into a single call for cleaner view code.
+    func handleGestureChange(_ value: DragGesture.Value) -> GestureResult? {
+        let direction = detectDirection(translation: value.translation)
+        guard direction != .none else { return nil }
+
+        let distance = max(abs(value.translation.width), abs(value.translation.height))
+        let progress = min(distance / GestureConstants.swipeThreshold, 1.0)
+
+        updateGestureState(translation: value.translation)
+        return GestureResult(direction: direction, progress: progress)
     }
 
     /// Resets all gesture state to default values.
@@ -133,7 +165,7 @@ class CardGestureViewModel: ObservableObject {
     /// - Returns: True if swipe should be committed
     func shouldCommitSwipe(translation: CGSize) -> Bool {
         let distance = max(abs(translation.width), abs(translation.height))
-        return distance >= swipeThreshold
+        return distance >= GestureConstants.swipeThreshold
     }
 
     /// Converts swipe direction to FSRS rating.
@@ -147,6 +179,21 @@ class CardGestureViewModel: ObservableObject {
         case .up:    return 3  // Easy
         case .down:  return 1  // Hard
         case .none:  return 2  // Default to Good
+        }
+    }
+}
+
+// MARK: - Haptic Conversion
+
+extension CardGestureViewModel.SwipeDirection {
+    /// Converts gesture direction to haptic service direction.
+    var hapticDirection: HapticService.SwipeDirection {
+        switch self {
+        case .right: return .right
+        case .left:  return .left
+        case .up:    return .up
+        case .down:  return .down
+        case .none:  return .right  // fallback
         }
     }
 }

@@ -25,7 +25,46 @@ class HapticService {
         case down    // Hard rating
     }
 
+    /// Cached haptic generators for performance
+    private var lightGenerator: UIImpactFeedbackGenerator?
+    private var mediumGenerator: UIImpactFeedbackGenerator?
+    private var heavyGenerator: UIImpactFeedbackGenerator?
+
     private init() {}
+
+    /// Gets or creates a cached haptic generator for the given style.
+    ///
+    /// - Parameter style: The haptic feedback style
+    /// - Returns: A prepared haptic generator
+    private func getGenerator(style: UIImpactFeedbackGenerator.FeedbackStyle) -> UIImpactFeedbackGenerator {
+        switch style {
+        case .light:
+            if let g = lightGenerator { return g }
+            let g = UIImpactFeedbackGenerator(style: .light)
+            g.prepare()
+            lightGenerator = g
+            return g
+        case .medium:
+            if let g = mediumGenerator { return g }
+            let g = UIImpactFeedbackGenerator(style: .medium)
+            g.prepare()
+            mediumGenerator = g
+            return g
+        case .heavy:
+            if let g = heavyGenerator { return g }
+            let g = UIImpactFeedbackGenerator(style: .heavy)
+            g.prepare()
+            heavyGenerator = g
+            return g
+        case .soft, .rigid:
+            // Handle iOS 26+ styles
+            let g = UIImpactFeedbackGenerator(style: style)
+            g.prepare()
+            return g
+        @unknown default:
+            return UIImpactFeedbackGenerator(style: .medium)
+        }
+    }
 
     /// Triggers haptic feedback during swipe gesture.
     ///
@@ -38,19 +77,15 @@ class HapticService {
     func triggerSwipe(direction: SwipeDirection, progress: CGFloat) {
         guard progress > 0.3 else { return }
 
-        let generator: UIImpactFeedbackGenerator
-
+        let style: UIImpactFeedbackGenerator.FeedbackStyle
         switch direction {
-        case .right:  // Good - Medium impact
-            generator = UIImpactFeedbackGenerator(style: .medium)
-        case .left:   // Again - Light impact
-            generator = UIImpactFeedbackGenerator(style: .light)
-        case .up:     // Easy - Heavy impact
-            generator = UIImpactFeedbackGenerator(style: .heavy)
-        case .down:   // Hard - Medium impact
-            generator = UIImpactFeedbackGenerator(style: .medium)
+        case .right: style = .medium
+        case .left:  style = .light
+        case .up:    style = .heavy
+        case .down:  style = .medium
         }
 
+        let generator = getGenerator(style: style)
         generator.prepare()
         generator.impactOccurred(intensity: progress)
     }
@@ -80,5 +115,15 @@ class HapticService {
         let generator = UINotificationFeedbackGenerator()
         generator.prepare()
         generator.notificationOccurred(.error)
+    }
+
+    /// Resets cached haptic generators.
+    ///
+    /// Call this method to release cached generators, such as when receiving
+    /// a memory warning or when the app backgrounds.
+    func reset() {
+        lightGenerator = nil
+        mediumGenerator = nil
+        heavyGenerator = nil
     }
 }

@@ -22,10 +22,10 @@ struct StudySessionView: View {
     }
 
     var body: some View {
-        Group {
+        @ViewBuilder var content: some View {
             if let viewModel = viewModel {
                 if viewModel.isComplete {
-                    sessionCompleteView(viewModel: viewModel)
+                    sessionCompleteView(vm: viewModel)
                 } else if let currentCard = viewModel.currentCard {
                     VStack(spacing: 30) {
                         // Progress indicator
@@ -35,14 +35,30 @@ struct StudySessionView: View {
                             .padding(.top)
 
                         // Flashcard
-                        FlashcardView(card: currentCard, isFlipped: $isFlipped)
-                            .frame(maxHeight: .infinity)
+                        FlashcardView(card: currentCard, isFlipped: $isFlipped) { rating in
+                            // IMPORTANT: Capture card reference NOW before async Task
+                            // Don't rely on viewModel.currentCard which might change
+                            let cardToRate = currentCard
+
+                            // Handle swipe-to-rate
+                            Task {
+                                await viewModel.submitRating(rating, card: cardToRate)
+                                withAnimation {
+                                    isFlipped = false
+                                }
+                            }
+                        }
+                        .frame(maxHeight: .infinity)
+                        .id("card-\(viewModel.currentIndex)-\(currentCard.word)")  // Force view refresh for each card with unique combo
+                        .opacity(viewModel.isComplete ? 0 : 1)  // Hide when complete
 
                         // Rating buttons (show after flip)
                         if isFlipped {
                             RatingButtonsView { rating in
+                                // Capture card reference before async
+                                let cardToRate = currentCard
                                 Task {
-                                    await viewModel.submitRating(rating.rawValue)
+                                    await viewModel.submitRating(rating.rawValue, card: cardToRate)
                                     withAnimation {
                                         isFlipped = false
                                     }
@@ -72,27 +88,29 @@ struct StudySessionView: View {
                 ProgressView("Loading session...")
             }
         }
-        .alert("Error", isPresented: $showError) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(viewModel?.lastError?.localizedDescription ?? "An unknown error occurred")
-        }
-        .task {
-            if viewModel == nil {
-                viewModel = StudySessionViewModel(modelContext: modelContext, mode: mode)
+
+        return content
+            .alert("Error", isPresented: $showError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(viewModel?.lastError?.localizedDescription ?? "An unknown error occurred")
             }
-            if let viewModel = viewModel, viewModel.cards.isEmpty {
-                viewModel.loadCards()
+            .task {
+                if viewModel == nil {
+                    viewModel = StudySessionViewModel(modelContext: modelContext, mode: mode)
+                }
+                if let viewModel = viewModel, viewModel.cards.isEmpty {
+                    viewModel.loadCards()
+                }
             }
-        }
-        .onChange(of: viewModel?.lastError != nil) { _, hasError in
-            if hasError {
-                showError = true
+            .onChange(of: viewModel?.lastError != nil) { _, hasError in
+                if hasError {
+                    showError = true
+                }
             }
-        }
     }
 
-    private func sessionCompleteView(viewModel: StudySessionViewModel) -> some View {
+    private func sessionCompleteView(vm: StudySessionViewModel) -> some View {
         VStack(spacing: 24) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 60))
@@ -101,7 +119,7 @@ struct StudySessionView: View {
             Text("Session Complete!")
                 .font(.title)
 
-            Text("You reviewed \(viewModel.cards.count) cards")
+            Text("You reviewed \(vm.cards.count) cards")
                 .foregroundStyle(.secondary)
 
             Button("Done") {

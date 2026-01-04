@@ -15,7 +15,26 @@ struct FlashcardView: View {
     // MARK: - Gesture State
 
     @StateObject private var gestureViewModel = CardGestureViewModel()
-    @State private var dragOffset = CGSize.zero
+    @State private var isDragging = false
+    @State private var lastHapticTime = Date()
+
+    // MARK: - Constants
+
+    /// Animation-related constants
+    private enum AnimationConstants {
+        /// Spring response for commit animation
+        static let commitSpringResponse: Double = 0.3
+        /// Spring damping for commit animation
+        static let commitSpringDamping: CGFloat = 0.7
+        /// Spring response for cancel animation
+        static let cancelSpringResponse: Double = 0.4
+        /// Spring damping for cancel animation
+        static let cancelSpringDamping: CGFloat = 0.7
+        /// Haptic throttle interval (max haptics per second)
+        static let hapticThrottleInterval: TimeInterval = 0.08
+        /// Progress threshold distance calculation
+        static let swipeThreshold: CGFloat = 100
+    }
 
     /// Determines glass thickness based on FSRS stability.
     ///
@@ -69,37 +88,29 @@ struct FlashcardView: View {
             gestureViewModel.tintColor
                 .clipShape(RoundedRectangle(cornerRadius: 20))
         )
-        // Gesture handling
-        .gesture(
-            DragGesture(minimumDistance: 0, coordinateSpace: .local)
+        // Gesture handling - use simultaneousGesture to allow tap to work
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 10, coordinateSpace: .local)
                 .onChanged { value in
-                    let direction = gestureViewModel.detectDirection(translation: value.translation)
-                    let distance = max(abs(value.translation.width), abs(value.translation.height))
-                    let progress = min(distance / 100, 1.0)
+                    isDragging = true
 
-                    // Update visual state
-                    gestureViewModel.updateGestureState(translation: value.translation)
+                    guard let result = gestureViewModel.handleGestureChange(value) else { return }
 
-                    // Haptic feedback during drag
-                    if direction != .none {
-                        let hapticDirection: HapticService.SwipeDirection
-                        switch direction {
-                        case .right: hapticDirection = .right
-                        case .left: hapticDirection = .left
-                        case .up: hapticDirection = .up
-                        case .down: hapticDirection = .down
-                        case .none: hapticDirection = .right
-                        }
+                    let now = Date()
+                    if now.timeIntervalSince(lastHapticTime) >= AnimationConstants.hapticThrottleInterval {
                         HapticService.shared.triggerSwipe(
-                            direction: hapticDirection,
-                            progress: progress
+                            direction: result.direction.hapticDirection,
+                            progress: result.progress
                         )
+                        lastHapticTime = now
                     }
                 }
                 .onEnded { value in
                     let direction = gestureViewModel.detectDirection(translation: value.translation)
+                    let distance = max(abs(value.translation.width), abs(value.translation.height))
+                    let shouldCommit = gestureViewModel.shouldCommitSwipe(translation: value.translation)
 
-                    if gestureViewModel.shouldCommitSwipe(translation: value.translation) {
+                    if shouldCommit {
                         // Commit swipe
                         let rating = gestureViewModel.ratingForDirection(direction)
 
@@ -111,23 +122,25 @@ struct FlashcardView: View {
                         }
 
                         // Reset with animation
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        withAnimation(.spring(response: AnimationConstants.commitSpringResponse, dampingFraction: AnimationConstants.commitSpringDamping)) {
                             gestureViewModel.resetGestureState()
                         }
+                        isDragging = false
 
                         // Notify parent
                         onSwipe?(rating)
                     } else {
                         // Cancel swipe - snap back
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                        withAnimation(.spring(response: AnimationConstants.cancelSpringResponse, dampingFraction: AnimationConstants.cancelSpringDamping)) {
                             gestureViewModel.resetGestureState()
                         }
+                        isDragging = false
                     }
                 }
         )
         .onTapGesture {
             // Only allow tap to flip if not currently dragging
-            guard gestureViewModel.offset == .zero else { return }
+            guard !isDragging else { return }
 
             withAnimation(.easeInOut(duration: 0.3)) {
                 isFlipped.toggle()
