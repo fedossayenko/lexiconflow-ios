@@ -16,6 +16,7 @@ import FSRS
 @MainActor
 struct ModelTests {
 
+    /// Create a fresh test container for each test (proper isolation)
     private func createTestContainer() -> ModelContainer {
         let schema = Schema([
             FSRSState.self,

@@ -98,3 +98,6 @@ iOSInjectionProject/
 
 # VS Code
 .vscode/
+
+# Auto Claude data directory
+.auto-claude/

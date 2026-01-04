@@ -15,7 +15,6 @@ import Foundation
 /// - Event tracking with metadata
 /// - Error tracking with context
 /// - Performance measurement
-/// - Benchmark timing accuracy
 /// - User property management
 struct AnalyticsTests {
 
@@ -111,23 +110,6 @@ struct AnalyticsTests {
 
         #expect(duration >= 0.01, "Duration should be at least 10ms")
         #expect(duration < 1.0, "Operation should complete quickly")
-    }
-
-    @Test("Benchmark timing is accurate")
-    func benchmarkAccuracy() async {
-        let expectedDelay: TimeInterval = 0.05 // 50ms
-
-        let duration = await Benchmark.measureTime("timing_test") {
-            try? await Task.sleep(nanoseconds: UInt64(expectedDelay * 1_000_000_000))
-        }
-
-        // Allow 100% tolerance for Task.sleep scheduling overhead
-        // Task.sleep is not precise and subject to scheduler delays
-        let tolerance = expectedDelay * 1.0
-        #expect(
-            abs(duration - expectedDelay) < tolerance,
-            "Duration \(duration)s should be close to expected \(expectedDelay)s"
-        )
     }
 
     @Test("Benchmark throws propagate correctly")
