@@ -23,19 +23,11 @@ struct FSRSWrapperTests {
 
     // MARK: - Test Fixtures
 
-    /// Create a test ModelContainer with in-memory storage
-    private func createTestContainer() -> ModelContainer {
-        let schema = Schema([
-            FSRSState.self,
-            Flashcard.self,
-            Deck.self,
-            FlashcardReview.self,
-        ])
-        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try! ModelContainer(for: schema, configurations: [configuration])
+    private func freshContext() -> ModelContext {
+        return TestContainers.freshContext()
     }
 
-    /// Create a test flashcard with optional FSRS state
+    /// Create a test flashcard with optional FSRS state (does NOT save - caller must save)
     private func createTestFlashcard(context: ModelContext, word: String = "test", withState: Bool = false) -> Flashcard {
         let flashcard = Flashcard(
             word: word,
@@ -56,7 +48,6 @@ struct FSRSWrapperTests {
         }
 
         context.insert(flashcard)
-        try! context.save()
         return flashcard
     }
 
@@ -64,9 +55,10 @@ struct FSRSWrapperTests {
 
     @Test("Process review returns DTO with correct values for new card")
     func dtoNewCardValues() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let flashcard = createTestFlashcard(context: context, withState: false)
+        try context.save()
         let now = Date()
 
         let result = try await FSRSWrapper.shared.processReview(
@@ -88,14 +80,15 @@ struct FSRSWrapperTests {
 
     @Test("DTO scheduled days differ by rating")
     func dtoScheduledDifferences() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
         let baseDate = Date()
 
         var scheduledDays: [Int: Double] = [:]
 
         for rating in 0...3 {
+            try context.clearAll()
             let flashcard = createTestFlashcard(context: context, word: "card\(rating)")
+            try context.save()
             let result = try await FSRSWrapper.shared.processReview(
                 flashcard: flashcard,
                 rating: rating,
@@ -113,9 +106,10 @@ struct FSRSWrapperTests {
 
     @Test("DTO stability increases with good ratings")
     func dtoStabilityIncrease() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let flashcard = createTestFlashcard(context: context, withState: true)
+        try context.save()
 
         // Use the default stability (10.0) from createTestFlashcard
         // FSRS should increase stability for a well-learned card rated Easy
@@ -132,11 +126,12 @@ struct FSRSWrapperTests {
 
     @Test("DTO difficulty adjusts based on rating")
     func dtoDifficultyAdjustment() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
 
         // Test Again rating (should increase difficulty)
+        try context.clearAll()
         let flashcard1 = createTestFlashcard(context: context, word: "again_test", withState: true)
+        try context.save()
         let initialDifficulty = flashcard1.fsrsState!.difficulty
 
         let resultAgain = try await FSRSWrapper.shared.processReview(
@@ -148,7 +143,9 @@ struct FSRSWrapperTests {
         #expect(resultAgain.difficulty >= initialDifficulty)
 
         // Test Easy rating (should decrease difficulty)
+        try context.clearAll()
         let flashcard2 = createTestFlashcard(context: context, word: "easy_test", withState: true)
+        try context.save()
         let resultEasy = try await FSRSWrapper.shared.processReview(
             flashcard: flashcard2,
             rating: 3, // Easy
@@ -160,11 +157,12 @@ struct FSRSWrapperTests {
 
     @Test("DTO state transitions correctly")
     func dtoStateTransitions() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
 
         // New → Learning (Again rating)
+        try context.clearAll()
         let flashcard1 = createTestFlashcard(context: context, word: "new_to_learning", withState: false)
+        try context.save()
         let result1 = try await FSRSWrapper.shared.processReview(
             flashcard: flashcard1,
             rating: 0, // Again
@@ -174,9 +172,10 @@ struct FSRSWrapperTests {
                 result1.stateEnum == FlashcardState.relearning.rawValue)
 
         // Review → Relearning (Again on review card)
+        try context.clearAll()
         let flashcard2 = createTestFlashcard(context: context, word: "review_to_relearning", withState: true)
         flashcard2.fsrsState!.stateEnum = FlashcardState.review.rawValue
-        try! context.save()
+        try context.save()
 
         let result2 = try await FSRSWrapper.shared.processReview(
             flashcard: flashcard2,
@@ -188,15 +187,15 @@ struct FSRSWrapperTests {
 
     @Test("Reset DTO returns to new state values")
     func dtoResetValues() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let flashcard = createTestFlashcard(context: context, withState: true)
 
         // Set to review state with high values
         flashcard.fsrsState!.stateEnum = FlashcardState.review.rawValue
         flashcard.fsrsState!.stability = 50.0
         flashcard.fsrsState!.difficulty = 8.0
-        try! context.save()
+        try context.save()
 
         let result = await FSRSWrapper.shared.resetFlashcard(flashcard, now: Date())
 
@@ -209,9 +208,10 @@ struct FSRSWrapperTests {
 
     @Test("Preview returns all four rating options")
     func previewCompleteness() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let flashcard = createTestFlashcard(context: context, withState: true)
+        try context.save()
 
         let previews = await FSRSWrapper.shared.previewRatings(flashcard: flashcard)
 
@@ -224,9 +224,10 @@ struct FSRSWrapperTests {
 
     @Test("Preview due dates are correctly ordered")
     func previewOrdering() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let flashcard = createTestFlashcard(context: context, withState: true)
+        try context.save()
 
         let previews = await FSRSWrapper.shared.previewRatings(flashcard: flashcard)
 
@@ -240,9 +241,10 @@ struct FSRSWrapperTests {
 
     @Test("Invalid rating defaults to Good")
     func invalidRatingHandling() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let flashcard = createTestFlashcard(context: context, withState: false)
+        try context.save()
 
         let result = try await FSRSWrapper.shared.processReview(
             flashcard: flashcard,
@@ -257,14 +259,14 @@ struct FSRSWrapperTests {
 
     @Test("Handles negative elapsed days (clock skew)")
     func negativeElapsedDays() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let flashcard = createTestFlashcard(context: context, withState: true)
 
         // Set lastReviewDate in future (clock skew)
         let futureDate = Date().addingTimeInterval(3600) // 1 hour ahead
         flashcard.fsrsState!.lastReviewDate = futureDate
-        try! context.save()
+        try context.save()
 
         let result = try await FSRSWrapper.shared.processReview(
             flashcard: flashcard,
@@ -278,12 +280,12 @@ struct FSRSWrapperTests {
 
     @Test("Zero stability calculates retrievability safely")
     func zeroStabilityRetrievability() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let flashcard = createTestFlashcard(context: context, withState: true)
 
         flashcard.fsrsState!.stability = 0.0
-        try! context.save()
+        try context.save()
 
         let result = try await FSRSWrapper.shared.processReview(
             flashcard: flashcard,

@@ -27,21 +27,13 @@ struct StudySessionViewModelTests {
 
     // MARK: - Test Fixtures
 
-    private func createTestContainer() -> ModelContainer {
-        let schema = Schema([
-            FSRSState.self,
-            Flashcard.self,
-            Deck.self,
-            FlashcardReview.self,
-        ])
-        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try! ModelContainer(for: schema, configurations: [configuration])
+    private func freshContext() -> ModelContext {
+        return TestContainers.freshContext()
     }
 
     private func createTestDeck(context: ModelContext, name: String = "Test Deck") -> Deck {
         let deck = Deck(name: name, icon: "test", order: 0)
         context.insert(deck)
-        try! context.save()
         return deck
     }
 
@@ -62,7 +54,6 @@ struct StudySessionViewModelTests {
         card.fsrsState = fsrsState
         context.insert(card)
         context.insert(fsrsState)
-        try! context.save()
         return card
     }
 
@@ -70,12 +61,13 @@ struct StudySessionViewModelTests {
 
     @Test("Load cards fetches from scheduler")
     func loadCardsFetchesFromScheduler() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
 
         // Create a due card
         _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
+        try context.save()
 
         viewModel.loadCards()
 
@@ -84,11 +76,12 @@ struct StudySessionViewModelTests {
 
     @Test("Load cards sets correct initial state")
     func loadCardsSetsCorrectInitialState() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
 
         _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
+        try context.save()
 
         viewModel.loadCards()
 
@@ -99,8 +92,8 @@ struct StudySessionViewModelTests {
 
     @Test("Load cards with empty deck sets complete flag")
     func loadCardsWithEmptyDeckSetsComplete() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
 
         viewModel.loadCards()
@@ -113,13 +106,14 @@ struct StudySessionViewModelTests {
 
     @Test("Submit rating advances to next card")
     func submitRatingAdvancesToNextCard() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
 
         // Create two due cards
         _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
         _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
+        try context.save()
 
         viewModel.loadCards()
         let initialIndex = viewModel.currentIndex
@@ -132,8 +126,8 @@ struct StudySessionViewModelTests {
 
     @Test("Submit rating without card does nothing")
     func submitRatingWithoutCardDoesNothing() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
 
         // Don't load any cards
@@ -150,13 +144,14 @@ struct StudySessionViewModelTests {
 
     @Test("Submit rating clears error on success")
     func submitRatingClearsErrorOnSuccess() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
 
         // Create two due cards
         _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
         _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
+        try context.save()
 
         viewModel.loadCards()
 
@@ -173,14 +168,15 @@ struct StudySessionViewModelTests {
 
     @Test("Progress format is correct")
     func progressFormatIsCorrect() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
 
         // Create 5 due cards
         for _ in 0..<5 {
             _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
         }
+        try context.save()
 
         viewModel.loadCards()
 
@@ -195,12 +191,13 @@ struct StudySessionViewModelTests {
 
     @Test("Complete on last card")
     func completeOnLastCard() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
 
         // Create one card
         _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
+        try context.save()
 
         viewModel.loadCards()
         #expect(!viewModel.isComplete)
@@ -215,12 +212,13 @@ struct StudySessionViewModelTests {
 
     @Test("IsProcessing prevents double submission")
     func isProcessingPreventsDoubleSubmission() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
 
         // Create a card
         _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
+        try context.save()
 
         viewModel.loadCards()
 
@@ -241,13 +239,14 @@ struct StudySessionViewModelTests {
 
     @Test("Reset returns to start")
     func resetSessionReturnsToStart() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
+        let context = freshContext()
+        try context.clearAll()
         let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
 
         // Create cards
         _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
         _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
+        try context.save()
 
         viewModel.loadCards()
 

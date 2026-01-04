@@ -28,46 +28,46 @@ This document outlines the phased development approach for Lexicon Flow, from in
 - Build core card/deck models
 
 ### Week 1: Project Setup
-- [ ] Initialize Xcode 26 project with iOS 26 target
-- [ ] Configure Swift 6 strict concurrency settings
-- [ ] Set up SwiftData model container
-- [ ] Create base project structure (folders, groups)
-- [ ] Configure SwiftFSRS package dependency
-- [ ] Set up git repository and CI/CD
+- [x] Initialize Xcode 26 project with iOS 26 target
+- [x] Configure Swift 6 strict concurrency settings
+- [x] Set up SwiftData model container
+- [x] Create base project structure (folders, groups)
+- [x] Configure SwiftFSRS package dependency
+- [x] Set up git repository and CI/CD
 
 ### Week 2: Data Model
-- [ ] Implement `Card`, `Deck`, `ReviewLog`, `FSRSState` models
-- [ ] Configure relationships and delete rules
-- [ ] Set up `@Attribute(.externalStorage)` for image data
+- [x] Implement `Flashcard`, `Deck`, `FlashcardReview`, `FSRSState` models
+- [x] Configure relationships and delete rules
+- [x] Set up `@Attribute(.externalStorage)` for image data
 - [ ] Create model migrations strategy
-- [ ] Write unit tests for model validation
-- [ ] Implement `ModelActor` for background operations
+- [x] Write unit tests for model validation
+- [x] Implement `ModelActor` for background operations (DataImporter)
 
 ### Week 3: FSRS Integration
-- [ ] Integrate SwiftFSRS library
-- [ ] Create `Scheduler` actor for thread-safe operations
-- [ ] Implement rating system (Again, Hard, Good, Easy)
-- [ ] Build due card query logic
-- [ ] Create Cram Mode vs Scheduled Review logic
-- [ ] Write comprehensive unit tests:
+- [x] Integrate SwiftFSRS library
+- [x] Create `FSRSWrapper` actor for thread-safe operations
+- [x] Implement rating system (Again, Hard, Good, Easy)
+- [x] Build due card query logic
+- [x] Create Cram Mode vs Scheduled Review logic
+- [x] Write comprehensive unit tests:
   - New card first review
   - Again resets state
   - Easy increases stability
   - Late review bonus
 
 ### Week 4: Basic UI Structure
-- [ ] Set up main app entry point
-- [ ] Create placeholder deck list view
-- [ ] Build basic flashcard view (without glass effects)
-- [ ] Implement tap-to-flip functionality
-- [ ] Create settings placeholder
-- [ ] Build onboarding flow (placeholder content)
+- [x] Set up main app entry point (LexiconFlowApp.swift)
+- [x] Create deck list view (DeckListView, DeckDetailView)
+- [x] Build basic flashcard view (FlashcardView with tap-to-flip)
+- [x] Implement tap-to-flip functionality
+- [x] Create settings placeholder (SettingsView)
+- [x] Build onboarding flow (OnboardingView with sample data)
 
 **Exit Criteria:**
-- App launches without crashes on iOS 26
-- Can create a deck and add cards manually
-- FSRS algorithm schedules next review correctly
-- All unit tests passing
+- [x] App launches without crashes on iOS 26
+- [x] Can create a deck and add cards manually
+- [x] FSRS algorithm schedules next review correctly
+- [x] All unit tests passing (131 tests, 9 suites)
 
 ---
 

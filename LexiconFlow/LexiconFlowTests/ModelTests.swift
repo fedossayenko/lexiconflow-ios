@@ -13,27 +13,22 @@ import FSRS
 @testable import LexiconFlow
 
 /// Test suite for SwiftData models
+/// Uses shared container for performance - each test clears context before use
 @MainActor
 struct ModelTests {
 
-    /// Create a fresh test container for each test (proper isolation)
-    private func createTestContainer() -> ModelContainer {
-        let schema = Schema([
-            FSRSState.self,
-            Flashcard.self,
-            Deck.self,
-            FlashcardReview.self,
-        ])
-        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try! ModelContainer(for: schema, configurations: [configuration])
+    /// Get a fresh isolated context for testing
+    /// Caller should call clearAll() before use to ensure test isolation
+    private func freshContext() -> ModelContext {
+        return TestContainers.freshContext()
     }
 
     // MARK: - Flashcard Tests
 
     @Test("Flashcard creation with required fields")
-    func flashcardCreation() {
-        let container = createTestContainer()
-        let context = container.mainContext
+    func flashcardCreation() throws {
+        let context = freshContext()
+        try context.clearAll()
 
         let flashcard = Flashcard(
             word: "hello",
@@ -42,7 +37,7 @@ struct ModelTests {
         )
 
         context.insert(flashcard)
-        try! context.save()
+        try context.save()
 
         #expect(flashcard.word == "hello")
         #expect(flashcard.definition == "a greeting")
@@ -51,9 +46,9 @@ struct ModelTests {
     }
 
     @Test("Flashcard optional fields can be nil")
-    func flashcardOptionals() {
-        let container = createTestContainer()
-        let context = container.mainContext
+    func flashcardOptionals() throws {
+        let context = freshContext()
+        try context.clearAll()
 
         let flashcard = Flashcard(
             word: "test",
@@ -62,16 +57,16 @@ struct ModelTests {
         )
 
         context.insert(flashcard)
-        try! context.save()
+        try context.save()
 
         #expect(flashcard.phonetic == nil)
         #expect(flashcard.imageData == nil)
     }
 
     @Test("Flashcard-deck relationship")
-    func flashcardDeckRelationship() {
-        let container = createTestContainer()
-        let context = container.mainContext
+    func flashcardDeckRelationship() throws {
+        let context = freshContext()
+        try context.clearAll()
 
         let deck = Deck(name: "Test Deck", icon: "📚")
         context.insert(deck)
@@ -79,15 +74,15 @@ struct ModelTests {
         let flashcard = Flashcard(word: "test", definition: "test")
         flashcard.deck = deck
         context.insert(flashcard)
-        try! context.save()
+        try context.save()
 
         #expect(flashcard.deck?.name == "Test Deck")
     }
 
     @Test("Flashcard FSRS state relationship")
-    func flashcardFSRSState() {
-        let container = createTestContainer()
-        let context = container.mainContext
+    func flashcardFSRSState() throws {
+        let context = freshContext()
+        try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
         let state = FSRSState(
@@ -100,15 +95,15 @@ struct ModelTests {
         context.insert(state)
         flashcard.fsrsState = state
         context.insert(flashcard)
-        try! context.save()
+        try context.save()
 
         #expect(flashcard.fsrsState?.stability == 5.0)
     }
 
     @Test("Flashcard review logs relationship")
-    func flashcardReviewLogs() {
-        let container = createTestContainer()
-        let context = container.mainContext
+    func flashcardReviewLogs() throws {
+        let context = freshContext()
+        try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
         context.insert(flashcard)
@@ -121,7 +116,7 @@ struct ModelTests {
         review2.card = flashcard
         context.insert(review2)
 
-        try! context.save()
+        try context.save()
 
         #expect(flashcard.reviewLogs.count == 2)
         #expect(flashcard.reviewLogs.allSatisfy { $0.card === flashcard })
@@ -130,13 +125,13 @@ struct ModelTests {
     // MARK: - Deck Tests
 
     @Test("Deck creation and properties")
-    func deckCreation() {
-        let container = createTestContainer()
-        let context = container.mainContext
+    func deckCreation() throws {
+        let context = freshContext()
+        try context.clearAll()
 
         let deck = Deck(name: "Vocabulary", icon: "📖")
         context.insert(deck)
-        try! context.save()
+        try context.save()
 
         #expect(deck.name == "Vocabulary")
         #expect(deck.icon == "📖")
@@ -144,9 +139,9 @@ struct ModelTests {
     }
 
     @Test("Deck-cards relationship")
-    func deckCardsRelationship() {
-        let container = createTestContainer()
-        let context = container.mainContext
+    func deckCardsRelationship() throws {
+        let context = freshContext()
+        try context.clearAll()
 
         let deck = Deck(name: "Test", icon: "📚")
         context.insert(deck)
@@ -157,7 +152,7 @@ struct ModelTests {
             context.insert(card)
         }
 
-        try! context.save()
+        try context.save()
 
         #expect(deck.cards.count == 3)
     }
@@ -165,9 +160,9 @@ struct ModelTests {
     // MARK: - FlashcardReview Tests
 
     @Test("Review log creation")
-    func reviewLogCreation() {
-        let container = createTestContainer()
-        let context = container.mainContext
+    func reviewLogCreation() throws {
+        let context = freshContext()
+        try context.clearAll()
 
         let now = Date()
         let review = FlashcardReview(
@@ -178,7 +173,7 @@ struct ModelTests {
         )
 
         context.insert(review)
-        try! context.save()
+        try context.save()
 
         #expect(review.rating == 2)
         #expect(review.reviewDate == now)
@@ -188,9 +183,7 @@ struct ModelTests {
 
     @Test("Review log convenience initializer")
     func reviewLogConvenienceInit() {
-        let container = createTestContainer()
-        let context = container.mainContext
-
+        // This test doesn't need context - just tests initializer
         let review = FlashcardReview(
             rating: 1,
             scheduledDays: 2.5,
@@ -208,6 +201,7 @@ struct ModelTests {
 
     @Test("FSRS state computed property")
     func fsrsStateComputedProperty() {
+        // This test doesn't need context - just tests computed properties
         let state = FSRSState(
             stability: 10.0,
             difficulty: 5.0,
@@ -222,6 +216,7 @@ struct ModelTests {
 
     @Test("FSRS state setter updates raw value")
     func fsrsStateSetter() {
+        // This test doesn't need context - just tests setter
         let state = FSRSState(
             stability: 0,
             difficulty: 5,
@@ -236,9 +231,9 @@ struct ModelTests {
     }
 
     @Test("FSRS state with lastReviewDate cache")
-    func fsrsStateCache() {
-        let container = createTestContainer()
-        let context = container.mainContext
+    func fsrsStateCache() throws {
+        let context = freshContext()
+        try context.clearAll()
 
         let state = FSRSState(
             stability: 10.0,
@@ -249,7 +244,7 @@ struct ModelTests {
         )
         state.lastReviewDate = Date().addingTimeInterval(-86400) // 1 day ago
         context.insert(state)
-        try! context.save()
+        try context.save()
 
         #expect(state.lastReviewDate != nil)
         #expect(abs(state.lastReviewDate!.timeIntervalSinceNow) > 80000) // ~23 hours ago
@@ -297,9 +292,9 @@ struct ModelTests {
     // MARK: - Cascade Delete Tests
 
     @Test("Deleting flashcard cascades to reviews")
-    func flashcardDeleteCascade() {
-        let container = createTestContainer()
-        let context = container.mainContext
+    func flashcardDeleteCascade() throws {
+        let context = freshContext()
+        try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
         context.insert(flashcard)
@@ -308,16 +303,16 @@ struct ModelTests {
         review.card = flashcard
         context.insert(review)
 
-        try! context.save()
+        try context.save()
 
         let reviewId = review.id
 
         // Delete flashcard
         context.delete(flashcard)
-        try! context.save()
+        try context.save()
 
         // Review should be deleted or have nil card reference
-        let reviews = try! context.fetch(FetchDescriptor<FlashcardReview>())
+        let reviews = try context.fetch(FetchDescriptor<FlashcardReview>())
         let deletedReview = reviews.first { $0.id == reviewId }
         #expect(deletedReview == nil || deletedReview?.card == nil)
     }
