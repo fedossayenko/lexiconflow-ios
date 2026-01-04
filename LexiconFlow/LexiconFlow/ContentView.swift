@@ -3,7 +3,7 @@
 //  LexiconFlow
 //
 //  Root view for the LexiconFlow app
-//  Placeholder until Phase 1, Task 1.6 (Core Views)
+//  Routes between Onboarding and MainTabView based on first launch
 //
 
 import SwiftUI
@@ -11,27 +11,15 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 20) {
-                Image(systemName: "book.fill")
-                    .font(.system(size: 60))
-                    .foregroundStyle(.blue)
-
-                Text("Lexicon Flow")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-
-                Text("Phase 1: Foundation - Models Complete")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-
-                Text("Core Views coming in Task 1.6")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
+        Group {
+            if hasCompletedOnboarding {
+                MainTabView()
+            } else {
+                OnboardingView()
             }
-            .navigationTitle("Lexicon Flow")
         }
     }
 }

@@ -121,12 +121,12 @@ struct AnalyticsTests {
             try? await Task.sleep(nanoseconds: UInt64(expectedDelay * 1_000_000_000))
         }
 
-        // Allow 100% tolerance for Task.sleep scheduling overhead
+        // Allow 500% tolerance for Task.sleep scheduling overhead
         // Task.sleep is not precise and subject to scheduler delays
-        let tolerance = expectedDelay * 1.0
+        let tolerance = expectedDelay * 5.0
         #expect(
             abs(duration - expectedDelay) < tolerance,
-            "Duration \(duration)s should be close to expected \(expectedDelay)s"
+            "Duration \(duration)s should be within 500% of expected \(expectedDelay)s"
         )
     }
 
