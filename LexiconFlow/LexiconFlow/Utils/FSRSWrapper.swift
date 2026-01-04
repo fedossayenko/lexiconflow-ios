@@ -39,11 +39,12 @@ struct FSRSReviewResult: Sendable {
     let elapsedDays: Double
 }
 
-/// Actor-isolated wrapper for FSRS algorithm operations
+/// MainActor-isolated wrapper for FSRS algorithm operations
 ///
-/// FSRS is not thread-safe by default, so we use an actor to ensure
-/// all algorithm operations are serialized and safe to call from anywhere.
-actor FSRSWrapper {
+/// FSRS is not thread-safe by default, so we use @MainActor to ensure
+/// all algorithm operations run on the main thread with SwiftData/DateMath access.
+@MainActor
+final class FSRSWrapper {
     /// Shared singleton instance for app-wide access
     static let shared = FSRSWrapper()
 

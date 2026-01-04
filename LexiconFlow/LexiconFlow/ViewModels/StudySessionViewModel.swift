@@ -84,9 +84,11 @@ final class StudySessionViewModel: ObservableObject {
         isComplete = cards.isEmpty
     }
 
-    /// Submit a rating for the current card
-    func submitRating(_ rating: Int) async {
-        guard let card = currentCard, !isProcessing else { return }
+    /// Submit a rating for a specific card
+    func submitRating(_ rating: Int, card: Flashcard) async {
+        guard !isProcessing else {
+            return
+        }
 
         // Validate rating is within FSRS range (0-3)
         guard (0...3).contains(rating) else {
@@ -95,7 +97,9 @@ final class StudySessionViewModel: ObservableObject {
         }
 
         isProcessing = true
-        defer { isProcessing = false }
+        defer {
+            isProcessing = false
+        }
 
         // Capture result and check for errors
         let result = await scheduler.processReview(

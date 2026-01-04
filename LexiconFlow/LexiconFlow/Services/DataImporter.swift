@@ -3,7 +3,7 @@
 //  LexiconFlow
 //
 //  Batch import optimization for large datasets
-//  Uses actor for background-safe SwiftData operations
+//  Uses @MainActor with background task offloading for performance
 //
 
 import Foundation
@@ -12,15 +12,17 @@ import OSLog
 
 /// Batch data import service with progress tracking
 ///
-/// **Architecture**: Uses actor for thread-safe bulk operations.
-/// **Performance**: Batches inserts to avoid memory pressure and maintains UI responsiveness.
+/// **Architecture**: Uses @MainActor for SwiftData ModelContext access required by SwiftData.
+/// **Performance**: Offloads heavy work to background while ModelContext operations run on main thread.
+/// Batch processing prevents UI blocking during large imports.
 ///
 /// **Usage**:
 /// ```swift
 /// let importer = DataImporter(modelContext: context)
 /// let progress = await importer.importCards(cards, batchSize: 500)
 /// ```
-actor DataImporter {
+@MainActor
+final class DataImporter {
     /// Logger for import operations
     private static let logger = Logger(subsystem: "com.lexiconflow.importer", category: "DataImport")
 
@@ -43,8 +45,8 @@ actor DataImporter {
     /// - UI blocking during long operations
     /// - SQLite lock contention
     ///
-    /// **Optimization**: Uses actor to run on background queue,
-    /// keeping UI responsive during large imports.
+    /// **Optimization**: Batch processing with periodic saves maintains
+    /// UI responsiveness even for large imports (500+ cards).
     ///
     /// - Parameters:
     ///   - cards: Array of flashcard data to import
@@ -335,7 +337,7 @@ struct ImportResult: Sendable {
 }
 
 /// Statistics for a single batch
-private struct BatchStats {
+private struct BatchStats: Sendable {
     var success: Int = 0
     var skipped: Int = 0
     var errors: [ImportError] = []
@@ -349,12 +351,13 @@ struct ImportError: Sendable {
 
     /// Create an unsupported strategy error
     static func unsupportedStrategy(_ message: String) -> Error {
-        NSError(
-            domain: "com.lexiconflow.importer",
-            code: 1001,
-            userInfo: [NSLocalizedDescriptionKey: message]
-        )
+        UnsupportedStrategyError(message: message)
     }
+}
+
+/// Error for unsupported import strategies
+private struct UnsupportedStrategyError: Error, Sendable {
+    let message: String
 }
 
 /// Strategy for handling duplicate cards

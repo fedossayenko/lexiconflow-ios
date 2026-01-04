@@ -16,6 +16,7 @@ import Foundation
 /// - DST handling
 /// - Timezone awareness
 /// - Edge cases
+@MainActor
 struct DateMathTests {
 
     // MARK: - Elapsed Days Tests

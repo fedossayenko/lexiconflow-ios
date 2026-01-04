@@ -14,6 +14,7 @@ import Foundation
 /// - Simple division (seconds / 86400) fails during DST transitions
 /// - Users in different timezones expect "day" to mean "calendar day"
 /// - FSRS algorithm assumes day-based intervals, not second-based
+@MainActor
 enum DateMath {
 
     /// The user's current calendar with locale settings
