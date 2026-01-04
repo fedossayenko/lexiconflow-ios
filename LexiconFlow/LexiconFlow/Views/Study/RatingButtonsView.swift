@@ -29,9 +29,14 @@ struct RatingButtonsView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(rating.label)
+                .accessibilityHint("Rate card as \(rating.label.lowercased())")
+                .accessibilityIdentifier("rating_\(rating.rawValue)")
             }
         }
         .padding(.horizontal)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Rating options")
     }
 }
 

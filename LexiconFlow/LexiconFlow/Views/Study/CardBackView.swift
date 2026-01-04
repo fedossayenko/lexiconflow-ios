@@ -19,12 +19,14 @@ struct CardBackView: View {
                 Text(card.word)
                     .font(.title3)
                     .foregroundStyle(.secondary)
+                    .accessibilityLabel("Word: \(card.word)")
 
                 // Definition
                 Text(card.definition)
                     .font(.body)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
+                    .accessibilityLabel("Definition: \(card.definition)")
 
                 // Image (if available)
                 if let imageData = card.imageData,
@@ -35,12 +37,16 @@ struct CardBackView: View {
                         .frame(maxHeight: 200)
                         .cornerRadius(12)
                         .padding(.horizontal)
+                        .accessibilityLabel("Card image")
+                        .accessibilityAddTraits(.isImage)
                 }
 
                 Spacer()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Card back")
     }
 }
 

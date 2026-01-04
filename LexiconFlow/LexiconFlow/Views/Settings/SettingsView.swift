@@ -18,6 +18,9 @@ struct SettingsView: View {
                         Text("Coming Soon")
                             .foregroundStyle(.secondary)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Audio Feedback, Coming Soon")
+                    .accessibilityAddTraits(.isButton)
 
                     HStack {
                         Text("Haptic Feedback")
@@ -25,6 +28,9 @@ struct SettingsView: View {
                         Text("Coming Soon")
                             .foregroundStyle(.secondary)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Haptic Feedback, Coming Soon")
+                    .accessibilityAddTraits(.isButton)
                 }
 
                 Section("Appearance") {
@@ -34,6 +40,9 @@ struct SettingsView: View {
                         Text("Coming Soon")
                             .foregroundStyle(.secondary)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Dark Mode, Coming Soon")
+                    .accessibilityAddTraits(.isButton)
 
                     HStack {
                         Text("Glass Effects")
@@ -41,6 +50,9 @@ struct SettingsView: View {
                         Text("Phase 2")
                             .foregroundStyle(.secondary)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Glass Effects, coming in Phase 2")
+                    .accessibilityAddTraits(.isButton)
                 }
 
                 Section("About") {
@@ -50,6 +62,8 @@ struct SettingsView: View {
                         Text("1.0.0 (Phase 1)")
                             .foregroundStyle(.secondary)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Version 1.0.0 Phase 1")
 
                     HStack {
                         Text("Algorithm")
@@ -57,6 +71,8 @@ struct SettingsView: View {
                         Text("FSRS v5")
                             .foregroundStyle(.secondary)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("FSRS v5 algorithm")
                 }
             }
             .navigationTitle("Settings")

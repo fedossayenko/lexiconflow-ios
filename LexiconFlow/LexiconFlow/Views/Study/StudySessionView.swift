@@ -114,15 +114,7 @@ struct StudySessionView: View {
     }
 }
 
-#Preview {
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Flashcard.self, configurations: config)
-    let card = Flashcard(word: "Ephemeral", definition: "Lasting for a very short time")
-    let state = FSRSState(stability: 0.0, difficulty: 5.0, retrievability: 0.9, dueDate: Date(), stateEnum: FlashcardState.new.rawValue)
-    card.fsrsState = state
-    container.mainContext.insert(card)
-    container.mainContext.insert(state)
-
-    return StudySessionView(mode: .scheduled) {}
-        .modelContainer(container)
+#Preview("Study Session") {
+    StudySessionView(mode: .scheduled) {}
+        .modelContainer(for: [Flashcard.self], inMemory: true)
 }

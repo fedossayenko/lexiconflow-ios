@@ -23,6 +23,7 @@ struct CardFrontView: View {
                     .padding(.vertical, 6)
                     .background(Color.secondary.opacity(0.1))
                     .clipShape(Capsule())
+                    .accessibilityLabel("Deck: \(deck.name)")
             }
 
             // Word
@@ -30,12 +31,14 @@ struct CardFrontView: View {
                 .font(.system(size: 42, weight: .bold, design: .rounded))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
+                .accessibilityLabel("Word: \(card.word)")
 
             // Phonetic
             if let phonetic = card.phonetic {
                 Text(phonetic)
                     .font(.title3)
                     .foregroundStyle(.secondary)
+                    .accessibilityLabel("Pronunciation: \(phonetic)")
             }
 
             Spacer()
@@ -44,9 +47,12 @@ struct CardFrontView: View {
             Text("Tap to reveal")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Card front")
     }
 }
 

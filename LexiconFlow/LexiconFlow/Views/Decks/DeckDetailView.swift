@@ -66,17 +66,9 @@ struct DeckDetailView: View {
     }
 }
 
-#Preview {
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Flashcard.self, configurations: config)
-    let deck = Deck(name: "Sample Deck", icon: "star.fill")
-    let card = Flashcard(word: "Test", definition: "A test card")
-    card.deck = deck
-    container.mainContext.insert(deck)
-    container.mainContext.insert(card)
-
-    return NavigationStack {
-        DeckDetailView(deck: deck)
+#Preview("Deck Detail") {
+    NavigationStack {
+        DeckDetailView(deck: Deck(name: "Sample Deck", icon: "star.fill"))
     }
-    .modelContainer(container)
+    .modelContainer(for: [Flashcard.self, Deck.self, FSRSState.self, FlashcardReview.self], inMemory: true)
 }

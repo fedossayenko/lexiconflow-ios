@@ -42,6 +42,8 @@ struct OnboardingView: View {
         }
         .tabViewStyle(.page(indexDisplayMode: .always))
         .indexViewStyle(.page(backgroundDisplayMode: .always))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Onboarding pages")
         .toolbar {
             if currentPage == pages.count - 1 {
                 ToolbarItem(placement: .bottomBar) {
@@ -57,6 +59,8 @@ struct OnboardingView: View {
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
                     .disabled(isCreatingSampleDeck)
+                    .accessibilityLabel("Get Started")
+                    .accessibilityHint("Create sample deck and begin using Lexicon Flow")
                 }
             }
         }

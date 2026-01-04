@@ -38,6 +38,10 @@ struct FlashcardView: View {
                 isFlipped.toggle()
             }
         }
+        .accessibilityLabel(isFlipped ? "Card back showing definition" : "Card front showing word")
+        .accessibilityHint("Double tap to flip card")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("flashcard")
     }
 }
 

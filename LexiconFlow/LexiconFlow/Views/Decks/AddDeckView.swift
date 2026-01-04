@@ -30,6 +30,8 @@ struct AddDeckView: View {
                 Section("Deck Info") {
                     TextField("Deck Name", text: $name)
                         .textInputAutocapitalization(.words)
+                        .accessibilityLabel("Deck Name")
+                        .accessibilityHint("Enter a name for the new deck")
 
                     Picker("Icon", selection: $selectedIcon) {
                         ForEach(deckIcons, id: \.self) { icon in
@@ -40,6 +42,8 @@ struct AddDeckView: View {
                             .tag(icon)
                         }
                     }
+                    .accessibilityLabel("Icon picker")
+                    .accessibilityHint("Select an icon for the deck")
                 }
 
                 Section {
@@ -54,9 +58,14 @@ struct AddDeckView: View {
                                     .cornerRadius(10)
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel("Icon \(icon)")
+                            .accessibilityHint(selectedIcon == icon ? "Currently selected" : "Select this icon")
+                            .accessibilityAddTraits(selectedIcon == icon ? .isSelected : [])
                         }
                     }
                     .padding(.vertical, 8)
+                    .accessibilityElement(children: .contain)
+                    .accessibilityLabel("Icon grid")
                 } header: {
                     Text("Choose Icon")
                 }

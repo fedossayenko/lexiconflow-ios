@@ -43,6 +43,8 @@ struct StudyView: View {
                         }
                         .pickerStyle(.segmented)
                         .padding(.horizontal)
+                        .accessibilityLabel("Study mode selector")
+                        .accessibilityHint("Choose between scheduled review or cram all cards")
 
                         Button(action: startSession) {
                             Text("Start Studying")
@@ -52,6 +54,8 @@ struct StudyView: View {
                         .buttonStyle(.borderedProminent)
                         .controlSize(.large)
                         .padding(.horizontal)
+                        .accessibilityLabel("Start studying")
+                        .accessibilityHint("Begin study session with \(dueCount) cards")
                     }
                     .padding()
                     .navigationTitle("Study")

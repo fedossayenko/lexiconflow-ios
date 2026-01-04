@@ -22,11 +22,15 @@ struct StudyEmptyView: View {
                     onSwitchMode(.cram)
                 }
                 .buttonStyle(.bordered)
+                .accessibilityLabel("Switch to Cram Mode")
+                .accessibilityHint("Practice all cards regardless of due date")
             } else {
                 Button("Switch to Scheduled Mode") {
                     onSwitchMode(.scheduled)
                 }
                 .buttonStyle(.bordered)
+                .accessibilityLabel("Switch to Scheduled Mode")
+                .accessibilityHint("Review only cards that are due")
             }
         }
     }

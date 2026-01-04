@@ -21,6 +21,7 @@ struct MainTabView: View {
                     Label("Decks", systemImage: "book.fill")
                 }
                 .tag(0)
+                .accessibilityIdentifier("decks_tab")
 
             StudyView()
                 .tabItem {
@@ -28,12 +29,15 @@ struct MainTabView: View {
                 }
                 .tag(1)
                 .badge(dueCardCount)
+                .accessibilityIdentifier("study_tab")
+                .accessibilityLabel(dueCardCount > 0 ? "Study, \(dueCardCount) cards due" : "Study")
 
             SettingsView()
                 .tabItem {
                     Label("Settings", systemImage: "gearshape.fill")
                 }
                 .tag(2)
+                .accessibilityIdentifier("settings_tab")
         }
         .onAppear {
             if scheduler == nil {

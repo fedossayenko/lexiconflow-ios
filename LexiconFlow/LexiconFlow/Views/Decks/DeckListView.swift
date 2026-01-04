@@ -11,7 +11,25 @@ import SwiftData
 struct DeckListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Deck.order) private var decks: [Deck]
+    @Query private var states: [FSRSState]
     @State private var showingAddDeck = false
+
+    /// Pre-computed due counts for each deck (O(n) total vs O(n*m) per row)
+    private var deckDueCounts: [Deck.ID: Int] {
+        let now = Date()
+        var counts: [Deck.ID: Int] = [:]
+
+        for state in states {
+            guard let card = state.card,
+                  let deck = card.deck,
+                  state.dueDate <= now,
+                  state.stateEnum != FlashcardState.new.rawValue else {
+                continue
+            }
+            counts[deck.id, default: 0] += 1
+        }
+        return counts
+    }
 
     var body: some View {
         NavigationStack {
@@ -29,7 +47,7 @@ struct DeckListView: View {
                 } else {
                     ForEach(decks) { deck in
                         NavigationLink(destination: DeckDetailView(deck: deck)) {
-                            DeckRowView(deck: deck)
+                            DeckRowView(deck: deck, dueCount: deckDueCounts[deck.id, default: 0])
                         }
                     }
                     .onDelete(perform: deleteDecks)

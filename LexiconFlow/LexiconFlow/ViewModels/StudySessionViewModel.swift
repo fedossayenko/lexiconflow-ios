@@ -9,6 +9,41 @@ import Foundation
 import SwiftData
 import Combine
 
+// MARK: - StudySessionError
+
+/// Errors that can occur during a study session
+enum StudySessionError: LocalizedError {
+    case reviewSaveFailed(underlying: Error)
+    case invalidRating(Int)
+
+    var errorDescription: String? {
+        switch self {
+        case .reviewSaveFailed:
+            return "Failed to save review. Please try again."
+        case .invalidRating(let rating):
+            return "Invalid rating: \(rating). Must be between 0 and 3."
+        }
+    }
+
+    var failureReason: String? {
+        switch self {
+        case .reviewSaveFailed(let error):
+            return "Underlying error: \(error.localizedDescription)"
+        case .invalidRating:
+            return "Rating value out of valid range (0-3)"
+        }
+    }
+
+    var recoverySuggestion: String? {
+        switch self {
+        case .reviewSaveFailed:
+            return "Try again. If the problem persists, check your network connection and storage."
+        case .invalidRating:
+            return "Only use the rating buttons provided (Again, Hard, Good, Easy)."
+        }
+    }
+}
+
 /// Manages the state of an active study session
 @MainActor
 final class StudySessionViewModel: ObservableObject {
@@ -53,6 +88,12 @@ final class StudySessionViewModel: ObservableObject {
     func submitRating(_ rating: Int) async {
         guard let card = currentCard, !isProcessing else { return }
 
+        // Validate rating is within FSRS range (0-3)
+        guard (0...3).contains(rating) else {
+            lastError = StudySessionError.invalidRating(rating)
+            return
+        }
+
         isProcessing = true
         defer { isProcessing = false }
 
@@ -65,10 +106,8 @@ final class StudySessionViewModel: ObservableObject {
 
         // Only advance if the review was saved successfully
         guard result != nil else {
-            lastError = NSError(
-                domain: "LexiconFlow",
-                code: 1001,
-                userInfo: [NSLocalizedDescriptionKey: "Failed to save review. Please try again."]
+            lastError = StudySessionError.reviewSaveFailed(
+                underlying: NSError(domain: "LexiconFlow", code: -1)
             )
             return
         }
