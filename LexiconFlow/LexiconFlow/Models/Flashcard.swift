@@ -1,5 +1,5 @@
 //
-//  Card.swift
+//  Flashcard.swift
 //  LexiconFlow
 //
 //  Core flashcard model representing a vocabulary item
@@ -10,15 +10,18 @@ import Foundation
 
 /// A flashcard containing vocabulary information and FSRS scheduling state
 ///
-/// Cards are the primary entity in the system, representing individual
-/// vocabulary items to be learned. Each card has:
+/// Flashcards are the primary entity in the system, representing individual
+/// vocabulary items to be learned. Each flashcard has:
 /// - The vocabulary word and its definition
 /// - Optional phonetic pronunciation and image
 /// - FSRS algorithm state for scheduling
 /// - Relationship to a deck (optional, for organization)
 /// - History of reviews
+///
+/// Note: Named `Flashcard` instead of `Card` to avoid naming collision
+/// with the FSRS library's `Card` type.
 @Model
-final class Card {
+final class Flashcard {
     /// Unique identifier for this card
     var id: UUID
 
@@ -46,9 +49,9 @@ final class Card {
 
     /// All review logs for this card
     /// - Deleting card cascades to delete all logs
-    /// - Inverse defined on ReviewLog.card to avoid circular reference
+    /// - Inverse defined on FlashcardReview.card to avoid circular reference
     /// - SwiftData auto-initializes this property
-    @Relationship(deleteRule: .cascade) var reviewLogs: [ReviewLog] = []
+    @Relationship(deleteRule: .cascade) var reviewLogs: [FlashcardReview] = []
 
     /// FSRS algorithm state for this card (one-to-one)
     /// - Inverse defined on FSRSState.card to avoid circular reference

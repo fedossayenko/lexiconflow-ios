@@ -38,5 +38,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: [Card.self, Deck.self, FSRSState.self, ReviewLog.self], inMemory: true)
+        .modelContainer(for: [Flashcard.self, Deck.self, FSRSState.self, FlashcardReview.self], inMemory: true)
 }

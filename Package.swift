@@ -7,13 +7,13 @@ let package = Package(
     name: "LexiconFlow",
     defaultLocalization: "en",
     platforms: [
-        .iOS(.v26)
+        .iOS(.v18)
     ],
     dependencies: [
         // SwiftFSRS package for Spaced Repetition scheduling
         .package(
             url: "https://github.com/open-spaced-repetition/swift-fsrs",
-            from: "1.0.0"
+            from: "5.0.0"
         )
     ]
 )

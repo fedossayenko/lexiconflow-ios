@@ -17,10 +17,10 @@ struct LexiconFlowApp: App {
         // Define the SwiftData schema with all models
         // Order matters: dependencies must be listed before dependents
         let schema = Schema([
-            FSRSState.self,  // Algorithm state (referenced by Card)
-            Card.self,       // Core vocabulary card
-            Deck.self,       // Card container/organizer
-            ReviewLog.self,  // Review history (referenced by Card)
+            FSRSState.self,       // Algorithm state (referenced by Flashcard)
+            Flashcard.self,       // Core vocabulary flashcard
+            Deck.self,            // Flashcard container/organizer
+            FlashcardReview.self, // Review history (referenced by Flashcard)
         ])
 
         // Configure persistent storage (SQLite on disk)

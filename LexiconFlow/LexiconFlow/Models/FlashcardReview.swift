@@ -1,8 +1,10 @@
 //
-//  ReviewLog.swift
+//  FlashcardReview.swift
 //  LexiconFlow
 //
 //  Audit trail of card reviews for tracking learning history
+//
+//  NOTE: Renamed from ReviewLog to avoid conflict with FSRS.ReviewLog
 //
 
 import SwiftData
@@ -10,7 +12,7 @@ import Foundation
 
 /// A record of a single card review session
 ///
-/// ReviewLogs provide a complete history of when cards were reviewed,
+/// FlashcardReview provides a complete history of when cards were reviewed,
 /// the rating given, and how the FSRS algorithm scheduled the next review.
 /// This data is essential for:
 /// - Analytics and progress tracking
@@ -18,7 +20,7 @@ import Foundation
 /// - Undo/redo functionality
 /// - Data export and analysis
 @Model
-final class ReviewLog {
+final class FlashcardReview {
     /// Unique identifier for this log entry
     var id: UUID
 
@@ -43,9 +45,9 @@ final class ReviewLog {
     var elapsedDays: Double
 
     /// The card that was reviewed
-    /// - Deleting card sets this to nil (orphaned logs kept for analytics)
-    /// - Inverse points to Card.reviewLogs
-    @Relationship(deleteRule: .nullify, inverse: \Card.reviewLogs) var card: Card?
+    /// - Deleting flashcard sets this to nil (orphaned logs kept for analytics)
+    /// - Inverse points to Flashcard.reviewLogs
+    @Relationship(deleteRule: .nullify, inverse: \Flashcard.reviewLogs) var card: Flashcard?
 
     // MARK: - Initialization
 
@@ -79,19 +81,4 @@ final class ReviewLog {
                   scheduledDays: scheduledDays,
                   elapsedDays: elapsedDays)
     }
-}
-
-/// FSRS rating values
-enum Rating: Int {
-    /// Again: Failed recall, reset to learning state
-    case again = 0
-
-    /// Hard: Remembered but with difficulty
-    case hard = 1
-
-    /// Good: Normal recall
-    case good = 2
-
-    /// Easy: Effortless recall
-    case easy = 3
 }

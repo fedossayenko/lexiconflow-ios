@@ -45,13 +45,23 @@ final class FSRSState {
     /// - "relearning": Relearning after failed review
     var stateEnum: String
 
+    /// Cached last review date for O(1) access
+    ///
+    /// **Performance optimization**: Eliminates O(n) scan through reviewLogs
+    /// when calculating elapsed days for FSRS algorithm. Updated automatically
+    /// when reviews are processed.
+    ///
+    /// - Default: nil (never reviewed)
+    /// - Updated by: Scheduler.processReview()
+    var lastReviewDate: Date?
+
     /// The card this state belongs to (one-to-one relationship)
-    /// - Inverse points to Card.fsrsState
-    @Relationship(inverse: \Card.fsrsState) var card: Card?
+    /// - Inverse points to Flashcard.fsrsState
+    @Relationship(inverse: \Flashcard.fsrsState) var card: Flashcard?
 
     /// Computed property for type-safe state enum access
-    var state: CardState {
-        get { CardState(rawValue: stateEnum) ?? .new }
+    var state: FlashcardState {
+        get { FlashcardState(rawValue: stateEnum) ?? .new }
         set { stateEnum = newValue.rawValue }
     }
 
@@ -60,7 +70,7 @@ final class FSRSState {
          difficulty: Double = 5.0,
          retrievability: Double = 0.9,
          dueDate: Date = Date(),
-         stateEnum: String = CardState.new.rawValue) {
+         stateEnum: String = FlashcardState.new.rawValue) {
 
         self.stability = stability
         self.difficulty = difficulty
@@ -69,12 +79,12 @@ final class FSRSState {
         self.stateEnum = stateEnum
     }
 
-    /// Initialize with CardState enum
+    /// Initialize with FlashcardState enum
     convenience init(stability: Double = 0.0,
                      difficulty: Double = 5.0,
                      retrievability: Double = 0.9,
                      dueDate: Date = Date(),
-                     state: CardState = .new) {
+                     state: FlashcardState = .new) {
         self.init(stability: stability,
                   difficulty: difficulty,
                   retrievability: retrievability,
@@ -84,7 +94,9 @@ final class FSRSState {
 }
 
 /// Card learning state
-enum CardState: String {
+///
+/// NOTE: Renamed from CardState to FlashcardState to avoid conflict with FSRS.CardState
+enum FlashcardState: String {
     /// Never been reviewed - first appearance
     case new
 

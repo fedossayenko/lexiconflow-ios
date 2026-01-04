@@ -35,10 +35,10 @@ final class Deck {
     var order: Int
 
     /// All cards belonging to this deck
-    /// - Deleting deck sets card.deck to nil (cards become orphaned)
-    /// - Inverse points to Card.deck
+    /// - Deleting deck sets flashcard.deck to nil (flashcards become orphaned)
+    /// - Inverse points to Flashcard.deck
     /// - SwiftData auto-initializes this property
-    @Relationship(deleteRule: .nullify, inverse: \Card.deck) var cards: [Card] = []
+    @Relationship(deleteRule: .nullify, inverse: \Flashcard.deck) var cards: [Flashcard] = []
 
     // MARK: - Initialization
 

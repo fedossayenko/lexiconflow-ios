@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		723CEDD12F09FFD200B16EF0 /* FSRS in Frameworks */ = {isa = PBXBuildFile; productRef = 723CEDD02F09FFD200B16EF0 /* FSRS */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		728BF8F42F09F5B500C67492 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				723CEDD12F09FFD200B16EF0 /* FSRS in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = LexiconFlow;
 			packageProductDependencies = (
+				723CEDD02F09FFD200B16EF0 /* FSRS */,
 			);
 			productName = LexiconFlow;
 			productReference = 728BF8E42F09F5B200C67492 /* LexiconFlow.app */;
@@ -195,6 +201,9 @@
 			);
 			mainGroup = 728BF8DB2F09F5B200C67492;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				723CEDCF2F09FFD200B16EF0 /* XCRemoteSwiftPackageReference "swift-fsrs" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 728BF8E52F09F5B200C67492 /* Products */;
 			projectDirPath = "";
@@ -615,6 +624,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		723CEDCF2F09FFD200B16EF0 /* XCRemoteSwiftPackageReference "swift-fsrs" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/open-spaced-repetition/swift-fsrs";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		723CEDD02F09FFD200B16EF0 /* FSRS */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 723CEDCF2F09FFD200B16EF0 /* XCRemoteSwiftPackageReference "swift-fsrs" */;
+			productName = FSRS;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 728BF8DC2F09F5B200C67492 /* Project object */;
 }
