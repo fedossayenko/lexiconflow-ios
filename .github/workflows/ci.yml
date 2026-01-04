@@ -21,12 +21,20 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
+      - name: List available runtimes
+        run: xcrun simctl list runtimes | grep iOS
+
+      - name: List available devices
+        run: xcrun simctl list devices available | grep iPhone
+
       - name: Create iOS Simulator
         run: |
-          xcrun simctl create "Test iPhone" "iPhone 17 Pro" "iOS 26.2"
-
-      - name: List Simulators
-        run: xcrun simctl list devices | grep "iPhone"
+          # Use com.apple.CoreSimulator.SimRuntime.iOS-26-1 (iOS 26.1 which comes with Xcode 26.1.1)
+          RUNTIME=$(xcrun simctl list runtimes | grep "iOS 26" | grep -v "26.0" | head -1 | grep -o "com\.apple\.CoreSimulator\.SimRuntime\.[^ ]*" | head -1)
+          echo "Using runtime: $RUNTIME"
+          xcrun simctl create "Test iPhone" "iPhone 16" "$RUNTIME" || \
+          xcrun simctl create "Test iPhone" "iPhone 15" "$RUNTIME" || \
+          xcrun simctl create "Test iPhone" "iPhone 14" "$RUNTIME"
 
       - name: Build and Test
         working-directory: ./LexiconFlow
