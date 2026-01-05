@@ -12,12 +12,11 @@ import OSLog
 ///
 /// This service provides automatic translation capabilities with metadata
 /// including CEFR levels and context-specific translations.
-@MainActor
+/// Network operations run off the main thread to avoid blocking UI.
 final class TranslationService {
     /// Shared singleton instance
     static let shared = TranslationService()
 
-    private let apiKey: String
     private let baseURL = "https://api.z.ai/api/coding/paas/v4/chat/completions"
     private let logger = Logger(subsystem: "com.lexiconflow.translation", category: "TranslationService")
 
@@ -25,21 +24,36 @@ final class TranslationService {
     private var targetLanguage = "ru"
 
     private init() {
-        // Load API key from UserDefaults
-        self.apiKey = UserDefaults.standard.string(forKey: "zai_api_key") ?? ""
+        // API key is now loaded from Keychain on-demand via computed property
     }
 
-    /// Set or update the API key
+    /// Current API key from Keychain (computed property to ensure fresh reads)
+    private var apiKey: String {
+        do {
+            return (try KeychainManager.getAPIKey()) ?? ""
+        } catch {
+            logger.error("Failed to read API key from Keychain: \(error.localizedDescription)")
+            return ""
+        }
+    }
+
+    /// Set or update the API key in Keychain
     ///
     /// - Parameter key: The Z.ai API key
-    func setAPIKey(_ key: String) {
-        UserDefaults.standard.set(key, forKey: "zai_api_key")
-        logger.info("API key updated")
+    /// - Throws: KeychainError if storage fails
+    func setAPIKey(_ key: String) throws {
+        try KeychainManager.setAPIKey(key)
+        logger.info("API key updated securely in Keychain")
     }
 
     /// Check if API key is configured
     var isConfigured: Bool {
-        !apiKey.isEmpty
+        do {
+            return (try KeychainManager.getAPIKey())?.isEmpty == false
+        } catch {
+            logger.error("Failed to check API key: \(error.localizedDescription)")
+            return false
+        }
     }
 
     /// Set source and target languages
@@ -112,14 +126,14 @@ final class TranslationService {
         struct TranslationItem: Codable {
             let targetWord: String
             let contextSentence: String
-            let russianTranslation: String
+            let targetTranslation: String  // Generic field for any language
             let cefrLevel: String
             let definitionEn: String
 
             enum CodingKeys: String, CodingKey {
                 case targetWord = "target_word"
                 case contextSentence = "context_sentence"
-                case russianTranslation = "russian_translation"
+                case targetTranslation = "russian_translation"  // API still returns this key
                 case cefrLevel = "cefr_level"
                 case definitionEn = "definition_en"
             }
@@ -128,12 +142,33 @@ final class TranslationService {
 
     // MARK: - Cancellation
 
-    private var cancellationTask: Task<Void, Never>?
+    /// Actor-isolated storage for the active translation task
+    /// Prevents data races when multiple threads access the task
+    private actor TaskStorage {
+        var task: Task<TranslationBatchResult, Error>?
+
+        func set(_ task: Task<TranslationBatchResult, Error>?) {
+            self.task = task
+        }
+
+        func get() -> Task<TranslationBatchResult, Error>? {
+            task
+        }
+
+        func cancel() {
+            task?.cancel()
+            task = nil
+        }
+    }
+
+    private let taskStorage = TaskStorage()
 
     /// Cancel any ongoing batch translation
     func cancelBatchTranslation() {
-        cancellationTask?.cancel()
-        logger.info("Batch translation cancelled")
+        Task {
+            await taskStorage.cancel()
+            logger.info("Batch translation cancelled")
+        }
     }
 
     // MARK: - Batch Translation
@@ -157,49 +192,72 @@ final class TranslationService {
             return TranslationBatchResult(successCount: 0, failedCount: 0, totalDuration: 0, errors: [], successfulTranslations: [])
         }
 
-        logger.info("Starting batch translation of \(cards.count) cards with max concurrency: \(maxConcurrency)")
+        logger.info("Starting batch translation: \(cards.count) cards, max concurrency: \(maxConcurrency)")
 
+        // Store active task for cancellation
+        let task = Task<TranslationBatchResult, Error> {
+            try await performBatchTranslation(
+                cards,
+                maxConcurrency: maxConcurrency,
+                progressHandler: progressHandler
+            )
+        }
+
+        await taskStorage.set(task)
+
+        do {
+            guard let currentTask = await taskStorage.get() else {
+                throw TranslationError.invalidConfiguration
+            }
+            return try await currentTask.value
+        } catch is CancellationError {
+            logger.info("Batch translation cancelled")
+            return TranslationBatchResult(
+                successCount: 0,
+                failedCount: cards.count,
+                totalDuration: 0,
+                errors: [.cancelled],
+                successfulTranslations: []
+            )
+        }
+    }
+
+    /// Internal method to perform batch translation
+    private func performBatchTranslation(
+        _ cards: [Flashcard],
+        maxConcurrency: Int,
+        progressHandler: (@Sendable (BatchTranslationProgress) -> Void)?
+    ) async throws -> TranslationBatchResult {
         let startTime = Date()
         var results: [TranslationTaskResult] = []
         var completedCount = 0
 
-        // Create cancellation tracking task
-        let currentTask = Task<Void, Never> {}
-        self.cancellationTask = currentTask
-
-        // Use TaskGroup for concurrent execution
-        return await withTaskGroup(of: TranslationTaskResult.self) { group in
+        // Use withThrowingTaskGroup to handle cancellation checks
+        return try await withThrowingTaskGroup(of: TranslationTaskResult.self) { group in
             // Add all tasks to the group
             for (index, card) in cards.enumerated() {
+                // Check cancellation before each task
+                try Task.checkCancellation()
+
                 // Implement semaphore-like concurrency limit
                 if index >= maxConcurrency {
                     // Wait for one task to complete before adding more
-                    if let result = await group.next() {
+                    if let result = try await group.next() {
                         results.append(result)
                         completedCount += 1
 
-                        // Report progress
+                        // Report progress on main thread
                         if let handler = progressHandler {
                             let progress = BatchTranslationProgress(
                                 current: completedCount,
                                 total: cards.count,
                                 currentWord: result.card.word
                             )
-                            handler(progress)
+                            await MainActor.run {
+                                handler(progress)
+                            }
                         }
                     }
-                }
-
-                // Check for cancellation
-                if currentTask.isCancelled {
-                    logger.info("Batch translation cancelled at index \(index)")
-                    return TranslationBatchResult(
-                        successCount: 0,
-                        failedCount: cards.count,
-                        totalDuration: Date().timeIntervalSince(startTime),
-                        errors: [.cancelled],
-                        successfulTranslations: []
-                    )
                 }
 
                 // Add translation task
@@ -209,7 +267,7 @@ final class TranslationService {
             }
 
             // Collect remaining results
-            for await result in group {
+            for try await result in group {
                 results.append(result)
                 completedCount += 1
 
@@ -220,7 +278,9 @@ final class TranslationService {
                         total: cards.count,
                         currentWord: result.card.word
                     )
-                    handler(progress)
+                    await MainActor.run {
+                        handler(progress)
+                    }
                 }
             }
 
@@ -252,7 +312,7 @@ final class TranslationService {
                 }
                 return SuccessfulTranslation(
                     card: result.card,
-                    translation: item.russianTranslation,
+                    translation: item.targetTranslation,
                     cefrLevel: item.cefrLevel,
                     contextSentence: item.contextSentence,
                     sourceLanguage: sourceLanguage,
@@ -305,7 +365,7 @@ final class TranslationService {
                 )
                 let duration = Date().timeIntervalSince(startTime)
 
-                logger.debug("Translation succeeded for '\(card.word)' after \(attempt + 1) attempt(s)")
+                logger.debug("Translation succeeded: \(card.word.replacingOccurrences(of: "'", with: "\\'")) (attempt \(attempt + 1))")
 
                 return TranslationTaskResult(
                     card: card,
@@ -314,25 +374,38 @@ final class TranslationService {
                 )
 
             } catch let error as TranslationError {
-                // Check if it's a rate limit error (HTTP 429)
-                if error == .apiFailed {
-                    // We'll treat apiFailed as potentially rate-limit related
-                    // In production, you'd check the actual HTTP status code
-                    attempt += 1
+                // Only retry if error is retryable
+                guard error.isRetryable else {
+                    // Non-retryable error
+                    let duration = Date().timeIntervalSince(startTime)
+                    logger.error("Translation failed with non-retryable error: \(card.word.replacingOccurrences(of: "'", with: "\\'")) - \(error.localizedDescription)")
 
-                    if attempt < maxRetries {
-                        logger.info("Rate limit hit for '\(card.word)', retrying in \(delay)s (attempt \(attempt + 1)/\(maxRetries))")
-
-                        // Exponential backoff
-                        try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
-                        delay *= 2
-                        continue
-                    }
+                    return TranslationTaskResult(
+                        card: card,
+                        result: .failure(error),
+                        duration: duration
+                    )
                 }
 
-                // Non-retryable error or max retries exceeded
+                // Retryable error
+                attempt += 1
+
+                if attempt < maxRetries {
+                    logger.info("Retrying translation: \(card.word.replacingOccurrences(of: "'", with: "\\'")) in \(delay)s (attempt \(attempt + 1)/\(maxRetries))")
+
+                    // Exponential backoff
+                    do {
+                        try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                    } catch {
+                        logger.warning("Task.sleep interrupted: \(error.localizedDescription)")
+                    }
+                    delay *= 2
+                    continue
+                }
+
+                // Max retries exceeded
                 let duration = Date().timeIntervalSince(startTime)
-                logger.error("Translation failed for '\(card.word)' after \(attempt + 1) attempt(s): \(error.localizedDescription)")
+                logger.error("Translation failed after max retries: \(card.word.replacingOccurrences(of: "'", with: "\\'")) (\(attempt + 1) attempts) - \(error.localizedDescription)")
 
                 return TranslationTaskResult(
                     card: card,
@@ -344,7 +417,7 @@ final class TranslationService {
                 let duration = Date().timeIntervalSince(startTime)
                 let translationError = TranslationError.apiFailed
 
-                logger.error("Unknown error translating '\(card.word)': \(error.localizedDescription)")
+                logger.error("Translation failed with unknown error: \(card.word.replacingOccurrences(of: "'", with: "\\'")) - \(error.localizedDescription)")
 
                 return TranslationTaskResult(
                     card: card,
@@ -415,28 +488,46 @@ final class TranslationService {
             ]
         )
 
-        var urlRequest = URLRequest(url: URL(string: baseURL)!)
+        guard let url = URL(string: self.baseURL) else {
+            logger.error("Invalid base URL: \(self.baseURL)")
+            throw TranslationError.invalidConfiguration
+        }
+        var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         urlRequest.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         urlRequest.httpBody = try JSONEncoder().encode(request)
 
-        logger.debug("Sending translation request for '\(word)'")
+        logger.debug("Sending translation request for '\(word)' (URL: \(url.absoluteString), model: glm-4.7)")
 
         let (data, response) = try await URLSession.shared.data(for: urlRequest)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
-            logger.error("Translation API error: Invalid HTTP response")
-            logger.error("Error body: \(errorBody)")
+            logger.error("Translation API error: Invalid HTTP response - \(String(errorBody.prefix(200)))")
             throw TranslationError.apiFailed
         }
 
         guard httpResponse.statusCode == 200 else {
             let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
-            logger.error("Translation API HTTP error: \(httpResponse.statusCode)")
-            logger.error("Error body: \(errorBody)")
-            throw TranslationError.apiFailed
+
+            switch httpResponse.statusCode {
+            case 429:
+                logger.warning("Rate limit hit for '\(word.replacingOccurrences(of: "'", with: "\\'"))'")
+                throw TranslationError.rateLimit
+
+            case 400...499:
+                logger.error("Client error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
+                throw TranslationError.clientError(statusCode: httpResponse.statusCode, message: errorBody)
+
+            case 500...599:
+                logger.error("Server error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
+                throw TranslationError.serverError(statusCode: httpResponse.statusCode, message: errorBody)
+
+            default:
+                logger.error("Unexpected HTTP status: \(httpResponse.statusCode)")
+                throw TranslationError.apiFailed
+            }
         }
 
         // Log raw response for debugging
@@ -454,7 +545,7 @@ final class TranslationService {
 
         guard let data = jsonContent.data(using: .utf8) else {
             logger.error("Failed to decode JSON content as UTF-8")
-            throw TranslationError.invalidResponse
+            throw TranslationError.invalidResponse(reason: "Content is not valid UTF-8")
         }
 
         do {
@@ -463,8 +554,8 @@ final class TranslationService {
             return translation
         } catch {
             logger.error("JSON decode error: \(error.localizedDescription)")
-            logger.error("Content that failed to decode: \(jsonContent)")
-            throw TranslationError.invalidResponse
+            logger.error("Content that failed to decode: \(String(jsonContent.prefix(500)))")
+            throw TranslationError.invalidResponse(reason: error.localizedDescription)
         }
     }
 
@@ -510,7 +601,7 @@ final class TranslationService {
     /// Process successful translation result
     private func logSuccess(word: String, translation: TranslationResponse) {
         if let item = translation.items.first {
-            logger.info("Successfully translated '\(word)' -> '\(item.russianTranslation)' (CEFR: \(item.cefrLevel))")
+            logger.info("Successfully translated '\(word.replacingOccurrences(of: "'", with: "\\'"))' -> '\(item.targetTranslation.replacingOccurrences(of: "'", with: "\\'"))' (CEFR: \(item.cefrLevel))")
         }
     }
 
@@ -532,20 +623,66 @@ final class TranslationService {
 
     enum TranslationError: LocalizedError {
         case missingAPIKey
+        case invalidConfiguration
+        case rateLimit
+        case clientError(statusCode: Int, message: String?)
+        case serverError(statusCode: Int, message: String?)
         case apiFailed
-        case invalidResponse
+        case invalidResponse(reason: String?)
         case cancelled
+        case offline
 
         var errorDescription: String? {
             switch self {
             case .missingAPIKey:
                 return "API key not configured"
+            case .invalidConfiguration:
+                return "Invalid service configuration"
+            case .rateLimit:
+                return "API rate limit exceeded. Please wait a moment and try again."
+            case .clientError(let code, let message):
+                if let msg = message {
+                    return "Request failed (HTTP \(code)): \(msg)"
+                }
+                return "Request failed (HTTP \(code))"
+            case .serverError(let code, _):
+                return "Server is experiencing issues (HTTP \(code)). Please try again later."
             case .apiFailed:
                 return "Translation API request failed"
-            case .invalidResponse:
-                return "Invalid response from API"
+            case .invalidResponse(let reason):
+                if let r = reason {
+                    return "Invalid response from translation API: \(r)"
+                }
+                return "Invalid response from translation API"
             case .cancelled:
                 return "Translation was cancelled"
+            case .offline:
+                return "No internet connection. Please check your network and try again."
+            }
+        }
+
+        var recoverySuggestion: String? {
+            switch self {
+            case .missingAPIKey:
+                return "Add your API key in Settings > Translation > Z.ai API Configuration"
+            case .rateLimit:
+                return "Wait a few seconds, then try again"
+            case .offline:
+                return "Check your WiFi or cellular connection"
+            case .invalidConfiguration:
+                return "Please contact support"
+            default:
+                return nil
+            }
+        }
+
+        /// Whether this error is retryable with exponential backoff
+        var isRetryable: Bool {
+            switch self {
+            case .rateLimit, .serverError, .offline:
+                return true
+            default:
+                return false
             }
         }
     }

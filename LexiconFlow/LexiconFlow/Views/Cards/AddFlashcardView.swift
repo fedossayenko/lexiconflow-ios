@@ -171,13 +171,13 @@ struct AddFlashcardView: View {
                 )
 
                 if let item = result.items.first {
-                    flashcard.translation = item.russianTranslation
+                    flashcard.translation = item.targetTranslation
                     flashcard.cefrLevel = item.cefrLevel
                     flashcard.contextSentence = item.contextSentence
                     flashcard.translationSourceLanguage = "en"
                     flashcard.translationTargetLanguage = targetLanguage
 
-                    logger.info("Translation successful: '\(word)' -> '\(item.russianTranslation)' (CEFR: \(item.cefrLevel))")
+                    logger.info("Translation successful: '\(word)' -> '\(item.targetTranslation)' (CEFR: \(item.cefrLevel))")
                 }
             } catch {
                 logger.error("Translation failed: \(error.localizedDescription)")

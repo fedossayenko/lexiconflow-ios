@@ -15,12 +15,12 @@ import OSLog
 /// - Set source and target languages
 /// - Enable/disable automatic translation
 struct TranslationSettingsView: View {
-    @AppStorage("zai_api_key") private var apiKey = ""
     @AppStorage("translationSourceLanguage") private var sourceLanguage = "en"
     @AppStorage("translationTargetLanguage") private var targetLanguage = "ru"
     @AppStorage("translationEnabled") private var translationEnabled = true
 
     @State private var showAPIKeyField = false
+    @State private var apiKey = ""
     @State private var tempAPIKey = ""
     @State private var isValidating = false
     @State private var isValid = false
@@ -98,10 +98,23 @@ struct TranslationSettingsView: View {
                     }
 
                     Button("Save") {
-                        apiKey = tempAPIKey
-                        TranslationService.shared.setAPIKey(tempAPIKey)
-                        showAPIKeyField = false
-                        logger.info("API key saved")
+                        Task {
+                            do {
+                                try KeychainManager.setAPIKey(tempAPIKey)
+                                apiKey = tempAPIKey
+                                do {
+                                    try TranslationService.shared.setAPIKey(tempAPIKey)
+                                } catch {
+                                    // Log but don't fail - Keychain is the source of truth
+                                    logger.error("Failed to update TranslationService: \(error.localizedDescription)")
+                                }
+                                showAPIKeyField = false
+                                logger.info("API key saved securely to Keychain")
+                            } catch {
+                                validationError = "Failed to save API key: \(error.localizedDescription)"
+                                Analytics.trackError("api_key_save", error: error)
+                            }
+                        }
                     }
                     .disabled(tempAPIKey.isEmpty || !isValid)
                 } else {
@@ -130,6 +143,17 @@ struct TranslationSettingsView: View {
             }
         }
         .navigationTitle("Translation Settings")
+        .onAppear {
+            loadAPIKey()
+        }
+    }
+
+    // MARK: - API Key Management
+
+    private func loadAPIKey() {
+        if let key = try? KeychainManager.getAPIKey() {
+            apiKey = key
+        }
     }
 
     // MARK: - API Key Validation
@@ -139,9 +163,11 @@ struct TranslationSettingsView: View {
         validationError = nil
         defer { isValidating = false }
 
-        TranslationService.shared.setAPIKey(tempAPIKey)
-
         do {
+            // Store key in Keychain temporarily for validation
+            // Note: This has the side effect of storing the key if validation succeeds
+            try KeychainManager.setAPIKey(tempAPIKey)
+
             let result = try await TranslationService.shared.translate(
                 word: "test",
                 definition: "a trial or test",
@@ -150,10 +176,16 @@ struct TranslationSettingsView: View {
             isValid = !result.items.isEmpty
             if !isValid {
                 validationError = "API returned empty results"
+                // Remove invalid key from Keychain
+                try? KeychainManager.deleteAPIKey()
             }
+            logger.info("API key validation completed: isValid=\(isValid)")
         } catch {
             isValid = false
             validationError = error.localizedDescription
+            Analytics.trackError("api_key_validation", error: error)
+            // Remove invalid key from Keychain if validation failed
+            try? KeychainManager.deleteAPIKey()
         }
     }
 }

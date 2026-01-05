@@ -11,6 +11,7 @@ import SwiftUI
 ///
 /// Provides a single source of truth for all user preferences,
 /// preventing naming conflicts and ensuring consistency across the app.
+@MainActor
 enum AppSettings {
     // MARK: - Translation Settings
 
@@ -23,8 +24,8 @@ enum AppSettings {
     /// Target language code for translation (e.g., "ru")
     @AppStorage("translationTargetLanguage") static var translationTargetLanguage: String = "ru"
 
-    /// Z.ai API key for translation service
-    @AppStorage("zai_api_key") static var translationAPIKey: String = ""
+    // Note: API key is now stored securely in Keychain, not UserDefaults
+    // Use KeychainManager.getAPIKey() and KeychainManager.setAPIKey() to access it
 
     // MARK: - Haptic Settings (NEW)
 

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import OSLog
 
 @main
 struct LexiconFlowApp: App {
@@ -14,23 +15,20 @@ struct LexiconFlowApp: App {
     /// - Persists to SQLite database (not in-memory)
     /// - CloudKit sync: DISABLED (will be enabled in Phase 4)
     var sharedModelContainer: ModelContainer = {
-        // Define the SwiftData schema with all models
-        // Order matters: dependencies must be listed before dependents
+        // Configure persistent storage (SQLite on disk)
+        let modelConfiguration = ModelConfiguration(isStoredInMemoryOnly: false)
+
+        // Define the schema with all models
         let schema = Schema([
-            FSRSState.self,       // Algorithm state (referenced by Flashcard)
-            Flashcard.self,       // Core vocabulary flashcard
-            Deck.self,            // Flashcard container/organizer
-            FlashcardReview.self, // Review history (referenced by Flashcard)
+            FSRSState.self,
+            Flashcard.self,
+            Deck.self,
+            FlashcardReview.self
         ])
 
-        // Configure persistent storage (SQLite on disk)
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
         do {
-            // Create the model container with our schema
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            // Fatal error is appropriate here because app cannot function without persistence
             fatalError("Could not create ModelContainer: \(error)")
         }
     }()

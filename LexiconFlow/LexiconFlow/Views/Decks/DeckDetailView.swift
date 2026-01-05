@@ -27,6 +27,13 @@ struct DeckDetailView: View {
     private let logger = Logger(subsystem: "com.lexiconflow.deckdetail", category: "BatchTranslation")
     private let translationService = TranslationService.shared
 
+    // MARK: - Computed Properties
+
+    /// Cards that don't have a translation yet (cached for efficiency)
+    private var untranslatedCards: [Flashcard] {
+        deck.cards.filter { $0.translation == nil }
+    }
+
     var body: some View {
         List {
             if deck.cards.isEmpty {
@@ -151,20 +158,20 @@ struct DeckDetailView: View {
             isPresented: $showingTranslateConfirmation,
             titleVisibility: .visible
         ) {
-            let untranslatedCount = deck.cards.filter { $0.translation == nil }.count
+            let count = untranslatedCards.count
 
-            Button("Translate \(untranslatedCount) Cards") {
+            Button("Translate \(count) Cards") {
                 Task {
                     await translateAllCards()
                 }
             }
-            .disabled(untranslatedCount == 0)
+            .disabled(count == 0)
 
             Button("Cancel", role: .cancel) { }
         } message: {
-            let untranslatedCount = deck.cards.filter { $0.translation == nil }.count
-            if untranslatedCount > 0 {
-                Text("Translate \(untranslatedCount) cards without translation using Z.ai API.")
+            let count = untranslatedCards.count
+            if count > 0 {
+                Text("Translate \(count) cards without translation using Z.ai API.")
             } else {
                 Text("All cards already have translations.")
             }
@@ -175,6 +182,11 @@ struct DeckDetailView: View {
             if let result = translationResult {
                 Text(result.summary)
             }
+        }
+        .onDisappear {
+            // Cancel any ongoing translation when view disappears
+            translationTask?.cancel()
+            translationService.cancelBatchTranslation()
         }
     }
 
@@ -187,8 +199,8 @@ struct DeckDetailView: View {
         isTranslating = true
         translationResult = nil
 
-        let untranslatedCards = deck.cards.filter { $0.translation == nil }
-        let total = untranslatedCards.count
+        let cardsToTranslate = untranslatedCards  // Use computed property
+        let total = cardsToTranslate.count
 
         logger.info("Starting batch translation of \(total) cards")
 
@@ -198,7 +210,7 @@ struct DeckDetailView: View {
 
             do {
                 let result = try await TranslationService.shared.translateBatch(
-                    untranslatedCards,
+                    cardsToTranslate,
                     maxConcurrency: 5,
                     progressHandler: { progress in
                         // Since TranslationService is @MainActor and we're in a Task on main actor,
@@ -212,7 +224,7 @@ struct DeckDetailView: View {
                 )
 
                 // Apply results
-                applyTranslationResults(result, cards: untranslatedCards, startTime: startTime)
+                applyTranslationResults(result, cards: cardsToTranslate, startTime: startTime)
 
             } catch let error as TranslationService.TranslationError {
                 handleTranslationError(error)
@@ -236,23 +248,34 @@ struct DeckDetailView: View {
             translation.card.translationTargetLanguage = translation.targetLanguage
         }
 
-        // Save all changes
-        try? modelContext.save()
+        // Save all changes with proper error handling
+        do {
+            try modelContext.save()
+            logger.info("Successfully saved translations: \(result.successCount) cards")
 
-        // Create result for UI
-        translationResult = TranslationResult(
-            translatedCount: result.successCount,
-            skippedCount: 0,
-            failedCount: result.failedCount,
-            failedWords: [] // Could be enhanced to extract failed words
-        )
+            // Create result for UI
+            translationResult = TranslationResult(
+                translatedCount: result.successCount,
+                skippedCount: 0,
+                failedCount: result.failedCount,
+                failedWords: []
+            )
 
-        logger.info("""
-            Batch translation complete:
-            - Success: \(result.successCount)
-            - Failed: \(result.failedCount)
-            - Duration: \(String(format: "%.2f", result.totalDuration))s
-            """)
+            logger.info("Batch translation complete: \(result.successCount) success, \(result.failedCount) failed, \(String(format: "%.2f", result.totalDuration))s")
+
+        } catch {
+            logger.error("Failed to save translations: \(error.localizedDescription)")
+
+            // Update result to reflect failure
+            translationResult = TranslationResult(
+                translatedCount: 0,
+                skippedCount: 0,
+                failedCount: cards.count,
+                failedWords: cards.map { $0.word }
+            )
+
+            Analytics.trackError("translation_save_failed", error: error)
+        }
 
         // Clear state
         isTranslating = false

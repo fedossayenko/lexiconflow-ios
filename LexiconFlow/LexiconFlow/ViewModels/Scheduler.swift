@@ -51,29 +51,29 @@ final class Scheduler {
     ///
     /// - Parameters:
     ///   - mode: Study mode (scheduled or cram)
-    ///   - limit: Maximum number of cards to return
+    ///   - limit: Maximum number of cards to return (defaults to AppSettings.studyLimit)
     /// - Returns: Array of flashcards ready for review
-    func fetchCards(mode: StudyMode = .scheduled, limit: Int = AppSettings.studyLimit) -> [Flashcard] {
+    func fetchCards(mode: StudyMode = .scheduled, limit: Int? = nil) -> [Flashcard] {
+        let effectiveLimit = limit ?? AppSettings.studyLimit
         switch mode {
         case .scheduled:
-            return fetchDueCards(limit: limit)
+            return fetchDueCards(limit: effectiveLimit)
         case .cram:
-            return fetchCramCards(limit: limit)
+            return fetchCramCards(limit: effectiveLimit)
         }
     }
 
     /// Fetch cards that are due for scheduled review
     ///
-    /// Due cards are those where dueDate <= now (excluding "new" cards)
+    /// Due cards are those that need review (review/learning/relearning states).
+    /// New cards are excluded as they haven't been learned yet.
     ///
     /// - Parameter limit: Maximum number of cards to return
     /// - Returns: Array of due flashcards, sorted by due date ascending
     private func fetchDueCards(limit: Int) -> [Flashcard] {
         let now = Date()
 
-        // Fetch cards with FSRS state that are due
-        // Note: Using string literal "new" instead of FlashcardState.new.rawValue
-        // to avoid SwiftData key path issues with enums
+        // Fetch cards with FSRS state that are due, excluding new cards
         let stateDescriptor = FetchDescriptor<FSRSState>(
             predicate: #Predicate<FSRSState> { state in
                 state.dueDate <= now && state.stateEnum != "new"
@@ -100,16 +100,14 @@ final class Scheduler {
     ///
     /// Cram mode ignores due dates and selects cards that need
     /// the most review based on stability (memory strength).
+    /// Includes new cards so they can be studied immediately.
     ///
     /// - Parameter limit: Maximum number of cards to return
     /// - Returns: Array of flashcards sorted by stability ascending
     private func fetchCramCards(limit: Int) -> [Flashcard] {
-        // Fetch all cards with FSRS state (excluding "new" cards)
-        // Note: Using string literal "new" to avoid SwiftData key path issues
+        // Fetch all cards with FSRS state, sorted by stability (ascending)
+        // New cards have stability=0, so they appear first
         let stateDescriptor = FetchDescriptor<FSRSState>(
-            predicate: #Predicate<FSRSState> { state in
-                state.stateEnum != "new"
-            },
             sortBy: [SortDescriptor(\.stability, order: .forward)]
         )
 
@@ -130,11 +128,14 @@ final class Scheduler {
 
     /// Count total due cards
     ///
+    /// Due cards are those that need review (review/learning/relearning states).
+    /// New cards are excluded as they haven't been learned yet.
+    ///
     /// - Returns: Number of cards currently due for review
     func dueCardCount() -> Int {
         let now = Date()
 
-        // Note: Using string literal "new" to avoid SwiftData key path issues
+        // Count cards with dueDate <= now, excluding new cards
         let stateDescriptor = FetchDescriptor<FSRSState>(
             predicate: #Predicate<FSRSState> { state in
                 state.dueDate <= now && state.stateEnum != "new"
