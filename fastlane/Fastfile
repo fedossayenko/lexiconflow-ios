@@ -1,0 +1,206 @@
+# Fastfile for LexiconFlow App Store Assets
+#
+# Usage:
+#   fastlane upload_app_store_assets
+#   fastlane upload_metadata
+#   fastlane upload_all_assets
+
+default_platform(:ios)
+
+platform :ios do
+
+  # Lane: Upload App Store screenshots and app icon
+  desc "Upload screenshots and app icon to App Store Connect"
+  lane :upload_app_store_assets do
+    ensure_git_status_clean
+
+    # Upload screenshots for all devices
+    upload_to_app_store(
+      skip_binary_upload: true,
+      skip_metadata: true,
+      skip_screenshots: false,
+      screenshot_path: "./fastlane/screenshots",
+      skip_app_icon_update: false,
+      app_icon_path: "./LexiconFlow/LexiconFlow/Assets.xcassets/AppIcon.appiconset/app-icon.png"
+    )
+
+    UI.success("✅ App Store visual assets uploaded successfully!")
+  end
+
+  # Lane: Upload App Store metadata (promotional text, description, keywords)
+  desc "Upload App Store metadata (promotional text, description, keywords)"
+  lane :upload_metadata do
+    ensure_git_status_clean
+
+    # Create metadata files from docs
+    metadata_path = "./fastlane/metadata"
+    FileUtils.mkdir_p(metadata_path)
+
+    # Copy promotional text
+    FileUtils.cp(
+      "./docs/app-store-promotional-text.md",
+      "#{metadata_path}/promotional_text.txt"
+    )
+
+    # Copy description
+    FileUtils.cp(
+      "./docs/app-store-description.md",
+      "#{metadata_path}/description.txt"
+    )
+
+    # Copy keywords
+    FileUtils.cp(
+      "./docs/app-store-keywords.md",
+      "#{metadata_path}/keywords.txt"
+    )
+
+    # Upload to App Store Connect
+    upload_to_app_store(
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      skip_app_icon_update: true,
+      metadata_path: metadata_path
+    )
+
+    UI.success("✅ App Store metadata uploaded successfully!")
+  end
+
+  # Lane: Upload all assets (visual + metadata)
+  desc "Upload all App Store assets (screenshots, icon, metadata)"
+  lane :upload_all_assets do
+    ensure_git_status_clean
+
+    UI.message("📤 Uploading all App Store assets...")
+
+    # Upload visual assets
+    upload_app_store_assets
+
+    # Upload metadata
+    upload_metadata
+
+    UI.success("✅ All App Store assets uploaded successfully!")
+    UI.message("⏳ Wait for Apple processing before submitting for review")
+  end
+
+  # Lane: Validate screenshots before upload
+  desc "Validate screenshots meet App Store requirements"
+  lane :verify_screenshots do
+    UI.message("🔍 Validating screenshots...")
+
+    required_devices = [
+      "iphone_se",
+      "iphone_15",
+      "iphone_15_pro_max",
+      "ipad"
+    ]
+
+    required_count_per_device = 6
+
+    errors = []
+
+    # Check each device directory
+    required_devices.each do |device|
+      device_path = "./fastlane/screenshots/#{device}"
+
+      unless File.directory?(device_path)
+        errors << "Missing screenshots directory: #{device_path}"
+        next
+      end
+
+      # Count PNG files
+      screenshots = Dir.glob(File.join(device_path, "*.png"))
+      actual_count = screenshots.count
+
+      if actual_count < required_count_per_device
+        errors << "#{device}: Found #{actual_count} screenshots, expected #{required_count_per_device}"
+      end
+
+      # Verify resolutions
+      screenshots.each do |screenshot|
+        image = Fastlane::Helper::ImageHelper.new(screenshot)
+        width = image.width
+        height = image.height
+
+        # Device-specific resolution checks
+        expected_sizes = {
+          "iphone_se" => [750, 1334],
+          "iphone_15" => [1179, 2556],
+          "iphone_15_pro_max" => [1290, 2796],
+          "ipad" => [1640, 2360]
+        }
+
+        expected = expected_sizes[device.to_sym]
+        unless width == expected[0] && height == expected[1]
+          errors << "#{screenshot}: Wrong resolution (#{width}x#{height}, expected #{expected[0]}x#{expected[1]})"
+        end
+      end
+    end
+
+    # Report results
+    if errors.empty?
+      UI.success("✅ All screenshots validated successfully!")
+    else
+      UI.user_error!("❌ Screenshot validation failed:\n#{errors.join("\n")}")
+    end
+  end
+
+  # Lane: Generate app icon variants from master
+  desc "Generate all iOS icon sizes from 1024x1024 master"
+  lane :generate_icons do |options|
+    master_icon = options[:input] || "./LexiconFlow/LexiconFlow/Assets.xcassets/AppIcon.appiconset/app-icon.png"
+    output_dir = options[:output] || "./LexiconFlow/LexiconFlow/Assets.xcassets/AppIcon.appiconset/"
+
+    unless File.exist?(master_icon)
+      UI.user_error!("Master icon not found: #{master_icon}")
+    end
+
+    UI.message("🎨 Generating icon variants from #{master_icon}...")
+
+    # Run Python script
+    script = "./scripts/generate-icon-variants.py"
+    command = [
+      "python3",
+      script,
+      "--input", master_icon,
+      "--output", output_dir
+    ]
+
+    result = sh(command.join(" "))
+
+    UI.success("✅ Icon variants generated successfully!")
+  end
+
+  # Lane: Process screenshots with captions
+  desc "Process raw screenshots with captions and frames"
+  lane :process_screenshots do |options|
+    device = options[:device]
+    input_dir = options[:input] || "./screenshots_raw/"
+    output_dir = options[:output] || "./fastlane/screenshots/"
+
+    unless device
+      UI.user_error!("Device type required. Use: device='iphone_se|iphone_15|iphone_15_pro_max|ipad'")
+    end
+
+    UI.message("📸 Processing #{device} screenshots...")
+
+    # Run Python script
+    script = "./scripts/process_screenshots.py"
+    command = [
+      "python3",
+      script,
+      "--device", device,
+      "--input", input_dir,
+      "--output", output_dir
+    ]
+
+    result = sh(command.join(" "))
+
+    UI.success("✅ Screenshots processed successfully!")
+  end
+
+  # Error block
+  error do |lane, exception|
+    UI.error("Error in lane #{lane}: #{exception.message}")
+  end
+
+end
