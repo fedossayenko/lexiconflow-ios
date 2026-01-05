@@ -8,14 +8,14 @@
 import SwiftUI
 
 struct AppearanceSettingsView: View {
-    @AppStorage("darkMode") private var darkMode = AppSettings.DarkModePreference.system
-    @AppStorage("glassEffectsEnabled") private var glassEffectsEnabled = true
-
     var body: some View {
         Form {
             // Theme Selection
             Section {
-                Picker("Appearance", selection: $darkMode) {
+                Picker("Appearance", selection: Binding(
+                    get: { AppSettings.darkMode },
+                    set: { AppSettings.darkMode = $0 }
+                )) {
                     ForEach(AppSettings.DarkModePreference.allCases, id: \.rawValue) { mode in
                         HStack(spacing: 12) {
                             Image(systemName: mode.icon)
@@ -35,7 +35,10 @@ struct AppearanceSettingsView: View {
 
             // Visual Effects
             Section {
-                Toggle("Glass Effects", isOn: $glassEffectsEnabled)
+                Toggle("Glass Effects", isOn: Binding(
+                    get: { AppSettings.glassEffectsEnabled },
+                    set: { AppSettings.glassEffectsEnabled = $0 }
+                ))
                     .accessibilityLabel("Enable glass morphism effects")
 
                 VStack(alignment: .leading, spacing: 8) {
@@ -88,16 +91,6 @@ struct AppearanceSettingsView: View {
             }
         }
         .navigationTitle("Appearance")
-    }
-}
-
-extension AppSettings.DarkModePreference {
-    var icon: String {
-        switch self {
-        case .system: return "iphone"
-        case .light: return "sun.max.fill"
-        case .dark: return "moon.fill"
-        }
     }
 }
 

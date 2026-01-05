@@ -83,6 +83,14 @@ enum AppSettings {
             case .dark: return "Dark"
             }
         }
+
+        var icon: String {
+            switch self {
+            case .system: return "iphone"
+            case .light: return "sun.max.fill"
+            case .dark: return "moon.fill"
+            }
+        }
     }
 
     /// Study mode options

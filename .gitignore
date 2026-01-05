@@ -101,3 +101,7 @@ iOSInjectionProject/
 
 # Auto Claude data directory
 .auto-claude/
+
+# Auto Claude build artifacts (per-worktree)
+.auto-claude-status
+.claude_settings.json
