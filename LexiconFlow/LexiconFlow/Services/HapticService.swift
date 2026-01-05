@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import CoreHaptics
 
 /// Service for generating haptic feedback during study sessions.
 ///
@@ -25,12 +26,166 @@ class HapticService {
         case down    // Hard rating
     }
 
-    /// Cached haptic generators for performance
+    /// Cached haptic generators for performance (UIKit fallback)
     private var lightGenerator: UIImpactFeedbackGenerator?
     private var mediumGenerator: UIImpactFeedbackGenerator?
     private var heavyGenerator: UIImpactFeedbackGenerator?
 
-    private init() {}
+    /// CoreHaptics engine (iOS 13+)
+    private var hapticEngine: CHHapticEngine?
+
+    /// Device capability detection
+    private var supportsHaptics: Bool {
+        CHHapticEngine.capabilitiesForHardware().supportsHaptics
+    }
+
+    private init() {
+        setupHapticEngine()
+    }
+
+    /// Sets up the CoreHaptics engine with graceful failure handling.
+    private func setupHapticEngine() {
+        guard supportsHaptics else { return }
+
+        do {
+            hapticEngine = try CHHapticEngine()
+            hapticEngine?.stoppedHandler = { reason in
+                logger.info("Haptic engine stopped: \(reason.rawValue)")
+            }
+            hapticEngine?.resetHandler = { [weak self] in
+                logger.info("Haptic engine reset handler triggered")
+                self?.setupHapticEngine()
+            }
+            try hapticEngine?.start()
+            logger.info("CoreHaptics engine started successfully")
+        } catch {
+            logger.error("Failed to create haptic engine: \(error)")
+            Analytics.trackError("haptic_engine_failed", error: error)
+            hapticEngine = nil
+        }
+    }
+
+    // MARK: - Custom Haptic Patterns
+
+    /// Creates a haptic pattern for swipe right (Good rating).
+    /// Pattern: Rising intensity with medium sharpness for positive feedback.
+    private func createSwipeRightPattern(intensity: CGFloat) throws -> CHHapticPattern {
+        let events = [
+            CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: intensity * 0.7),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.8)
+                ],
+                relativeTime: 0
+            )
+        ]
+        return try CHHapticPattern(events: events, parameters: [])
+    }
+
+    /// Creates a haptic pattern for swipe left (Again rating).
+    /// Pattern: Light, soft haptic indicating the card needs more practice.
+    private func createSwipeLeftPattern(intensity: CGFloat) throws -> CHHapticPattern {
+        let events = [
+            CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: intensity * 0.4),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.3)
+                ],
+                relativeTime: 0
+            )
+        ]
+        return try CHHapticPattern(events: events, parameters: [])
+    }
+
+    /// Creates a haptic pattern for swipe up (Easy rating).
+    /// Pattern: Heavy, sharp haptic indicating the card was very easy.
+    private func createSwipeUpPattern(intensity: CGFloat) throws -> CHHapticPattern {
+        let events = [
+            CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: intensity * 0.9),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 1.0)
+                ],
+                relativeTime: 0
+            )
+        ]
+        return try CHHapticPattern(events: events, parameters: [])
+    }
+
+    /// Creates a haptic pattern for swipe down (Hard rating).
+    /// Pattern: Medium intensity with lower sharpness indicating difficulty.
+    private func createSwipeDownPattern(intensity: CGFloat) throws -> CHHapticPattern {
+        let events = [
+            CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: intensity * 0.6),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5)
+                ],
+                relativeTime: 0
+            )
+        ]
+        return try CHHapticPattern(events: events, parameters: [])
+    }
+
+    /// Creates a success haptic pattern (double tap).
+    /// Pattern: Two distinct taps with decreasing intensity.
+    private func createSuccessPattern() throws -> CHHapticPattern {
+        let events = [
+            CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.7)
+                ],
+                relativeTime: 0
+            ),
+            CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.7),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5)
+                ],
+                relativeTime: 0.1
+            )
+        ]
+        return try CHHapticPattern(events: events, parameters: [])
+    }
+
+    /// Creates a warning haptic pattern.
+    /// Pattern: Single tap with medium intensity for attention.
+    private func createWarningPattern() throws -> CHHapticPattern {
+        let events = [
+            CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.7),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.6)
+                ],
+                relativeTime: 0
+            )
+        ]
+        return try CHHapticPattern(events: events, parameters: [])
+    }
+
+    /// Creates an error haptic pattern.
+    /// Pattern: Sharp, intense tap for critical feedback.
+    private func createErrorPattern() throws -> CHHapticPattern {
+        let events = [
+            CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 1.0)
+                ],
+                relativeTime: 0
+            )
+        ]
+        return try CHHapticPattern(events: events, parameters: [])
+    }
 
     /// Gets or creates a cached haptic generator for the given style.
     ///
@@ -78,6 +233,42 @@ class HapticService {
         guard AppSettings.hapticEnabled else { return }
         guard progress > 0.3 else { return }
 
+        // Try CoreHaptics first
+        if let engine = hapticEngine {
+            triggerCoreHapticSwipe(direction: direction, progress: progress, engine: engine)
+        } else {
+            // Fall back to UIKit
+            triggerUIKitSwipe(direction: direction, progress: progress)
+        }
+    }
+
+    /// Triggers haptic feedback using CoreHaptics engine.
+    private func triggerCoreHapticSwipe(direction: SwipeDirection, progress: CGFloat, engine: CHHapticEngine) {
+        do {
+            let pattern: CHHapticPattern
+            switch direction {
+            case .right:
+                pattern = try createSwipeRightPattern(intensity: progress)
+            case .left:
+                pattern = try createSwipeLeftPattern(intensity: progress)
+            case .up:
+                pattern = try createSwipeUpPattern(intensity: progress)
+            case .down:
+                pattern = try createSwipeDownPattern(intensity: progress)
+            }
+
+            let player = try engine.makePlayer(with: pattern)
+            try player.start(atTime: 0)
+        } catch {
+            logger.error("Failed to play CoreHaptics swipe: \(error)")
+            Analytics.trackError("haptic_swipe_failed", error: error)
+            // Fallback to UIKit on failure
+            triggerUIKitSwipe(direction: direction, progress: progress)
+        }
+    }
+
+    /// Triggers haptic feedback using UIKit generators (fallback).
+    private func triggerUIKitSwipe(direction: SwipeDirection, progress: CGFloat) {
         let style: UIImpactFeedbackGenerator.FeedbackStyle
         switch direction {
         case .right: style = .medium
@@ -88,46 +279,122 @@ class HapticService {
 
         let generator = getGenerator(style: style)
         generator.prepare()
-        generator.impactOccurred(intensity: progress * AppSettings.hapticIntensity)
+        generator.impactOccurred(intensity: progress)
     }
 
     /// Triggers success haptic when card is rated positively.
     ///
-    /// Uses notification feedback pattern for clear success confirmation.
+    /// Uses custom CoreHaptics pattern with double tap for clear success confirmation.
     func triggerSuccess() {
         guard AppSettings.hapticEnabled else { return }
+
+        if let engine = hapticEngine {
+            do {
+                let pattern = try createSuccessPattern()
+                let player = try engine.makePlayer(with: pattern)
+                try player.start(atTime: 0)
+            } catch {
+                logger.error("Failed to play CoreHaptics success: \(error)")
+                Analytics.trackError("haptic_success_failed", error: error)
+                triggerUIKitSuccess()
+            }
+        } else {
+            triggerUIKitSuccess()
+        }
+    }
+
+    /// Triggers warning haptic when card is marked for repetition.
+    ///
+    /// Uses custom CoreHaptics pattern to indicate card needs more review.
+    func triggerWarning() {
+        guard AppSettings.hapticEnabled else { return }
+
+        if let engine = hapticEngine {
+            do {
+                let pattern = try createWarningPattern()
+                let player = try engine.makePlayer(with: pattern)
+                try player.start(atTime: 0)
+            } catch {
+                logger.error("Failed to play CoreHaptics warning: \(error)")
+                Analytics.trackError("haptic_warning_failed", error: error)
+                triggerUIKitWarning()
+            }
+        } else {
+            triggerUIKitWarning()
+        }
+    }
+
+    /// Triggers error haptic for critical events.
+    ///
+    /// Uses custom CoreHaptics pattern with sharp, intense tap for critical feedback.
+    func triggerError() {
+        guard AppSettings.hapticEnabled else { return }
+
+        if let engine = hapticEngine {
+            do {
+                let pattern = try createErrorPattern()
+                let player = try engine.makePlayer(with: pattern)
+                try player.start(atTime: 0)
+            } catch {
+                logger.error("Failed to play CoreHaptics error: \(error)")
+                Analytics.trackError("haptic_error_failed", error: error)
+                triggerUIKitError()
+            }
+        } else {
+            triggerUIKitError()
+        }
+    }
+
+    // MARK: - UIKit Fallback Methods
+
+    /// Triggers success haptic using UIKit (fallback).
+    private func triggerUIKitSuccess() {
         let generator = UINotificationFeedbackGenerator()
         generator.prepare()
         generator.notificationOccurred(.success)
     }
 
-    /// Triggers warning haptic when card is marked for repetition.
-    ///
-    /// Uses notification feedback pattern to indicate card needs more review.
-    func triggerWarning() {
-        guard AppSettings.hapticEnabled else { return }
+    /// Triggers warning haptic using UIKit (fallback).
+    private func triggerUIKitWarning() {
         let generator = UINotificationFeedbackGenerator()
         generator.prepare()
         generator.notificationOccurred(.warning)
     }
 
-    /// Triggers error haptic for critical events.
-    ///
-    /// Uses notification feedback pattern for error states.
-    func triggerError() {
-        guard AppSettings.hapticEnabled else { return }
+    /// Triggers error haptic using UIKit (fallback).
+    private func triggerUIKitError() {
         let generator = UINotificationFeedbackGenerator()
         generator.prepare()
         generator.notificationOccurred(.error)
     }
 
-    /// Resets cached haptic generators.
+    /// Resets cached haptic generators and stops the haptic engine.
     ///
     /// Call this method to release cached generators, such as when receiving
     /// a memory warning or when the app backgrounds.
     func reset() {
+        // Stop and release haptic engine
+        hapticEngine?.stop()
+        hapticEngine = nil
+
+        // Release cached UIKit generators
         lightGenerator = nil
         mediumGenerator = nil
         heavyGenerator = nil
+
+        logger.info("HapticService reset completed")
+    }
+
+    /// Shuts down the haptic engine permanently.
+    ///
+    /// Call this when the app is terminating to clean up resources.
+    func shutdown() {
+        hapticEngine?.stop()
+        hapticEngine = nil
+    }
+
+    /// Restarts the haptic engine after it was stopped (e.g., app returns from background).
+    func restartEngine() {
+        setupHapticEngine()
     }
 }
