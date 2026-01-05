@@ -75,6 +75,7 @@ class HapticService {
     /// Haptic intensity scales with progress, with minimum threshold of 0.3
     /// to prevent overuse during small movements.
     func triggerSwipe(direction: SwipeDirection, progress: CGFloat) {
+        guard AppSettings.hapticEnabled else { return }
         guard progress > 0.3 else { return }
 
         let style: UIImpactFeedbackGenerator.FeedbackStyle
@@ -87,13 +88,14 @@ class HapticService {
 
         let generator = getGenerator(style: style)
         generator.prepare()
-        generator.impactOccurred(intensity: progress)
+        generator.impactOccurred(intensity: progress * AppSettings.hapticIntensity)
     }
 
     /// Triggers success haptic when card is rated positively.
     ///
     /// Uses notification feedback pattern for clear success confirmation.
     func triggerSuccess() {
+        guard AppSettings.hapticEnabled else { return }
         let generator = UINotificationFeedbackGenerator()
         generator.prepare()
         generator.notificationOccurred(.success)
@@ -103,6 +105,7 @@ class HapticService {
     ///
     /// Uses notification feedback pattern to indicate card needs more review.
     func triggerWarning() {
+        guard AppSettings.hapticEnabled else { return }
         let generator = UINotificationFeedbackGenerator()
         generator.prepare()
         generator.notificationOccurred(.warning)
@@ -112,6 +115,7 @@ class HapticService {
     ///
     /// Uses notification feedback pattern for error states.
     func triggerError() {
+        guard AppSettings.hapticEnabled else { return }
         let generator = UINotificationFeedbackGenerator()
         generator.prepare()
         generator.notificationOccurred(.error)

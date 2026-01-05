@@ -53,7 +53,7 @@ final class Scheduler {
     ///   - mode: Study mode (scheduled or cram)
     ///   - limit: Maximum number of cards to return
     /// - Returns: Array of flashcards ready for review
-    func fetchCards(mode: StudyMode = .scheduled, limit: Int = 20) -> [Flashcard] {
+    func fetchCards(mode: StudyMode = .scheduled, limit: Int = AppSettings.studyLimit) -> [Flashcard] {
         switch mode {
         case .scheduled:
             return fetchDueCards(limit: limit)
