@@ -39,7 +39,7 @@ This document outlines the phased development approach for Lexicon Flow, from in
 - [x] Implement `Flashcard`, `Deck`, `FlashcardReview`, `FSRSState` models
 - [x] Configure relationships and delete rules
 - [x] Set up `@Attribute(.externalStorage)` for image data
-- [ ] Create model migrations strategy
+- [x] Create model migrations strategy
 - [x] Write unit tests for model validation
 - [x] Implement `ModelActor` for background operations (DataImporter)
 
