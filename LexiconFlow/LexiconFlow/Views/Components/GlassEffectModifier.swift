@@ -106,6 +106,40 @@ extension View {
     }
 }
 
+/// View modifier that conditionally applies glass effect based on AppSettings
+struct ConditionalGlassEffectModifier<S: InsettableShape & Sendable>: ViewModifier {
+    let thickness: GlassThickness
+    let shape: S
+
+    func body(content: Content) -> some View {
+        if AppSettings.glassEffectsEnabled {
+            content.modifier(GlassEffectModifier(thickness: thickness, shape: shape))
+        } else {
+            content
+        }
+    }
+}
+
+extension View {
+    /// Conditionally applies a glass morphism effect based on AppSettings.glassEffectsEnabled.
+    /// - Parameters:
+    ///   - thickness: The thickness of the glass effect (thin, regular, thick).
+    ///   - shape: The shape to clip the glass effect to.
+    /// - Returns: A view with the glass effect applied only if enabled in settings.
+    func conditionalGlassEffect<S: InsettableShape>(_ thickness: GlassThickness, in shape: S) -> some View where S: Sendable {
+        modifier(ConditionalGlassEffectModifier(thickness: thickness, shape: shape))
+    }
+
+    /// Conditionally applies a glass morphism effect with a rounded rectangle shape.
+    /// - Parameters:
+    ///   - thickness: The thickness of the glass effect.
+    ///   - cornerRadius: The corner radius of the rounded rectangle.
+    /// - Returns: A view with the glass effect applied only if enabled in settings.
+    func conditionalGlassEffect(_ thickness: GlassThickness, cornerRadius: CGFloat = 16) -> some View {
+        modifier(ConditionalGlassEffectModifier(thickness: thickness, shape: RoundedRectangle(cornerRadius: cornerRadius)))
+    }
+}
+
 #Preview("Glass Effect Thickness Variants") {
     VStack(spacing: 32) {
         Group {

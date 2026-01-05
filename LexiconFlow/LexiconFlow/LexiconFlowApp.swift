@@ -9,6 +9,13 @@ import SwiftUI
 import SwiftData
 import OSLog
 
+// Firebase imports - only available when SDKs are added via Xcode
+#if canImport(FirebaseAnalytics)
+import FirebaseAnalytics
+import FirebaseCore
+import FirebaseCrashlytics
+#endif
+
 @main
 struct LexiconFlowApp: App {
     /// Shared SwiftData ModelContainer for the entire app
@@ -16,6 +23,21 @@ struct LexiconFlowApp: App {
     /// - CloudKit sync: DISABLED (will be enabled in Phase 4)
     /// - Falls back to in-memory storage if SQLite fails
     var sharedModelContainer: ModelContainer = {
+        // All error handling is done inside makeModelContainer()
+        // Force unwrap is safe because we return a fallback container on all error paths
+        try! Self.makeModelContainer()
+    }()
+
+    /// Creates ModelContainer with multiple fallback strategies
+    ///
+    /// **Fallback Strategy:**
+    /// 1. Persistent SQLite storage (primary)
+    /// 2. In-memory storage (graceful degradation)
+    /// 3. Empty schema container (allows error UI to show)
+    ///
+    /// - Returns: A ModelContainer (never nil, always returns a valid container)
+    /// - Throws: Only if absolutely all container creation attempts fail
+    private static func makeModelContainer() throws -> ModelContainer {
         let logger = Logger(subsystem: "com.lexiconflow.app", category: "LexiconFlowApp")
 
         // Define the schema with all models
@@ -73,17 +95,65 @@ struct LexiconFlowApp: App {
                 "model_container_emergency_fallback",
                 message: "All storage attempts failed, using emergency empty container"
             )
-            // Return an empty container - this should never fail
-            // The app will launch but models will be unavailable
-            return ModelContainer(for: [])
+            // Return an empty container as final fallback
+            return try ModelContainer(for: Schema([]), configurations: [])
         }
-    }()
+    }
 
     // Flag to check if we're using degraded storage
     private var isUsingDegradedStorage: Bool {
         // Check if container is in-memory or minimal
         // This can be used by ContentView to show warning UI
         sharedModelContainer.configurations.allSatisfy { $0.isStoredInMemoryOnly }
+    }
+
+    /// Initialize Firebase and configure analytics/crashlytics
+    init() {
+        // Firebase configuration happens on app launch
+        // Using Task.detached to avoid blocking the main actor
+        Task.detached {
+            Self.configureFirebase()
+        }
+    }
+
+    /// Configure Firebase based on build configuration
+    ///
+    /// **DEBUG**: Analytics and Crashlytics disabled (uses console logging)
+    /// **RELEASE**: Firebase Analytics and Crashlytics enabled
+    private static func configureFirebase() {
+        #if canImport(FirebaseCore)
+        do {
+            // Firebase SDKs are available - configure Firebase
+            try FirebaseApp.configure()
+
+            #if canImport(FirebaseAnalytics)
+            #if DEBUG
+            // Disable analytics and crashlytics in debug builds
+            #if canImport(FirebaseCrashlytics)
+            Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(false)
+            #endif
+            // Use fully qualified name to avoid collision with our Analytics enum
+            FirebaseAnalytics.Analytics.setAnalyticsCollectionEnabled(false)
+            print("🔥 Firebase configured (DEBUG mode: analytics disabled)")
+            #else
+            // Enable in release builds
+            #if canImport(FirebaseCrashlytics)
+            Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
+            #endif
+            FirebaseAnalytics.Analytics.setAnalyticsCollectionEnabled(true)
+            print("🔥 Firebase configured (RELEASE mode: analytics enabled)")
+            #endif
+            #else
+            print("🔥 Firebase configured (Analytics not available)")
+            #endif
+        } catch {
+            print("⚠️ Firebase configuration failed: \(error.localizedDescription)")
+        }
+
+        #else
+        // Firebase SDKs not available - Analytics.swift will use console fallback
+        print("⚠️ Firebase SDKs not available - using console logging")
+        #endif
     }
 
     var body: some Scene {

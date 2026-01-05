@@ -18,63 +18,21 @@ import SwiftData
 /// - Cram mode behavior
 /// - Review processing with FSRS
 /// - Study mode differences
+/// - Concurrency stress tests
 @MainActor
 struct SchedulerTests {
-
-    // MARK: - Test Fixtures
-
-    /// Get a fresh isolated context for testing
-    private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
-    }
-
-    /// Create a test deck (does NOT save - caller must save)
-    private func createTestDeck(context: ModelContext, name: String = "Test Deck") -> Deck {
-        let deck = Deck(name: name, icon: "📚")
-        context.insert(deck)
-        return deck
-    }
-
-    /// Create a test flashcard with specified parameters (does NOT save - caller must save)
-    private func createTestFlashcard(
-        context: ModelContext,
-        word: String = UUID().uuidString,
-        state: FlashcardState = .new,
-        dueOffset: TimeInterval = 0,
-        stability: Double = 0.0,
-        difficulty: Double = 5.0
-    ) -> Flashcard {
-        let flashcard = Flashcard(
-            word: word,
-            definition: "Test definition",
-            phonetic: "tɛst"
-        )
-
-        let fsrsState = FSRSState(
-            stability: stability,
-            difficulty: difficulty,
-            retrievability: 0.9,
-            dueDate: Date().addingTimeInterval(dueOffset),
-            stateEnum: state.rawValue
-        )
-        context.insert(fsrsState)
-        flashcard.fsrsState = fsrsState
-        context.insert(flashcard)
-        return flashcard
-    }
 
     // MARK: - Due Card Query Tests
 
     @Test("Fetch due cards returns only cards with due date in past")
     func fetchDueCardsOnlyDue() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
 
         // Create 3 cards: due, not due, due (specify review state for due cards)
-        _ = createTestFlashcard(context: context, word: "due1", state: .review, dueOffset: -3600) // 1 hour ago
-        _ = createTestFlashcard(context: context, word: "future", state: .review, dueOffset: 3600) // 1 hour future
-        _ = createTestFlashcard(context: context, word: "due2", state: .review, dueOffset: -7200) // 2 hours ago
+        _ = TestFixtures.createFlashcard(context: context, word: "due1", state: .review, dueOffset: -3600) // 1 hour ago
+        _ = TestFixtures.createFlashcard(context: context, word: "future", state: .review, dueOffset: 3600) // 1 hour future
+        _ = TestFixtures.createFlashcard(context: context, word: "due2", state: .review, dueOffset: -7200) // 2 hours ago
         try context.save()
 
         let dueCards = scheduler.fetchCards(mode: .scheduled, limit: 20)
@@ -85,16 +43,15 @@ struct SchedulerTests {
 
     @Test("Fetch due cards excludes new cards")
     func fetchDueCardsExcludesNew() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
 
         // Create new card (due now, state = new)
-        _ = createTestFlashcard(context: context, word: "new", state: .new, dueOffset: 0)
+        _ = TestFixtures.createFlashcard(context: context, word: "new", state: .new, dueOffset: 0)
         // Create review card (due in past and state = review)
-        _ = createTestFlashcard(context: context, word: "review", state: .review, dueOffset: -3600)
+        _ = TestFixtures.createFlashcard(context: context, word: "review", state: .review, dueOffset: -3600)
         // Create future card (not due yet)
-        _ = createTestFlashcard(context: context, word: "future", state: .review, dueOffset: 3600)
+        _ = TestFixtures.createFlashcard(context: context, word: "future", state: .review, dueOffset: 3600)
         try context.save()
 
         let dueCards = scheduler.fetchCards(mode: .scheduled, limit: 20)
@@ -108,13 +65,12 @@ struct SchedulerTests {
 
     @Test("Fetch due cards respects limit parameter")
     func fetchDueCardsLimit() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
 
         // Create 5 due cards
         for i in 1...5 {
-            _ = createTestFlashcard(
+            _ = TestFixtures.createFlashcard(
                 context: context,
                 word: "card\(i)",
                 state: .review,
@@ -132,14 +88,13 @@ struct SchedulerTests {
 
     @Test("Fetch due cards sorts by due date ascending")
     func fetchDueCardsSorting() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
 
         // Create cards with different due dates
-        let due1 = createTestFlashcard(context: context, word: "middle", state: .review, dueOffset: -3600)
-        let due2 = createTestFlashcard(context: context, word: "latest", state: .review, dueOffset: -1800)
-        let due3 = createTestFlashcard(context: context, word: "earliest", state: .review, dueOffset: -7200)
+        let due1 = TestFixtures.createFlashcard(context: context, word: "middle", state: .review, dueOffset: -3600)
+        let due2 = TestFixtures.createFlashcard(context: context, word: "latest", state: .review, dueOffset: -1800)
+        let due3 = TestFixtures.createFlashcard(context: context, word: "earliest", state: .review, dueOffset: -7200)
         try context.save()
 
         let dueCards = scheduler.fetchCards(mode: .scheduled, limit: 20)
@@ -153,23 +108,22 @@ struct SchedulerTests {
 
     @Test("Due card count excludes new cards")
     func dueCardCountExcludesNew() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
 
         // Create 5 due review cards
         for i in 1...5 {
-            _ = createTestFlashcard(context: context, word: "due\(i)", state: .review, dueOffset: -3600)
+            _ = TestFixtures.createFlashcard(context: context, word: "due\(i)", state: .review, dueOffset: -3600)
         }
 
         // Create 3 new cards (not counted as due)
         for i in 1...3 {
-            _ = createTestFlashcard(context: context, word: "new\(i)", state: .new, dueOffset: 0)
+            _ = TestFixtures.createFlashcard(context: context, word: "new\(i)", state: .new, dueOffset: 0)
         }
 
         // Create 2 non-due cards (future)
-        _ = createTestFlashcard(context: context, word: "future1", state: .review, dueOffset: 3600)
-        _ = createTestFlashcard(context: context, word: "future2", state: .learning, dueOffset: 7200)
+        _ = TestFixtures.createFlashcard(context: context, word: "future1", state: .review, dueOffset: 3600)
+        _ = TestFixtures.createFlashcard(context: context, word: "future2", state: .learning, dueOffset: 7200)
         try context.save()
 
         let count = scheduler.dueCardCount()
@@ -182,13 +136,12 @@ struct SchedulerTests {
 
     @Test("Cram mode ignores due dates")
     func cramModeIgnoresDueDates() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
 
         // Create cards with different due dates and stability
-        _ = createTestFlashcard(context: context, word: "low_stability", state: .review, dueOffset: 3600, stability: 1.0)
-        _ = createTestFlashcard(context: context, word: "high_stability", state: .review, dueOffset: -3600, stability: 20.0)
+        _ = TestFixtures.createFlashcard(context: context, word: "low_stability", state: .review, dueOffset: 3600, stability: 1.0)
+        _ = TestFixtures.createFlashcard(context: context, word: "high_stability", state: .review, dueOffset: -3600, stability: 20.0)
         try context.save()
 
         let cramCards = scheduler.fetchCards(mode: .cram, limit: 20)
@@ -199,14 +152,13 @@ struct SchedulerTests {
 
     @Test("Cram mode includes new cards")
     func cramModeIncludesNew() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
 
         // Create review card
-        _ = createTestFlashcard(context: context, word: "review", state: .review, stability: 5.0)
+        _ = TestFixtures.createFlashcard(context: context, word: "review", state: .review, stability: 5.0)
         // Create new card (stability=0, should appear first)
-        _ = createTestFlashcard(context: context, word: "new", state: .new, stability: 0.0)
+        _ = TestFixtures.createFlashcard(context: context, word: "new", state: .new, stability: 0.0)
         try context.save()
 
         let cramCards = scheduler.fetchCards(mode: .cram, limit: 20)
@@ -218,14 +170,13 @@ struct SchedulerTests {
 
     @Test("Cram mode sorts by stability ascending")
     func cramModeStabilitySorting() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
 
         // Create cards with different stability values
-        _ = createTestFlashcard(context: context, word: "high", state: .review, stability: 20.0)
-        _ = createTestFlashcard(context: context, word: "low", state: .review, stability: 2.0)
-        _ = createTestFlashcard(context: context, word: "mid", state: .review, stability: 10.0)
+        _ = TestFixtures.createFlashcard(context: context, word: "high", state: .review, stability: 20.0)
+        _ = TestFixtures.createFlashcard(context: context, word: "low", state: .review, stability: 2.0)
+        _ = TestFixtures.createFlashcard(context: context, word: "mid", state: .review, stability: 10.0)
         try context.save()
 
         let cramCards = scheduler.fetchCards(mode: .cram, limit: 20)
@@ -241,11 +192,10 @@ struct SchedulerTests {
 
     @Test("Process review in scheduled mode updates FSRS state")
     func scheduledModeUpdatesState() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
         // Create review card with meaningful stability (> 0 for review state)
-        let flashcard = createTestFlashcard(context: context, state: .review, stability: 5.0)
+        let flashcard = TestFixtures.createFlashcard(context: context, state: .review, stability: 5.0)
         try context.save()
 
         let initialStability = flashcard.fsrsState!.stability
@@ -263,10 +213,9 @@ struct SchedulerTests {
 
     @Test("Process review in scheduled mode creates review log")
     func scheduledModeCreatesLog() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
-        let flashcard = createTestFlashcard(context: context, state: .review)
+        let flashcard = TestFixtures.createFlashcard(context: context, state: .review)
         try context.save()
 
         let initialLogCount = flashcard.reviewLogs.count
@@ -286,10 +235,9 @@ struct SchedulerTests {
 
     @Test("Process review in cram mode does not update FSRS state")
     func cramModeNoStateUpdate() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
-        let flashcard = createTestFlashcard(context: context, state: .review)
+        let flashcard = TestFixtures.createFlashcard(context: context, state: .review)
         try context.save()
 
         let initialStability = flashcard.fsrsState!.stability
@@ -310,10 +258,9 @@ struct SchedulerTests {
 
     @Test("Process review in cram mode still creates log")
     func cramModeCreatesLog() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
-        let flashcard = createTestFlashcard(context: context, state: .review)
+        let flashcard = TestFixtures.createFlashcard(context: context, state: .review)
         try context.save()
 
         let initialLogCount = flashcard.reviewLogs.count
@@ -333,13 +280,12 @@ struct SchedulerTests {
 
     @Test("Process review handles all four ratings")
     func processReviewAllRatings() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
 
         for rating in 0...3 {
             try context.clearAll()
-            let flashcard = createTestFlashcard(context: context, state: .review)
+            let flashcard = TestFixtures.createFlashcard(context: context, state: .review)
             try context.save()
             let initialLogCount = flashcard.reviewLogs.count
 
@@ -360,10 +306,9 @@ struct SchedulerTests {
 
     @Test("Preview ratings returns all four options")
     func previewRatings() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
-        let flashcard = createTestFlashcard(context: context, state: .review)
+        let flashcard = TestFixtures.createFlashcard(context: context, state: .review)
         try context.save()
 
         let previews = await scheduler.previewRatings(for: flashcard)
@@ -377,10 +322,9 @@ struct SchedulerTests {
 
     @Test("Preview due dates are in future")
     func previewDatesInFuture() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
-        let flashcard = createTestFlashcard(context: context, state: .review)
+        let flashcard = TestFixtures.createFlashcard(context: context, state: .review)
         let now = Date()
         try context.save()
 
@@ -395,10 +339,9 @@ struct SchedulerTests {
 
     @Test("Reset flashcard returns to new state")
     func resetFlashcard() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
-        let flashcard = createTestFlashcard(context: context, state: .review)
+        let flashcard = TestFixtures.createFlashcard(context: context, state: .review)
 
         // Set to review with high stability
         flashcard.fsrsState!.stability = 50.0
@@ -415,8 +358,7 @@ struct SchedulerTests {
 
     @Test("Empty database returns empty arrays")
     func emptyDatabase() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
 
         let dueCards = scheduler.fetchCards(mode: .scheduled)
@@ -430,8 +372,7 @@ struct SchedulerTests {
 
     @Test("Processing review without FSRS state creates state")
     func processReviewWithoutState() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
 
         // Create flashcard without FSRS state
@@ -453,14 +394,13 @@ struct SchedulerTests {
 
     @Test("Concurrent review processing is serialized")
     func concurrentReviews() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
 
         // Create 10 cards
         var cards: [Flashcard] = []
         for i in 1...10 {
-            let card = createTestFlashcard(context: context, word: "card\(i)", state: .review)
+            let card = TestFixtures.createFlashcard(context: context, word: "card\(i)", state: .review)
             cards.append(card)
         }
         try context.save()
@@ -487,13 +427,12 @@ struct SchedulerTests {
 
     @Test("Concurrent fetchCards calls from multiple tasks")
     func concurrentFetchCards() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
 
         // Create 20 due cards
         for i in 1...20 {
-            _ = createTestFlashcard(context: context, word: "card\(i)", state: .review, dueOffset: -3600)
+            _ = TestFixtures.createFlashcard(context: context, word: "card\(i)", state: .review, dueOffset: -3600)
         }
         try context.save()
 
@@ -512,11 +451,10 @@ struct SchedulerTests {
 
     @Test("Concurrent processReview on same card")
     func concurrentProcessReviewSameCard() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
 
-        let flashcard = createTestFlashcard(context: context, word: "shared", state: .review)
+        let flashcard = TestFixtures.createFlashcard(context: context, word: "shared", state: .review)
         try context.save()
 
         // Spawn 20 concurrent reviews on the SAME card
@@ -538,11 +476,10 @@ struct SchedulerTests {
 
     @Test("Concurrent reset and review on same card")
     func concurrentResetAndReview() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
 
-        let flashcard = createTestFlashcard(context: context, word: "test", state: .review)
+        let flashcard = TestFixtures.createFlashcard(context: context, word: "test", state: .review)
         flashcard.fsrsState!.stability = 50.0
         try context.save()
 
@@ -571,13 +508,12 @@ struct SchedulerTests {
 
     @Test("Concurrent dueCardCount calls")
     func concurrentDueCardCount() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
 
         // Create 15 due cards
         for i in 1...15 {
-            _ = createTestFlashcard(context: context, word: "card\(i)", state: .review, dueOffset: -3600)
+            _ = TestFixtures.createFlashcard(context: context, word: "card\(i)", state: .review, dueOffset: -3600)
         }
         try context.save()
 
@@ -601,11 +537,10 @@ struct SchedulerTests {
 
     @Test("Concurrent previewRatings calls")
     func concurrentPreviewRatings() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
 
-        let flashcard = createTestFlashcard(context: context, state: .review)
+        let flashcard = TestFixtures.createFlashcard(context: context, state: .review)
         try context.save()
 
         // Concurrent preview calls
@@ -623,14 +558,13 @@ struct SchedulerTests {
 
     @Test("Concurrent fetch and process on different cards")
     func concurrentFetchAndProcess() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
 
         // Create 30 cards
         var cards: [Flashcard] = []
         for i in 1...30 {
-            let card = createTestFlashcard(context: context, word: "card\(i)", state: .review, dueOffset: -3600)
+            let card = TestFixtures.createFlashcard(context: context, word: "card\(i)", state: .review, dueOffset: -3600)
             cards.append(card)
         }
         try context.save()
@@ -663,8 +597,7 @@ struct SchedulerTests {
 
     @Test("Concurrent batch import simulation")
     func concurrentBatchImport() async throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
         let scheduler = Scheduler(modelContext: context)
 
         // Simulate batch import: create and process many cards
@@ -672,7 +605,7 @@ struct SchedulerTests {
         for batch in 1...5 {
             var batchCards: [Flashcard] = []
             for i in 1...10 {
-                let card = createTestFlashcard(
+                let card = TestFixtures.createFlashcard(
                     context: context,
                     word: "batch\(batch)-card\(i)",
                     state: .review

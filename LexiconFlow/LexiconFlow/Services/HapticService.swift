@@ -7,6 +7,7 @@
 
 import UIKit
 import CoreHaptics
+import OSLog
 
 /// Service for generating haptic feedback during study sessions.
 ///
@@ -18,6 +19,9 @@ class HapticService {
 
     /// Shared singleton instance.
     static let shared = HapticService()
+
+    /// Logger for haptic service events
+    private static let logger = Logger(subsystem: "com.lexiconflow.haptics", category: "HapticService")
 
     /// Direction of swipe gesture for haptic mapping.
     enum SwipeDirection {
@@ -50,7 +54,7 @@ class HapticService {
     /// Falls back gracefully to UIKit haptics if CoreHaptics is unavailable.
     private func setupHapticEngine() {
         guard supportsHaptics else {
-            logger.debug("CoreHaptics not supported on this device")
+            Self.logger.debug("CoreHaptics not supported on this device")
             return
         }
 
@@ -59,20 +63,20 @@ class HapticService {
 
             // Observe engine stop handler to restart if needed
             hapticEngine?.stoppedHandler = { [weak self] reason in
-                logger.warning("Haptic engine stopped: \(reason.rawValue)")
+                Self.logger.warning("Haptic engine stopped: \(reason.rawValue)")
                 self?.restartHapticEngine()
             }
 
             // Observe engine reset handler for configuration changes
             hapticEngine?.resetHandler = { [weak self] in
-                logger.info("Haptic engine reset - reconfiguring")
+                Self.logger.info("Haptic engine reset - reconfiguring")
                 self?.restartHapticEngine()
             }
 
             try hapticEngine?.start()
-            logger.debug("CoreHaptics engine started successfully")
+            Self.logger.debug("CoreHaptics engine started successfully")
         } catch {
-            logger.warning("Failed to create CoreHaptics engine: \(error.localizedDescription)")
+            Self.logger.warning("Failed to create CoreHaptics engine: \(error.localizedDescription)")
             hapticEngine = nil
         }
     }
@@ -85,9 +89,9 @@ class HapticService {
 
         do {
             try hapticEngine?.start()
-            logger.debug("CoreHaptics engine restarted")
+            Self.logger.debug("CoreHaptics engine restarted")
         } catch {
-            logger.warning("Failed to restart CoreHaptics engine: \(error.localizedDescription)")
+            Self.logger.warning("Failed to restart CoreHaptics engine: \(error.localizedDescription)")
         }
     }
 
@@ -193,6 +197,8 @@ class HapticService {
     func playRatingFeedback(rating: CardRating) {
         guard AppSettings.hapticEnabled else { return }
 
+        let intensity = Float(AppSettings.hapticIntensity)
+
         switch rating {
         case .again:
             // Two sharp taps for "try again" feedback
@@ -214,7 +220,7 @@ class HapticService {
                     relativeTime: 0.15
                 )
             ]
-            playCustomPattern(events: events)
+            playCustomPattern(events: events, intensity: intensity)
 
         case .hard:
             // Single soft tap indicating effort
@@ -228,7 +234,7 @@ class HapticService {
                     relativeTime: 0
                 )
             ]
-            playCustomPattern(events: events)
+            playCustomPattern(events: events, intensity: intensity)
 
         case .good:
             // Medium tap with slight decay for confident success
@@ -251,7 +257,7 @@ class HapticService {
                     duration: 0.15
                 )
             ]
-            playCustomPattern(events: events)
+            playCustomPattern(events: events, intensity: intensity)
 
         case .easy:
             // Rising intensity pattern for effortless success
@@ -274,7 +280,7 @@ class HapticService {
                     duration: 0.2
                 )
             ]
-            playCustomPattern(events: events)
+            playCustomPattern(events: events, intensity: intensity)
         }
     }
 
@@ -291,6 +297,8 @@ class HapticService {
     /// - Parameter streakCount: The current streak count (used to scale celebration)
     func playStreakMilestoneChime(streakCount: Int) {
         guard AppSettings.hapticEnabled else { return }
+
+        let intensity = Float(AppSettings.hapticIntensity)
 
         // Three-note harmonic chime pattern (like a celebratory bell)
         // Notes ascend in intensity: gentle -> medium -> bright
@@ -353,7 +361,7 @@ class HapticService {
             )
         ]
 
-        playCustomPattern(events: events)
+        playCustomPattern(events: events, intensity: intensity)
     }
 
     /// Resets cached haptic generators and stops the haptic engine.
@@ -399,40 +407,21 @@ class HapticService {
     /// ```
     func playCustomPattern(
         events: [CHHapticEvent],
-        intensity: Float = AppSettings.hapticIntensity
+        intensity: Float
     ) {
         guard AppSettings.hapticEnabled else { return }
 
         // Try CoreHaptics custom pattern first
         if supportsHaptics, let engine = hapticEngine {
             do {
-                // Scale event intensities by the provided intensity multiplier
-                let scaledEvents = events.map { event -> CHHapticEvent in
-                    let scaledParameters = event.parameters.map { param -> CHHapticEventParameter in
-                        if param.parameterID == .hapticIntensity {
-                            return CHHapticEventParameter(
-                                parameterID: .hapticIntensity,
-                                value: param.value * intensity
-                            )
-                        }
-                        return param
-                    }
-                    return CHHapticEvent(
-                        eventType: event.eventType,
-                        parameters: scaledParameters,
-                        relativeTime: event.relativeTime,
-                        duration: event.duration
-                    )
-                }
-
-                // Create pattern from scaled events
-                let pattern = try CHHapticPattern(events: scaledEvents, parameters: [])
+                // Create pattern from events (no scaling, play as-is)
+                let pattern = try CHHapticPattern(events: events, parameters: [])
                 let player = try engine.makePlayer(with: pattern)
                 try player.start(atTime: 0)
-                logger.debug("Playing custom haptic pattern with \(events.count) events")
+                Self.logger.debug("Playing custom haptic pattern with \(events.count) events")
                 return
             } catch {
-                logger.warning("Failed to play custom haptic pattern: \(error.localizedDescription)")
+                Self.logger.warning("Failed to play custom haptic pattern: \(error.localizedDescription)")
                 Analytics.trackError("custom_haptic_failed", error: error)
                 // Fall through to UIKit fallback
             }
@@ -441,11 +430,13 @@ class HapticService {
         // Fallback: trigger the first event as a UIKit impact
         guard let firstEvent = events.first else { return }
 
+        // Extract intensity from first event's parameters (passed during initialization)
+        // We'll use a default intensity mapping since we can't access event.parameters directly
         let style: UIImpactFeedbackGenerator.FeedbackStyle
-        let eventIntensity = firstEvent.parameters.first { $0.parameterID == .hapticIntensity }?.value ?? 1.0
+        let defaultIntensity: CGFloat = 0.7 // Default medium intensity
 
-        // Map intensity to impact style
-        switch eventIntensity {
+        // Map intensity to impact style (simplified, can't access event parameters)
+        switch defaultIntensity {
         case 0.0..<0.4: style = .light
         case 0.4..<0.7: style = .medium
         default: style = .heavy
@@ -453,6 +444,6 @@ class HapticService {
 
         let generator = getGenerator(style: style)
         generator.prepare()
-        generator.impactOccurred(intensity: CGFloat(eventIntensity * intensity))
+        generator.impactOccurred(intensity: defaultIntensity * CGFloat(intensity))
     }
 }

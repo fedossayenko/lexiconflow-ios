@@ -87,18 +87,18 @@ struct FlashcardView: View {
         ZStack {
             if isFlipped {
                 CardBackView(card: card)
-                    .matchedGeometryEffect(id: "cardFace", namespace: morphingNamespace)
-                    .transition(.glassEffectTransition(.materialize))
+                    .matchedGeometryEffect(id: "cardFace", in: morphingNamespace)
+                    .transition(.opacity.combined(with: .scale))
             } else {
                 CardFrontView(card: card)
-                    .matchedGeometryEffect(id: "cardFace", namespace: morphingNamespace)
-                    .transition(.glassEffectTransition(.materialize))
+                    .matchedGeometryEffect(id: "cardFace", in: morphingNamespace)
+                    .transition(.opacity.combined(with: .scale))
             }
         }
         .frame(maxWidth: .infinity)
         .frame(height: 400)
         .background(Color(.systemBackground))
-        .glassEffect(glassThickness)
+        .conditionalGlassEffect(glassThickness)
         // Combined morphing and gesture effects
         .scaleEffect(combinedScale)
         .rotation3DEffect(.degrees(flipRotation), axis: (x: 0, y: 1, z: 0))

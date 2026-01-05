@@ -20,11 +20,29 @@ final class TranslationService {
     private let baseURL = "https://api.z.ai/api/coding/paas/v4/chat/completions"
     private let logger = Logger(subsystem: "com.lexiconflow.translation", category: "TranslationService")
 
+    /// Network session for API requests (dependency injection for testing)
+    private let session: NetworkSession
+
     private var sourceLanguage = "en"
     private var targetLanguage = "ru"
 
+    /// Initialize with default URLSession.shared
     private init() {
-        // API key is now loaded from Keychain on-demand via computed property
+        self.session = URLSession.shared
+    }
+
+    /// Initialize with custom NetworkSession (for testing)
+    ///
+    /// - Parameter session: Custom NetworkSession implementation
+    /// - Returns: New TranslationService instance
+    static func forTesting(session: NetworkSession) -> TranslationService {
+        let service = TranslationService(session: session)
+        return service
+    }
+
+    /// Private initializer with custom session
+    private init(session: NetworkSession) {
+        self.session = session
     }
 
     /// Current API key from Keychain (computed property to ensure fresh reads)
@@ -128,7 +146,7 @@ final class TranslationService {
 
         logger.debug("Validating API key with test request (URL: \(url.absoluteString))")
 
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        let (data, response) = try await session.data(for: urlRequest)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
@@ -596,7 +614,7 @@ final class TranslationService {
 
         logger.debug("Sending translation request for '\(word)' (URL: \(url.absoluteString), model: glm-4.7)")
 
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        let (data, response) = try await session.data(for: urlRequest)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"

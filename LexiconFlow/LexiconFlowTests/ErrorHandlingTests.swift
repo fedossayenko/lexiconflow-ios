@@ -22,9 +22,6 @@ struct ErrorHandlingTests {
 
     // MARK: - Test Fixtures
 
-    private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
-    }
 
     private func createTestDeck(context: ModelContext, name: String = "Test Deck") -> Deck {
         let deck = Deck(name: name, icon: "test", order: 0)
@@ -36,7 +33,7 @@ struct ErrorHandlingTests {
 
     @Test("AddDeckView save failure shows error")
     func addDeckSaveFailureShowsError() async throws {
-        let context = freshContext()
+        let context = TestContext.clean()
         try context.clearAll()
 
         // Create a deck
@@ -64,7 +61,7 @@ struct ErrorHandlingTests {
 
     @Test("AddFlashcardView save failure shows error")
     func addFlashcardSaveFailureShowsError() async throws {
-        let context = freshContext()
+        let context = TestContext.clean()
         try context.clearAll()
         let deck = createTestDeck(context: context)
 
@@ -133,7 +130,7 @@ struct ErrorHandlingTests {
 
     @Test("DeckRowView dueCount updates with query")
     func deckRowViewDueCountUpdatesWithQuery() async throws {
-        let context = freshContext()
+        let context = TestContext.clean()
         try context.clearAll()
 
         // Create a deck
@@ -185,7 +182,7 @@ struct ErrorHandlingTests {
 
     @Test("DeckRowView dueCount excludes new cards")
     func deckRowViewDueCountExcludesNewCards() async throws {
-        let context = freshContext()
+        let context = TestContext.clean()
         try context.clearAll()
 
         // Create a deck

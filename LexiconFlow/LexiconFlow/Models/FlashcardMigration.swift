@@ -111,7 +111,7 @@ enum FlashcardMigrationPlan: SchemaMigrationPlan {
             // v1.0 to v1.1: Add optional translation fields
             // Uses lightweight migration - SwiftData automatically adds new optional fields
             // No custom migration logic needed
-            .lightweight(from: FlashcardSchemaV1_0.self, to: FlashcardSchemaV1_1.self)
+            .lightweight(fromVersion: FlashcardSchemaV1_0.self, toVersion: FlashcardSchemaV1_1.self)
         ]
     }
 

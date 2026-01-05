@@ -159,7 +159,7 @@ final class PerformanceTestDataGenerator {
     /// Words are sourced from academic English to provide meaningful test content.
     ///
     /// - Parameter count: Number of cards to generate
-    /// - Returns: Array of flashcard data
+    /// - Returns: Array of flashcard data (reuses DataImporter.FlashcardData DTO)
     private func generatePerformanceTestCards(count: Int) -> [FlashcardData] {
         // Academic vocabulary for realistic test data
         let vocabularyWords = [
@@ -246,12 +246,9 @@ final class PerformanceTestDataGenerator {
     }
 }
 
-// MARK: - Supporting Types
-
-/// Flashcard data for test generation
-private struct FlashcardData {
-    let word: String
-    let definition: String
-    let phonetic: String?
-    let imageData: Data?
-}
+// MARK: - Supporting Types Deleted
+//
+// The private FlashcardData struct was removed to eliminate type ambiguity.
+// PerformanceTestDataGenerator now reuses DataImporter.FlashcardData,
+// which has an identical structure (word, definition, phonetic, imageData).
+// This follows the DRY principle and prevents Swift compiler ambiguity errors.

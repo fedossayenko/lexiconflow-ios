@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		723CEDD12F09FFD200B16EF0 /* FSRS in Frameworks */ = {isa = PBXBuildFile; productRef = 723CEDD02F09FFD200B16EF0 /* FSRS */; };
+		727673CE2F0C5739000C7E83 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 727673CD2F0C5739000C7E83 /* FirebaseAnalytics */; };
+		727673D02F0C5739000C7E83 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 727673CF2F0C5739000C7E83 /* FirebaseCrashlytics */; };
+		727673D22F0C5739000C7E83 /* FirebasePerformance in Frameworks */ = {isa = PBXBuildFile; productRef = 727673D12F0C5739000C7E83 /* FirebasePerformance */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -56,6 +59,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				727673D02F0C5739000C7E83 /* FirebaseCrashlytics in Frameworks */,
+				727673CE2F0C5739000C7E83 /* FirebaseAnalytics in Frameworks */,
+				727673D22F0C5739000C7E83 /* FirebasePerformance in Frameworks */,
 				723CEDD12F09FFD200B16EF0 /* FSRS in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -118,6 +124,9 @@
 			name = LexiconFlow;
 			packageProductDependencies = (
 				723CEDD02F09FFD200B16EF0 /* FSRS */,
+				727673CD2F0C5739000C7E83 /* FirebaseAnalytics */,
+				727673CF2F0C5739000C7E83 /* FirebaseCrashlytics */,
+				727673D12F0C5739000C7E83 /* FirebasePerformance */,
 			);
 			productName = LexiconFlow;
 			productReference = 728BF8E42F09F5B200C67492 /* LexiconFlow.app */;
@@ -203,6 +212,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				723CEDCF2F09FFD200B16EF0 /* XCRemoteSwiftPackageReference "swift-fsrs" */,
+				727673CC2F0C5739000C7E83 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 728BF8E52F09F5B200C67492 /* Products */;
@@ -634,6 +644,14 @@
 				kind = branch;
 			};
 		};
+		727673CC2F0C5739000C7E83 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.7.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -641,6 +659,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 723CEDCF2F09FFD200B16EF0 /* XCRemoteSwiftPackageReference "swift-fsrs" */;
 			productName = FSRS;
+		};
+		727673CD2F0C5739000C7E83 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 727673CC2F0C5739000C7E83 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		727673CF2F0C5739000C7E83 /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 727673CC2F0C5739000C7E83 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
+		};
+		727673D12F0C5739000C7E83 /* FirebasePerformance */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 727673CC2F0C5739000C7E83 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebasePerformance;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

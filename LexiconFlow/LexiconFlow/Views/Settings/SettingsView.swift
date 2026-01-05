@@ -72,29 +72,33 @@ struct SettingsView: View {
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel("FSRS v5 algorithm")
 
-                    Link(destination: URL(string: "https://github.com/open-spaced-repetition/fsrs.js")!) {
-                        HStack {
-                            Label("FSRS Algorithm", systemImage: "arrow.up.right.square")
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
+                    if let fsrsURL = URL(string: "https://github.com/open-spaced-repetition/fsrs.js") {
+                        Link(destination: fsrsURL) {
+                            HStack {
+                                Label("FSRS Algorithm", systemImage: "arrow.up.right.square")
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                            }
                         }
+                        .accessibilityLabel("Learn more about FSRS algorithm")
                     }
-                    .accessibilityLabel("Learn more about FSRS algorithm")
 
-                    Link(destination: URL(string: "https://github.com/fedossayenko/lexiconflow-ios")!) {
-                        HStack {
-                            Label("GitHub Repository", systemImage: "arrow.up.right.square")
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
+                    if let repoURL = URL(string: "https://github.com/fedossayeno/lexiconflow-ios") {
+                        Link(destination: repoURL) {
+                            HStack {
+                                Label("GitHub Repository", systemImage: "arrow.up.right.square")
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                            }
                         }
+                        .accessibilityLabel("View GitHub repository")
                     }
-                    .accessibilityLabel("View GitHub repository")
                 }
             }
             .navigationTitle("Settings")

@@ -49,9 +49,9 @@ struct DeckRowView: View {
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 12)
-        // Apply glass effect for "Liquid Glass" design
+        // Apply glass effect for "Liquid Glass" design (respects AppSettings.glassEffectsEnabled)
         // Performance optimized: .drawingGroup() in GlassEffectModifier caches blurred background as Metal texture
-        .glassEffect(.regular, cornerRadius: 12)
+        .conditionalGlassEffect(.regular, cornerRadius: 12)
     }
 }
 

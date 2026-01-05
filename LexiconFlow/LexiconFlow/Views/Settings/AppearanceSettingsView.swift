@@ -59,7 +59,7 @@ struct AppearanceSettingsView: View {
                             .fontWeight(.medium)
                     }
 
-                    Text("Glass morphism creates translucent, frosted glass UI elements with blur effects. This feature is planned for Phase 2.")
+                    Text("Glass morphism creates translucent, frosted glass UI elements with blur effects. Glass thickness adapts to card memory stability for visual feedback.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

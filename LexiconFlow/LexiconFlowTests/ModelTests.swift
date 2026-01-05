@@ -17,18 +17,11 @@ import FSRS
 @MainActor
 struct ModelTests {
 
-    /// Get a fresh isolated context for testing
-    /// Caller should call clearAll() before use to ensure test isolation
-    private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
-    }
-
     // MARK: - Flashcard Tests
 
     @Test("Flashcard creation with required fields")
     func flashcardCreation() throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
 
         let flashcard = Flashcard(
             word: "hello",
@@ -47,8 +40,7 @@ struct ModelTests {
 
     @Test("Flashcard optional fields can be nil")
     func flashcardOptionals() throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
 
         let flashcard = Flashcard(
             word: "test",
@@ -65,8 +57,7 @@ struct ModelTests {
 
     @Test("Flashcard-deck relationship")
     func flashcardDeckRelationship() throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
 
         let deck = Deck(name: "Test Deck", icon: "📚")
         context.insert(deck)
@@ -81,8 +72,7 @@ struct ModelTests {
 
     @Test("Flashcard FSRS state relationship")
     func flashcardFSRSState() throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
 
         let flashcard = Flashcard(word: "test", definition: "test")
         let state = FSRSState(
@@ -102,8 +92,7 @@ struct ModelTests {
 
     @Test("Flashcard review logs relationship")
     func flashcardReviewLogs() throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
 
         let flashcard = Flashcard(word: "test", definition: "test")
         context.insert(flashcard)
@@ -126,8 +115,7 @@ struct ModelTests {
 
     @Test("Deck creation and properties")
     func deckCreation() throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
 
         let deck = Deck(name: "Vocabulary", icon: "📖")
         context.insert(deck)
@@ -140,8 +128,7 @@ struct ModelTests {
 
     @Test("Deck-cards relationship")
     func deckCardsRelationship() throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
 
         let deck = Deck(name: "Test", icon: "📚")
         context.insert(deck)
@@ -161,8 +148,7 @@ struct ModelTests {
 
     @Test("Review log creation")
     func reviewLogCreation() throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
 
         let now = Date()
         let review = FlashcardReview(
@@ -232,8 +218,7 @@ struct ModelTests {
 
     @Test("FSRS state with lastReviewDate cache")
     func fsrsStateCache() throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
 
         let state = FSRSState(
             stability: 10.0,
@@ -293,8 +278,7 @@ struct ModelTests {
 
     @Test("Deleting flashcard cascades to reviews")
     func flashcardDeleteCascade() throws {
-        let context = freshContext()
-        try context.clearAll()
+        let context = TestContext.clean()
 
         let flashcard = Flashcard(word: "test", definition: "test")
         context.insert(flashcard)

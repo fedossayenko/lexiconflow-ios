@@ -2,16 +2,11 @@
 //  SettingsViewsTests.swift
 //  LexiconFlowTests
 //
-//  Tests for Settings views including:
-//  - TranslationSettingsView: API key management, language pickers
-//  - AppearanceSettingsView: Theme picker, glass effects toggle
-//  - HapticSettingsView: Toggle, slider, preset buttons
-//  - StudySettingsView: Limit pickers, study mode picker
-//  - DataManagementView: Export/import, reset progress
+//  Tests for Settings views with meaningful assertions
+//  Tests verify AppSettings bindings, enum values, property ranges, and view compilation
 //
-//  NOTE: SwiftUI views are value types that describe UI structure.
-//  These tests verify view creation, @AppStorage bindings, and accessibility.
-//  Full UI behavior testing requires UI tests with XCUItest.
+//  REWRITTEN: 42 tautological tests → 22 meaningful tests
+//  Approach: Hybrid (Property verification + Enum validation + Compilation verification)
 //
 
 import Testing
@@ -19,306 +14,226 @@ import SwiftUI
 @testable import LexiconFlow
 
 /// Test suite for all Settings views
+///
+/// Tests verify:
+/// - AppSettings binding functionality (read/write)
+/// - Enum display properties and values
+/// - Property range validation
+/// - View compilation without crashes
 @MainActor
 struct SettingsViewsTests {
 
-    // MARK: - TranslationSettingsView Tests
+    // MARK: - Translation Settings Tests
 
-    @Test("TranslationSettingsView can be created")
-    func translationSettingsViewCreation() {
-        let view = TranslationSettingsView()
-        #expect(true, "TranslationSettingsView should be created")
+    @Test("TranslationSettingsView.isTranslationEnabled binding works")
+    func translationSettingsBindingEnabled() {
+        let initialValue = AppSettings.isTranslationEnabled
+        AppSettings.isTranslationEnabled.toggle()
+        #expect(AppSettings.isTranslationEnabled != initialValue, "Translation enabled should toggle")
+        AppSettings.isTranslationEnabled = initialValue // Reset
     }
 
-    @Test("TranslationSettingsView has correct navigation title")
-    func translationSettingsViewNavigationTitle() {
-        let view = TranslationSettingsView()
-        // Verify navigation title is "Translation"
-        #expect(true, "Navigation title should be 'Translation'")
+    @Test("TranslationSettingsView.supportedLanguages has required languages")
+    func translationSettingsSupportedLanguages() {
+        let languages = AppSettings.supportedLanguages
+        #expect(languages.count >= 10, "Should have at least 10 supported languages")
+        #expect(languages.contains { $0.code == "en" }, "Should include English")
+        #expect(languages.contains { $0.code == "ru" }, "Should include Russian")
+        #expect(languages.contains { $0.code == "zh-Hans" }, "Should include Chinese (Simplified)")
     }
 
-    @Test("TranslationSettingsView bindable properties exist")
-    func translationSettingsViewBindable() {
-        // Verify view uses @AppStorage for:
-        // - translationEnabled
-        // - translationSourceLanguage
-        // - translationTargetLanguage
-        #expect(true, "TranslationSettingsView should use @AppStorage bindings")
+    @Test("TranslationSettingsView.language codes are unique")
+    func translationSettingsLanguageCodesUnique() {
+        let languages = AppSettings.supportedLanguages
+        let codes = languages.map { $0.code }
+        let uniqueCodes = Set(codes)
+        #expect(codes.count == uniqueCodes.count, "Language codes should be unique")
     }
 
-    // MARK: - AppearanceSettingsView Tests
+    @Test("TranslationSettingsView can set source and target languages")
+    func translationSettingsLanguageBinding() {
+        let initialSource = AppSettings.translationSourceLanguage
+        let initialTarget = AppSettings.translationTargetLanguage
 
-    @Test("AppearanceSettingsView can be created")
-    func appearanceSettingsViewCreation() {
-        let view = AppearanceSettingsView()
-        #expect(true, "AppearanceSettingsView should be created")
+        AppSettings.translationSourceLanguage = "es"
+        AppSettings.translationTargetLanguage = "de"
+
+        #expect(AppSettings.translationSourceLanguage == "es", "Source language should be 'es'")
+        #expect(AppSettings.translationTargetLanguage == "de", "Target language should be 'de'")
+
+        // Reset
+        AppSettings.translationSourceLanguage = initialSource
+        AppSettings.translationTargetLanguage = initialTarget
     }
 
-    @Test("AppearanceSettingsView has correct navigation title")
-    func appearanceSettingsViewNavigationTitle() {
-        let view = AppearanceSettingsView()
-        // Verify navigation title is "Appearance"
-        #expect(true, "Navigation title should be 'Appearance'")
+    // MARK: - Haptic Settings Tests
+
+    @Test("HapticSettingsView.hapticEnabled binding works")
+    func hapticSettingsBindingEnabled() {
+        let initialValue = AppSettings.hapticEnabled
+        AppSettings.hapticEnabled.toggle()
+        #expect(AppSettings.hapticEnabled != initialValue, "Haptic enabled should toggle")
+        AppSettings.hapticEnabled = initialValue // Reset
     }
 
-    @Test("AppearanceSettingsView has theme picker")
-    func appearanceSettingsViewThemePicker() {
-        // Verify @AppStorage("darkMode") with DarkModePreference cases
-        #expect(true, "AppearanceSettingsView should have theme picker")
+    @Test("HapticSettingsView.hapticIntensity is within valid range")
+    func hapticSettingsIntensityRange() {
+        let intensity = AppSettings.hapticIntensity
+        #expect(intensity >= 0.1 && intensity <= 1.0, "Haptic intensity should be between 0.1 and 1.0")
     }
 
-    @Test("AppearanceSettingsView has glass effects toggle")
-    func appearanceSettingsViewGlassEffectsToggle() {
-        // Verify @AppStorage("glassEffectsEnabled") toggle
-        #expect(true, "AppearanceSettingsView should have glass effects toggle")
+    @Test("HapticSettingsView.hapticIntensity binding works")
+    func hapticSettingsBindingIntensity() {
+        let initialValue = AppSettings.hapticIntensity
+        AppSettings.hapticIntensity = 0.5
+        #expect(AppSettings.hapticIntensity == 0.5, "Haptic intensity should be settable")
+        AppSettings.hapticIntensity = initialValue // Reset
     }
 
-    @Test("AppearanceSettingsView has preview section")
-    func appearanceSettingsViewPreviewSection() {
-        // Verify preview with RoundedRectangle and .ultraThinMaterial
-        #expect(true, "AppearanceSettingsView should have preview section")
+    // MARK: - Study Settings Tests
+
+    @Test("StudySettingsView.studyLimit is within valid range")
+    func studySettingsStudyLimitRange() {
+        let limit = AppSettings.studyLimit
+        #expect(limit >= 10 && limit <= 100, "Study limit should be between 10 and 100")
     }
 
-    // MARK: - HapticSettingsView Tests
-
-    @Test("HapticSettingsView can be created")
-    func hapticSettingsViewCreation() {
-        let view = HapticSettingsView()
-        #expect(true, "HapticSettingsView should be created")
+    @Test("StudySettingsView.dailyGoal is within valid range")
+    func studySettingsDailyGoalRange() {
+        let goal = AppSettings.dailyGoal
+        #expect(goal >= 5 && goal <= 100, "Daily goal should be between 5 and 100")
     }
 
-    @Test("HapticSettingsView has correct navigation title")
-    func hapticSettingsViewNavigationTitle() {
-        let view = HapticSettingsView()
-        // Verify navigation title is "Haptic Feedback"
-        #expect(true, "Navigation title should be 'Haptic Feedback'")
+    @Test("StudySettingsView.defaultStudyMode is valid")
+    func studySettingsDefaultMode() {
+        let mode = AppSettings.defaultStudyMode
+        #expect(mode == "scheduled" || mode == "cram", "Default study mode should be 'scheduled' or 'cram'")
     }
 
-    @Test("HapticSettingsView has haptic toggle")
-    func hapticSettingsViewToggle() {
-        // Verify @AppStorage("hapticEnabled") toggle exists
-        #expect(true, "HapticSettingsView should have haptic enabled toggle")
+    @Test("StudySettingsView.studyLimit binding works")
+    func studySettingsBindingLimit() {
+        let initialValue = AppSettings.studyLimit
+        AppSettings.studyLimit = 50
+        #expect(AppSettings.studyLimit == 50, "Study limit should be settable")
+        AppSettings.studyLimit = initialValue // Reset
     }
 
-    @Test("HapticSettingsView has intensity slider")
-    func hapticSettingsViewSlider() {
-        // Verify Slider with range 0.1...1.0, step 0.1
-        // Bound to @AppStorage("hapticIntensity")
-        #expect(true, "HapticSettingsView should have intensity slider")
+    @Test("StudySettingsView.dailyGoal binding works")
+    func studySettingsBindingGoal() {
+        let initialValue = AppSettings.dailyGoal
+        AppSettings.dailyGoal = 30
+        #expect(AppSettings.dailyGoal == 30, "Daily goal should be settable")
+        AppSettings.dailyGoal = initialValue // Reset
     }
 
-    @Test("HapticSettingsView has preset intensity buttons")
-    func hapticSettingsViewPresetButtons() {
-        // Verify Light (0.3), Medium (0.6), Heavy (1.0) buttons
-        #expect(true, "HapticSettingsView should have preset intensity buttons")
+    @Test("StudySettingsView.gestureEnabled binding works")
+    func studySettingsBindingGesture() {
+        let initialValue = AppSettings.gestureEnabled
+        AppSettings.gestureEnabled.toggle()
+        #expect(AppSettings.gestureEnabled != initialValue, "Gesture enabled should toggle")
+        AppSettings.gestureEnabled = initialValue // Reset
     }
 
-    @Test("HapticSettingsView has test haptic button")
-    func hapticSettingsViewTestButton() {
-        // Verify Test Haptic button with ProgressView during testing
-        #expect(true, "HapticSettingsView should have test haptic button")
+    // MARK: - Appearance Settings Tests
+
+    @Test("AppearanceSettingsView.darkMode binding works")
+    func appearanceSettingsBindingDarkMode() {
+        let initialValue = AppSettings.darkMode
+        AppSettings.darkMode = .light
+        #expect(AppSettings.darkMode == .light, "Dark mode should be settable")
+        AppSettings.darkMode = initialValue // Reset
     }
 
-    @Test("HapticSettingsView slider visibility tied to toggle")
-    func hapticSettingsViewSliderVisibility() {
-        // Verify slider is hidden when hapticEnabled is false
-        #expect(true, "Intensity slider should be hidden when haptics disabled")
+    @Test("AppearanceSettingsView.glassEffectsEnabled binding works")
+    func appearanceSettingsBindingGlassEffects() {
+        let initialValue = AppSettings.glassEffectsEnabled
+        AppSettings.glassEffectsEnabled.toggle()
+        #expect(AppSettings.glassEffectsEnabled != initialValue, "Glass effects enabled should toggle")
+        AppSettings.glassEffectsEnabled = initialValue // Reset
     }
 
-    @Test("HapticSettingsView preset values are correct")
-    func hapticSettingsViewPresetValues() {
-        // Verify Light = 0.3, Medium = 0.6, Heavy = 1.0
-        #expect(true, "Preset buttons should set correct intensity values")
+    @Test("AppearanceSettingsView.DarkModePreference display names are correct")
+    func appearanceSettingsDarkModeDisplayNames() {
+        #expect(AppSettings.DarkModePreference.system.displayName == "System", "System display name should match")
+        #expect(AppSettings.DarkModePreference.light.displayName == "Light", "Light display name should match")
+        #expect(AppSettings.DarkModePreference.dark.displayName == "Dark", "Dark display name should match")
     }
 
-    // MARK: - StudySettingsView Tests
-
-    @Test("StudySettingsView can be created")
-    func studySettingsViewCreation() {
-        let view = StudySettingsView()
-        #expect(true, "StudySettingsView should be created")
+    @Test("AppearanceSettingsView.DarkModePreference has all cases")
+    func appearanceSettingsDarkModeCases() {
+        let cases = AppSettings.DarkModePreference.allCases
+        #expect(cases.count == 3, "Should have 3 dark mode options")
+        #expect(cases.contains(.system), "Should include system option")
+        #expect(cases.contains(.light), "Should include light option")
+        #expect(cases.contains(.dark), "Should include dark option")
     }
 
-    @Test("StudySettingsView has correct navigation title")
-    func studySettingsViewNavigationTitle() {
-        let view = StudySettingsView()
-        // Verify navigation title is "Study"
-        #expect(true, "Navigation title should be 'Study'")
+    // MARK: - Study Mode Option Tests
+
+    @Test("StudySettingsView.StudyModeOption display names are correct")
+    func studySettingsModeDisplayNames() {
+        #expect(AppSettings.StudyModeOption.scheduled.displayName == "Scheduled (FSRS)", "Scheduled display name should match")
+        #expect(AppSettings.StudyModeOption.cram.displayName == "Cram (Practice)", "Cram display name should match")
     }
 
-    @Test("StudySettingsView has cards per session picker")
-    func studySettingsViewCardsPerSessionPicker() {
-        // Verify @AppStorage("studyLimit") picker with options [10, 20, 30, 50, 100]
-        #expect(true, "StudySettingsView should have cards per session picker")
+    @Test("StudySettingsView.StudyModeOption descriptions are correct")
+    func studySettingsModeDescriptions() {
+        #expect(AppSettings.StudyModeOption.scheduled.description.contains("FSRS"), "Scheduled description should mention FSRS")
+        #expect(AppSettings.StudyModeOption.cram.description.contains("Practice"), "Cram description should mention practice")
     }
 
-    @Test("StudySettingsView has daily goal picker")
-    func studySettingsViewDailyGoalPicker() {
-        // Verify @AppStorage("dailyGoal") picker with options [10, 20, 30, 50, 100]
-        #expect(true, "StudySettingsView should have daily goal picker")
+    @Test("StudySettingsView.StudyModeOption has all cases")
+    func studySettingsModeCases() {
+        let cases = AppSettings.StudyModeOption.allCases
+        #expect(cases.count == 2, "Should have 2 study mode options")
+        #expect(cases.contains(.scheduled), "Should include scheduled option")
+        #expect(cases.contains(.cram), "Should include cram option")
     }
 
-    @Test("StudySettingsView has default study mode picker")
-    func studySettingsViewDefaultModePicker() {
-        // Verify @AppStorage("defaultStudyMode") picker with StudyModeOption cases
-        #expect(true, "StudySettingsView should have default study mode picker")
+    // MARK: - Onboarding Tests
+
+    @Test("AppSettings.hasCompletedOnboarding binding works")
+    func onboardingBinding() {
+        let initialValue = AppSettings.hasCompletedOnboarding
+        AppSettings.hasCompletedOnboarding.toggle()
+        #expect(AppSettings.hasCompletedOnboarding != initialValue, "Onboarding completion should toggle")
+        AppSettings.hasCompletedOnboarding = initialValue // Reset
     }
 
-    @Test("StudySettingsView has statistics section")
-    func studySettingsViewStatisticsSection() {
-        // Verify ProgressView showing daily goal progress
-        #expect(true, "StudySettingsView should have statistics section")
+    // MARK: - View Compilation Tests
+
+    @Test("All settings views compile without crash")
+    func settingsViewsCompile() {
+        let views: [any View] = [
+            TranslationSettingsView(),
+            AppearanceSettingsView(),
+            HapticSettingsView(),
+            StudySettingsView(),
+            DataManagementView()
+        ]
+
+        for view in views {
+            _ = view.body // Verify compilation
+        }
+        // If we reach here without crash, all views compiled successfully
     }
 
-    // MARK: - DataManagementView Tests
+    @Test("All settings views render without crash")
+    func settingsViewsRender() {
+        // Verify views can be instantiated and rendered
+        let translationView = TranslationSettingsView()
+        let appearanceView = AppearanceSettingsView()
+        let hapticView = HapticSettingsView()
+        let studyView = StudySettingsView()
+        let dataView = DataManagementView()
 
-    @Test("DataManagementView can be created")
-    func dataManagementViewCreation() {
-        let view = DataManagementView()
-        #expect(true, "DataManagementView should be created")
-    }
+        // Access body to trigger rendering
+        _ = translationView.body
+        _ = appearanceView.body
+        _ = hapticView.body
+        _ = studyView.body
+        _ = dataView.body
 
-    @Test("DataManagementView has correct navigation title")
-    func dataManagementViewNavigationTitle() {
-        let view = DataManagementView()
-        // Verify navigation title is "Data Management"
-        #expect(true, "Navigation title should be 'Data Management'")
-    }
-
-    @Test("DataManagementView has export all data button")
-    func dataManagementViewExportAllButton() {
-        // Verify "Export All Data" button with includeProgress=true
-        #expect(true, "DataManagementView should have export all data button")
-    }
-
-    @Test("DataManagementView has export as JSON button")
-    func dataManagementViewExportJSONButton() {
-        // Verify "Export as JSON" button with includeProgress=false
-        #expect(true, "DataManagementView should have export as JSON button")
-    }
-
-    @Test("DataManagementView has import button")
-    func dataManagementViewImportButton() {
-        // Verify FileImporter with .json content type restriction
-        #expect(true, "DataManagementView should have import button")
-    }
-
-    @Test("DataManagementView has reset progress button")
-    func dataManagementViewResetButton() {
-        // Verify Reset Progress button with ConfirmationDialog
-        #expect(true, "DataManagementView should have reset progress button")
-    }
-
-    @Test("DataManagementView has statistics display")
-    func dataManagementViewStatisticsDisplay() {
-        // Verify cardCount, deckCount, and estimatedSize display
-        #expect(true, "DataManagementView should display statistics")
-    }
-
-    @Test("DataManagementView calculates estimated size correctly")
-    func dataManagementViewEstimatedSizeCalculation() {
-        // Verify estimated size = cards * 500 bytes / 1M
-        #expect(true, "DataManagementView should calculate size as 500 bytes per card")
-    }
-
-    // MARK: - @AppStorage Persistence Tests
-
-    @Test("Settings persist across view recreations")
-    func settingsPersistAcrossRecreations() {
-        // Test that @AppStorage values persist when views are recreated
-        // This is a compile-time verification test
-        #expect(true, "@AppStorage values should persist across view recreations")
-    }
-
-    // MARK: - Accessibility Tests
-
-    @Test("TranslationSettingsView has accessibility labels")
-    func translationSettingsViewAccessibility() {
-        // Verify accessibility labels for:
-        // - Auto-Translation toggle
-        // - Language pickers
-        // - API key field
-        // - Save button
-        #expect(true, "TranslationSettingsView should have proper accessibility labels")
-    }
-
-    @Test("HapticSettingsView has accessibility labels")
-    func hapticSettingsViewAccessibility() {
-        // Verify accessibility labels for:
-        // - Haptic Feedback toggle
-        // - Intensity slider with value
-        // - Preset buttons
-        // - Test Haptic button
-        #expect(true, "HapticSettingsView should have proper accessibility labels")
-    }
-
-    @Test("AppearanceSettingsView has accessibility labels")
-    func appearanceSettingsViewAccessibility() {
-        // Verify accessibility labels for:
-        // - Theme picker
-        // - Glass effects toggle
-        #expect(true, "AppearanceSettingsView should have proper accessibility labels")
-    }
-
-    @Test("StudySettingsView has accessibility labels")
-    func studySettingsViewAccessibility() {
-        // Verify accessibility labels for:
-        // - Cards per session picker
-        // - Daily goal picker
-        // - Default study mode picker
-        #expect(true, "StudySettingsView should have proper accessibility labels")
-    }
-
-    @Test("DataManagementView has accessibility labels")
-    func dataManagementViewAccessibility() {
-        // Verify accessibility labels for:
-        // - Export buttons
-        // - Import button
-        // - Reset Progress button
-        #expect(true, "DataManagementView should have proper accessibility labels")
-    }
-
-    // MARK: - Edge Cases
-
-    @Test("Views handle missing @AppStorage defaults")
-    func viewsHandleMissingDefaults() {
-        // Test that views handle missing @AppStorage values gracefully
-        // by using default values
-        #expect(true, "Views should handle missing @AppStorage defaults")
-    }
-
-    @Test("Views don't crash on rapid state changes")
-    func viewsHandleRapidStateChanges() {
-        // Test that views handle rapid @AppStorage changes without crashing
-        #expect(true, "Views should handle rapid state changes")
-    }
-
-    @Test("HapticSettingsView test button has proper delay")
-    func hapticTestButtonDelay() {
-        // Verify test button uses 0.5 second delay before reset
-        #expect(true, "Test haptic button should have 0.5s delay before reset")
-    }
-
-    @Test("DataManagementView export includes progress flag")
-    func dataExportIncludesProgressFlag() {
-        // Verify "Export All Data" uses includeProgress=true
-        // Verify "Export as JSON" uses includeProgress=false
-        #expect(true, "Export buttons should have correct includeProgress flags")
-    }
-
-    @Test("DataManagementView import uses batch size")
-    func dataImportBatchSize() {
-        // Verify DataImporter is called with batchSize=500
-        #expect(true, "Import should use batchSize=500 for DataImporter")
-    }
-
-    @Test("DataManagementView reset clears FSRS states")
-    func dataResetClearsFSRSStates() {
-        // Verify Reset Progress clears:
-        // - stability = 0.0
-        // - difficulty = 5.0
-        // - retrievability = 0.9
-        // - lastReviewDate = nil
-        #expect(true, "Reset Progress should clear all FSRS state values")
+        // If we reach here without crash, all views render successfully
     }
 }
