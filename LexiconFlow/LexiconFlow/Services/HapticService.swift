@@ -278,6 +278,84 @@ class HapticService {
         }
     }
 
+    /// Plays harmonic chime pattern for streak milestone achievements.
+    ///
+    /// Creates a musical "chime" effect with three ascending notes that celebrate
+    /// when the user reaches a streak milestone. The pattern uses:
+    /// - Three transient taps at ascending intensities (like a chime or bell)
+    /// - Continuous resonance events for each note to create sustain
+    /// - Precise timing (0.12s intervals) for musical quality
+    ///
+    /// Milestones typically occur at streak values like: 7, 14, 30, 60, 100, 365
+    ///
+    /// - Parameter streakCount: The current streak count (used to scale celebration)
+    func playStreakMilestoneChime(streakCount: Int) {
+        guard AppSettings.hapticEnabled else { return }
+
+        // Three-note harmonic chime pattern (like a celebratory bell)
+        // Notes ascend in intensity: gentle -> medium -> bright
+        let events = [
+            // First note: gentle chime
+            CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.5),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.6)
+                ],
+                relativeTime: 0
+            ),
+            CHHapticEvent(
+                eventType: .hapticContinuous,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.25),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.4)
+                ],
+                relativeTime: 0.02,
+                duration: 0.1
+            ),
+
+            // Second note: medium chime
+            CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.7),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.75)
+                ],
+                relativeTime: 0.12
+            ),
+            CHHapticEvent(
+                eventType: .hapticContinuous,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.35),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5)
+                ],
+                relativeTime: 0.14,
+                duration: 0.12
+            ),
+
+            // Third note: bright celebratory chime
+            CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.9)
+                ],
+                relativeTime: 0.24
+            ),
+            CHHapticEvent(
+                eventType: .hapticContinuous,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.5),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.6)
+                ],
+                relativeTime: 0.26,
+                duration: 0.18
+            )
+        ]
+
+        playCustomPattern(events: events)
+    }
+
     /// Resets cached haptic generators and stops the haptic engine.
     ///
     /// Call this method to release cached generators, such as when receiving
