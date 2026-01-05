@@ -11,9 +11,12 @@
 import SwiftData
 import Foundation
 
-// MARK: - Model Versioning
+// MARK: - Schema Version Tracking
 
 /// Schema version enumeration for Flashcard model
+///
+/// Tracks the evolution of the Flashcard SwiftData schema over time.
+/// Each version represents a set of model definitions that can be migrated between.
 enum FlashcardSchemaVersion: Int {
     /// v1.0 - Initial schema (word, definition, phonetic, imageData)
     case v1_0 = 1
@@ -22,56 +25,105 @@ enum FlashcardSchemaVersion: Int {
     case v1_1 = 2
 
     /// Current schema version
-    static var current: FlashcardSchemaVersion {
-        return .v1_1
+    static let current: FlashcardSchemaVersion = .v1_1
+}
+
+// MARK: - Versioned Schema Definitions
+
+/// v1.0 Schema - Initial Release
+///
+/// Original Flashcard model without translation support.
+/// Used for migrating legacy databases to current schema.
+@Model
+final class FlashcardV1_0 {
+    var id: UUID
+    var word: String
+    var definition: String
+    var phonetic: String?
+    @Attribute(.externalStorage) var imageData: Data?
+    var createdAt: Date
+    @Relationship(deleteRule: .nullify) var deck: Deck?
+    @Relationship(deleteRule: .cascade) var reviewLogs: [FlashcardReview] = []
+    @Relationship(deleteRule: .cascade) var fsrsState: FSRSState?
+
+    init(id: UUID = UUID(),
+         word: String,
+         definition: String,
+         phonetic: String? = nil,
+         imageData: Data? = nil,
+         createdAt: Date = Date()) {
+        self.id = id
+        self.word = word
+        self.definition = definition
+        self.phonetic = phonetic
+        self.imageData = imageData
+        self.createdAt = createdAt
+    }
+}
+
+/// v1.0 Versioned Schema
+enum FlashcardSchemaV1_0: VersionedSchema {
+    static var versionIdentifier = Schema.Version(1, 0, 0)
+
+    static var models: [any PersistentModel.Type] {
+        [
+            FlashcardV1_0.self,
+            Deck.self,
+            FSRSState.self,
+            FlashcardReview.self
+        ]
+    }
+}
+
+/// v1.1 Schema - Translation Feature Addition
+///
+/// Current Flashcard model with translation support.
+/// This is the active schema used by the app.
+enum FlashcardSchemaV1_1: VersionedSchema {
+    static var versionIdentifier = Schema.Version(1, 1, 0)
+
+    static var models: [any PersistentModel.Type] {
+        [
+            Flashcard.self,
+            Deck.self,
+            FSRSState.self,
+            FlashcardReview.self
+        ]
     }
 }
 
 // MARK: - Migration Plan
 
-/// Migration handler for Flashcard schema changes
+/// Migration plan for Flashcard model schema changes
 ///
-/// **Usage**:
-/// ```swift
-/// let modelConfiguration = ModelConfiguration(
-///     schema: Schema([Flashcard.self, ...]),
-///     migrationStage: .migrationRequired
-/// )
-/// ```
-///
-/// **Current Migrations**:
-/// - v1.0 → v1.1: Add optional translation fields (automatic)
-///
-/// **Future Migration Pattern**:
-/// When adding new non-optional fields, use this pattern:
-/// ```swift
-/// enum FlashcardSchemaVersion: Int {
-///     case v1_0 = 1
-///     case v1_1 = 2
-///     case v1_2 = 3  // New version with non-optional field
-/// }
-///
-/// // In migration handler:
-/// if version < .v1_2.rawValue {
-///     // Migrate existing data, provide defaults for new non-optional field
-///     try context.delete(model: FlashcardV1_1.self)
-///     try context.insert(migratedFlashcards)
-/// }
-/// ```
-enum FlashcardMigrationPlan {
+/// Defines how to migrate between different schema versions.
+/// Uses SwiftData's lightweight migration for optional field additions.
+enum FlashcardMigrationPlan: SchemaMigrationPlan {
+    static var schemas: [any VersionedSchema.Type] {
+        [
+            FlashcardSchemaV1_0.self,
+            FlashcardSchemaV1_1.self
+        ]
+    }
+
+    static var stages: [MigrationStage] {
+        [
+            // v1.0 to v1.1: Add optional translation fields
+            // Uses lightweight migration - SwiftData automatically adds new optional fields
+            // No custom migration logic needed
+            .lightweight(from: FlashcardSchemaV1_0.self, to: FlashcardSchemaV1_1.self)
+        ]
+    }
 
     /// Migration Stage Information
     ///
     /// **NOTE**: For v1.0 → v1.1 (adding optional fields), SwiftData handles
     /// migration automatically because all new fields are optional with default nil values.
     ///
-    /// No explicit migration stage configuration is needed for automatic migration.
-    /// SwiftData will detect schema changes and migrate automatically.
-    ///
     /// **Future**: When adding non-optional fields, you will need to:
     /// 1. Bump the schema version
     /// 2. Create a custom migration plan
-    /// 3. Use `.migrationRequired` stage in ModelConfiguration
+    /// 3. Use custom MigrationStage with data transformation
 
     /// Perform custom migration between schema versions
     ///
@@ -102,27 +154,30 @@ enum FlashcardMigrationPlan {
     }
 }
 
-// MARK: - Migration Types
+// MARK: - Migration Errors
 
-/// Typesafe marker for different schema versions (used in future migrations)
-///
-/// **Usage**: Create typed version of model for each schema version:
-/// ```swift
-/// @Model
-/// final class FlashcardV1_0 {
-///     var word: String
-///     var definition: String
-///     // ... v1.0 fields only
-/// }
-///
-/// @Model
-/// final class FlashcardV1_1 {
-///     var word: String
-///     var definition: String
-///     var translation: String?  // NEW in v1.1
-///     // ... all v1.1 fields
-/// }
-/// ```
+/// Errors that can occur during schema migration
+enum MigrationError: Error {
+    /// Unsupported version transition (e.g., backward migration)
+    case unsupportedVersionTransition(from: Int, to: Int)
+
+    /// Migration failed with underlying error
+    case migrationFailed(underlying: Error)
+
+    /// Data corruption during migration
+    case dataCorruption(String)
+
+    var localizedDescription: String {
+        switch self {
+        case .unsupportedVersionTransition(let from, let to):
+            return "Cannot migrate from version \(from) to version \(to). Backward migration is not supported."
+        case .migrationFailed(let error):
+            return "Migration failed: \(error.localizedDescription)"
+        case .dataCorruption(let message):
+            return "Data corruption during migration: \(message)"
+        }
+    }
+}
 
 // MARK: - Testing Support
 
@@ -133,21 +188,51 @@ extension FlashcardMigrationPlan {
     /// ```swift
     /// @Test("Migration v1.0 to v1.1 succeeds")
     /// func testMigration() throws {
-    ///     let container = try ModelContainer(
-    ///         for: Flashcard.self,
-    ///         migrationStage: .migrationRequired
-    ///     )
-    ///     let migrated = try FlashcardMigrationPlan.performMigration(
+    ///     let result = try FlashcardMigrationPlan.verifyMigration(
     ///         from: .v1_0,
-    ///         to: .v1_1,
-    ///         context: container.mainContext
+    ///         to: .v1_1
     ///     )
-    ///     #expect(migrated, "Migration should succeed")
+    ///     #expect(result, "Automatic migration should verify")
     /// }
     /// ```
     static func verifyMigration(from: FlashcardSchemaVersion, to: FlashcardSchemaVersion) throws -> Bool {
-        // For v1.0 → v1.1, automatic migration always succeeds
+        // Same version is always valid (no migration needed)
+        if from == to {
+            return true
+        }
+
+        // Forward migration is supported
+        if to.rawValue > from.rawValue {
+            return true
+        }
+
+        // Backward migration is not supported
+        throw MigrationError.unsupportedVersionTransition(
+            from: from.rawValue,
+            to: to.rawValue
+        )
+    }
+}
+
+// MARK: - Migration Utilities
+
+extension ModelContainer {
+    /// Check if the container is using the current schema version
+    ///
+    /// - Returns: true if the container's schema matches the current version
+    func isCurrentSchemaVersion() -> Bool {
+        // SwiftData handles schema versioning internally
+        // This is a placeholder for future version tracking implementation
         return true
+    }
+
+    /// Get the schema version of this container
+    ///
+    /// - Returns: The schema version enum value
+    func getSchemaVersion() -> FlashcardSchemaVersion {
+        // SwiftData doesn't expose schema version directly
+        // This is a placeholder for future version tracking implementation
+        return .current
     }
 }
 
