@@ -12,6 +12,7 @@ struct StudyView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var studyMode: StudyMode = .scheduled
     @State private var dueCount = 0
+    @State private var newCardCount = 0
     @State private var isSessionActive = false
 
     var body: some View {
@@ -21,13 +22,13 @@ struct StudyView: View {
                     StudySessionView(mode: studyMode) {
                         sessionComplete()
                     }
-                } else if dueCount > 0 {
+                } else if hasCardsToStudy {
                     VStack(spacing: 24) {
-                        Image(systemName: "brain.head.profile")
+                        Image(systemName: modeIcon)
                             .font(.system(size: 60))
                             .foregroundStyle(.blue)
 
-                        Text("You have \(dueCount) cards due")
+                        Text(modeTitle)
                             .font(.title2)
                             .multilineTextAlignment(.center)
 
@@ -38,13 +39,14 @@ struct StudyView: View {
                             .padding(.horizontal)
 
                         Picker("Study Mode", selection: $studyMode) {
+                            Text("Learn New").tag(StudyMode.learning)
                             Text("Scheduled").tag(StudyMode.scheduled)
                             Text("Cram").tag(StudyMode.cram)
                         }
                         .pickerStyle(.segmented)
                         .padding(.horizontal)
                         .accessibilityLabel("Study mode selector")
-                        .accessibilityHint("Choose between scheduled review or cram all cards")
+                        .accessibilityHint("Choose between learning new cards, scheduled review, or cram all cards")
 
                         Button(action: startSession) {
                             Text("Start Studying")
@@ -55,7 +57,7 @@ struct StudyView: View {
                         .controlSize(.large)
                         .padding(.horizontal)
                         .accessibilityLabel("Start studying")
-                        .accessibilityHint("Begin study session with \(dueCount) cards")
+                        .accessibilityHint("Begin study session with \(studyMode == .learning ? newCardCount : dueCount) cards")
                     }
                     .padding()
                     .navigationTitle("Study")
@@ -77,6 +79,8 @@ struct StudyView: View {
 
     private var modeDescription: String {
         switch studyMode {
+        case .learning:
+            return "Learn new vocabulary for the first time. Cards will go through initial learning steps."
         case .scheduled:
             return "Review cards scheduled for today using the FSRS algorithm."
         case .cram:
@@ -84,24 +88,44 @@ struct StudyView: View {
         }
     }
 
+    private var hasCardsToStudy: Bool {
+        switch studyMode {
+        case .learning:
+            return newCardCount > 0
+        case .scheduled:
+            return dueCount > 0
+        case .cram:
+            return dueCount > 0 || newCardCount > 0
+        }
+    }
+
+    private var modeTitle: String {
+        switch studyMode {
+        case .learning:
+            return "\(newCardCount) new cards to learn"
+        case .scheduled:
+            return "\(dueCount) cards due"
+        case .cram:
+            let total = dueCount + newCardCount
+            return "\(total) cards to practice"
+        }
+    }
+
+    private var modeIcon: String {
+        switch studyMode {
+        case .learning:
+            return "plus.circle.fill"
+        case .scheduled:
+            return "brain.head.profile"
+        case .cram:
+            return "arrow.triangle.2.circlepath"
+        }
+    }
+
     private func refreshDueCount() {
         let scheduler = Scheduler(modelContext: modelContext)
-        if studyMode == .scheduled {
-            dueCount = scheduler.dueCardCount()
-        } else {
-            // For cram mode, count excludes new cards (consistent with fetchCramCards)
-            let stateDescriptor = FetchDescriptor<FSRSState>(
-                predicate: #Predicate<FSRSState> { state in
-                    state.stateEnum != "new"
-                }
-            )
-            do {
-                dueCount = try modelContext.fetchCount(stateDescriptor)
-            } catch {
-                Analytics.trackError("refresh_due_count", error: error)
-                dueCount = 0
-            }
-        }
+        dueCount = scheduler.dueCardCount()
+        newCardCount = scheduler.newCardCount()
     }
 
     private func startSession() {

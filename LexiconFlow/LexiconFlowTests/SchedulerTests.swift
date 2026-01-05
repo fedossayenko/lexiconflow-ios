@@ -237,6 +237,136 @@ struct SchedulerTests {
         #expect(cramCards[2].word == "high")
     }
 
+    // MARK: - Learning Mode Tests
+
+    @Test("Fetch new cards returns only cards with state = new")
+    func fetchNewCardsOnlyNew() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // Create new card
+        _ = createTestFlashcard(context: context, word: "new", state: .new)
+        // Create review card
+        _ = createTestFlashcard(context: context, word: "review", state: .review, dueOffset: -3600)
+        // Create learning card
+        _ = createTestFlashcard(context: context, word: "learning", state: .learning, dueOffset: -600)
+        try context.save()
+
+        let newCards = scheduler.fetchCards(mode: .learning, limit: 20)
+
+        #expect(newCards.count == 1)
+        #expect(newCards.allSatisfy { $0.fsrsState?.stateEnum == FlashcardState.new.rawValue })
+    }
+
+    @Test("Fetch new cards sorts by creation date ascending")
+    func fetchNewCardsSortedByCreationDate() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // Create cards with different creation dates
+        let card3 = createTestFlashcard(context: context, word: "card3", state: .new)
+        try context.save()
+
+        try await Task.sleep(for: .milliseconds(10))  // Ensure different timestamps
+
+        let card1 = createTestFlashcard(context: context, word: "card1", state: .new)
+        try context.save()
+
+        try await Task.sleep(for: .milliseconds(10))
+
+        let card2 = createTestFlashcard(context: context, word: "card2", state: .new)
+        try context.save()
+
+        // Manually set creation dates to control order
+        card1.createdAt = Date().addingTimeInterval(-300)  // 5 minutes ago (oldest)
+        card2.createdAt = Date().addingTimeInterval(-60)   // 1 minute ago (middle)
+        card3.createdAt = Date()                           // now (newest)
+        try context.save()
+
+        let newCards = scheduler.fetchCards(mode: .learning, limit: 20)
+
+        #expect(newCards.count == 3)
+        #expect(newCards[0].word == "card1", "Oldest card should be first")
+        #expect(newCards[1].word == "card2")
+        #expect(newCards[2].word == "card3", "Newest card should be last")
+    }
+
+    @Test("New card count excludes non-new cards")
+    func newCardCountExcludesReviewAndLearning() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // Create 5 new cards
+        for i in 1...5 {
+            _ = createTestFlashcard(context: context, word: "new\(i)", state: .new)
+        }
+
+        // Create 3 review cards
+        for i in 1...3 {
+            _ = createTestFlashcard(context: context, word: "review\(i)", state: .review, dueOffset: -3600)
+        }
+
+        // Create 2 learning cards
+        for i in 1...2 {
+            _ = createTestFlashcard(context: context, word: "learning\(i)", state: .learning, dueOffset: -600)
+        }
+
+        try context.save()
+
+        let count = scheduler.newCardCount()
+
+        #expect(count == 5, "Should count only new cards")
+    }
+
+    @Test("Learning mode processes reviews with FSRS")
+    func learningModeProcessReview() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        let newCard = createTestFlashcard(context: context, word: "newcard", state: .new)
+        try context.save()
+
+        let initialState = newCard.fsrsState!
+        #expect(initialState.stateEnum == FlashcardState.new.rawValue)
+        #expect(initialState.stability == 0.0)
+
+        // Process first review in learning mode
+        let review = await scheduler.processReview(
+            flashcard: newCard,
+            rating: 2,  // Good
+            mode: .learning
+        )
+
+        #expect(review != nil)
+
+        // Card should transition from new to learning or review
+        let newState = newCard.fsrsState!
+        #expect(newState.stateEnum != FlashcardState.new.rawValue, "State should change from new")
+        #expect(newState.stability > 0, "Stability should be set after first review")
+        #expect(newState.lastReviewDate != nil, "Last review date should be cached")
+    }
+
+    @Test("Learning mode respects study limit")
+    func learningModeRespectsLimit() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // Create 25 new cards
+        for i in 1...25 {
+            _ = createTestFlashcard(context: context, word: "new\(i)", state: .new)
+        }
+        try context.save()
+
+        let cards = scheduler.fetchCards(mode: .learning, limit: 20)
+
+        #expect(cards.count == 20, "Should respect study limit")
+    }
+
     // MARK: - Review Processing Tests
 
     @Test("Process review in scheduled mode updates FSRS state")

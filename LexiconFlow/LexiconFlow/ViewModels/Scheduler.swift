@@ -18,6 +18,12 @@ enum StudyMode: Sendable {
     /// - Respects due dates and intervals
     case scheduled
 
+    /// Learning mode: New cards only (initial learning phase)
+    /// - Updates FSRS state after each review
+    /// - Cards go through learning steps before graduating to review state
+    /// - Ordered by creation date (oldest first)
+    case learning
+
     /// Cram mode: Review cards regardless of due date
     /// - Does NOT update FSRS state (for temporary review)
     /// - Selects cards by lowest stability (least learned)
@@ -50,7 +56,7 @@ final class Scheduler {
     /// Fetch cards ready for study
     ///
     /// - Parameters:
-    ///   - mode: Study mode (scheduled or cram)
+    ///   - mode: Study mode (scheduled, learning, or cram)
     ///   - limit: Maximum number of cards to return (defaults to AppSettings.studyLimit)
     /// - Returns: Array of flashcards ready for review
     func fetchCards(mode: StudyMode = .scheduled, limit: Int? = nil) -> [Flashcard] {
@@ -58,6 +64,8 @@ final class Scheduler {
         switch mode {
         case .scheduled:
             return fetchDueCards(limit: effectiveLimit)
+        case .learning:
+            return fetchNewCards(limit: effectiveLimit)
         case .cram:
             return fetchCramCards(limit: effectiveLimit)
         }
@@ -90,6 +98,36 @@ final class Scheduler {
     private func fetchCramCards(limit: Int) -> [Flashcard] {
         let sortBy = [SortDescriptor(\FSRSState.stability, order: .forward)]
         return fetchCards(limit: limit, predicate: nil, sortBy: sortBy, errorName: "fetch_cram_cards")
+    }
+
+    /// Fetch new cards for initial learning phase
+    ///
+    /// New cards are those that have never been reviewed (stateEnum == "new").
+    /// These cards go through FSRS learning steps before graduating to review state.
+    ///
+    /// - Parameter limit: Maximum number of cards to return
+    /// - Returns: Array of new flashcards, sorted by creation date ascending (oldest first)
+    private func fetchNewCards(limit: Int) -> [Flashcard] {
+        // Fetch states where stateEnum == "new"
+        let predicate = #Predicate<FSRSState> { state in
+            state.stateEnum == "new"
+        }
+
+        var stateDescriptor = FetchDescriptor<FSRSState>(predicate: predicate)
+
+        do {
+            let states = try modelContext.fetch(stateDescriptor)
+
+            // Convert to cards and sort by creation date (oldest first)
+            let cards = states.compactMap { $0.card }
+                .sorted { $0.createdAt < $1.createdAt }
+
+            return Array(cards.prefix(limit))
+        } catch {
+            Analytics.trackError("fetch_new_cards", error: error)
+            print("❌ Scheduler: Error fetching new cards: \(error)")
+            return []
+        }
     }
 
     /// Generic fetch method for cards with configurable predicate and sort
@@ -147,6 +185,27 @@ final class Scheduler {
         }
     }
 
+    /// Count total new cards available for learning
+    ///
+    /// New cards are those that have never been reviewed (stateEnum == "new").
+    ///
+    /// - Returns: Number of new cards awaiting initial review
+    func newCardCount() -> Int {
+        let stateDescriptor = FetchDescriptor<FSRSState>(
+            predicate: #Predicate<FSRSState> { state in
+                state.stateEnum == "new"
+            }
+        )
+
+        do {
+            return try modelContext.fetchCount(stateDescriptor)
+        } catch {
+            Analytics.trackError("new_card_count", error: error)
+            print("❌ Scheduler: Error counting new cards: \(error)")
+            return 0
+        }
+    }
+
     // MARK: - Review Processing
 
     /// Process a flashcard review
@@ -159,11 +218,12 @@ final class Scheduler {
     /// 5. Saves changes to the database
     ///
     /// In cram mode, the rating is logged but FSRS state is NOT updated.
+    /// In scheduled or learning mode, FSRS state is updated based on rating.
     ///
     /// - Parameters:
     ///   - flashcard: The flashcard being reviewed
     ///   - rating: The user's rating (0=Again, 1=Hard, 2=Good, 3=Easy)
-    ///   - mode: Study mode (scheduled or cram)
+    ///   - mode: Study mode (scheduled, learning, or cram)
     /// - Returns: The created FlashcardReview entry (or nil if save failed)
     func processReview(
         flashcard: Flashcard,
@@ -198,7 +258,7 @@ final class Scheduler {
             }
         }
 
-        // In scheduled mode, run the FSRS algorithm
+        // In scheduled or learning mode, run the FSRS algorithm
         do {
             // Get DTO from FSRSWrapper actor
             let result = try await FSRSWrapper.shared.processReview(

@@ -13,6 +13,7 @@ import CoreFoundation
 @testable import LexiconFlow
 
 /// Saves and restores the original hapticEnabled setting for test isolation.
+@MainActor
 private func withHapticEnabled<T>(_ enabled: Bool, operation: () throws -> T) rethrows -> T {
     let original = AppSettings.hapticEnabled
     AppSettings.hapticEnabled = enabled
