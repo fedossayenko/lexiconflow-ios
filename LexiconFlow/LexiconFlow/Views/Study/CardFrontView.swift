@@ -10,6 +10,14 @@ import SwiftUI
 struct CardFrontView: View {
     @Bindable var card: Flashcard
 
+    // MARK: - Animation State
+
+    /// Controls the blur radius for the blur-into-glass effect
+    @State private var blurRadius: CGFloat = 0
+
+    /// Controls the content opacity for smooth morphing transitions
+    @State private var contentOpacity: Double = 1
+
     var body: some View {
         VStack(spacing: 24) {
             Spacer()
@@ -51,8 +59,31 @@ struct CardFrontView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
+        .blur(radius: blurRadius)
+        .opacity(contentOpacity)
+        .onAppear {
+            // Animate from glass blur to clear on appearance
+            withAnimation(.easeOut(duration: 0.4)) {
+                blurRadius = 0
+                contentOpacity = 1
+            }
+        }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Card front")
+    }
+
+    // MARK: - Transition Animation
+
+    /// Prepares the view for the blur-into-glass transition effect.
+    ///
+    /// When the card is about to be removed (flipped to back), this method
+    /// animates the blur radius and opacity to create a morphing effect where
+    /// the content blurs into glass before disappearing.
+    func prepareForTransition() {
+        withAnimation(.easeIn(duration: 0.3)) {
+            blurRadius = 20
+            contentOpacity = 0.6
+        }
     }
 }
 
