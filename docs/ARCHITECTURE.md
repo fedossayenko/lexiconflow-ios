@@ -528,66 +528,219 @@ class AudioService {
 
 ## Haptic Feedback
 
-### CoreHaptics Patterns
+### Architecture Overview
+
+Lexicon Flow uses **CoreHaptics** (CHHapticEngine) for custom haptic patterns with graceful **UIKit fallback** for devices without haptic capability. The implementation follows the "Liquid Glass" design philosophy with nuanced, direction-specific feedback.
+
+### HapticService Implementation
 
 ```swift
+import UIKit
 import CoreHaptics
 
-@Actor
+@MainActor
 class HapticService {
-    private var engine: CHHapticEngine?
+    static let shared = HapticService()
 
-    func setup() async throws {
-        engine = try CHHapticEngine()
-        try engine?.start()
+    // CoreHaptics engine (iOS 13+)
+    private var hapticEngine: CHHapticEngine?
+
+    // UIKit fallback for older devices
+    private var lightGenerator: UIImpactFeedbackGenerator?
+    private var mediumGenerator: UIImpactFeedbackGenerator?
+    private var heavyGenerator: UIImpactFeedbackGenerator?
+
+    // Device capability detection
+    private var supportsHaptics: Bool {
+        CHHapticEngine.capabilitiesForHardware().supportsHaptics
     }
 
-    func playRatingFeedback(_ rating: Rating) async {
-        guard let engine = engine else { return }
+    private init() {
+        setupHapticEngine()
+    }
 
-        let pattern: CHHapticPattern
+    private func setupHapticEngine() {
+        guard supportsHaptics else { return }
 
-        switch rating {
-        case .again:
-            pattern = try! hapticPattern(
-                intensity: 1.0, sharpness: 0.8, duration: 0.1
-            )
-        case .hard:
-            pattern = try! hapticPattern(
-                intensity: 0.7, sharpness: 0.6, duration: 0.08
-            )
-        case .good:
-            pattern = try! hapticPattern(
-                intensity: 0.5, sharpness: 0.3, duration: 0.05
-            )
-        case .easy:
-            pattern = try! hapticPattern(
-                intensity: 0.3, sharpness: 0.1, duration: 0.03
-            )
+        do {
+            hapticEngine = try CHHapticEngine()
+
+            // Handle engine stopped (common in backgrounding)
+            hapticEngine?.stoppedHandler = { reason in
+                logger.info("Haptic engine stopped: \(reason.rawValue)")
+            }
+
+            // Auto-restart on reset
+            hapticEngine?.resetHandler = { [weak self] in
+                logger.info("Haptic engine reset handler triggered")
+                self?.setupHapticEngine()
+            }
+
+            try hapticEngine?.start()
+            logger.info("CoreHaptics engine started successfully")
+        } catch {
+            logger.error("Failed to create haptic engine: \(error)")
+            Analytics.trackError("haptic_engine_failed", error: error)
+            hapticEngine = nil
         }
-
-        try? engine.execute(pattern)
-    }
-
-    private func hapticPattern(
-        intensity: Float,
-        sharpness: Float,
-        duration: TimeInterval
-    ) throws -> CHHapticPattern {
-        try CHHapticPattern(
-            events: [
-                CHHapticEvent(
-                    eventType: .hapticTransient,
-                    time: 0,
-                    intensity: intensity,
-                    sharpness: sharpness
-                )
-            ],
-            parameters: []
-        )
     }
 }
 ```
+
+### Custom Haptic Patterns
+
+Each swipe direction uses a distinct haptic pattern with unique intensity and sharpness curves:
+
+| Direction | Rating | Pattern Description | Intensity | Sharpness |
+|-----------|--------|-------------------|-----------|-----------|
+| Right | Good | Rising positive feedback | 0.7 × progress | 0.8 |
+| Left | Again | Light, needs practice | 0.4 × progress | 0.3 |
+| Up | Easy | Heavy, very easy | 0.9 × progress | 1.0 |
+| Down | Hard | Medium difficulty | 0.6 × progress | 0.5 |
+
+```swift
+// Example: Swipe Right (Good) pattern
+private func createSwipeRightPattern(intensity: CGFloat) throws -> CHHapticPattern {
+    let events = [
+        CHHapticEvent(
+            eventType: .hapticTransient,
+            parameters: [
+                CHHapticEventParameter(parameterID: .hapticIntensity, value: intensity * 0.7),
+                CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.8)
+            ],
+            relativeTime: 0
+        )
+    ]
+    return try CHHapticPattern(events: events, parameters: [])
+}
+```
+
+### Notification Patterns
+
+Completion events use custom temporal patterns:
+
+| Event | Pattern | Description |
+|-------|---------|-------------|
+| Success | Double tap | Two haptics with decreasing intensity (1.0 → 0.7) |
+| Warning | Single tap | Medium intensity for attention (0.7, 0.6) |
+| Error | Sharp tap | High intensity for critical feedback (1.0, 1.0) |
+
+```swift
+// Success pattern (double tap)
+private func createSuccessPattern() throws -> CHHapticPattern {
+    let events = [
+        CHHapticEvent(
+            eventType: .hapticTransient,
+            parameters: [
+                CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
+                CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.7)
+            ],
+            relativeTime: 0
+        ),
+        CHHapticEvent(
+            eventType: .hapticTransient,
+            parameters: [
+                CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.7),
+                CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5)
+            ],
+            relativeTime: 0.1  // 100ms delay
+        )
+    ]
+    return try CHHapticPattern(events: events, parameters: [])
+}
+```
+
+### Graceful Degradation Strategy
+
+```swift
+func triggerSwipe(direction: SwipeDirection, progress: CGFloat) {
+    guard AppSettings.hapticEnabled else { return }
+    guard progress > 0.3 else { return }  // Threshold to prevent spam
+
+    // Try CoreHaptics first
+    if let engine = hapticEngine {
+        triggerCoreHapticSwipe(direction: direction, progress: progress, engine: engine)
+    } else {
+        // Fall back to UIKit
+        triggerUIKitSwipe(direction: direction, progress: progress)
+    }
+}
+
+private func triggerCoreHapticSwipe(direction: SwipeDirection, progress: CGFloat, engine: CHHapticEngine) {
+    do {
+        let pattern = try createPattern(for: direction, intensity: progress)
+        let player = try engine.makePlayer(with: pattern)
+        try player.start(atTime: 0)
+    } catch {
+        logger.error("Failed to play CoreHaptics swipe: \(error)")
+        Analytics.trackError("haptic_swipe_failed", error: error)
+        // Fallback to UIKit on failure
+        triggerUIKitSwipe(direction: direction, progress: progress)
+    }
+}
+```
+
+### Lifecycle Management
+
+HapticService integrates with app lifecycle to manage engine state:
+
+```swift
+// In LexiconFlowApp.swift
+@Environment(\.scenePhase) private var scenePhase
+
+var body: some Scene {
+    WindowGroup {
+        ContentView()
+    }
+    .onChange(of: scenePhase) { oldPhase, newPhase in
+        handleScenePhaseChange(from: oldPhase, to: newPhase)
+    }
+}
+
+private func handleScenePhaseChange(from oldPhase: ScenePhase, to newPhase: ScenePhase) {
+    switch newPhase {
+    case .background:
+        HapticService.shared.reset()  // Free resources
+    case .active:
+        if oldPhase == .background || oldPhase == .inactive {
+            HapticService.shared.restartEngine()  // Restart engine
+        }
+    default:
+        break
+    }
+}
+```
+
+### Haptic Throttling
+
+FlashcardView throttles haptic feedback to prevent excessive vibration:
+
+```swift
+// In FlashcardView.swift
+private enum AnimationConstants {
+    static let hapticThrottleInterval: TimeInterval = 0.08  // Max 12.5 haptics/second
+}
+
+@State private var lastHapticTime = Date()
+
+// In DragGesture.onChanged
+let now = Date()
+if now.timeIntervalSince(lastHapticTime) >= AnimationConstants.hapticThrottleInterval {
+    HapticService.shared.triggerSwipe(
+        direction: result.direction.hapticDirection,
+        progress: result.progress
+    )
+    lastHapticTime = now
+}
+```
+
+### Usage Guidelines
+
+1. **Respect User Settings**: Always check `AppSettings.hapticEnabled` before triggering
+2. **Use Progress Threshold**: Only trigger swipes when `progress > 0.3` to prevent spam
+3. **Follow Direction Mapping**: Use `CardGestureViewModel.SwipeDirection.hapticDirection` for consistency
+4. **Throttle Rapid Events**: Use `hapticThrottleInterval` (80ms) for high-frequency events
+5. **Handle Errors Gracefully**: CoreHaptics failures fall back to UIKit automatically
 
 ---
 

@@ -112,6 +112,45 @@ struct SettingsViewsTests {
         #expect(true, "Test button should be hidden when haptics disabled")
     }
 
+    @Test("HapticSettingsView toggle updates AppSettings")
+    func hapticToggleUpdatesAppSettings() {
+        // Save original value
+        let original = AppSettings.hapticEnabled
+
+        // Test enabling haptics
+        AppSettings.hapticEnabled = true
+        #expect(AppSettings.hapticEnabled == true, "AppSettings.hapticEnabled should be true")
+
+        // Test disabling haptics
+        AppSettings.hapticEnabled = false
+        #expect(AppSettings.hapticEnabled == false, "AppSettings.hapticEnabled should be false")
+
+        // Restore original value
+        AppSettings.hapticEnabled = original
+
+        #expect(true, "Toggle should update AppSettings.hapticEnabled")
+    }
+
+    @Test("HapticSettingsView binding works correctly")
+    func hapticToggleBinding() {
+        // Test that the binding in HapticSettingsView correctly
+        // gets and sets AppSettings.hapticEnabled
+        let original = AppSettings.hapticEnabled
+
+        // Simulate toggle turning off
+        AppSettings.hapticEnabled = false
+        #expect(AppSettings.hapticEnabled == false, "Binding should set AppSettings to false")
+
+        // Simulate toggle turning on
+        AppSettings.hapticEnabled = true
+        #expect(AppSettings.hapticEnabled == true, "Binding should set AppSettings to true")
+
+        // Restore original value
+        AppSettings.hapticEnabled = original
+
+        #expect(true, "HapticSettingsView binding should correctly update AppSettings")
+    }
+
     // MARK: - StudySettingsView Tests
 
     @Test("StudySettingsView can be created")

@@ -307,6 +307,44 @@ struct MyView: View {
 ```
 **Rationale**: Silent failures create poor UX. Users need to know when operations fail.
 
+### 15. CoreHaptics with UIKit Fallback Pattern
+**Use CoreHaptics for custom haptic patterns with graceful UIKit fallback:**
+```swift
+// HapticService.swift
+@MainActor
+class HapticService {
+    static let shared = HapticService()
+
+    private var hapticEngine: CHHapticEngine?
+    private var fallbackLight: UIImpactFeedbackGenerator?
+    private var fallbackMedium: UIImpactFeedbackGenerator?
+    private var fallbackHeavy: UIImpactFeedbackGenerator?
+
+    private var supportsHaptics: Bool {
+        CHHapticEngine.capabilitiesForHardware().supportsHaptics
+    }
+
+    func triggerSwipe(direction: SwipeDirection, progress: CGFloat) {
+        guard AppSettings.hapticEnabled else { return }
+        guard progress > 0.3 else { return }
+
+        if supportsHaptics, let engine = hapticEngine {
+            triggerCoreHapticSwipe(direction: direction, progress: progress, engine: engine)
+        } else {
+            triggerUIKitSwipe(direction: direction, progress: progress)
+        }
+    }
+}
+```
+**Key Features:**
+- Device capability detection with `CHHapticEngine.capabilitiesForHardware()`
+- Custom haptic patterns for each swipe direction
+- Graceful UIKit fallback for older devices
+- Engine lifecycle management (setup, reset, restart)
+- Analytics tracking for haptic failures
+
+**Rationale**: CoreHaptics enables "Liquid Glass" haptic design with custom temporal patterns, while UIKit fallback ensures compatibility.
+
 ## Project Structure
 
 ```

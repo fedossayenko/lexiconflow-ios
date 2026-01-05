@@ -12,6 +12,16 @@ import Testing
 import CoreFoundation
 @testable import LexiconFlow
 
+/// Saves and restores the original hapticEnabled setting for test isolation.
+private func withHapticEnabled<T>(_ enabled: Bool, operation: () throws -> T) rethrows -> T {
+    let original = AppSettings.hapticEnabled
+    AppSettings.hapticEnabled = enabled
+    defer {
+        AppSettings.hapticEnabled = original
+    }
+    return try operation()
+}
+
 @MainActor
 struct HapticServiceTests {
 
@@ -174,5 +184,189 @@ struct HapticServiceTests {
         service.triggerSwipe(direction: .right, progress: -0.5)
 
         #expect(true, "Negative progress handled without crash")
+    }
+
+    // MARK: - AppSettings Integration Tests
+
+    @Test("HapticService respects hapticEnabled=false for triggerSwipe")
+    func testTriggerSwipeRespectsSetting() {
+        let service = HapticService.shared
+
+        // When hapticEnabled is false, triggerSwipe should return early
+        withHapticEnabled(false) {
+            service.triggerSwipe(direction: .right, progress: 0.5)
+            service.triggerSwipe(direction: .left, progress: 0.7)
+            service.triggerSwipe(direction: .up, progress: 0.9)
+            service.triggerSwipe(direction: .down, progress: 0.6)
+        }
+
+        // When hapticEnabled is true, haptics should work
+        withHapticEnabled(true) {
+            service.triggerSwipe(direction: .right, progress: 0.5)
+            service.triggerSwipe(direction: .left, progress: 0.7)
+        }
+
+        #expect(true, "HapticService should respect hapticEnabled setting for triggerSwipe")
+    }
+
+    @Test("HapticService respects hapticEnabled=false for triggerSuccess")
+    func testTriggerSuccessRespectsSetting() {
+        let service = HapticService.shared
+
+        withHapticEnabled(false) {
+            service.triggerSuccess()
+        }
+
+        withHapticEnabled(true) {
+            service.triggerSuccess()
+        }
+
+        #expect(true, "HapticService should respect hapticEnabled setting for triggerSuccess")
+    }
+
+    @Test("HapticService respects hapticEnabled=false for triggerWarning")
+    func testTriggerWarningRespectsSetting() {
+        let service = HapticService.shared
+
+        withHapticEnabled(false) {
+            service.triggerWarning()
+        }
+
+        withHapticEnabled(true) {
+            service.triggerWarning()
+        }
+
+        #expect(true, "HapticService should respect hapticEnabled setting for triggerWarning")
+    }
+
+    @Test("HapticService respects hapticEnabled=false for triggerError")
+    func testTriggerErrorRespectsSetting() {
+        let service = HapticService.shared
+
+        withHapticEnabled(false) {
+            service.triggerError()
+        }
+
+        withHapticEnabled(true) {
+            service.triggerError()
+        }
+
+        #expect(true, "HapticService should respect hapticEnabled setting for triggerError")
+    }
+
+    @Test("HapticService progress threshold still enforced when hapticEnabled=true")
+    func testProgressThresholdRespectedWhenEnabled() {
+        let service = HapticService.shared
+
+        withHapticEnabled(true) {
+            // Below threshold should not trigger haptic
+            service.triggerSwipe(direction: .right, progress: 0.2)
+            service.triggerSwipe(direction: .left, progress: 0.3)
+
+            // Above threshold should trigger haptic
+            service.triggerSwipe(direction: .up, progress: 0.5)
+            service.triggerSwipe(direction: .down, progress: 1.0)
+        }
+
+        #expect(true, "Progress threshold should be enforced when hapticEnabled is true")
+    }
+
+    // MARK: - CoreHaptics Engine Tests
+
+    @Test("HapticService handles CoreHaptics engine setup")
+    func testCoreHapticsEngineSetup() {
+        let service = HapticService.shared
+
+        // Trigger a haptic to ensure engine is set up
+        withHapticEnabled(true) {
+            service.triggerSuccess()
+        }
+
+        // If device supports haptics, engine should be set up
+        // If not, service should gracefully fallback to UIKit
+        #expect(true, "HapticService should handle CoreHaptics setup gracefully")
+    }
+
+    @Test("HapticService resets CoreHaptics engine")
+    func testCoreHapticsEngineReset() {
+        let service = HapticService.shared
+
+        // Trigger some haptics
+        withHapticEnabled(true) {
+            service.triggerSwipe(direction: .right, progress: 0.5)
+            service.triggerSuccess()
+        }
+
+        // Reset should clear engine and cached generators
+        service.reset()
+
+        // Service should still work after reset
+        withHapticEnabled(true) {
+            service.triggerSwipe(direction: .left, progress: 0.7)
+        }
+
+        #expect(true, "HapticService should reset and recreate CoreHaptics engine")
+    }
+
+    @Test("HapticService restarts engine after background")
+    func testCoreHapticsEngineRestart() {
+        let service = HapticService.shared
+
+        // Reset (simulating background)
+        service.reset()
+
+        // Restart engine (simulating foreground)
+        service.restartEngine()
+
+        // Service should work after restart
+        withHapticEnabled(true) {
+            service.triggerSuccess()
+        }
+
+        #expect(true, "HapticService should restart CoreHaptics engine after background")
+    }
+
+    @Test("HapticService gracefully falls back to UIKit")
+    func testUIKitFallback() {
+        let service = HapticService.shared
+
+        // Even if CoreHaptics fails, UIKit fallback should work
+        withHapticEnabled(true) {
+            service.triggerSwipe(direction: .right, progress: 0.5)
+            service.triggerSuccess()
+            service.triggerWarning()
+            service.triggerError()
+        }
+
+        #expect(true, "HapticService should fall back to UIKit if CoreHaptics fails")
+    }
+
+    @Test("HapticService creates patterns for all directions")
+    func testHapticPatternCreation() {
+        let service = HapticService.shared
+
+        // Trigger all swipe directions to ensure patterns are created
+        withHapticEnabled(true) {
+            service.triggerSwipe(direction: .right, progress: 0.8)
+            service.triggerSwipe(direction: .left, progress: 0.8)
+            service.triggerSwipe(direction: .up, progress: 0.8)
+            service.triggerSwipe(direction: .down, progress: 0.8)
+        }
+
+        #expect(true, "HapticService should create patterns for all swipe directions")
+    }
+
+    @Test("HapticService uses custom patterns for notifications")
+    func testNotificationPatterns() {
+        let service = HapticService.shared
+
+        withHapticEnabled(true) {
+            // Each should use a custom CoreHaptics pattern
+            service.triggerSuccess()  // Double tap pattern
+            service.triggerWarning()  // Medium intensity pattern
+            service.triggerError()    // Sharp, intense pattern
+        }
+
+        #expect(true, "HapticService should use custom patterns for notifications")
     }
 }

@@ -8,15 +8,22 @@
 import SwiftUI
 
 struct HapticSettingsView: View {
-    @AppStorage("hapticEnabled") private var isEnabled = true
     @State private var isTesting = false
 
     private let hapticService = HapticService.shared
 
+    /// Binding to AppSettings.hapticEnabled following centralized pattern
+    private var isEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { AppSettings.hapticEnabled },
+            set: { AppSettings.hapticEnabled = $0 }
+        )
+    }
+
     var body: some View {
         Form {
             Section {
-                Toggle("Haptic Feedback", isOn: $isEnabled)
+                Toggle("Haptic Feedback", isOn: isEnabledBinding)
                     .accessibilityLabel("Enable haptic feedback")
             } header: {
                 Text("Feedback")
@@ -24,7 +31,7 @@ struct HapticSettingsView: View {
                 Text("Haptic feedback during card swipes and ratings.")
             }
 
-            if isEnabled {
+            if AppSettings.hapticEnabled {
                 Button {
                     testHaptic()
                 } label: {

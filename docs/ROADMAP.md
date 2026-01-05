@@ -108,14 +108,18 @@ This document outlines the phased development approach for Lexicon Flow, from in
 - [ ] Implement navigation transitions between views
 
 ### Week 8: Haptics & Audio Feedback
-- [ ] Design `CoreHaptics` patterns:
-  - Again: Heavy thud
-  - Hard: Firm press
-  - Good: Crisp click
-  - Easy: Light tap
+- [x] Design `CoreHaptics` patterns:
+  - Again: Light, soft haptic (0.4 intensity, 0.3 sharpness)
+  - Hard: Medium difficulty (0.6 intensity, 0.5 sharpness)
+  - Good: Rising positive feedback (0.7 intensity, 0.8 sharpness)
+  - Easy: Heavy, very easy (0.9 intensity, 1.0 sharpness)
+- [x] Implement graceful UIKit fallback for older devices
+- [x] Add device capability detection
+- [x] Implement haptic throttling (80ms interval)
+- [x] Add haptic lifecycle management (background/foreground)
+- [x] Create comprehensive test coverage (~40 new tests)
 - [ ] Implement harmonic chimes for streak building
 - [ ] Add audio feedback toggle in settings
-- [ ] Test haptic intensity levels
 - [ ] A/B test gesture vs. button grading
 
 **Exit Criteria:**
