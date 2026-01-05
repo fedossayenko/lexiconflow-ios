@@ -210,22 +210,22 @@ final class TranslationService {
 
     // MARK: - API Models
 
-    private struct TranslationRequest: Codable {
+    private struct TranslationRequest: Codable, Sendable {
         let model: String
         let temperature: Double
         let messages: [Message]
 
-        struct Message: Codable {
+        struct Message: Codable, Sendable {
             let role: String
             let content: String
         }
     }
 
     /// Translation response from Z.ai API
-    struct TranslationResponse: Codable {
+    struct TranslationResponse: Codable, Sendable {
         let items: [TranslationItem]
 
-        struct TranslationItem: Codable {
+        struct TranslationItem: Codable, Sendable {
             let targetWord: String
             let contextSentence: String
             let targetTranslation: String  // Generic field for any language
@@ -703,13 +703,13 @@ final class TranslationService {
 
     // MARK: - Response Models
 
-    private struct ZAIResponse: Codable {
+    private struct ZAIResponse: Codable, Sendable {
         let choices: [Choice]
 
-        struct Choice: Codable {
+        struct Choice: Codable, Sendable {
             let message: Message
 
-            struct Message: Codable {
+            struct Message: Codable, Sendable {
                 let content: String
             }
         }

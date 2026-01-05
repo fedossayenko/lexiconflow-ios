@@ -68,7 +68,7 @@ enum AppSettings {
     // MARK: - Types
 
     /// Dark mode preference options
-    enum DarkModePreference: String, CaseIterable {
+    enum DarkModePreference: String, CaseIterable, Sendable {
         case system = "system"
         case light = "light"
         case dark = "dark"
@@ -91,7 +91,7 @@ enum AppSettings {
     }
 
     /// Study mode options
-    enum StudyModeOption: String, CaseIterable {
+    enum StudyModeOption: String, CaseIterable, Sendable {
         case scheduled = "scheduled"
         case cram = "cram"
 

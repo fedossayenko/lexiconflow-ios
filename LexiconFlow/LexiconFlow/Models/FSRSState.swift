@@ -96,7 +96,7 @@ final class FSRSState {
 /// Card learning state
 ///
 /// NOTE: Renamed from CardState to FlashcardState to avoid conflict with FSRS.CardState
-enum FlashcardState: String {
+enum FlashcardState: String, Sendable {
     /// Never been reviewed - first appearance
     case new
 

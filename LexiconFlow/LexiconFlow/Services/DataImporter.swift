@@ -207,65 +207,6 @@ final class DataImporter {
         return stats
     }
 
-    // MARK: - Import Strategies
-
-    /// Import cards with automatic deduplication strategy
-    ///
-    /// - Parameters:
-    ///   - cards: Cards to import
-    ///   - strategy: How to handle duplicates
-    ///   - deck: Optional deck
-    /// - Returns: Import result
-    func importCardsWithStrategy(
-        _ cards: [FlashcardData],
-        strategy: DuplicateStrategy = .skip,
-        deck: Deck? = nil
-    ) async -> ImportResult {
-        switch strategy {
-        case .skip:
-            return await importCards(cards, into: deck)
-
-        case .update:
-            return await importCardsWithUpdate(cards, into: deck)
-
-        case .replace:
-            return await importCardsWithReplace(cards, into: deck)
-        }
-    }
-
-    /// Import cards updating existing ones
-    private func importCardsWithUpdate(
-        _ cards: [FlashcardData],
-        into deck: Deck?
-    ) async -> ImportResult {
-        // Update strategy not yet implemented
-        var result = ImportResult()
-        result.errors.append(
-            ImportError(
-                batchNumber: 0,
-                error: ImportError.unsupportedStrategy("Update strategy not yet implemented. Use .skip or .replace strategies."),
-                cardWord: nil
-            )
-        )
-        return result
-    }
-
-    /// Import cards replacing existing ones
-    private func importCardsWithReplace(
-        _ cards: [FlashcardData],
-        into deck: Deck?
-    ) async -> ImportResult {
-        // Replace strategy not yet implemented
-        var result = ImportResult()
-        result.errors.append(
-            ImportError(
-                batchNumber: 0,
-                error: ImportError.unsupportedStrategy("Replace strategy not yet implemented. Use .skip strategy."),
-                cardWord: nil
-            )
-        )
-        return result
-    }
 }
 
 // MARK: - Supporting Types
@@ -348,28 +289,6 @@ struct ImportError: Sendable {
     let batchNumber: Int
     let error: Error
     let cardWord: String?
-
-    /// Create an unsupported strategy error
-    static func unsupportedStrategy(_ message: String) -> Error {
-        UnsupportedStrategyError(message: message)
-    }
-}
-
-/// Error for unsupported import strategies
-private struct UnsupportedStrategyError: Error, Sendable {
-    let message: String
-}
-
-/// Strategy for handling duplicate cards
-enum DuplicateStrategy {
-    /// Skip duplicates, keep existing
-    case skip
-
-    /// Update existing cards with new data
-    case update
-
-    /// Delete existing and insert new
-    case replace
 }
 
 // MARK: - Array Chunking Extension

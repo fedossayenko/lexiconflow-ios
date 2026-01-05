@@ -59,6 +59,65 @@ xcodebuild test \
 - **Scheduler**: `@MainActor` view model that applies DTO updates to SwiftData models
 - **DTO Pattern**: Data transfer objects prevent cross-actor concurrency issues
 
+### SwiftData Concurrency Architecture
+
+**Why SwiftData Models Cannot Be Actor-Isolated:**
+
+SwiftData `@Model` classes handle their own concurrency internally via `ModelContext`. Adding `actor` to a SwiftData model would break persistence and cause compile errors. The current architecture is the CORRECT approach for Swift 6 + SwiftData.
+
+**Data Flow:**
+```
+Actor (FSRSWrapper) → DTO (FSRSReviewResult) → MainActor (Scheduler) → SwiftData Models
+```
+
+**Key Principles:**
+1. **Models**: Standard `@Model` classes (no actor isolation)
+   - SwiftData handles model concurrency internally
+   - All model mutations must happen through a `ModelContext`
+
+2. **Business Logic**: `@MainActor` isolated for safe SwiftData access
+   - FSRSWrapper: `@MainActor` - thread-safe algorithm wrapper
+   - Scheduler: `@MainActor` - safe SwiftData mutations
+   - StudySessionViewModel: `@MainActor` - session state management
+
+3. **DTO Pattern**: Return `Sendable` structs from actors, not models
+   - `FSRSReviewResult`: `Sendable` struct with updated values
+   - Prevents cross-actor model mutations
+   - Caller (Scheduler) applies DTO updates on `@MainActor`
+
+4. **Pure Functions**: No actor isolation needed
+   - DateMath: Pure functions using `Calendar.autoupdatingCurrent`
+   - Safe to call from any context
+
+**Example:**
+```swift
+// ✅ CORRECT: Actor returns DTO, MainActor applies updates
+@MainActor
+func processReview(flashcard: Flashcard, rating: Int) async -> FlashcardReview? {
+    // 1. Call actor (returns DTO)
+    let dto = try FSRSWrapper.shared.processReview(
+        flashcard: flashcard,
+        rating: rating
+    )
+
+    // 2. Apply DTO updates to model (safe on @MainActor)
+    flashcard.fsrsState?.stability = dto.stability
+    flashcard.fsrsState?.difficulty = dto.difficulty
+    flashcard.fsrsState?.dueDate = dto.dueDate
+    flashcard.fsrsState?.stateEnum = dto.stateEnum
+
+    // 3. Save to SwiftData
+    try modelContext.save()
+
+    return review
+}
+
+// ❌ AVOID: Returning models from actors
+actor MyActor {
+    func getFlashcard() -> Flashcard { ... }  // DON'T DO THIS
+}
+```
+
 ### Key Components
 - **Flashcard**: Core vocabulary model (word, definition, phonetic, imageData)
 - **Deck**: Container/organizer for flashcards
