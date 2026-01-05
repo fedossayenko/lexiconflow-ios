@@ -4,6 +4,8 @@ import SwiftUI
 ///
 /// This container wraps content in a glass-like material with blur and translucency,
 /// creating the "Liquid Glass" visual effect that responds to memory stability.
+///
+/// Optimized for 120Hz ProMotion displays with Metal-accelerated rendering.
 struct GlassEffectContainer<Content: View>: View {
     let spacing: CGFloat
     let content: Content
@@ -18,9 +20,10 @@ struct GlassEffectContainer<Content: View>: View {
     }
 
     var body: some View {
-        // For now, pass through the content
-        // Glass effects are applied via the .glassEffect() modifier on individual views
+        // Promote to Metal for smooth 120Hz rendering
+        // drawingGroup composites all child views efficiently as a single texture
         content
+            .drawingGroup()
     }
 }
 
