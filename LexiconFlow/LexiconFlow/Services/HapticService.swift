@@ -194,4 +194,89 @@ class HapticService {
         mediumGenerator = nil
         heavyGenerator = nil
     }
+
+    // MARK: - Custom Haptic Patterns
+
+    /// Creates and plays a custom haptic pattern from haptic events.
+    ///
+    /// This helper function enables rich, multi-event haptic feedback by combining
+    /// multiple haptic events into a single pattern. Falls back to UIKit haptics
+    /// if CoreHaptics is unavailable.
+    ///
+    /// - Parameters:
+    ///   - events: Array of CHHapticEvent objects defining the pattern
+    ///   - intensity: Optional intensity multiplier (0.0-1.0). Defaults to AppSettings.hapticIntensity
+    ///
+    /// Example usage:
+    /// ```swift
+    /// let events = [
+    ///     CHHapticEvent(eventType: .hapticTransient, parameters: [
+    ///         CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
+    ///         CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.8)
+    ///     ], relativeTime: 0),
+    ///     CHHapticEvent(eventType: .hapticContinuous, parameters: [
+    ///         CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.5),
+    ///         CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5)
+    ///     ], relativeTime: 0.1, duration: 0.3)
+    /// ]
+    /// HapticService.shared.playCustomPattern(events: events)
+    /// ```
+    func playCustomPattern(
+        events: [CHHapticEvent],
+        intensity: Float = AppSettings.hapticIntensity
+    ) {
+        guard AppSettings.hapticEnabled else { return }
+
+        // Try CoreHaptics custom pattern first
+        if supportsHaptics, let engine = hapticEngine {
+            do {
+                // Scale event intensities by the provided intensity multiplier
+                let scaledEvents = events.map { event -> CHHapticEvent in
+                    let scaledParameters = event.parameters.map { param -> CHHapticEventParameter in
+                        if param.parameterID == .hapticIntensity {
+                            return CHHapticEventParameter(
+                                parameterID: .hapticIntensity,
+                                value: param.value * intensity
+                            )
+                        }
+                        return param
+                    }
+                    return CHHapticEvent(
+                        eventType: event.eventType,
+                        parameters: scaledParameters,
+                        relativeTime: event.relativeTime,
+                        duration: event.duration
+                    )
+                }
+
+                // Create pattern from scaled events
+                let pattern = try CHHapticPattern(events: scaledEvents, parameters: [])
+                let player = try engine.makePlayer(with: pattern)
+                try player.start(atTime: 0)
+                logger.debug("Playing custom haptic pattern with \(events.count) events")
+                return
+            } catch {
+                logger.warning("Failed to play custom haptic pattern: \(error.localizedDescription)")
+                Analytics.trackError("custom_haptic_failed", error: error)
+                // Fall through to UIKit fallback
+            }
+        }
+
+        // Fallback: trigger the first event as a UIKit impact
+        guard let firstEvent = events.first else { return }
+
+        let style: UIImpactFeedbackGenerator.FeedbackStyle
+        let eventIntensity = firstEvent.parameters.first { $0.parameterID == .hapticIntensity }?.value ?? 1.0
+
+        // Map intensity to impact style
+        switch eventIntensity {
+        case 0.0..<0.4: style = .light
+        case 0.4..<0.7: style = .medium
+        default: style = .heavy
+        }
+
+        let generator = getGenerator(style: style)
+        generator.prepare()
+        generator.impactOccurred(intensity: CGFloat(eventIntensity * intensity))
+    }
 }
