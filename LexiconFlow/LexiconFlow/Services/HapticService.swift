@@ -6,11 +6,13 @@
 //
 
 import UIKit
+import CoreHaptics
 
 /// Service for generating haptic feedback during study sessions.
 ///
 /// Provides directional haptic feedback during card swipes and confirmation
-/// haptics when ratings are submitted.
+/// haptics when ratings are submitted. Uses CoreHaptics for custom patterns
+/// with UIKit fallback for basic feedback.
 @MainActor
 class HapticService {
 
@@ -25,12 +27,69 @@ class HapticService {
         case down    // Hard rating
     }
 
-    /// Cached haptic generators for performance
+    /// CoreHaptics engine for custom haptic patterns.
+    private var hapticEngine: CHHapticEngine?
+
+    /// Flag indicating if CoreHaptics is supported and available.
+    private var supportsHaptics: Bool {
+        return CHHapticEngine.capabilitiesForHardware().supportsHaptics
+    }
+
+    /// Cached haptic generators for performance (UIKit fallback)
     private var lightGenerator: UIImpactFeedbackGenerator?
     private var mediumGenerator: UIImpactFeedbackGenerator?
     private var heavyGenerator: UIImpactFeedbackGenerator?
 
-    private init() {}
+    private init() {
+        setupHapticEngine()
+    }
+
+    /// Sets up the CoreHaptics engine with proper error handling.
+    ///
+    /// Attempts to create and start a CHHapticEngine for custom haptic patterns.
+    /// Falls back gracefully to UIKit haptics if CoreHaptics is unavailable.
+    private func setupHapticEngine() {
+        guard supportsHaptics else {
+            logger.debug("CoreHaptics not supported on this device")
+            return
+        }
+
+        do {
+            hapticEngine = try CHHapticEngine()
+
+            // Observe engine stop handler to restart if needed
+            hapticEngine?.stoppedHandler = { [weak self] reason in
+                logger.warning("Haptic engine stopped: \(reason.rawValue)")
+                self?.restartHapticEngine()
+            }
+
+            // Observe engine reset handler for configuration changes
+            hapticEngine?.resetHandler = { [weak self] in
+                logger.info("Haptic engine reset - reconfiguring")
+                self?.restartHapticEngine()
+            }
+
+            try hapticEngine?.start()
+            logger.debug("CoreHaptics engine started successfully")
+        } catch {
+            logger.warning("Failed to create CoreHaptics engine: \(error.localizedDescription)")
+            hapticEngine = nil
+        }
+    }
+
+    /// Restarts the haptic engine after it stops or resets.
+    ///
+    /// Called automatically by the stoppedHandler and resetHandler.
+    private func restartHapticEngine() {
+        guard supportsHaptics else { return }
+
+        do {
+            try hapticEngine?.start()
+            logger.debug("CoreHaptics engine restarted")
+        } catch {
+            logger.warning("Failed to restart CoreHaptics engine: \(error.localizedDescription)")
+        }
+    }
 
     /// Gets or creates a cached haptic generator for the given style.
     ///
@@ -121,11 +180,16 @@ class HapticService {
         generator.notificationOccurred(.error)
     }
 
-    /// Resets cached haptic generators.
+    /// Resets cached haptic generators and stops the haptic engine.
     ///
     /// Call this method to release cached generators, such as when receiving
     /// a memory warning or when the app backgrounds.
     func reset() {
+        // Stop CoreHaptics engine
+        hapticEngine?.stop()
+        hapticEngine = nil
+
+        // Release UIKit generators
         lightGenerator = nil
         mediumGenerator = nil
         heavyGenerator = nil
