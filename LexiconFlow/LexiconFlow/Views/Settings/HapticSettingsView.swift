@@ -20,15 +20,25 @@ struct HapticSettingsView: View {
         )
     }
 
+    /// Binding to AppSettings.audioEnabled following centralized pattern
+    private var audioEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { AppSettings.audioEnabled },
+            set: { AppSettings.audioEnabled = $0 }
+        )
+    }
+
     var body: some View {
         Form {
             Section {
+                Toggle("Audio Feedback", isOn: audioEnabledBinding)
+                    .accessibilityLabel("Enable audio feedback")
                 Toggle("Haptic Feedback", isOn: isEnabledBinding)
                     .accessibilityLabel("Enable haptic feedback")
             } header: {
                 Text("Feedback")
             } footer: {
-                Text("Haptic feedback during card swipes and ratings.")
+                Text("Audio and haptic feedback during study sessions.")
             }
 
             if AppSettings.hapticEnabled {

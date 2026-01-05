@@ -262,20 +262,6 @@ struct CardGestureViewModelTests {
         #expect(viewModel.offset == .zero, "State should remain default after multiple resets")
     }
 
-    // MARK: - GestureResult Tests
-
-    @Test(.disabled("DragGesture.Value cannot be constructed in tests"))
-    func testHandleGestureChangeNoDirection() {
-        // Disabled: SwiftUI doesn't expose DragGesture.Value initializer
-        // This test needs to be rewritten to use UI testing instead
-    }
-
-    @Test(.disabled("DragGesture.Value cannot be constructed in tests"))
-    func testHandleGestureChangeSuccess() {
-        // Disabled: SwiftUI doesn't expose DragGesture.Value initializer
-        // This test needs to be rewritten to use UI testing instead
-    }
-
     // MARK: - Haptic Direction Extension Tests
 
     @Test("Haptic direction extension works for all directions")
