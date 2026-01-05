@@ -17,6 +17,7 @@ struct FlashcardView: View {
     @StateObject private var gestureViewModel = CardGestureViewModel()
     @State private var isDragging = false
     @State private var lastHapticTime = Date()
+    @Namespace private var morphingNamespace
 
     // MARK: - Constants
 
@@ -63,15 +64,17 @@ struct FlashcardView: View {
         ZStack {
             if isFlipped {
                 CardBackView(card: card)
+                    .matchedGeometryEffect(id: "cardFace", namespace: morphingNamespace)
                     .transition(.asymmetric(
-                        insertion: .opacity,
-                        removal: .opacity
+                        insertion: .opacity.combined(with: .scale(scale: 0.95)),
+                        removal: .opacity.combined(with: .scale(scale: 1.05))
                     ))
             } else {
                 CardFrontView(card: card)
+                    .matchedGeometryEffect(id: "cardFace", namespace: morphingNamespace)
                     .transition(.asymmetric(
-                        insertion: .opacity,
-                        removal: .opacity
+                        insertion: .opacity.combined(with: .scale(scale: 0.95)),
+                        removal: .opacity.combined(with: .scale(scale: 1.05))
                     ))
             }
         }
