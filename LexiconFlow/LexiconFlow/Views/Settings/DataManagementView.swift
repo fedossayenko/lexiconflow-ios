@@ -21,6 +21,12 @@ struct DataManagementView: View {
     @State private var isExporting = false
     @State private var isImporting = false
 
+    // Performance testing state
+    @State private var showingPerformanceTestAlert = false
+    @State private var showingClearPerformanceTestDataAlert = false
+    @State private var performanceTestResultMessage: String?
+    @State private var showingPerformanceTestResult = false
+
     private let logger = Logger(subsystem: "com.lexiconflow.datamanagement", category: "DataManagement")
 
     var body: some View {
@@ -87,6 +93,25 @@ struct DataManagementView: View {
                 Text("Reset all FSRS progress. Cards will be marked as new but not deleted.")
             }
 
+            // Performance Testing Section
+            Section {
+                Button("Create Performance Test Deck (50 cards)") {
+                    showingPerformanceTestAlert = true
+                }
+
+                Button("Create Performance Test Decks (10, 50, 100 cards)") {
+                    createMultiplePerformanceTestDecks()
+                }
+
+                Button("Clear Performance Test Data", role: .destructive) {
+                    showingClearPerformanceTestDataAlert = true
+                }
+            } header: {
+                Text("Performance Testing")
+            } footer: {
+                Text("Generate test data to verify app performance with 50+ glass elements. Navigate to Decks to test scrolling performance.")
+            }
+
             // Statistics
             Section {
                 HStack {
@@ -121,6 +146,32 @@ struct DataManagementView: View {
             }
         } message: {
             Text("This will reset all card progress to \"new\" state but keep your cards. This action cannot be undone.")
+        }
+        .confirmationDialog("Create Performance Test Data", isPresented: $showingPerformanceTestAlert, titleVisibility: .visible) {
+            Button("Cancel", role: .cancel) { }
+            Button("Create 50 Cards") {
+                createPerformanceTestDeck(cardCount: 50)
+            }
+            Button("Create 100 Cards") {
+                createPerformanceTestDeck(cardCount: 100)
+            }
+        } message: {
+            Text("This will create a performance test deck with vocabulary cards for testing scroll performance with glass effects.")
+        }
+        .confirmationDialog("Clear Performance Test Data", isPresented: $showingClearPerformanceTestDataAlert, titleVisibility: .visible) {
+            Button("Cancel", role: .cancel) { }
+            Button("Clear Test Data", role: .destructive) {
+                clearPerformanceTestData()
+            }
+        } message: {
+            Text("This will delete all decks with 'Performance Test' in the name and their associated cards. This action cannot be undone.")
+        }
+        .alert("Performance Test Data Created", isPresented: $showingPerformanceTestResult) {
+            Button("OK") { }
+        } message: {
+            if let message = performanceTestResultMessage {
+                Text(message)
+            }
         }
         .alert("Import Complete", isPresented: $showingImportResult) {
             Button("OK") { }
@@ -325,6 +376,69 @@ struct DataManagementView: View {
                 logger.info("Reset progress for \(states.count) cards")
             } catch {
                 logger.error("Failed to reset progress: \(error)")
+            }
+        }
+    }
+
+    // MARK: - Performance Testing
+
+    /// Creates a performance test deck with specified number of cards
+    private func createPerformanceTestDeck(cardCount: Int) {
+        Task {
+            do {
+                let generator = PerformanceTestDataGenerator(modelContext: modelContext)
+                let deck = try generator.createPerformanceTestDeck(cardCount: cardCount)
+
+                await MainActor.run {
+                    performanceTestResultMessage = "Created performance test deck '\(deck.name)' with \(cardCount) cards.\n\nNavigate to Decks to test scrolling performance with \(cardCount) glass elements."
+                    showingPerformanceTestResult = true
+                }
+
+                logger.info("Created performance test deck with \(cardCount) cards")
+            } catch {
+                await MainActor.run {
+                    performanceTestResultMessage = "Failed to create performance test deck: \(error.localizedDescription)"
+                    showingPerformanceTestResult = true
+                }
+                logger.error("Failed to create performance test deck: \(error)")
+            }
+        }
+    }
+
+    /// Creates multiple performance test decks with varying card counts
+    private func createMultiplePerformanceTestDecks() {
+        Task {
+            do {
+                let generator = PerformanceTestDataGenerator(modelContext: modelContext)
+                let decks = try generator.createMultiplePerformanceTestDecks(cardCounts: [10, 50, 100])
+
+                await MainActor.run {
+                    let totalCards = decks.reduce(0) { $0 + $1.cards.count }
+                    performanceTestResultMessage = "Created \(decks.count) performance test decks with \(totalCards) total cards.\n\nDecks: 10 cards, 50 cards, 100 cards.\n\nNavigate to Decks to test scrolling performance with glass effects."
+                    showingPerformanceTestResult = true
+                }
+
+                logger.info("Created multiple performance test decks")
+            } catch {
+                await MainActor.run {
+                    performanceTestResultMessage = "Failed to create performance test decks: \(error.localizedDescription)"
+                    showingPerformanceTestResult = true
+                }
+                logger.error("Failed to create performance test decks: \(error)")
+            }
+        }
+    }
+
+    /// Clears all performance test data
+    private func clearPerformanceTestData() {
+        Task {
+            do {
+                let generator = PerformanceTestDataGenerator(modelContext: modelContext)
+                try generator.clearPerformanceTestData()
+
+                logger.info("Cleared performance test data")
+            } catch {
+                logger.error("Failed to clear performance test data: \(error)")
             }
         }
     }

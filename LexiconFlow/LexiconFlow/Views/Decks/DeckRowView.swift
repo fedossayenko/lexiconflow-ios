@@ -4,6 +4,9 @@
 //
 //  Single deck display in list
 //
+//  Uses glass effect for "Liquid Glass" UI design
+//  Performance optimized with .drawingGroup() for 120Hz ProMotion
+//
 
 import SwiftUI
 import SwiftData
@@ -44,6 +47,11 @@ struct DeckRowView: View {
 
             Spacer()
         }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        // Apply glass effect for "Liquid Glass" design
+        // Performance optimized: .drawingGroup() in GlassEffectModifier caches blurred background as Metal texture
+        .glassEffect(.regular, cornerRadius: 12)
     }
 }
 
