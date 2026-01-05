@@ -11,6 +11,8 @@ import OSLog
 
 @main
 struct LexiconFlowApp: App {
+    /// Scene phase for app lifecycle management
+    @Environment(\.scenePhase) private var scenePhase
     /// Shared SwiftData ModelContainer for the entire app
     /// - Persists to SQLite database (not in-memory)
     /// - CloudKit sync: DISABLED (will be enabled in Phase 4)
@@ -72,17 +74,29 @@ struct LexiconFlowApp: App {
         }
     }()
 
-    // Flag to check if we're using degraded storage
-    private var isUsingDegradedStorage: Bool {
-        // Check if container is in-memory or minimal
-        // This can be used by ContentView to show warning UI
-        sharedModelContainer.configurations.allSatisfy { $0.isStoredInMemoryOnly }
-    }
-
     var body: some Scene {
         WindowGroup {
             ContentView()
         }
         .modelContainer(sharedModelContainer)
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            handleScenePhaseChange(from: oldPhase, to: newPhase)
+        }
+    }
+
+    /// Handles app lifecycle phase changes.
+    private func handleScenePhaseChange(from oldPhase: ScenePhase, to newPhase: ScenePhase) {
+        switch newPhase {
+        case .background:
+            // Reset haptic engine when app goes to background to free resources
+            HapticService.shared.reset()
+        case .active:
+            // Restart haptic engine when app returns to foreground
+            if oldPhase == .background || oldPhase == .inactive {
+                HapticService.shared.restartEngine()
+            }
+        default:
+            break
+        }
     }
 }

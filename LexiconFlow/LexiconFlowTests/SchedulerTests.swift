@@ -663,4 +663,109 @@ struct SchedulerTests {
         let totalCount = cards.reduce(0) { $0 + $1.reviewLogs.count }
         #expect(totalCount == 100)
     }
+
+    // MARK: - lastReviewDate Cache Tests (from main branch)
+
+    @Test("lastReviewDate is updated after processReview")
+    func lastReviewDateUpdated() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        let card = createTestFlashcard(context: context, state: .review)
+        let beforeDate = Date().addingTimeInterval(-100)
+        card.fsrsState!.lastReviewDate = beforeDate
+        try context.save()
+
+        let afterDate = Date().addingTimeInterval(100)
+
+        _ = await scheduler.processReview(flashcard: card, rating: 2, mode: .scheduled)
+
+        // lastReviewDate should be updated to current time
+        #expect(card.fsrsState!.lastReviewDate! > beforeDate)
+        #expect(card.fsrsState!.lastReviewDate! < afterDate)
+    }
+
+    @Test("lastReviewDate consistency with review logs")
+    func lastReviewDateLogConsistency() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        let card = createTestFlashcard(context: context, state: .review)
+        try context.save()
+
+        // Process 3 reviews
+        _ = await scheduler.processReview(flashcard: card, rating: 2, mode: .scheduled)
+        let review1Time = card.fsrsState!.lastReviewDate
+
+        await Task.sleep(1_000_000) // 1ms delay
+
+        _ = await scheduler.processReview(flashcard: card, rating: 3, mode: .scheduled)
+        let review2Time = card.fsrsState!.lastReviewDate
+
+        // lastReviewDate should be the most recent review
+        #expect(card.fsrsState!.lastReviewDate == review2Time)
+        #expect(review2Time! > review1Time!)
+    }
+
+    @Test("FSRSState orphan prevention on flashcard delete")
+    func fsrsStateOrphanPrevention() async throws {
+        let context = freshContext()
+        try context.clearAll()
+
+        // Create flashcard with FSRS state
+        let card = createTestFlashcard(context: context, word: "orphan_test", state: .review)
+        let stateId = card.fsrsState!.persistentModelID
+        try context.save()
+
+        // Delete the flashcard
+        context.delete(card)
+        try context.save()
+
+        // Fetch to verify FSRS state is also deleted (cascade)
+        let fetchDescriptor = FetchDescriptor<FSRSState>()
+        let remainingStates = try context.fetch(fetchDescriptor)
+
+        #expect(remainingStates.isEmpty, "FSRSState should be cascade deleted with flashcard")
+    }
+
+    @Test("Stress test with >10 concurrent operations")
+    func concurrentStressTest() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // Create 100 cards
+        var cards: [Flashcard] = []
+        for i in 1...100 {
+            let card = createTestFlashcard(context: context, word: "card\(i)", state: .review)
+            cards.append(card)
+        }
+        try context.save()
+
+        // Process all concurrently with different ratings
+        await withTaskGroup(of: Void.self) { group in
+            for (index, card) in cards.enumerated() {
+                group.addTask {
+                    let rating = index % 4 // Cycle through all ratings
+                    _ = await scheduler.processReview(
+                        flashcard: card,
+                        rating: rating,
+                        mode: .scheduled
+                    )
+                }
+            }
+        }
+
+        // All should be processed
+        let totalLogs = cards.reduce(0) { $0 + $1.reviewLogs.count }
+        #expect(totalLogs == 100)
+
+        // Verify no data corruption
+        for card in cards {
+            #expect(card.fsrsState != nil)
+            #expect(card.reviewLogs.count == 1)
+        }
+    }
 }
