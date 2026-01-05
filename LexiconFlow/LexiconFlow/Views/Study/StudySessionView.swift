@@ -40,6 +40,9 @@ struct StudySessionView: View {
                             // Don't rely on viewModel.currentCard which might change
                             let cardToRate = currentCard
 
+                            // Trigger haptic feedback for gesture rating
+                            HapticService.shared.playRatingFeedback(rating: rating)
+
                             // Handle swipe-to-rate
                             Task {
                                 await viewModel.submitRating(rating.rawValue, card: cardToRate)
@@ -57,6 +60,10 @@ struct StudySessionView: View {
                             RatingButtonsView { rating in
                                 // Capture card reference before async
                                 let cardToRate = currentCard
+
+                                // Trigger haptic feedback for button rating
+                                HapticService.shared.playRatingFeedback(rating: rating)
+
                                 Task {
                                     await viewModel.submitRating(rating.rawValue, card: cardToRate)
                                     withAnimation {
