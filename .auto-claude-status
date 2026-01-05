@@ -3,7 +3,7 @@
   "spec": "011-fsrs-v5-algorithm-integration",
   "state": "building",
   "subtasks": {
-    "completed": 7,
+    "completed": 8,
     "total": 13,
     "in_progress": 1,
     "failed": 0
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 3,
+    "number": 4,
     "started_at": "2026-01-05T21:48:33.605534"
   },
-  "last_update": "2026-01-05T21:54:04.844766"
+  "last_update": "2026-01-05T21:57:29.076810"
 }
