@@ -26,10 +26,39 @@ LexiconFlowTests/
 └── AnalyticsTests.swift                # Analytics & benchmarking
 ```
 
-**Current Coverage** (as of commit ba73634):
-- Total tests: **131**
-- Test suites: **9**
+**Current Coverage** (as of January 2026):
+- Total tests: **370+**
+- Test suites: **24**
 - Target: >80% for new code
+
+### Test Suites (24 total)
+
+| Test Suite | Focus | Test Count |
+|------------|-------|------------|
+| FSRSWrapperTests | Algorithm DTO integration | ~20 |
+| SchedulerTests | Business logic, concurrency | ~30 |
+| ModelTests | SwiftData models | ~18 |
+| StudySessionViewModelTests | View model behavior | ~12 |
+| StudySessionViewTests | Study view integration | ~8 |
+| DateMathTests | Timezone-aware date math | ~26 |
+| EdgeCaseTests | Unicode, security, validation | ~40 |
+| FlashcardMigrationTests | Schema migration, backward compatibility | ~24 |
+| TranslationServiceTests | Batch translation API | ~42 |
+| KeychainManagerPersistenceTests | Keychain UTF-8 support | ~30 |
+| AddFlashcardViewTests | Add flashcard flow | ~23 |
+| AnalyticsTests | Event tracking | ~17 |
+| HapticServiceTests | Haptic feedback | ~15 |
+| CardGestureViewModelTests | Swipe gesture handling | ~12 |
+| DataImporterTests | CSV import | ~18 |
+| ErrorHandlingTests | Error scenarios | ~7 |
+| SettingsViewsTests | Settings views smoke tests | ~42 |
+| DeckListViewTests | Deck list view | ~8 |
+| DeckDetailViewTests | Deck detail view | ~10 |
+| FlashcardViewTests | Flashcard view | ~8 |
+| GlassEffectModifierTests | Glass effect modifier | ~5 |
+| MainTabViewTests | Main tab view | ~5 |
+| OnboardingTests | First-run flow | ~8 |
+| StudyViewTests | Study view | ~5 |
 
 ## Test Patterns
 
@@ -231,26 +260,35 @@ xcodebuild test \
 
 ### Coverage Areas
 
-- ✅ SwiftData models (relationships, cascades, validation)
+- ✅ SwiftData models (relationships, cascades, validation, migration)
 - ✅ ViewModels (business logic, state management)
-- ✅ Services (import, analytics, utilities)
+- ✅ Services (import, analytics, utilities, haptics)
 - ✅ Error scenarios (save failures, validation errors)
-- ⚠️ UI components (no SwiftUI view tests yet)
+- ✅ Concurrency (actor isolation, concurrent reviews)
+- ✅ Retrievability calculation accuracy
+- ✅ Clock skew and DST boundary handling
+- ✅ Database backward compatibility (v1.0 → v1.1)
+- ⚠️ UI components (smoke tests only, no SwiftUI view tests)
 - ⚠️ Integration tests (no end-to-end flows yet)
 
-### Coverage by Test Suite
+### Recent Test Additions (January 2026)
 
-| Test Suite | Focus | Test Count |
-|------------|-------|------------|
-| ModelTests | SwiftData models | ~18 |
-| SchedulerTests | Business logic | ~20 |
-| DataImporterTests | Batch import | ~18 |
-| StudySessionViewModelTests | View model behavior | ~12 |
-| OnboardingTests | First-run flow | ~8 |
-| ErrorHandlingTests | Error scenarios | ~7 |
-| FSRSWrapperTests | Algorithm integration | ~14 |
-| DateMathTests | Date utilities | ~17 |
-| AnalyticsTests | Event tracking | ~20 |
+#### FSRSWrapperTests
+- Retrievability formula accuracy tests
+- Retrievability clamping for extreme values
+- Clock skew with future lastReviewDate
+- DST boundary handling
+
+#### SchedulerTests
+- Concurrent reviews on same card
+- lastReviewDate consistency verification
+- FSRSState orphan prevention
+- Stress test with >10 concurrent operations
+
+#### FlashcardMigrationTests
+- Database backward compatibility tests
+- v1.0 to v1.1 migration defaults
+- Empty string vs nil handling
 
 ## Common Pitfalls
 

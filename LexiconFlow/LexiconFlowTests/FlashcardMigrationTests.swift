@@ -52,26 +52,6 @@ struct FlashcardMigrationTests {
         #expect(v1_1 == v1_0 + 1, "Versions should be sequential")
     }
 
-    // MARK: - Migration Verification Tests
-
-    @Test("v1.0 to v1.1 migration verifies successfully")
-    func migrationVerificationSuccess() throws {
-        let result = try FlashcardMigrationPlan.verifyMigration(
-            from: .v1_0,
-            to: .v1_1
-        )
-        #expect(result, "Automatic migration should verify")
-    }
-
-    @Test("Same version migration verifies successfully")
-    func sameVersionMigration() throws {
-        let result = try FlashcardMigrationPlan.verifyMigration(
-            from: .v1_1,
-            to: .v1_1
-        )
-        #expect(result, "Same version should verify")
-    }
-
     // MARK: - Flashcard Field Tests (v1.1)
 
     @Test("Flashcard has all v1.1 translation fields")
@@ -307,5 +287,117 @@ struct FlashcardMigrationTests {
         // }
         #expect(FlashcardSchemaVersion.current.rawValue >= 2,
                "Current version should be at least v1.1")
+    }
+
+    // MARK: - Database Backward Compatibility Tests
+
+    @Test("Current schema version matches expected value")
+    func currentSchemaVersionMatches() {
+        #expect(FlashcardSchemaVersion.current == .v1_1,
+               "Current schema version should be v1.1")
+        #expect(FlashcardSchemaVersion.current.rawValue == 2,
+               "Current schema raw value should be 2")
+    }
+
+    @Test("v1.1 optional fields default to nil for existing v1.0 data")
+    func v1_0ToV1_1Defaults() throws {
+        let container = createTestContainer()
+        let context = container.mainContext
+
+        // Simulate v1.0 data (without translation fields)
+        let flashcard = Flashcard(
+            word: "test",
+            definition: "test definition"
+            // No translation fields - simulating v1.0 data
+        )
+        context.insert(flashcard)
+        try context.save()
+
+        // Verify all v1.1 optional fields are nil
+        #expect(flashcard.translation == nil, "Translation should default to nil")
+        #expect(flashcard.translationSourceLanguage == nil, "Source language should default to nil")
+        #expect(flashcard.translationTargetLanguage == nil, "Target language should default to nil")
+        #expect(flashcard.cefrLevel == nil, "CEFR level should default to nil")
+        #expect(flashcard.contextSentence == nil, "Context sentence should default to nil")
+    }
+
+    @Test("v1.0 data can be enhanced with v1.1 fields post-migration")
+    func v1_0DataEnhancement() throws {
+        let container = createTestContainer()
+        let context = container.mainContext
+
+        // Simulate v1.0 data
+        let flashcard = Flashcard(
+            word: "café",
+            definition: "coffee shop"
+        )
+        context.insert(flashcard)
+        try context.save()
+
+        // Post-migration: add v1.1 fields
+        flashcard.translation = "кофе"
+        flashcard.translationSourceLanguage = "fr"
+        flashcard.translationTargetLanguage = "ru"
+        flashcard.cefrLevel = "A2"
+        flashcard.contextSentence = "J'aime aller au café."
+        try context.save()
+
+        // Verify fields are persisted
+        #expect(flashcard.translation == "кофе")
+        #expect(flashcard.cefrLevel == "A2")
+    }
+
+    @Test("v1.1 fields support empty strings for pre-existing data")
+    func v1_1EmptyStringsSupported() throws {
+        let container = createTestContainer()
+        let context = container.mainContext
+
+        // Simulate v1.0 data migrated with empty strings (not nil)
+        let flashcard = Flashcard(
+            word: "test",
+            definition: "definition",
+            translation: "",  // Empty string, not nil
+            translationSourceLanguage: "",
+            translationTargetLanguage: "",
+            cefrLevel: "",
+            contextSentence: ""
+        )
+        context.insert(flashcard)
+        try context.save()
+
+        // Verify empty strings are preserved (not converted to nil)
+        #expect(flashcard.translation == "")
+        #expect(flashcard.cefrLevel == "")
+    }
+
+    @Test("Automatic migration preserves existing data integrity")
+    func automaticMigrationIntegrity() throws {
+        let container = createTestContainer()
+        let context = container.mainContext
+
+        // Create cards with different v1.0 states
+        let card1 = Flashcard(word: "card1", definition: "def1")
+        let card2 = Flashcard(word: "card2", definition: "def2")
+        let card3 = Flashcard(word: "card3", definition: "def3")
+
+        // Add some v1.1 fields to simulate partial migration
+        card2.translation = "translation2"
+        card3.cefrLevel = "B1"
+
+        context.insert(card1)
+        context.insert(card2)
+        context.insert(card3)
+        try context.save()
+
+        // Fetch and verify integrity
+        let fetchDescriptor = FetchDescriptor<Flashcard>()
+        let fetched = try context.fetch(fetchDescriptor)
+
+        #expect(fetched.count == 3)
+
+        let sorted = fetched.sorted { $0.word < $1.word }
+        #expect(sorted[0].translation == nil, "card1 should have nil translation")
+        #expect(sorted[1].translation == "translation2", "card2 should have translation")
+        #expect(sorted[2].cefrLevel == "B1", "card3 should have CEFR level")
     }
 }

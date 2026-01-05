@@ -7,6 +7,10 @@
 
 import UIKit
 import CoreHaptics
+import OSLog
+
+/// Logger for haptic service output
+private let logger = Logger(subsystem: "com.lexiconflow.haptics", category: "HapticService")
 
 /// Service for generating haptic feedback during study sessions.
 ///
@@ -74,7 +78,7 @@ class HapticService {
             CHHapticEvent(
                 eventType: .hapticTransient,
                 parameters: [
-                    CHHapticEventParameter(parameterID: .hapticIntensity, value: intensity * 0.7),
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity * 0.7)),
                     CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.8)
                 ],
                 relativeTime: 0
@@ -90,7 +94,7 @@ class HapticService {
             CHHapticEvent(
                 eventType: .hapticTransient,
                 parameters: [
-                    CHHapticEventParameter(parameterID: .hapticIntensity, value: intensity * 0.4),
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity * 0.4)),
                     CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.3)
                 ],
                 relativeTime: 0
@@ -106,7 +110,7 @@ class HapticService {
             CHHapticEvent(
                 eventType: .hapticTransient,
                 parameters: [
-                    CHHapticEventParameter(parameterID: .hapticIntensity, value: intensity * 0.9),
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity * 0.9)),
                     CHHapticEventParameter(parameterID: .hapticSharpness, value: 1.0)
                 ],
                 relativeTime: 0
@@ -122,7 +126,7 @@ class HapticService {
             CHHapticEvent(
                 eventType: .hapticTransient,
                 parameters: [
-                    CHHapticEventParameter(parameterID: .hapticIntensity, value: intensity * 0.6),
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity * 0.6)),
                     CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5)
                 ],
                 relativeTime: 0
