@@ -180,6 +180,104 @@ class HapticService {
         generator.notificationOccurred(.error)
     }
 
+    /// Plays rating-specific haptic feedback for card review.
+    ///
+    /// Each rating has a distinct haptic pattern to provide immediate,
+    /// distinguishable feedback about the review outcome:
+    /// - **Again**: Two sharp taps indicating reset/try again
+    /// - **Hard**: Single soft tap indicating effort was required
+    /// - **Good**: Single medium tap with slight decay indicating success
+    /// - **Easy**: Rising intensity pattern indicating effortless recall
+    ///
+    /// - Parameter rating: The CardRating to generate feedback for
+    func playRatingFeedback(rating: CardRating) {
+        guard AppSettings.hapticEnabled else { return }
+
+        switch rating {
+        case .again:
+            // Two sharp taps for "try again" feedback
+            let events = [
+                CHHapticEvent(
+                    eventType: .hapticTransient,
+                    parameters: [
+                        CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.8),
+                        CHHapticEventParameter(parameterID: .hapticSharpness, value: 1.0)
+                    ],
+                    relativeTime: 0
+                ),
+                CHHapticEvent(
+                    eventType: .hapticTransient,
+                    parameters: [
+                        CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.6),
+                        CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.9)
+                    ],
+                    relativeTime: 0.15
+                )
+            ]
+            playCustomPattern(events: events)
+
+        case .hard:
+            // Single soft tap indicating effort
+            let events = [
+                CHHapticEvent(
+                    eventType: .hapticTransient,
+                    parameters: [
+                        CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.4),
+                        CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5)
+                    ],
+                    relativeTime: 0
+                )
+            ]
+            playCustomPattern(events: events)
+
+        case .good:
+            // Medium tap with slight decay for confident success
+            let events = [
+                CHHapticEvent(
+                    eventType: .hapticTransient,
+                    parameters: [
+                        CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.7),
+                        CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.7)
+                    ],
+                    relativeTime: 0
+                ),
+                CHHapticEvent(
+                    eventType: .hapticContinuous,
+                    parameters: [
+                        CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.3),
+                        CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.4)
+                    ],
+                    relativeTime: 0.05,
+                    duration: 0.15
+                )
+            ]
+            playCustomPattern(events: events)
+
+        case .easy:
+            // Rising intensity pattern for effortless success
+            let events = [
+                CHHapticEvent(
+                    eventType: .hapticTransient,
+                    parameters: [
+                        CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.5),
+                        CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.6)
+                    ],
+                    relativeTime: 0
+                ),
+                CHHapticEvent(
+                    eventType: .hapticContinuous,
+                    parameters: [
+                        CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.8),
+                        CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.8)
+                    ],
+                    relativeTime: 0.08,
+                    duration: 0.2
+                )
+            ]
+            playCustomPattern(events: events)
+        }
+    }
+
     /// Resets cached haptic generators and stops the haptic engine.
     ///
     /// Call this method to release cached generators, such as when receiving
