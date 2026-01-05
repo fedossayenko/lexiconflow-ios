@@ -63,31 +63,33 @@ struct FlashcardView: View {
         ZStack {
             if isFlipped {
                 CardBackView(card: card)
-                    .transition(.asymmetric(
-                        insertion: .opacity,
-                        removal: .opacity
-                    ))
+                    .glassEffectTransition(.scaleFade)
+                    .zIndex(1)
             } else {
                 CardFrontView(card: card)
-                    .transition(.asymmetric(
-                        insertion: .opacity,
-                        removal: .opacity
-                    ))
+                    .glassEffectTransition(.scaleFade)
+                    .zIndex(0)
             }
         }
         .frame(maxWidth: .infinity)
         .frame(height: 400)
         .background(Color(.systemBackground))
-        .glassEffect(glassThickness)
+        .glassEffect(AppSettings.glassEffectsEnabled ? glassThickness : .thin)
+        .animation(.spring(response: 0.4, dampingFraction: 0.75), value: isFlipped)
+        .interactive($gestureViewModel.offset) { dragOffset in
+            let progress = min(max(dragOffset.width / 100, -1), 1)
+
+            if progress > 0 {
+                return .tint(.green.opacity(0.3 * progress))
+            } else {
+                return .tint(.red.opacity(0.3 * abs(progress)))
+            }
+        }
         // Gesture visual feedback
         .offset(x: gestureViewModel.offset.width, y: gestureViewModel.offset.height)
         .scaleEffect(gestureViewModel.scale)
         .rotationEffect(.degrees(gestureViewModel.rotation))
         .opacity(gestureViewModel.opacity)
-        .overlay(
-            gestureViewModel.tintColor
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-        )
         // Gesture handling - use simultaneousGesture to allow tap to work
         .simultaneousGesture(
             DragGesture(minimumDistance: 10, coordinateSpace: .local)

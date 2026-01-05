@@ -50,7 +50,7 @@ enum GlassThickness {
 }
 
 /// A view modifier that applies a glass morphism effect to the view.
-struct GlassEffectModifier<S: InsettableShape & Sendable>: ViewModifier {
+struct GlassEffectModifier<S: InsettableShape>: ViewModifier {
     let thickness: GlassThickness
     let shape: S
 
@@ -77,7 +77,7 @@ extension View {
     ///   - thickness: The thickness of the glass effect (thin, regular, thick).
     ///   - shape: The shape to clip the glass effect to.
     /// - Returns: A view with the glass effect applied.
-    func glassEffect<S: InsettableShape>(_ thickness: GlassThickness, in shape: S) -> some View where S: Sendable {
+    func glassEffect<S: InsettableShape>(_ thickness: GlassThickness, in shape: S) -> some View {
         modifier(GlassEffectModifier(thickness: thickness, shape: shape))
     }
 

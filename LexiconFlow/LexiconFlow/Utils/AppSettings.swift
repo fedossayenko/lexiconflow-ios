@@ -46,6 +46,9 @@ enum AppSettings {
     /// Whether haptic feedback is enabled
     @AppStorage("hapticEnabled") static var hapticEnabled: Bool = true
 
+    /// Whether audio feedback is enabled
+    @AppStorage("audioEnabled") static var audioEnabled: Bool = true
+
     // MARK: - Study Session Settings (NEW)
 
     /// Maximum number of cards to fetch per study session
