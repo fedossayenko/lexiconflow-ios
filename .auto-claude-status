@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "005-appearance-section-is-not-working-in-settings-syst",
+  "state": "building",
+  "subtasks": {
+    "completed": 0,
+    "total": 1,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Fix Appearance Picker",
+    "id": 1,
+    "total": 1
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 1,
+    "started_at": "2026-01-05T20:50:17.165776"
+  },
+  "last_update": "2026-01-05T20:50:17.226423"
+}

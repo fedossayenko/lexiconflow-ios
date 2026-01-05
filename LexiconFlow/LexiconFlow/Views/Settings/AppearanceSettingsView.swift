@@ -21,7 +21,7 @@ struct AppearanceSettingsView: View {
                             Image(systemName: mode.icon)
                                 .foregroundStyle(.secondary)
                             Text(mode.displayName)
-                                .tag(mode.rawValue)
+                                .tag(mode)
                         }
                     }
                 }
