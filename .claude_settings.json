@@ -1,0 +1,34 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read(./**)",
+      "Write(./**)",
+      "Edit(./**)",
+      "Glob(./**)",
+      "Grep(./**)",
+      "Read(/Users/fedirsaienko/IdeaProjects/side/lexiconflow-ios/**)",
+      "Write(/Users/fedirsaienko/IdeaProjects/side/lexiconflow-ios/**)",
+      "Edit(/Users/fedirsaienko/IdeaProjects/side/lexiconflow-ios/**)",
+      "Glob(/Users/fedirsaienko/IdeaProjects/side/lexiconflow-ios/**)",
+      "Grep(/Users/fedirsaienko/IdeaProjects/side/lexiconflow-ios/**)",
+      "Read(/Users/fedirsaienko/IdeaProjects/side/lexiconflow-ios/.auto-claude/specs/002-let-s-inveistigate-project-and-investigate-what-is/**)",
+      "Write(/Users/fedirsaienko/IdeaProjects/side/lexiconflow-ios/.auto-claude/specs/002-let-s-inveistigate-project-and-investigate-what-is/**)",
+      "Edit(/Users/fedirsaienko/IdeaProjects/side/lexiconflow-ios/.auto-claude/specs/002-let-s-inveistigate-project-and-investigate-what-is/**)",
+      "Bash(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__context7__resolve-library-id(*)",
+      "mcp__context7__get-library-docs(*)",
+      "mcp__graphiti-memory__search_nodes(*)",
+      "mcp__graphiti-memory__search_facts(*)",
+      "mcp__graphiti-memory__add_episode(*)",
+      "mcp__graphiti-memory__get_episodes(*)",
+      "mcp__graphiti-memory__get_entity_edge(*)"
+    ]
+  }
+}

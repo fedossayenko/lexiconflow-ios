@@ -89,16 +89,21 @@ struct SchedulerTests {
         try context.clearAll()
         let scheduler = Scheduler(modelContext: context)
 
-        // Create new card (due in past but state = new)
-        _ = createTestFlashcard(context: context, word: "new", state: .new, dueOffset: -3600)
+        // Create new card (due now, state = new)
+        _ = createTestFlashcard(context: context, word: "new", state: .new, dueOffset: 0)
         // Create review card (due in past and state = review)
         _ = createTestFlashcard(context: context, word: "review", state: .review, dueOffset: -3600)
+        // Create future card (not due yet)
+        _ = createTestFlashcard(context: context, word: "future", state: .review, dueOffset: 3600)
         try context.save()
 
         let dueCards = scheduler.fetchCards(mode: .scheduled, limit: 20)
 
+        // Only review cards are due (new cards are excluded)
         #expect(dueCards.count == 1)
-        #expect(dueCards.first?.word == "review")
+        #expect(!dueCards.contains { $0.word == "new" })
+        #expect(dueCards.contains { $0.word == "review" })
+        #expect(!dueCards.contains { $0.word == "future" })
     }
 
     @Test("Fetch due cards respects limit parameter")
@@ -146,24 +151,30 @@ struct SchedulerTests {
         #expect(dueCards[2].word == "latest")
     }
 
-    @Test("Due card count returns accurate number")
-    func dueCardCountAccuracy() async throws {
+    @Test("Due card count excludes new cards")
+    func dueCardCountExcludesNew() async throws {
         let context = freshContext()
         try context.clearAll()
         let scheduler = Scheduler(modelContext: context)
 
-        // Create 5 due cards
+        // Create 5 due review cards
         for i in 1...5 {
             _ = createTestFlashcard(context: context, word: "due\(i)", state: .review, dueOffset: -3600)
         }
 
-        // Create 2 non-due cards
+        // Create 3 new cards (not counted as due)
+        for i in 1...3 {
+            _ = createTestFlashcard(context: context, word: "new\(i)", state: .new, dueOffset: 0)
+        }
+
+        // Create 2 non-due cards (future)
         _ = createTestFlashcard(context: context, word: "future1", state: .review, dueOffset: 3600)
-        _ = createTestFlashcard(context: context, word: "new1", state: .new, dueOffset: -3600)
+        _ = createTestFlashcard(context: context, word: "future2", state: .learning, dueOffset: 7200)
         try context.save()
 
         let count = scheduler.dueCardCount()
 
+        // Should count only the 5 due review cards (new cards are excluded)
         #expect(count == 5)
     }
 
@@ -186,22 +197,23 @@ struct SchedulerTests {
         #expect(cramCards.count == 2)
     }
 
-    @Test("Cram mode excludes new cards")
-    func cramModeExcludesNew() async throws {
+    @Test("Cram mode includes new cards")
+    func cramModeIncludesNew() async throws {
         let context = freshContext()
         try context.clearAll()
         let scheduler = Scheduler(modelContext: context)
 
         // Create review card
         _ = createTestFlashcard(context: context, word: "review", state: .review, stability: 5.0)
-        // Create new card
-        _ = createTestFlashcard(context: context, word: "new", state: .new, stability: 1.0)
+        // Create new card (stability=0, should appear first)
+        _ = createTestFlashcard(context: context, word: "new", state: .new, stability: 0.0)
         try context.save()
 
         let cramCards = scheduler.fetchCards(mode: .cram, limit: 20)
 
-        #expect(cramCards.count == 1)
-        #expect(cramCards.first?.word == "review")
+        // Both should be fetched, new cards first (lowest stability)
+        #expect(cramCards.count == 2)
+        #expect(cramCards.first?.word == "new", "New cards with stability=0 should appear first in cram mode")
     }
 
     @Test("Cram mode sorts by stability ascending")

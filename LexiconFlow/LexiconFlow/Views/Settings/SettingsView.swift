@@ -2,7 +2,7 @@
 //  SettingsView.swift
 //  LexiconFlow
 //
-//  Settings screen (placeholder for Phase 1)
+//  Main settings screen with navigation to dedicated settings views
 //
 
 import SwiftUI
@@ -11,53 +11,51 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("Study Settings") {
-                    HStack {
-                        Text("Audio Feedback")
-                        Spacer()
-                        Text("Coming Soon")
-                            .foregroundStyle(.secondary)
+                // MARK: - Study Section
+                Section("Study") {
+                    NavigationLink(destination: StudySettingsView()) {
+                        Label("Study Settings", systemImage: "brain.head.profile")
                     }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Audio Feedback, Coming Soon")
-                    .accessibilityAddTraits(.isButton)
+                    .accessibilityLabel("Study Settings")
 
-                    HStack {
-                        Text("Haptic Feedback")
-                        Spacer()
-                        Text("Coming Soon")
-                            .foregroundStyle(.secondary)
+                    NavigationLink(destination: HapticSettingsView()) {
+                        Label("Haptic Feedback", systemImage: "hand.tap")
                     }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Haptic Feedback, Coming Soon")
-                    .accessibilityAddTraits(.isButton)
+                    .accessibilityLabel("Haptic Feedback")
+
+                    NavigationLink(destination: TranslationSettingsView()) {
+                        HStack {
+                            Label("Translation", systemImage: "character.book.closed")
+                            Spacer()
+                            Text("Z.ai API")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .labelStyle(.titleAndIcon)
+                    }
+                    .accessibilityLabel("Translation Settings")
                 }
 
+                // MARK: - Data Section
+                Section("Data") {
+                    NavigationLink(destination: DataManagementView()) {
+                        Label("Data Management", systemImage: "tray.full")
+                    }
+                    .accessibilityLabel("Data Management")
+                }
+
+                // MARK: - Appearance Section
                 Section("Appearance") {
-                    HStack {
-                        Text("Dark Mode")
-                        Spacer()
-                        Text("Coming Soon")
-                            .foregroundStyle(.secondary)
+                    NavigationLink(destination: AppearanceSettingsView()) {
+                        Label("Appearance", systemImage: "paintbrush")
                     }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Dark Mode, Coming Soon")
-                    .accessibilityAddTraits(.isButton)
-
-                    HStack {
-                        Text("Glass Effects")
-                        Spacer()
-                        Text("Phase 2")
-                            .foregroundStyle(.secondary)
-                    }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Glass Effects, coming in Phase 2")
-                    .accessibilityAddTraits(.isButton)
+                    .accessibilityLabel("Appearance")
                 }
 
+                // MARK: - About Section
                 Section("About") {
                     HStack {
-                        Text("Version")
+                        Label("Version", systemImage: "info.circle")
                         Spacer()
                         Text("1.0.0 (Phase 1)")
                             .foregroundStyle(.secondary)
@@ -66,13 +64,37 @@ struct SettingsView: View {
                     .accessibilityLabel("Version 1.0.0 Phase 1")
 
                     HStack {
-                        Text("Algorithm")
+                        Label("Algorithm", systemImage: "function")
                         Spacer()
                         Text("FSRS v5")
                             .foregroundStyle(.secondary)
                     }
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel("FSRS v5 algorithm")
+
+                    Link(destination: URL(string: "https://github.com/open-spaced-repetition/fsrs.js")!) {
+                        HStack {
+                            Label("FSRS Algorithm", systemImage: "arrow.up.right.square")
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .accessibilityLabel("Learn more about FSRS algorithm")
+
+                    Link(destination: URL(string: "https://github.com/fedossayenko/lexiconflow-ios")!) {
+                        HStack {
+                            Label("GitHub Repository", systemImage: "arrow.up.right.square")
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .accessibilityLabel("View GitHub repository")
                 }
             }
             .navigationTitle("Settings")

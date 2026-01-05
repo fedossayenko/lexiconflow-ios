@@ -20,7 +20,7 @@ cd LexiconFlow
 xcodebuild build \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1'
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.2'
 ```
 
 ### Run Tests
@@ -30,7 +30,7 @@ cd LexiconFlow
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.2' \
   -only-testing:LexiconFlowTests \
   -parallel-testing-enabled NO
 
@@ -38,8 +38,8 @@ xcodebuild test \
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1' \
-  -only-testing:LexiconFlowTests/ModelTests \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.2' \
+  -only-testing:LexiconFlowTests/TranslationServiceTests \
   -parallel-testing-enabled NO
 ```
 
@@ -75,7 +75,115 @@ xcodebuild test \
 ### 1. Naming: Flashcard vs Card
 - Use `Flashcard` instead of `Card` to avoid collision with FSRS library's `Card` type
 
-### 2. DTO Pattern for Concurrency
+### 2. ModelContainer Fallback Pattern (No fatalError)
+**NEVER use `fatalError` for ModelContainer creation** - it causes immediate app crash:
+```swift
+// ❌ AVOID: Crashes app on any database error
+var sharedModelContainer: ModelContainer = {
+    do {
+        return try ModelContainer(for: schema, configurations: [config])
+    } catch {
+        fatalError("Could not create ModelContainer: \(error)")  // CRASH!
+    }
+}()
+
+// ✅ CORRECT: Graceful degradation with fallback
+var sharedModelContainer: ModelContainer = {
+    let modelConfiguration = ModelConfiguration(isStoredInMemoryOnly: false)
+    let schema = Schema([FSRSState.self, Flashcard.self, Deck.self, FlashcardReview.self])
+
+    do {
+        return try ModelContainer(for: schema, configurations: [modelConfiguration])
+    } catch {
+        logger.critical("ModelContainer creation failed: \(error)")
+        Analytics.trackError("model_container_failed", error: error)
+
+        // Fallback to in-memory for recovery
+        let fallbackConfig = ModelConfiguration(isStoredInMemoryOnly: true)
+        do {
+            return try ModelContainer(for: schema, configurations: [fallbackConfig])
+        } catch {
+            // Last resort: minimal app with error UI
+            return ModelContainer(for: [])
+        }
+    }
+}()
+```
+**Rationale**: Database corruption, permissions, or disk full should not crash the app. Use in-memory fallback to allow user to see error and attempt recovery.
+
+### 3. KeychainManager Security Pattern
+**Use KeychainManager for sensitive data** (API keys, tokens):
+```swift
+// Store API key securely
+try KeychainManager.setAPIKey("sk-test-...")
+
+// Retrieve API key
+if let apiKey = try KeychainManager.getAPIKey() {
+    // Use API key
+}
+
+// Check if API key exists
+if KeychainManager.hasAPIKey() {
+    // API key is configured
+}
+
+// Delete API key
+try KeychainManager.deleteAPIKey()
+```
+**Key Features**:
+- UTF-8 encoding support (emoji, CJK, RTL languages)
+- Generic account storage for custom data
+- Empty key validation
+- Secure storage with kSecClassGenericPassword
+
+### 4. AppSettings Centralization (Not @AppStorage)
+**Use `AppSettings` class instead of direct `@AppStorage`** for centralized state management:
+```swift
+// ✅ CORRECT: Use AppSettings properties
+struct MyView: View {
+    var body: some View {
+        Toggle("Translation", isOn: Binding(
+            get: { AppSettings.isTranslationEnabled },
+            set: { AppSettings.isTranslationEnabled = $0 }
+        ))
+    }
+}
+
+// ❌ AVOID: Direct @AppStorage
+struct MyView: View {
+    @AppStorage("translationEnabled") private var translationEnabled = true
+    // ^^^ Scattered across views, hard to maintain
+}
+```
+**Rationale**: Single source of truth, easier to test, centralized defaults.
+
+### 5. TranslationService Batch Pattern
+**Use actor-isolated TranslationService for concurrent batch translation**:
+```swift
+// Configure with API key
+try KeychainManager.setAPIKey("sk-test-...")
+
+// Batch translate with concurrency control
+let service = TranslationService.shared
+let result = try await service.translateBatch(
+    cards,
+    maxConcurrency: 5,
+    progressHandler: { progress in
+        print("Progress: \(progress.completedCount)/\(progress.totalCount)")
+    }
+)
+
+// Result contains success/failure counts
+print("Success: \(result.successCount)")
+print("Failed: \(result.failedCount)")
+```
+**Key Features**:
+- Rate limiting with adaptive concurrency
+- Progress handler callbacks
+- Individual card failure handling
+- Actor-isolated for thread safety
+
+### 6. DTO Pattern for Concurrency
 ```swift
 // FSRSWrapper actor returns DTO (not model mutation)
 func processReview(flashcard: Flashcard, rating: Int) throws -> FSRSReviewResult
@@ -84,7 +192,7 @@ func processReview(flashcard: Flashcard, rating: Int) throws -> FSRSReviewResult
 func processReview(flashcard: Flashcard, rating: Int) async -> FlashcardReview?
 ```
 
-### 3. Single-Sided Inverse Relationships
+### 7. Single-Sided Inverse Relationships
 Define `@Relationship` inverse on **only ONE side** to avoid SwiftData circular macro expansion errors:
 ```swift
 // Flashcard.swift - inverse NOT defined here
@@ -94,10 +202,10 @@ Define `@Relationship` inverse on **only ONE side** to avoid SwiftData circular 
 @Relationship(inverse: \Flashcard.fsrsState) var card: Flashcard?
 ```
 
-### 4. Cached lastReviewDate
+### 8. Cached lastReviewDate
 Cache last review date in `FSRSState.lastReviewDate` for O(1) access vs O(n) scan through reviewLogs
 
-### 5. String Literals in Predicates
+### 9. String Literals in Predicates
 Use string literals instead of enum raw values in `#Predicate`:
 ```swift
 // CORRECT: String literal
@@ -111,15 +219,15 @@ Use string literals instead of enum raw values in `#Predicate`:
 }
 ```
 
-### 6. External Storage for Images
+### 10. External Storage for Images
 ```swift
 @Attribute(.externalStorage) var imageData: Data?
 ```
 
-### 7. Timezone-Aware Date Math
+### 11. Timezone-Aware Date Math
 Use `DateMath.elapsedDays()` for calendar-aware calculations (handles DST, timezone boundaries)
 
-### 8. Safe View Initialization Pattern
+### 12. Safe View Initialization Pattern
 Use `@State` with lazy initialization instead of `@StateObject` with force unwrap:
 ```swift
 // ❌ AVOID: Force unwrap in init
@@ -147,7 +255,7 @@ struct MyView: View {
 ```
 **Rationale**: Prevents app crashes if ModelContainer fails, follows iOS 26 best practices.
 
-### 9. Reactive Updates with @Query
+### 13. Reactive Updates with @Query
 Use `@Query` for automatic SwiftData updates instead of manual refresh:
 ```swift
 // ❌ AVOID: Manual refresh with .onAppear
@@ -171,7 +279,7 @@ struct MyView: View {
 ```
 **Rationale**: @Query automatically tracks SwiftData changes and updates the view.
 
-### 10. Error Handling with User Alerts
+### 14. Error Handling with User Alerts
 Always show errors to users with Analytics tracking:
 ```swift
 struct MyView: View {
@@ -206,11 +314,14 @@ LexiconFlow/
 ├── App/                    # App entry point (@main)
 ├── Models/                 # SwiftData @Model classes
 ├── ViewModels/             # @MainActor coordinators (Scheduler)
-├── Services/               # Analytics, DataImporter
-├── Utils/                  # FSRSWrapper, DateMath, FSRSConstants
+├── Services/               # TranslationService, Analytics, DataImporter
+├── Utils/                  # AppSettings, KeychainManager, FSRSWrapper, DateMath
 ├── Views/                  # SwiftUI views
+│   ├── Cards/              # AddFlashcardView, StudySessionView
+│   ├── Decks/              # DeckDetailView
+│   └── Settings/           # TranslationSettingsView, AppearanceSettingsView, etc.
 ├── Assets.xcassets/        # Images, colors
-└── LexiconFlowTests/       # Unit tests
+└── LexiconFlowTests/       # Unit tests (14+ suites)
 ```
 
 ## Concurrency Guidelines
@@ -224,9 +335,18 @@ LexiconFlow/
 ## Testing
 
 - **Framework**: Swift Testing (`import Testing`)
-- **Structure**: 9 test suites in `LexiconFlowTests/` (ModelTests, SchedulerTests, DataImporterTests, StudySessionViewModelTests, OnboardingTests, ErrorHandlingTests, FSRSWrapperTests, DateMathTests, AnalyticsTests)
+- **Structure**: 14 test suites in `LexiconFlowTests/`:
+  - ModelTests, SchedulerTests, DataImporterTests
+  - StudySessionViewModelTests, OnboardingTests, ErrorHandlingTests
+  - FSRSWrapperTests, DateMathTests, AnalyticsTests
+  - TranslationServiceTests (42 tests with concurrency stress tests)
+  - AddFlashcardViewTests (23 tests for saveCard() flow)
+  - KeychainManagerPersistenceTests (30 tests for UTF-8, persistence)
+  - SettingsViewsTests (42 smoke tests for settings views)
+  - EdgeCaseTests (40 tests for security, Unicode, input validation)
 - **Pattern**: In-memory SwiftData container for isolation
 - **Coverage Target**: >80% for new code
+- **Test Execution**: Use `-parallel-testing-enabled NO` for shared container tests
 
 ## Development Workflow
 
@@ -263,6 +383,7 @@ Comprehensive documentation in `/docs/`:
 - No linting tools configured (consider adding SwiftLint)
 - "Liquid Glass" UI not yet implemented (planned for Phase 2)
 - AI integration not yet implemented (planned for Phase 3)
+- SwiftData migration strategy not yet defined (translation fields added as optional)
 
 ## Common Pitfalls
 
@@ -271,3 +392,8 @@ Comprehensive documentation in `/docs/`:
 3. **Cross-actor mutations**: Return DTOs from actors, not models
 4. **Date math**: Use `DateMath.elapsedDays()` for timezone-aware calculations
 5. **Force unwraps**: Avoid `!` without proper validation
+6. **fatalError in app init**: Use ModelContainer fallback pattern instead
+7. **Direct @AppStorage**: Use AppSettings class for centralized state
+8. **Silent error swallowing**: Always show errors to users with Analytics tracking
+9. **Force view refresh**: Avoid UUID hacks, use proper @Observable state
+10. **API key validation side effects**: Validate before storing to Keychain

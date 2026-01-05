@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import PhotosUI
+import OSLog
 
 struct AddFlashcardView: View {
     @Environment(\.modelContext) private var modelContext
@@ -23,7 +24,10 @@ struct AddFlashcardView: View {
     @State private var selectedImage: PhotosPickerItem?
     @State private var imageData: Data?
     @State private var isSaving = false
+    @State private var isTranslating = false
     @State private var errorMessage: String?
+
+    private let logger = Logger(subsystem: "com.lexiconflow.flashcard", category: "AddFlashcardView")
 
     var body: some View {
         NavigationStack {
@@ -100,20 +104,36 @@ struct AddFlashcardView: View {
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(action: saveCard) {
-                        if isSaving {
-                            ProgressView()
-                        } else {
-                            Text("Save")
+                    Button(action: { Task { await saveCard() } }) {
+                        HStack(spacing: 8) {
+                            if isSaving {
+                                if isTranslating {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                    Text("Translating...")
+                                } else {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                    Text("Saving...")
+                                }
+                            } else {
+                                Text("Save")
+                            }
                         }
                     }
-                    .disabled(word.isEmpty || definition.isEmpty || isSaving)
+                    .disabled(word.isEmpty || definition.isEmpty || isSaving || isTranslating)
                 }
             }
             .onChange(of: selectedImage) { _, newItem in
                 Task {
-                    if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                    guard let newItem = newItem else { return }
+                    do {
+                        let data = try await newItem.loadTransferable(type: Data.self)
                         imageData = data
+                    } catch {
+                        errorMessage = "Failed to load image: \(error.localizedDescription)"
+                        logger.error("Image loading failed: \(error.localizedDescription)")
+                        Analytics.trackError("image_load_failed", error: error)
                     }
                 }
             }
@@ -130,9 +150,10 @@ struct AddFlashcardView: View {
         }
     }
 
-    private func saveCard() {
+    private func saveCard() async {
         isSaving = true
 
+        // 1. Create Flashcard
         let flashcard = Flashcard(
             word: word,
             definition: definition,
@@ -141,7 +162,37 @@ struct AddFlashcardView: View {
         )
         flashcard.deck = selectedDeck
 
-        // Create FSRSState for the card
+        // 2. Automatic translation - NEW
+        isTranslating = true
+
+        if AppSettings.isTranslationEnabled && TranslationService.shared.isConfigured {
+            do {
+                let result = try await TranslationService.shared.translate(
+                    word: word,
+                    definition: definition,
+                    context: nil
+                )
+
+                if let item = result.items.first {
+                    flashcard.translation = item.targetTranslation
+                    flashcard.cefrLevel = item.cefrLevel
+                    flashcard.contextSentence = item.contextSentence
+                    flashcard.translationSourceLanguage = "en"
+                    flashcard.translationTargetLanguage = AppSettings.translationTargetLanguage
+
+                    logger.info("Translation successful: '\(word)' -> '\(item.targetTranslation)' (CEFR: \(item.cefrLevel))")
+                }
+            } catch {
+                logger.error("Translation failed: \(error.localizedDescription)")
+                // Card is still saved without translation
+            }
+        } else if AppSettings.isTranslationEnabled && !TranslationService.shared.isConfigured {
+            logger.warning("Translation enabled but API key not configured, skipping")
+        }
+
+        isTranslating = false
+
+        // 3. Create FSRSState for the card
         let state = FSRSState(
             stability: 0.0,
             difficulty: 5.0,

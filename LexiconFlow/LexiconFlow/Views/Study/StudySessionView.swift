@@ -49,7 +49,7 @@ struct StudySessionView: View {
                             }
                         }
                         .frame(maxHeight: .infinity)
-                        .id("card-\(viewModel.currentIndex)-\(currentCard.word)")  // Force view refresh for each card with unique combo
+                        .id(currentCard.persistentModelID)  // View identity tied to card
                         .opacity(viewModel.isComplete ? 0 : 1)  // Hide when complete
 
                         // Rating buttons (show after flip)
