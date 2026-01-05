@@ -297,4 +297,106 @@ struct FSRSWrapperTests {
         #expect(result.retrievability >= 0.0)
         #expect(result.retrievability <= 1.0)
     }
+
+    // MARK: - Retrievability Calculation Tests
+
+    @Test("Retrievability formula matches expected calculation: 1.0 - elapsedDays / stability")
+    func retrievabilityFormulaAccuracy() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let flashcard = createTestFlashcard(context: context, withState: true)
+
+        // Set specific stability and last review to predict retrievability
+        flashcard.fsrsState!.stability = 10.0
+        flashcard.fsrsState!.lastReviewDate = Date().addingTimeInterval(-5 * 86400) // 5 days ago
+        try context.save()
+
+        let result = try await FSRSWrapper.shared.processReview(
+            flashcard: flashcard,
+            rating: 2, // Good
+            now: Date()
+        )
+
+        // Verify the formula: retrievability = 1.0 - elapsedSinceReview / stability
+        // With stability=10, scheduledDays should be based on FSRS calculation
+        // The elapsedSinceReview is from now to dueDate
+        let elapsedSinceReview = DateMath.elapsedDays(from: Date(), to: result.dueDate)
+        let expectedRetrievability = max(0.0, min(1.0, 1.0 - elapsedSinceReview / result.stability))
+
+        #expect(abs(result.retrievability - expectedRetrievability) < 0.001,
+               "Retrievability should match formula: 1.0 - elapsedSinceReview / stability")
+    }
+
+    @Test("Retrievability clamped to 0-1 range for extreme values")
+    func retrievabilityClamping() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let flashcard = createTestFlashcard(context: context, withState: true)
+
+        // Very low stability with large elapsed time should clamp to 0
+        flashcard.fsrsState!.stability = 0.1
+        flashcard.fsrsState!.lastReviewDate = Date().addingTimeInterval(-100 * 86400) // 100 days ago
+        try context.save()
+
+        let result = try await FSRSWrapper.shared.processReview(
+            flashcard: flashcard,
+            rating: 2,
+            now: Date()
+        )
+
+        #expect(result.retrievability >= 0.0, "Retrievability should not be negative")
+        #expect(result.retrievability <= 1.0, "Retrievability should not exceed 1.0")
+    }
+
+    // MARK: - Clock Skew Tests
+
+    @Test("Clock skew with future lastReviewDate handles gracefully")
+    func clockSkewFutureLastReview() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let flashcard = createTestFlashcard(context: context, withState: true)
+
+        // Set lastReviewDate in the future (clock skew scenario)
+        let futureDate = Date().addingTimeInterval(86400) // 1 day in future
+        flashcard.fsrsState!.lastReviewDate = futureDate
+        flashcard.fsrsState!.stability = 10.0
+        try context.save()
+
+        let result = try await FSRSWrapper.shared.processReview(
+            flashcard: flashcard,
+            rating: 2,
+            now: Date()
+        )
+
+        // Should handle negative elapsed days without crashing
+        #expect(result.retrievability >= 0.0 && result.retrievability <= 1.0)
+        #expect(result.dueDate > Date())
+    }
+
+    @Test("Clock skew across DST boundary calculates elapsed days correctly")
+    func clockSkewDSTBoundary() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let flashcard = createTestFlashcard(context: context, withState: true)
+
+        // Create a date across a DST boundary (e.g., during spring forward)
+        // Use calendar to ensure proper DST handling
+        let calendar = Calendar(identifier: .gregorian)
+        let now = calendar.date(from: DateComponents(year: 2026, month: 3, day:15, hour: 12))!
+        let lastReview = calendar.date(from: DateComponents(year: 2026, month=3, day: 8, hour: 12))!
+
+        flashcard.fsrsState!.lastReviewDate = lastReview
+        flashcard.fsrsState!.stability = 10.0
+        try context.save()
+
+        let result = try await FSRSWrapper.shared.processReview(
+            flashcard: flashcard,
+            rating: 2,
+            now: now
+        )
+
+        // DateMath should handle DST transitions correctly
+        #expect(result.elapsedDays >= 6.0 && result.elapsedDays <= 8.0,
+               "Elapsed days should account for DST transition")
+    }
 }

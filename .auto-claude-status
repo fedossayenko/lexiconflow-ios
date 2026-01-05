@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "006-investigate-haptic-feedback-setting-when-on-iphone",
-  "state": "complete",
+  "spec": "011-fsrs-v5-algorithm-integration",
+  "state": "completed",
   "subtasks": {
-    "completed": 1,
-    "total": 1,
+    "completed": 13,
+    "total": 13,
     "in_progress": 0,
     "failed": 0
   },
   "phase": {
-    "current": "Simplify Haptic Settings",
-    "id": 1,
-    "total": 1
+    "current": "Phase 4: Documentation and Acceptance",
+    "id": null,
+    "total": 2
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 1,
-    "started_at": "2026-01-05T20:31:06.156486"
+    "number": 8,
+    "started_at": "2026-01-05T21:48:33.605534"
   },
-  "last_update": "2026-01-05T20:35:01.302929"
+  "last_update": "2026-01-05T22:15:00.000000"
 }

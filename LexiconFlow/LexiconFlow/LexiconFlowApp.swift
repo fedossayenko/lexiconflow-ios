@@ -74,13 +74,6 @@ struct LexiconFlowApp: App {
         }
     }()
 
-    // Flag to check if we're using degraded storage
-    private var isUsingDegradedStorage: Bool {
-        // Check if container is in-memory or minimal
-        // This can be used by ContentView to show warning UI
-        sharedModelContainer.configurations.allSatisfy { $0.isStoredInMemoryOnly }
-    }
-
     var body: some Scene {
         WindowGroup {
             ContentView()
