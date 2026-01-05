@@ -13,7 +13,6 @@ struct StudySessionView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var isFlipped = false
     @State private var showError = false
-    @State private var cardRefreshID = UUID()
     let mode: StudyMode
     let onComplete: () -> Void
 
@@ -50,7 +49,7 @@ struct StudySessionView: View {
                             }
                         }
                         .frame(maxHeight: .infinity)
-                        .id(cardRefreshID)  // Force view refresh on card change
+                        .id(currentCard.persistentModelID)  // View identity tied to card
                         .opacity(viewModel.isComplete ? 0 : 1)  // Hide when complete
 
                         // Rating buttons (show after flip)
@@ -107,12 +106,6 @@ struct StudySessionView: View {
             .onChange(of: viewModel?.lastError != nil) { _, hasError in
                 if hasError {
                     showError = true
-                }
-            }
-            .onChange(of: viewModel?.currentIndex) { _, newIndex in
-                // Force card view refresh when advancing to next card
-                if newIndex != nil {
-                    cardRefreshID = UUID()
                 }
             }
     }

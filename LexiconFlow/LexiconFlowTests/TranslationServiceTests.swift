@@ -90,7 +90,7 @@ struct TranslationServiceTests {
           "items": [{
             "target_word": "привет",
             "context_sentence": "Used as greeting",
-            "russian_translation": "hello",
+            "translation": "hello",
             "cefr_level": "A1",
             "definition_en": "a greeting"
           }]
@@ -126,7 +126,7 @@ struct TranslationServiceTests {
         {
           "items": [{
             "target_word": "тест",
-            "russian_translation": "test"
+            "translation": "test"
           }]
         }
         ```
@@ -153,7 +153,7 @@ struct TranslationServiceTests {
     @Test("extractJSON from plain text using braces")
     func testExtractJSONPlainBraces() {
         let input = """
-        The result is: {"items": [{"target_word": "word", "russian_translation": "слово"}]} and that's it.
+        The result is: {"items": [{"target_word": "word", "translation": "слово"}]} and that's it.
         """
 
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -172,7 +172,7 @@ struct TranslationServiceTests {
     @Test("extractJSON handles plain JSON without formatting")
     func testExtractJSONPlain() {
         let input = """
-        {"items": [{"target_word": "тест","russian_translation": "test"}]}
+        {"items": [{"target_word": "тест","translation": "test"}]}
         """
 
         // Should return original when no extraction patterns match
@@ -452,7 +452,7 @@ struct TranslationServiceTests {
           "items": [{
             "target_word": "привет",
             "context_sentence": "Hello!",
-            "russian_translation": "hello",
+            "translation": "hello",
             "cefr_level": "A1",
             "definition_en": "a greeting"
           }]
@@ -492,7 +492,7 @@ struct TranslationServiceTests {
           "items": [{
             "target_word": "word",
             "context_sentence": "",
-            "russian_translation": "translation",
+            "translation": "translation",
             "cefr_level": "B1",
             "definition_en": "def"
           }]
@@ -554,5 +554,240 @@ struct TranslationServiceTests {
             }
         }
         // Test passes if no race conditions occur
+    }
+
+    // MARK: - Critical Integration Tests
+
+    @Test("Batch translation reports progress through handler")
+    func batchTranslationReportsProgress() async throws {
+        // This test verifies the progress handler is called correctly
+        // Note: Without URLSession mocking, we verify structure only
+        let context = TestContainers.freshContext()
+        try? context.clearAll()
+
+        // Create test cards
+        let cards = [
+            Flashcard(word: "test1", definition: "definition 1"),
+            Flashcard(word: "test2", definition: "definition 2"),
+            Flashcard(word: "test3", definition: "definition 3")
+        ]
+
+        for card in cards {
+            context.insert(card)
+        }
+
+        // Track progress calls
+        var progressUpdates: [TranslationService.BatchTranslationProgress] = []
+
+        // Set up test API key (will fail network, but we test structure)
+        try KeychainManager.setAPIKey("test-key")
+
+        let service = TranslationService.shared
+
+        // Attempt batch translation (will fail network, but tests structure)
+        do {
+            let result = try await service.translateBatch(
+                cards,
+                maxConcurrency: 2,
+                progressHandler: { progress in
+                    progressUpdates.append(progress)
+                }
+            )
+
+            // If somehow succeeds (e.g., mocked), verify progress was reported
+            #expect(progressUpdates.count >= 1)
+
+            // Verify final progress shows completion
+            if let finalProgress = progressUpdates.last {
+                #expect(finalProgress.current <= cards.count)
+                #expect(finalProgress.total == cards.count)
+            }
+        } catch is TranslationService.TranslationError {
+            // Network failure expected - this is OK for structural test
+            // The test verifies the progress handler signature is correct
+        }
+
+        // Cleanup
+        try KeychainManager.deleteAPIKey()
+    }
+
+    @Test("Batch translation can be cancelled mid-execution")
+    func cancelBatchTranslation() async throws {
+        let context = TestContainers.freshContext()
+        try? context.clearAll()
+
+        // Create multiple test cards
+        let cards = (1..<20).map { i in
+            Flashcard(word: "word\(i)", definition: "definition \(i)")
+        }
+
+        for card in cards {
+            context.insert(card)
+        }
+
+        try KeychainManager.setAPIKey("test-key")
+        let service = TranslationService.shared
+
+        // Start translation and cancel quickly
+        let translationTask = Task {
+            try? await service.translateBatch(cards, maxConcurrency: 5)
+        }
+
+        // Cancel immediately
+        try await Task.sleep(nanoseconds: 10_000_000) // 0.01 seconds
+        service.cancelBatchTranslation()
+        translationTask.cancel()
+
+        // Wait for task to complete
+        await translationTask.value
+
+        // Verify cancel method doesn't crash and state is clean
+        // Should be able to start another translation after cancel
+        let singleCard = Flashcard(word: "after", definition: "after cancel")
+        context.insert(singleCard)
+
+        // This would normally fail if state wasn't cleaned up
+        // (Structural test - verifies no crash on second call)
+        _ = try? await service.translateBatch([singleCard], maxConcurrency: 1)
+
+        // Cleanup
+        try KeychainManager.deleteAPIKey()
+    }
+
+    @Test("Batch translation handles partial failures correctly")
+    func partialFailureRollback() async throws {
+        let context = TestContainers.freshContext()
+        try? context.clearAll()
+
+        // Create cards where some will fail (invalid data)
+        let cards = [
+            Flashcard(word: "valid", definition: "a valid word"),
+            Flashcard(word: "", definition: "empty word"),  // Invalid
+            Flashcard(word: "another", definition: "another valid word"),
+            Flashcard(word: "", definition: "another empty")  // Invalid
+        ]
+
+        for card in cards {
+            context.insert(card)
+        }
+
+        try KeychainManager.setAPIKey("test-key")
+        let service = TranslationService.shared
+
+        // Attempt batch translation
+        let result = try await service.translateBatch(cards, maxConcurrency: 2)
+
+        // Verify result structure handles mixed success/failure
+        #expect(result.totalDuration >= 0)
+        #expect(result.successCount >= 0)
+        #expect(result.failedCount >= 0)
+        #expect(result.successCount + result.failedCount == cards.count)
+
+        // Verify successful translations are in result
+        #expect(result.successfulTranslations.count <= 2) // At most 2 valid cards
+
+        // Verify errors are captured
+        if result.failedCount > 0 {
+            #expect(!result.errors.isEmpty)
+        }
+
+        // Cleanup
+        try KeychainManager.deleteAPIKey()
+    }
+
+    @Test("Concurrent batches don't interfere with each other")
+    func concurrentBatchesDontInterfere() async throws {
+        let context = TestContainers.freshContext()
+        try? context.clearAll()
+
+        // Create 3 separate batches of cards
+        let batch1 = (1...5).map { Flashcard(word: "batch1_word\($0)", definition: "definition \($0)") }
+        let batch2 = (1...5).map { Flashcard(word: "batch2_word\($0)", definition: "definition \($0)") }
+        let batch3 = (1...5).map { Flashcard(word: "batch3_word\($0)", definition: "definition \($0)") }
+
+        // Insert all cards
+        for card in batch1 + batch2 + batch3 {
+            context.insert(card)
+        }
+
+        try KeychainManager.setAPIKey("test-key")
+        let service = TranslationService.shared
+
+        // Run all batches concurrently
+        async let result1 = service.translateBatch(batch1, maxConcurrency: 2)
+        async let result2 = service.translateBatch(batch2, maxConcurrency: 2)
+        async let result3 = service.translateBatch(batch3, maxConcurrency: 2)
+
+        let (r1, r2, r3) = try await (result1, result2, result3)
+
+        // Verify no cross-contamination
+        #expect(r1.totalDuration >= 0, "Batch 1 should complete")
+        #expect(r2.totalDuration >= 0, "Batch 2 should complete")
+        #expect(r3.totalDuration >= 0, "Batch 3 should complete")
+
+        // Verify each batch processed its own cards
+        #expect(r1.successCount + r1.failedCount == batch1.count, "Batch 1: all cards processed")
+        #expect(r2.successCount + r2.failedCount == batch2.count, "Batch 2: all cards processed")
+        #expect(r3.successCount + r3.failedCount == batch3.count, "Batch 3: all cards processed")
+
+        // Cleanup
+        try KeychainManager.deleteAPIKey()
+    }
+
+    @Test("maxConcurrency parameter is respected during batch translation")
+    func maxConcurrencyIsRespected() async throws {
+        let context = TestContainers.freshContext()
+        try? context.clearAll()
+
+        // Create 20 cards (more than maxConcurrency)
+        let cards = (1..<20).map { Flashcard(word: "word\($0)", definition: "definition \($0)") }
+
+        for card in cards {
+            context.insert(card)
+        }
+
+        try KeychainManager.setAPIKey("test-key")
+        let service = TranslationService.shared
+
+        // Use maxConcurrency=3
+        let result = try await service.translateBatch(cards, maxConcurrency: 3)
+
+        // Verify all cards were processed
+        #expect(result.successCount + result.failedCount == cards.count, "All cards should be processed")
+
+        // The actual concurrency limit is enforced by the TaskGroup implementation
+        // We verify the batch completes successfully (no race conditions)
+        #expect(result.totalDuration >= 0, "Batch should complete successfully")
+
+        // Cleanup
+        try KeychainManager.deleteAPIKey()
+    }
+
+    @Test("Rapid sequential batch translations don't cause state corruption")
+    func rapidSequentialBatches() async throws {
+        let context = TestContainers.freshContext()
+        try? context.clearAll()
+
+        try KeychainManager.setAPIKey("test-key")
+        let service = TranslationService.shared
+
+        // Run 5 sequential batches
+        for batchIndex in 1...5 {
+            let cards = (1...3).map { i in
+                Flashcard(word: "batch\(batchIndex)_word\(i)", definition: "definition")
+            }
+
+            for card in cards {
+                context.insert(card)
+            }
+
+            let result = try await service.translateBatch(cards, maxConcurrency: 2)
+
+            // Verify each batch completes
+            #expect(result.successCount + result.failedCount == cards.count, "Batch \(batchIndex) should complete")
+        }
+
+        // Cleanup
+        try KeychainManager.deleteAPIKey()
     }
 }

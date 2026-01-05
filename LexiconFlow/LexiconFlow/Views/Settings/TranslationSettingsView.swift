@@ -15,10 +15,6 @@ import OSLog
 /// - Set source and target languages
 /// - Enable/disable automatic translation
 struct TranslationSettingsView: View {
-    @AppStorage("translationSourceLanguage") private var sourceLanguage = "en"
-    @AppStorage("translationTargetLanguage") private var targetLanguage = "ru"
-    @AppStorage("translationEnabled") private var translationEnabled = true
-
     @State private var showAPIKeyField = false
     @State private var apiKey = ""
     @State private var tempAPIKey = ""
@@ -28,33 +24,29 @@ struct TranslationSettingsView: View {
 
     private let logger = Logger(subsystem: "com.lexiconflow.translation", category: "TranslationSettingsView")
 
-    private let supportedLanguages = [
-        ("en", "English"),
-        ("ru", "Russian"),
-        ("es", "Spanish"),
-        ("fr", "French"),
-        ("de", "German"),
-        ("it", "Italian"),
-        ("ja", "Japanese"),
-        ("ko", "Korean"),
-        ("zh-Hans", "Chinese (Simplified)"),
-        ("pt", "Portuguese")
-    ]
-
     var body: some View {
         Form {
             Section {
-                Toggle("Enable Auto-Translation", isOn: $translationEnabled)
+                Toggle("Enable Auto-Translation", isOn: Binding(
+                    get: { AppSettings.isTranslationEnabled },
+                    set: { AppSettings.isTranslationEnabled = $0 }
+                ))
 
-                if translationEnabled {
-                    Picker("Source Language", selection: $sourceLanguage) {
-                        ForEach(supportedLanguages, id: \.0) { code, name in
+                if AppSettings.isTranslationEnabled {
+                    Picker("Source Language", selection: Binding(
+                        get: { AppSettings.translationSourceLanguage },
+                        set: { AppSettings.translationSourceLanguage = $0 }
+                    )) {
+                        ForEach(AppSettings.supportedLanguages, id: \.0) { code, name in
                             Text(name).tag(code)
                         }
                     }
 
-                    Picker("Target Language", selection: $targetLanguage) {
-                        ForEach(supportedLanguages, id: \.0) { code, name in
+                    Picker("Target Language", selection: Binding(
+                        get: { AppSettings.translationTargetLanguage },
+                        set: { AppSettings.translationTargetLanguage = $0 }
+                    )) {
+                        ForEach(AppSettings.supportedLanguages, id: \.0) { code, name in
                             Text(name).tag(code)
                         }
                     }
@@ -164,28 +156,19 @@ struct TranslationSettingsView: View {
         defer { isValidating = false }
 
         do {
-            // Store key in Keychain temporarily for validation
-            // Note: This has the side effect of storing the key if validation succeeds
-            try KeychainManager.setAPIKey(tempAPIKey)
+            // Validate WITHOUT storing to Keychain first
+            // The key is only stored after user clicks "Save"
+            isValid = try await TranslationService.shared.validateAPIKey(tempAPIKey)
 
-            let result = try await TranslationService.shared.translate(
-                word: "test",
-                definition: "a trial or test",
-                context: nil
-            )
-            isValid = !result.items.isEmpty
             if !isValid {
-                validationError = "API returned empty results"
-                // Remove invalid key from Keychain
-                try? KeychainManager.deleteAPIKey()
+                validationError = "API key validation failed: server returned empty response"
             }
+
             logger.info("API key validation completed: isValid=\(isValid)")
         } catch {
             isValid = false
             validationError = error.localizedDescription
             Analytics.trackError("api_key_validation", error: error)
-            // Remove invalid key from Keychain if validation failed
-            try? KeychainManager.deleteAPIKey()
         }
     }
 }

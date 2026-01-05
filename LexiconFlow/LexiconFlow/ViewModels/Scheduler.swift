@@ -72,28 +72,11 @@ final class Scheduler {
     /// - Returns: Array of due flashcards, sorted by due date ascending
     private func fetchDueCards(limit: Int) -> [Flashcard] {
         let now = Date()
-
-        // Fetch cards with FSRS state that are due, excluding new cards
-        let stateDescriptor = FetchDescriptor<FSRSState>(
-            predicate: #Predicate<FSRSState> { state in
-                state.dueDate <= now && state.stateEnum != "new"
-            },
-            sortBy: [SortDescriptor(\.dueDate, order: .forward)]
-        )
-
-        do {
-            let dueStates = try modelContext.fetch(stateDescriptor)
-
-            // Get the cards associated with these states
-            let dueCards = dueStates.compactMap { $0.card }
-
-            // Apply limit
-            return Array(dueCards.prefix(limit))
-        } catch {
-            Analytics.trackError("fetch_due_cards", error: error)
-            print("❌ Scheduler: Error fetching due cards: \(error)")
-            return []
+        let predicate = #Predicate<FSRSState> { state in
+            state.dueDate <= now && state.stateEnum != "new"
         }
+        let sortBy = [SortDescriptor(\FSRSState.dueDate, order: .forward)]
+        return fetchCards(limit: limit, predicate: predicate, sortBy: sortBy, errorName: "fetch_due_cards")
     }
 
     /// Fetch cards for cram mode (lowest stability first)
@@ -105,23 +88,36 @@ final class Scheduler {
     /// - Parameter limit: Maximum number of cards to return
     /// - Returns: Array of flashcards sorted by stability ascending
     private func fetchCramCards(limit: Int) -> [Flashcard] {
-        // Fetch all cards with FSRS state, sorted by stability (ascending)
-        // New cards have stability=0, so they appear first
-        let stateDescriptor = FetchDescriptor<FSRSState>(
-            sortBy: [SortDescriptor(\.stability, order: .forward)]
-        )
+        let sortBy = [SortDescriptor(\FSRSState.stability, order: .forward)]
+        return fetchCards(limit: limit, predicate: nil, sortBy: sortBy, errorName: "fetch_cram_cards")
+    }
+
+    /// Generic fetch method for cards with configurable predicate and sort
+    ///
+    /// - Parameters:
+    ///   - limit: Maximum number of cards to return
+    ///   - predicate: Optional predicate to filter FSRS states
+    ///   - sortBy: Sort descriptors for ordering
+    ///   - errorName: Name for error tracking
+    /// - Returns: Array of flashcards matching the criteria
+    private func fetchCards(
+        limit: Int,
+        predicate: Predicate<FSRSState>?,
+        sortBy: [SortDescriptor<FSRSState>],
+        errorName: String
+    ) -> [Flashcard] {
+        var stateDescriptor = FetchDescriptor<FSRSState>(sortBy: sortBy)
+        if let predicate = predicate {
+            stateDescriptor.predicate = predicate
+        }
 
         do {
             let states = try modelContext.fetch(stateDescriptor)
-
-            // Get the cards associated with these states
             let cards = states.compactMap { $0.card }
-
-            // Apply limit
             return Array(cards.prefix(limit))
         } catch {
-            Analytics.trackError("fetch_cram_cards", error: error)
-            print("❌ Scheduler: Error fetching cram cards: \(error)")
+            Analytics.trackError(errorName, error: error)
+            print("❌ Scheduler: Error fetching cards: \(error)")
             return []
         }
     }

@@ -27,9 +27,6 @@ struct AddFlashcardView: View {
     @State private var isTranslating = false
     @State private var errorMessage: String?
 
-    @AppStorage("translationEnabled") private var translationEnabled = true
-    @AppStorage("translationTargetLanguage") private var targetLanguage = "ru"
-
     private let logger = Logger(subsystem: "com.lexiconflow.flashcard", category: "AddFlashcardView")
 
     var body: some View {
@@ -129,8 +126,14 @@ struct AddFlashcardView: View {
             }
             .onChange(of: selectedImage) { _, newItem in
                 Task {
-                    if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                    guard let newItem = newItem else { return }
+                    do {
+                        let data = try await newItem.loadTransferable(type: Data.self)
                         imageData = data
+                    } catch {
+                        errorMessage = "Failed to load image: \(error.localizedDescription)"
+                        logger.error("Image loading failed: \(error.localizedDescription)")
+                        Analytics.trackError("image_load_failed", error: error)
                     }
                 }
             }
@@ -162,7 +165,7 @@ struct AddFlashcardView: View {
         // 2. Automatic translation - NEW
         isTranslating = true
 
-        if translationEnabled && TranslationService.shared.isConfigured {
+        if AppSettings.isTranslationEnabled && TranslationService.shared.isConfigured {
             do {
                 let result = try await TranslationService.shared.translate(
                     word: word,
@@ -175,7 +178,7 @@ struct AddFlashcardView: View {
                     flashcard.cefrLevel = item.cefrLevel
                     flashcard.contextSentence = item.contextSentence
                     flashcard.translationSourceLanguage = "en"
-                    flashcard.translationTargetLanguage = targetLanguage
+                    flashcard.translationTargetLanguage = AppSettings.translationTargetLanguage
 
                     logger.info("Translation successful: '\(word)' -> '\(item.targetTranslation)' (CEFR: \(item.cefrLevel))")
                 }
@@ -183,7 +186,7 @@ struct AddFlashcardView: View {
                 logger.error("Translation failed: \(error.localizedDescription)")
                 // Card is still saved without translation
             }
-        } else if translationEnabled && !TranslationService.shared.isConfigured {
+        } else if AppSettings.isTranslationEnabled && !TranslationService.shared.isConfigured {
             logger.warning("Translation enabled but API key not configured, skipping")
         }
 

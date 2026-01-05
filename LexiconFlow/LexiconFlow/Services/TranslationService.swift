@@ -67,6 +67,108 @@ final class TranslationService {
         logger.info("Languages set: \(source) -> \(target)")
     }
 
+    /// Validate an API key without storing it to Keychain
+    ///
+    /// Use this method to validate a new API key before committing it to storage.
+    /// Performs a test translation request with the provided key.
+    ///
+    /// - Parameter key: The API key to validate
+    /// - Returns: `true` if the key is valid, `false` otherwise
+    /// - Throws: `TranslationError` if the validation request fails
+    func validateAPIKey(_ key: String) async throws -> Bool {
+        guard !key.isEmpty else {
+            logger.error("API key validation failed: key is empty")
+            throw TranslationError.missingAPIKey
+        }
+
+        let systemPrompt = """
+        Translate English vocabulary to \(targetLanguage) with CEFR level.
+
+        Return ONLY raw JSON (no markdown):
+        {
+          "items": [{
+            "target_word": "...",
+            "context_sentence": "...",
+            "translation": "specific to definition",
+            "cefr_level": "A1-C2",
+            "definition_en": "..."
+          }]
+        }
+
+        Rules:
+        - Single JSON object
+        - Context-specific translation
+        - Estimate CEFR level accurately
+        """
+
+        let userPrompt = """
+        Word: test
+        Definition: a trial or test to validate something
+        """
+
+        let request = TranslationRequest(
+            model: "glm-4.7",
+            temperature: 0.1,
+            messages: [
+                .init(role: "system", content: systemPrompt),
+                .init(role: "user", content: userPrompt)
+            ]
+        )
+
+        guard let url = URL(string: self.baseURL) else {
+            logger.error("Invalid base URL: \(self.baseURL)")
+            throw TranslationError.invalidConfiguration
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        urlRequest.httpBody = try JSONEncoder().encode(request)
+
+        logger.debug("Validating API key with test request (URL: \(url.absoluteString))")
+
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
+            logger.error("API key validation error: Invalid HTTP response - \(String(errorBody.prefix(200)))")
+            throw TranslationError.apiFailed
+        }
+
+        switch httpResponse.statusCode {
+        case 200:
+            // Valid API key - verify response has expected content
+            let rawResponse = try JSONDecoder().decode(ZAIResponse.self, from: data)
+            let content = rawResponse.choices.first?.message.content ?? ""
+            let isValid = !content.isEmpty
+            logger.info("API key validation succeeded: isValid=\(isValid)")
+            return isValid
+
+        case 401:
+            logger.error("API key validation failed: Invalid credentials (401)")
+            throw TranslationError.clientError(statusCode: 401, message: "Invalid API key")
+
+        case 429:
+            logger.warning("API key validation hit rate limit (429)")
+            throw TranslationError.rateLimit
+
+        case 400...499:
+            let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
+            logger.error("API key validation client error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
+            throw TranslationError.clientError(statusCode: httpResponse.statusCode, message: errorBody)
+
+        case 500...599:
+            let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
+            logger.error("API key validation server error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
+            throw TranslationError.serverError(statusCode: httpResponse.statusCode, message: errorBody)
+
+        default:
+            logger.error("API key validation unexpected HTTP status: \(httpResponse.statusCode)")
+            throw TranslationError.apiFailed
+        }
+    }
+
     // MARK: - Batch Translation Types
 
     /// Result of a single translation task within a batch
@@ -133,7 +235,7 @@ final class TranslationService {
             enum CodingKeys: String, CodingKey {
                 case targetWord = "target_word"
                 case contextSentence = "context_sentence"
-                case targetTranslation = "russian_translation"  // API still returns this key
+                case targetTranslation = "translation"  // Generic translation key for any target language
                 case cefrLevel = "cefr_level"
                 case definitionEn = "definition_en"
             }
@@ -234,33 +336,24 @@ final class TranslationService {
 
         // Use withThrowingTaskGroup to handle cancellation checks
         return try await withThrowingTaskGroup(of: TranslationTaskResult.self) { group in
-            // Add all tasks to the group
+            // Add all tasks with concurrency control
             for (index, card) in cards.enumerated() {
-                // Check cancellation before each task
                 try Task.checkCancellation()
 
-                // Implement semaphore-like concurrency limit
+                // Wait for task completion if we've reached max concurrency
                 if index >= maxConcurrency {
-                    // Wait for one task to complete before adding more
                     if let result = try await group.next() {
                         results.append(result)
                         completedCount += 1
-
-                        // Report progress on main thread
-                        if let handler = progressHandler {
-                            let progress = BatchTranslationProgress(
-                                current: completedCount,
-                                total: cards.count,
-                                currentWord: result.card.word
-                            )
-                            await MainActor.run {
-                                handler(progress)
-                            }
-                        }
+                        await reportProgress(
+                            handler: progressHandler,
+                            current: completedCount,
+                            total: cards.count,
+                            word: result.card.word
+                        )
                     }
                 }
 
-                // Add translation task
                 group.addTask {
                     await self.performTranslationWithRetry(card: card)
                 }
@@ -270,75 +363,78 @@ final class TranslationService {
             for try await result in group {
                 results.append(result)
                 completedCount += 1
-
-                // Report progress for remaining items
-                if let handler = progressHandler {
-                    let progress = BatchTranslationProgress(
-                        current: completedCount,
-                        total: cards.count,
-                        currentWord: result.card.word
-                    )
-                    await MainActor.run {
-                        handler(progress)
-                    }
-                }
-            }
-
-            // Calculate final result
-            let successes = results.filter { result in
-                switch result.result {
-                case .success: return true
-                case .failure: return false
-                }
-            }
-            let failures = results.filter { result in
-                switch result.result {
-                case .success: return false
-                case .failure: return true
-                }
-            }
-            let errors = failures.compactMap { (result) -> TranslationError? in
-                switch result.result {
-                case .failure(let error): return error
-                case .success: return nil
-                }
-            }
-
-            // Extract successful translations to apply to cards
-            let successfulTranslations: [SuccessfulTranslation] = successes.compactMap { result in
-                guard case .success(let response) = result.result,
-                      let item = response.items.first else {
-                    return nil
-                }
-                return SuccessfulTranslation(
-                    card: result.card,
-                    translation: item.targetTranslation,
-                    cefrLevel: item.cefrLevel,
-                    contextSentence: item.contextSentence,
-                    sourceLanguage: sourceLanguage,
-                    targetLanguage: targetLanguage
+                await reportProgress(
+                    handler: progressHandler,
+                    current: completedCount,
+                    total: cards.count,
+                    word: result.card.word
                 )
             }
 
+            // Aggregate and return results
             let duration = Date().timeIntervalSince(startTime)
-
-            let batchResult = TranslationBatchResult(
-                successCount: successes.count,
-                failedCount: failures.count,
-                totalDuration: duration,
-                errors: errors,
-                successfulTranslations: successfulTranslations
-            )
-
-            logger.info("""
-                Batch translation complete:
-                - Success: \(successes.count)
-                - Failed: \(failures.count)
-                - Duration: \(String(format: "%.2f", duration))s
-                """)
-
+            let batchResult = aggregateResults(results, duration: duration)
+            logBatchCompletion(batchResult)
             return batchResult
         }
+    }
+
+    /// Report progress to handler on main actor
+    private func reportProgress(
+        handler: (@Sendable (BatchTranslationProgress) -> Void)?,
+        current: Int,
+        total: Int,
+        word: String
+    ) async {
+        guard let handler = handler else { return }
+        let progress = BatchTranslationProgress(current: current, total: total, currentWord: word)
+        await MainActor.run { handler(progress) }
+    }
+
+    /// Aggregate translation results into final batch result
+    private func aggregateResults(
+        _ results: [TranslationTaskResult],
+        duration: TimeInterval
+    ) -> TranslationBatchResult {
+        let successes = results.filter { if case .success = $0.result { true } else { false } }
+        let failures = results.filter { if case .failure = $0.result { true } else { false } }
+        let errors = failures.compactMap { (result) -> TranslationError? in
+            guard case .failure(let error) = result.result else { return nil }
+            return error
+        }
+
+        let successfulTranslations: [SuccessfulTranslation] = successes.compactMap { result in
+            guard case .success(let response) = result.result,
+                  let item = response.items.first else {
+                return nil
+            }
+            return SuccessfulTranslation(
+                card: result.card,
+                translation: item.targetTranslation,
+                cefrLevel: item.cefrLevel,
+                contextSentence: item.contextSentence,
+                sourceLanguage: sourceLanguage,
+                targetLanguage: targetLanguage
+            )
+        }
+
+        return TranslationBatchResult(
+            successCount: successes.count,
+            failedCount: failures.count,
+            totalDuration: duration,
+            errors: errors,
+            successfulTranslations: successfulTranslations
+        )
+    }
+
+    /// Log batch translation completion summary
+    private func logBatchCompletion(_ result: TranslationBatchResult) {
+        logger.info("""
+            Batch translation complete:
+            - Success: \(result.successCount)
+            - Failed: \(result.failedCount)
+            - Duration: \(String(format: "%.2f", result.totalDuration))s
+            """)
     }
 
     /// Performs translation with exponential backoff retry on rate limit errors
@@ -461,7 +557,7 @@ final class TranslationService {
           "items": [{
             "target_word": "...",
             "context_sentence": "...",
-            "russian_translation": "specific to definition",
+            "translation": "specific to definition",
             "cefr_level": "A1-C2",
             "definition_en": "..."
           }]

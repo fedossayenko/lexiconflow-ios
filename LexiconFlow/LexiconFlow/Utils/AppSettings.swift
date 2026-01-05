@@ -24,6 +24,20 @@ enum AppSettings {
     /// Target language code for translation (e.g., "ru")
     @AppStorage("translationTargetLanguage") static var translationTargetLanguage: String = "ru"
 
+    /// Supported translation languages
+    static let supportedLanguages: [(code: String, name: String)] = [
+        ("en", "English"),
+        ("ru", "Russian"),
+        ("es", "Spanish"),
+        ("fr", "French"),
+        ("de", "German"),
+        ("it", "Italian"),
+        ("ja", "Japanese"),
+        ("ko", "Korean"),
+        ("zh-Hans", "Chinese (Simplified)"),
+        ("pt", "Portuguese")
+    ]
+
     // Note: API key is now stored securely in Keychain, not UserDefaults
     // Use KeychainManager.getAPIKey() and KeychainManager.setAPIKey() to access it
 

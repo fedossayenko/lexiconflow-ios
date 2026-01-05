@@ -23,7 +23,6 @@ struct DeckDetailView: View {
     @State private var showingTranslationResult = false
     @State private var translationTask: Task<Void, Never>?
 
-    @AppStorage("translationEnabled") private var translationEnabled = true
     private let logger = Logger(subsystem: "com.lexiconflow.deckdetail", category: "BatchTranslation")
     private let translationService = TranslationService.shared
 
@@ -147,7 +146,7 @@ struct DeckDetailView: View {
                 Button("Translate All") {
                     showingTranslateConfirmation = true
                 }
-                .disabled(deck.cards.isEmpty || !translationEnabled || !translationService.isConfigured || isTranslating)
+                .disabled(deck.cards.isEmpty || !AppSettings.isTranslationEnabled || !translationService.isConfigured || isTranslating)
             }
         }
         .sheet(isPresented: $showingAddCard) {
