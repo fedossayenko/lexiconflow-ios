@@ -65,17 +65,11 @@ struct FlashcardView: View {
             if isFlipped {
                 CardBackView(card: card)
                     .matchedGeometryEffect(id: "cardFace", namespace: morphingNamespace)
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.95)),
-                        removal: .opacity.combined(with: .scale(scale: 1.05))
-                    ))
+                    .transition(.glassEffectTransition(.materialize))
             } else {
                 CardFrontView(card: card)
                     .matchedGeometryEffect(id: "cardFace", namespace: morphingNamespace)
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.95)),
-                        removal: .opacity.combined(with: .scale(scale: 1.05))
-                    ))
+                    .transition(.glassEffectTransition(.materialize))
             }
         }
         .frame(maxWidth: .infinity)
