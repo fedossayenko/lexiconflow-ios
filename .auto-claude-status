@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "011-fsrs-v5-algorithm-integration",
+  "state": "building",
+  "subtasks": {
+    "completed": 7,
+    "total": 13,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Phase 2: Test Coverage Verification",
+    "id": null,
+    "total": 3
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 3,
+    "started_at": "2026-01-05T21:48:33.605534"
+  },
+  "last_update": "2026-01-05T21:54:04.844766"
+}
