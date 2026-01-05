@@ -66,7 +66,7 @@ struct StudyView: View {
                     })
                 }
             }
-            .onAppear {
+            .task {
                 refreshDueCount()
             }
             .onChange(of: studyMode) { _, _ in

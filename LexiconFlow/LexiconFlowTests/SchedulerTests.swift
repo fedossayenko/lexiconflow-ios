@@ -482,4 +482,222 @@ struct SchedulerTests {
         let totalCount = cards.reduce(0) { $0 + $1.reviewLogs.count }
         #expect(totalCount == 10)
     }
+
+    // MARK: - Concurrency Stress Tests
+
+    @Test("Concurrent fetchCards calls from multiple tasks")
+    func concurrentFetchCards() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // Create 20 due cards
+        for i in 1...20 {
+            _ = createTestFlashcard(context: context, word: "card\(i)", state: .review, dueOffset: -3600)
+        }
+        try context.save()
+
+        // Concurrent fetch calls from multiple tasks
+        await withTaskGroup(of: [Flashcard].self) { group in
+            for _ in 1...10 {
+                group.addTask {
+                    return scheduler.fetchCards(mode: .scheduled, limit: 20)
+                }
+            }
+        }
+
+        // Should complete without errors
+        // @MainActor ensures serialization
+    }
+
+    @Test("Concurrent processReview on same card")
+    func concurrentProcessReviewSameCard() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        let flashcard = createTestFlashcard(context: context, word: "shared", state: .review)
+        try context.save()
+
+        // Spawn 20 concurrent reviews on the SAME card
+        await withTaskGroup(of: Void.self) { group in
+            for _ in 1...20 {
+                group.addTask {
+                    _ = await scheduler.processReview(
+                        flashcard: flashcard,
+                        rating: 2,
+                        mode: .scheduled
+                    )
+                }
+            }
+        }
+
+        // @MainActor ensures serialization - should have 20 logs
+        #expect(flashcard.reviewLogs.count == 20)
+    }
+
+    @Test("Concurrent reset and review on same card")
+    func concurrentResetAndReview() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        let flashcard = createTestFlashcard(context: context, word: "test", state: .review)
+        flashcard.fsrsState!.stability = 50.0
+        try context.save()
+
+        // Concurrent reset and review operations
+        await withTaskGroup(of: Void.self) { group in
+            for i in 1...10 {
+                if i % 2 == 0 {
+                    group.addTask {
+                        _ = await scheduler.processReview(
+                            flashcard: flashcard,
+                            rating: 2,
+                            mode: .scheduled
+                        )
+                    }
+                } else {
+                    group.addTask {
+                        _ = await scheduler.resetFlashcard(flashcard)
+                    }
+                }
+            }
+        }
+
+        // @MainActor ensures serialization - state should be valid
+        #expect(flashcard.fsrsState != nil)
+    }
+
+    @Test("Concurrent dueCardCount calls")
+    func concurrentDueCardCount() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // Create 15 due cards
+        for i in 1...15 {
+            _ = createTestFlashcard(context: context, word: "card\(i)", state: .review, dueOffset: -3600)
+        }
+        try context.save()
+
+        // Concurrent count calls
+        var counts: [Int] = []
+        await withTaskGroup(of: Int.self) { group in
+            for _ in 1...20 {
+                group.addTask {
+                    return scheduler.dueCardCount()
+                }
+            }
+
+            for await count in group {
+                counts.append(count)
+            }
+        }
+
+        // All counts should be consistent
+        #expect(counts.allSatisfy { $0 == 15 })
+    }
+
+    @Test("Concurrent previewRatings calls")
+    func concurrentPreviewRatings() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        let flashcard = createTestFlashcard(context: context, state: .review)
+        try context.save()
+
+        // Concurrent preview calls
+        await withTaskGroup(of: [Int: Date].self) { group in
+            for _ in 1...15 {
+                group.addTask {
+                    return await scheduler.previewRatings(for: flashcard)
+                }
+            }
+        }
+
+        // Should complete without errors
+        // @MainActor ensures serialization
+    }
+
+    @Test("Concurrent fetch and process on different cards")
+    func concurrentFetchAndProcess() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // Create 30 cards
+        var cards: [Flashcard] = []
+        for i in 1...30 {
+            let card = createTestFlashcard(context: context, word: "card\(i)", state: .review, dueOffset: -3600)
+            cards.append(card)
+        }
+        try context.save()
+
+        // Mix of fetch and process operations
+        await withTaskGroup(of: Void.self) { group in
+            // 10 fetch operations
+            for _ in 1...10 {
+                group.addTask {
+                    _ = scheduler.fetchCards(mode: .scheduled, limit: 10)
+                }
+            }
+
+            // 20 process operations
+            for card in cards {
+                group.addTask {
+                    _ = await scheduler.processReview(
+                        flashcard: card,
+                        rating: 2,
+                        mode: .scheduled
+                    )
+                }
+            }
+        }
+
+        // All operations should complete
+        let totalLogs = cards.reduce(0) { $0 + $1.reviewLogs.count }
+        #expect(totalLogs == 30)
+    }
+
+    @Test("Concurrent batch import simulation")
+    func concurrentBatchImport() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // Simulate batch import: create and process many cards
+        var allCards: [Flashcard] = []
+        for batch in 1...5 {
+            var batchCards: [Flashcard] = []
+            for i in 1...10 {
+                let card = createTestFlashcard(
+                    context: context,
+                    word: "batch\(batch)-card\(i)",
+                    state: .review
+                )
+                batchCards.append(card)
+                allCards.append(card)
+            }
+            try context.save()
+        }
+
+        // Process all batches concurrently
+        await withTaskGroup(of: Void.self) { group in
+            for card in allCards {
+                group.addTask {
+                    _ = await scheduler.processReview(
+                        flashcard: card,
+                        rating: 2,
+                        mode: .scheduled
+                    )
+                }
+            }
+        }
+
+        // All 50 cards should be processed
+        let totalLogs = allCards.reduce(0) { $0 + $1.reviewLogs.count }
+        #expect(totalLogs == 50)
+    }
 }

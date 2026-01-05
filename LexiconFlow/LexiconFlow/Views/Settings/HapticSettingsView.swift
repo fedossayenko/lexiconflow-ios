@@ -8,8 +8,6 @@
 import SwiftUI
 
 struct HapticSettingsView: View {
-    @AppStorage("hapticEnabled") private var isEnabled = true
-    @AppStorage("hapticIntensity") private var intensity = 1.0
     @State private var isTesting = false
 
     private let hapticService = HapticService.shared
@@ -17,23 +15,29 @@ struct HapticSettingsView: View {
     var body: some View {
         Form {
             Section {
-                Toggle("Haptic Feedback", isOn: $isEnabled)
+                Toggle("Haptic Feedback", isOn: Binding(
+                    get: { AppSettings.hapticEnabled },
+                    set: { AppSettings.hapticEnabled = $0 }
+                ))
                     .accessibilityLabel("Enable haptic feedback")
 
-                if isEnabled {
+                if AppSettings.hapticEnabled {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Intensity")
                             .font(.caption)
                             .foregroundStyle(.secondary)
 
-                        Slider(value: $intensity, in: 0.1...1.0, step: 0.1)
+                        Slider(value: Binding(
+                            get: { AppSettings.hapticIntensity },
+                            set: { AppSettings.hapticIntensity = $0 }
+                        ), in: 0.1...1.0, step: 0.1)
                             .accessibilityLabel("Haptic intensity")
-                            .accessibilityValue("\(Int(intensity * 100))%")
+                            .accessibilityValue("\(Int(AppSettings.hapticIntensity * 100))%")
 
                         HStack(spacing: 12) {
                             Button("Light") {
                                 withAnimation(.easeInOut(duration: 0.2)) {
-                                    intensity = 0.3
+                                    AppSettings.hapticIntensity = 0.3
                                 }
                             }
                             .buttonStyle(.bordered)
@@ -41,7 +45,7 @@ struct HapticSettingsView: View {
 
                             Button("Medium") {
                                 withAnimation(.easeInOut(duration: 0.2)) {
-                                    intensity = 0.6
+                                    AppSettings.hapticIntensity = 0.6
                                 }
                             }
                             .buttonStyle(.bordered)
@@ -49,7 +53,7 @@ struct HapticSettingsView: View {
 
                             Button("Heavy") {
                                 withAnimation(.easeInOut(duration: 0.2)) {
-                                    intensity = 1.0
+                                    AppSettings.hapticIntensity = 1.0
                                 }
                             }
                             .buttonStyle(.bordered)
@@ -64,7 +68,7 @@ struct HapticSettingsView: View {
                 Text("Haptic feedback during card swipes and ratings. Test the intensity below:")
             }
 
-            if isEnabled {
+            if AppSettings.hapticEnabled {
                 Button {
                     testHaptic()
                 } label: {

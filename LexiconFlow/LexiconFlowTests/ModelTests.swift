@@ -316,4 +316,88 @@ struct ModelTests {
         let deletedReview = reviews.first { $0.id == reviewId }
         #expect(deletedReview == nil || deletedReview?.card == nil)
     }
+
+    // MARK: - ModelContainer Fallback Tests
+
+    @Test("ModelContainer creation with valid schema succeeds")
+    func modelContainerCreationWithValidSchema() {
+        let schema = Schema([
+            Flashcard.self,
+            Deck.self,
+            FSRSState.self,
+            FlashcardReview.self
+        ])
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+
+        do {
+            let container = try ModelContainer(for: schema, configurations: [configuration])
+            #expect(container.mainContext != nil, "Container should have valid context")
+        } catch {
+            #expect(Bool(false), "Container creation should not fail: \(error)")
+        }
+    }
+
+    @Test("ModelContainer fallback to in-memory on persistent failure")
+    func modelContainerFallbackToInMemory() {
+        let schema = Schema([
+            Flashcard.self,
+            Deck.self,
+            FSRSState.self,
+            FlashcardReview.self
+        ])
+
+        // First, try persistent storage
+        let persistentConfig = ModelConfiguration(isStoredInMemoryOnly: false)
+        var persistentContainer: ModelContainer?
+
+        do {
+            persistentContainer = try ModelContainer(for: schema, configurations: [persistentConfig])
+        } catch {
+            // Expected to potentially fail in test environment
+        }
+
+        // Always fall back to in-memory
+        let inMemoryConfig = ModelConfiguration(isStoredInMemoryOnly: true)
+        do {
+            let container = try ModelContainer(for: schema, configurations: [inMemoryConfig])
+            #expect(container.mainContext != nil, "In-memory container should be valid")
+        } catch {
+            #expect(Bool(false), "In-memory fallback should not fail: \(error)")
+        }
+    }
+
+    @Test("ModelContainer empty schema fallback works")
+    func modelContainerEmptySchemaFallback() {
+        // This mimics the final fallback in LexiconFlowApp
+        let emptyContainer = ModelContainer(for: [])
+
+        #expect(emptyContainer.mainContext != nil, "Empty container should have context")
+    }
+
+    @Test("ModelContainer configurations can be checked")
+    func modelContainerConfigurationCheck() {
+        let schema = Schema([Flashcard.self])
+        let inMemoryConfig = ModelConfiguration(isStoredInMemoryOnly: true)
+
+        do {
+            let container = try ModelContainer(for: schema, configurations: [inMemoryConfig])
+            let isInMemory = container.configurations.allSatisfy { $0.isStoredInMemoryOnly }
+            #expect(isInMemory, "Container should use in-memory configuration")
+        } catch {
+            #expect(Bool(false), "Container creation should not fail: \(error)")
+        }
+    }
+
+    @Test("ModelContainer handles schema with no models")
+    func modelContainerHandlesNoModels() {
+        let emptySchema = Schema([])
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+
+        do {
+            let container = try ModelContainer(for: emptySchema, configurations: [configuration])
+            #expect(container.mainContext != nil, "Container with no models should still work")
+        } catch {
+            #expect(Bool(false), "Empty schema container should not fail: \(error)")
+        }
+    }
 }

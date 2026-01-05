@@ -11,11 +11,10 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     var body: some View {
         Group {
-            if hasCompletedOnboarding {
+            if AppSettings.hasCompletedOnboarding {
                 MainTabView()
             } else {
                 OnboardingView()

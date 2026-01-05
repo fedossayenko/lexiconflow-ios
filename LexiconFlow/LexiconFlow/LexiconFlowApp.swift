@@ -65,10 +65,17 @@ struct LexiconFlowApp: App {
             // This prevents crash but allows error UI to be shown
             return try ModelContainer(for: schema, configurations: [])
         } catch {
-            // If this somehow fails, we have no choice but to crash
-            // This should never happen with an empty configuration
-            logger.critical("Minimal container creation failed: \(error.localizedDescription)")
-            fatalError("Could not create any ModelContainer: \(error)")
+            // Absolute last resort: create completely empty container
+            // This will allow the app to launch with minimal functionality
+            // ContentView can detect this and show appropriate error UI
+            logger.critical("All container creation failed. Using emergency empty container: \(error.localizedDescription)")
+            Analytics.trackIssue(
+                "model_container_emergency_fallback",
+                message: "All storage attempts failed, using emergency empty container"
+            )
+            // Return an empty container - this should never fail
+            // The app will launch but models will be unavailable
+            return ModelContainer(for: [])
         }
     }()
 

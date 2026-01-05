@@ -6,31 +6,31 @@
 //
 
 import SwiftUI
-import Combine
 
 /// View model for tracking and updating flashcard swipe gesture state.
 ///
 /// Provides visual feedback state based on drag direction and progress.
 /// Maps 4-directional swipes to FSRS ratings with appropriate visual effects.
 @MainActor
-class CardGestureViewModel: ObservableObject {
+@Observable
+class CardGestureViewModel {
 
-    // MARK: - Published Properties
+    // MARK: - Observable Properties
 
     /// Current offset of the card from center.
-    @Published var offset: CGSize = .zero
+    var offset: CGSize = .zero
 
     /// Scale factor applied to the card during swipe.
-    @Published var scale: CGFloat = 1.0
+    var scale: CGFloat = 1.0
 
     /// Rotation angle in degrees during swipe.
-    @Published var rotation: Double = 0.0
+    var rotation: Double = 0.0
 
     /// Opacity of the card during swipe.
-    @Published var opacity: Double = 1.0
+    var opacity: Double = 1.0
 
     /// Tint color overlay based on swipe direction.
-    @Published var tintColor: Color = .clear
+    var tintColor: Color = .clear
 
     // MARK: - Constants
 

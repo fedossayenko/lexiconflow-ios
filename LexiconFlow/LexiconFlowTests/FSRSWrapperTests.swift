@@ -297,4 +297,208 @@ struct FSRSWrapperTests {
         #expect(result.retrievability >= 0.0)
         #expect(result.retrievability <= 1.0)
     }
+
+    // MARK: - FSRS Edge Case Tests
+
+    @Test("Negative stability values are handled")
+    func negativeStabilityValues() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let flashcard = createTestFlashcard(context: context, withState: true)
+
+        // Set negative stability (edge case)
+        flashcard.fsrsState!.stability = -10.0
+        try context.save()
+
+        let result = try await FSRSWrapper.shared.processReview(
+            flashcard: flashcard,
+            rating: 2,
+            now: Date()
+        )
+
+        // FSRS should handle this gracefully
+        // Stability should be adjusted to valid range
+        #expect(result.stability >= 0, "Stability should be non-negative after processing")
+    }
+
+    @Test("Extreme difficulty value of 0 is handled")
+    func extremeDifficultyZero() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let flashcard = createTestFlashcard(context: context, withState: true)
+
+        flashcard.fsrsState!.difficulty = 0.0
+        try context.save()
+
+        let result = try await FSRSWrapper.shared.processReview(
+            flashcard: flashcard,
+            rating: 2,
+            now: Date()
+        )
+
+        // Difficulty should be adjusted to valid range
+        #expect(result.difficulty >= 1 && result.difficulty <= 10, "Difficulty should be in valid range")
+    }
+
+    @Test("Extreme difficulty value of 10 is handled")
+    func extremeDifficultyTen() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let flashcard = createTestFlashcard(context: context, withState: true)
+
+        flashcard.fsrsState!.difficulty = 10.0
+        try context.save()
+
+        let result = try await FSRSWrapper.shared.processReview(
+            flashcard: flashcard,
+            rating: 2,
+            now: Date()
+        )
+
+        // Should handle max difficulty
+        #expect(result.difficulty <= 10, "Difficulty should not exceed 10")
+    }
+
+    @Test("Invalid difficulty value below 0 is clamped")
+    func invalidDifficultyBelowZero() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let flashcard = createTestFlashcard(context: context, withState: true)
+
+        flashcard.fsrsState!.difficulty = -1.0
+        try context.save()
+
+        let result = try await FSRSWrapper.shared.processReview(
+            flashcard: flashcard,
+            rating: 2,
+            now: Date()
+        )
+
+        // Should clamp to valid range
+        #expect(result.difficulty >= 1 && result.difficulty <= 10, "Difficulty should be in valid range")
+    }
+
+    @Test("Invalid difficulty value above 10 is clamped")
+    func invalidDifficultyAboveTen() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let flashcard = createTestFlashcard(context: context, withState: true)
+
+        flashcard.fsrsState!.difficulty = 11.0
+        try context.save()
+
+        let result = try await FSRSWrapper.shared.processReview(
+            flashcard: flashcard,
+            rating: 2,
+            now: Date()
+        )
+
+        // Should clamp to valid range
+        #expect(result.difficulty >= 1 && result.difficulty <= 10, "Difficulty should be in valid range")
+    }
+
+    @Test("Zero retrievability is handled")
+    func zeroRetrievability() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let flashcard = createTestFlashcard(context: context, withState: true)
+
+        flashcard.fsrsState!.retrievability = 0.0
+        try context.save()
+
+        let result = try await FSRSWrapper.shared.processReview(
+            flashcard: flashcard,
+            rating: 2,
+            now: Date()
+        )
+
+        // Should handle zero retrievability
+        #expect(result.retrievability >= 0, "Retrievability should be non-negative")
+    }
+
+    @Test("Negative scheduled days are handled")
+    func negativeScheduledDays() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let flashcard = createTestFlashcard(context: context, withState: true)
+
+        // Set a past due date
+        flashcard.fsrsState!.dueDate = Date().addingTimeInterval(-86400) // 1 day ago
+        try context.save()
+
+        let result = try await FSRSWrapper.shared.processReview(
+            flashcard: flashcard,
+            rating: 2,
+            now: Date()
+        )
+
+        // Should schedule for future despite past due date
+        #expect(result.scheduledDays >= 0, "Scheduled days should be non-negative")
+        #expect(result.dueDate > Date(), "Due date should be in the future")
+    }
+
+    @Test("Very large elapsed days (1000+) is handled")
+    func veryLargeElapsedDays() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let flashcard = createTestFlashcard(context: context, withState: true)
+
+        // Simulate card reviewed 1000 days ago
+        let pastDate = Date().addingTimeInterval(-86400 * 1000)
+        flashcard.fsrsState!.lastReviewDate = pastDate
+        try context.save()
+
+        let result = try await FSRSWrapper.shared.processReview(
+            flashcard: flashcard,
+            rating: 2,
+            now: Date()
+        )
+
+        // Should handle large elapsed time gracefully
+        #expect(result.elapsedDays >= 1000, "Should recognize large elapsed time")
+        #expect(result.dueDate > Date(), "Should still schedule for future")
+    }
+
+    @Test("New to learning state transition works")
+    func newToLearningTransition() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let flashcard = createTestFlashcard(context: context, withState: false)
+
+        // New card (no state yet)
+        try context.save()
+
+        let result = try await FSRSWrapper.shared.processReview(
+            flashcard: flashcard,
+            rating: 0, // Again - should move to learning
+            now: Date()
+        )
+
+        // Should transition from new to learning
+        #expect(result.stateEnum == FlashcardState.learning.rawValue ||
+                result.stateEnum == FlashcardState.relearning.rawValue,
+                "Should transition to learning state")
+    }
+
+    @Test("State enum handles all valid values")
+    func stateEnumValidValues() async throws {
+        let context = freshContext()
+        try context.clearAll()
+
+        for stateEnum in [FlashcardState.new.rawValue, FlashcardState.learning.rawValue,
+                       FlashcardState.review.rawValue, FlashcardState.relearning.rawValue] {
+            let flashcard = createTestFlashcard(context: context, word: "state_\(stateEnum)", withState: true)
+            flashcard.fsrsState!.stateEnum = stateEnum
+            try context.save()
+
+            let result = try await FSRSWrapper.shared.processReview(
+                flashcard: flashcard,
+                rating: 2,
+                now: Date()
+            )
+
+            // Should process without error
+            #expect(result.stateEnum != "", "State enum should be valid")
+        }
+    }
 }

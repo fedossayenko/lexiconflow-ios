@@ -13,6 +13,11 @@ import SwiftUI
 /// preventing naming conflicts and ensuring consistency across the app.
 @MainActor
 enum AppSettings {
+    // MARK: - Onboarding
+
+    /// Whether user has completed the onboarding flow
+    @AppStorage("hasCompletedOnboarding") static var hasCompletedOnboarding: Bool = false
+
     // MARK: - Translation Settings
 
     /// Whether automatic translation is enabled

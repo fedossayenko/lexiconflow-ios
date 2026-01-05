@@ -567,4 +567,269 @@ struct KeychainManagerPersistenceTests {
         let final = try KeychainManager.getAPIKey()
         #expect(final == nil, "All rapid operations completed cleanly")
     }
+
+    // MARK: - Concurrency Stress Tests
+
+    @Test("Concurrent reads (getAPIKey) from multiple tasks")
+    func concurrentReads() async throws {
+        cleanupAPIKey()
+
+        let testKey = "sk-concurrent-read-\(UUID().uuidString)"
+        try KeychainManager.setAPIKey(testKey)
+
+        // Concurrent reads from 20 tasks
+        await withTaskGroup(of: String?.self) { group in
+            for _ in 1...20 {
+                group.addTask {
+                    return try? KeychainManager.getAPIKey()
+                }
+            }
+
+            var results: [String?] = []
+            for await result in group {
+                results.append(result)
+            }
+
+            // All reads should return the same value
+            #expect(results.count == 20)
+            #expect(results.allSatisfy { $0 == testKey })
+        }
+
+        try KeychainManager.deleteAPIKey()
+    }
+
+    @Test("Concurrent writes (setAPIKey) from multiple tasks")
+    func concurrentWrites() async throws {
+        cleanupAPIKey()
+
+        // Concurrent writes from 10 tasks
+        await withTaskGroup(of: Void.self) { group in
+            for i in 1...10 {
+                group.addTask {
+                    let key = "sk-concurrent-\(i)"
+                    try? KeychainManager.setAPIKey(key)
+                }
+            }
+        }
+
+        // Final value should be one of the written keys
+        let final = try KeychainManager.getAPIKey()
+        #expect(final != nil, "Should have a value after concurrent writes")
+        #expect(final?.starts(with: "sk-concurrent-") == true)
+
+        try KeychainManager.deleteAPIKey()
+    }
+
+    @Test("Concurrent read and write operations")
+    func concurrentReadAndWrite() async throws {
+        cleanupAPIKey()
+
+        let initialKey = "sk-initial"
+        try KeychainManager.setAPIKey(initialKey)
+
+        // Mix of reads and writes
+        await withTaskGroup(of: Void.self) { group in
+            // 5 read operations
+            for _ in 1...5 {
+                group.addTask {
+                    _ = try? KeychainManager.getAPIKey()
+                }
+            }
+
+            // 5 write operations
+            for i in 1...5 {
+                group.addTask {
+                    let key = "sk-concurrent-\(i)"
+                    try? KeychainManager.setAPIKey(key)
+                }
+            }
+        }
+
+        // Should complete without crashing
+        let final = try KeychainManager.getAPIKey()
+        #expect(final != nil)
+
+        try KeychainManager.deleteAPIKey()
+    }
+
+    @Test("Concurrent delete while reading")
+    func concurrentDeleteAndRead() async throws {
+        cleanupAPIKey()
+
+        let testKey = "sk-delete-read-test"
+        try KeychainManager.setAPIKey(testKey)
+
+        // Mix of delete and read operations
+        await withTaskGroup(of: Void.self) { group in
+            // 5 delete operations (may fail if already deleted)
+            for _ in 1...5 {
+                group.addTask {
+                    _ = try? KeychainManager.deleteAPIKey()
+                }
+            }
+
+            // 10 read operations
+            for _ in 1...10 {
+                group.addTask {
+                    _ = try? KeychainManager.getAPIKey()
+                }
+            }
+        }
+
+        // Should complete without crashing
+        // Final state may be deleted or may have value
+    }
+
+    @Test("Concurrent generic operations on different accounts")
+    func concurrentGenericOperations() async throws {
+        cleanupAPIKey()
+
+        let accounts = (1...10).map { "account-\($0)" }
+
+        // Concurrent set operations on different accounts
+        await withTaskGroup(of: Void.self) { group in
+            for account in accounts {
+                group.addTask {
+                    let value = "value-for-\(account)"
+                    try? KeychainManager.set(value, forAccount: account)
+                }
+            }
+        }
+
+        // Concurrent get operations
+        var readValues: [String?] = []
+        await withTaskGroup(of: String?.self) { group in
+            for account in accounts {
+                group.addTask {
+                    return try? KeychainManager.get(forAccount: account)
+                }
+            }
+
+            for await value in group {
+                readValues.append(value)
+            }
+        }
+
+        // All values should be retrieved
+        #expect(readValues.count == 10)
+        #expect(readValues.allSatisfy { $0 != nil })
+
+        // Cleanup
+        for account in accounts {
+            try? KeychainManager.delete(forAccount: account)
+        }
+    }
+
+    @Test("Concurrent API key and generic operations")
+    func concurrentAPIAndGenericOperations() async throws {
+        cleanupAPIKey()
+
+        // Mix of API key and generic account operations
+        await withTaskGroup(of: Void.self) { group in
+            // API key operations
+            group.addTask {
+                _ = try? KeychainManager.setAPIKey("sk-api-1")
+            }
+            group.addTask {
+                _ = try? KeychainManager.getAPIKey()
+            }
+
+            // Generic account operations
+            group.addTask {
+                _ = try? KeychainManager.set("generic-1", forAccount: "generic")
+            }
+            group.addTask {
+                _ = try? KeychainManager.get(forAccount: "generic")
+            }
+        }
+
+        // Should complete without crashing
+        let apiKey = try KeychainManager.getAPIKey()
+        let generic = try KeychainManager.get(forAccount: "generic")
+
+        #expect(apiKey != nil || generic != nil)
+
+        // Cleanup
+        try? KeychainManager.deleteAPIKey()
+        try? KeychainManager.delete(forAccount: "generic")
+    }
+
+    @Test("Rapid concurrent operations stress test")
+    func rapidConcurrentStressTest() async throws {
+        cleanupAPIKey()
+
+        // Rapid mix of all operations
+        await withTaskGroup(of: Void.self) { group in
+            for i in 1...50 {
+                if i % 3 == 0 {
+                    // Write
+                    group.addTask {
+                        let key = "sk-stress-\(i)"
+                        _ = try? KeychainManager.setAPIKey(key)
+                    }
+                } else if i % 3 == 1 {
+                    // Read
+                    group.addTask {
+                        _ = try? KeychainManager.getAPIKey()
+                    }
+                } else {
+                    // Delete
+                    group.addTask {
+                        _ = try? KeychainManager.deleteAPIKey()
+                    }
+                }
+            }
+        }
+
+        // Should complete without crashing
+        // Final state cleanup
+        try? KeychainManager.deleteAPIKey()
+    }
+
+    @Test("Concurrent hasAPIKey checks")
+    func concurrentHasAPIKeyChecks() async throws {
+        cleanupAPIKey()
+
+        // Initially no key
+        #expect(KeychainManager.hasAPIKey() == false)
+
+        // Set key
+        try KeychainManager.setAPIKey("sk-has-test")
+
+        // Concurrent hasAPIKey() checks from many tasks
+        var results: [Bool] = []
+        await withTaskGroup(of: Bool.self) { group in
+            for _ in 1...30 {
+                group.addTask {
+                    return KeychainManager.hasAPIKey()
+                }
+            }
+
+            for await result in group {
+                results.append(result)
+            }
+        }
+
+        // All checks should return true
+        #expect(results.count == 30)
+        #expect(results.allSatisfy { $0 == true })
+
+        try KeychainManager.deleteAPIKey()
+
+        // After delete, all should return false
+        var resultsAfterDelete: [Bool] = []
+        await withTaskGroup(of: Bool.self) { group in
+            for _ in 1...20 {
+                group.addTask {
+                    return KeychainManager.hasAPIKey()
+                }
+            }
+
+            for await result in group {
+                resultsAfterDelete.append(result)
+            }
+        }
+
+        #expect(resultsAfterDelete.allSatisfy { $0 == false })
+    }
 }

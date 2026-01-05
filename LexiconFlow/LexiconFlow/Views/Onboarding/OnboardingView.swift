@@ -10,7 +10,6 @@ import SwiftData
 
 struct OnboardingView: View {
     @Environment(\.modelContext) private var modelContext
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var currentPage = 0
     @State private var isCreatingSampleDeck = false
     @State private var errorMessage: String?
@@ -120,7 +119,7 @@ struct OnboardingView: View {
             // Save to persistent store
             do {
                 try modelContext.save()
-                hasCompletedOnboarding = true
+                AppSettings.hasCompletedOnboarding = true
             } catch {
                 Analytics.trackError("onboarding_save", error: error)
                 errorMessage = "Failed to create sample deck: \(error.localizedDescription)"

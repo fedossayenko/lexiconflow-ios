@@ -39,7 +39,7 @@ struct MainTabView: View {
                 .tag(2)
                 .accessibilityIdentifier("settings_tab")
         }
-        .onAppear {
+        .task {
             if scheduler == nil {
                 scheduler = Scheduler(modelContext: modelContext)
             }

@@ -25,13 +25,37 @@ struct AddFlashcardView: View {
     @State private var imageData: Data?
     @State private var isSaving = false
     @State private var isTranslating = false
+    @State private var translationWarning: String?
     @State private var errorMessage: String?
 
     private let logger = Logger(subsystem: "com.lexiconflow.flashcard", category: "AddFlashcardView")
 
+    // Initialize selectedDeck with the passed deck parameter
+    init(deck: Deck) {
+        self.deck = deck
+        _selectedDeck = .init(initialValue: deck)
+    }
+
     var body: some View {
         NavigationStack {
             Form {
+                // Translation warning banner
+                if let warning = translationWarning {
+                    Section {
+                        HStack(spacing: 12) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.orange)
+                            Text(warning)
+                                .font(.subheadline)
+                            Spacer()
+                            Button("Dismiss") {
+                                translationWarning = nil
+                            }
+                            .font(.caption)
+                        }
+                    }
+                }
+
                 Section("Word") {
                     TextField("Word", text: $word)
                         .textInputAutocapitalization(.words)
@@ -137,9 +161,6 @@ struct AddFlashcardView: View {
                     }
                 }
             }
-            .onAppear {
-                selectedDeck = deck
-            }
             .alert("Error", isPresented: .constant(errorMessage != nil)) {
                 Button("OK", role: .cancel) {
                     errorMessage = nil
@@ -184,7 +205,9 @@ struct AddFlashcardView: View {
                 }
             } catch {
                 logger.error("Translation failed: \(error.localizedDescription)")
-                // Card is still saved without translation
+                // Card is still saved without translation, but warn user
+                translationWarning = "Translation failed. Card saved without translation."
+                Analytics.trackError("translation_failed_in_save", error: error)
             }
         } else if AppSettings.isTranslationEnabled && !TranslationService.shared.isConfigured {
             logger.warning("Translation enabled but API key not configured, skipping")

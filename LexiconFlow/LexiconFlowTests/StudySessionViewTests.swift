@@ -27,7 +27,11 @@ struct StudySessionViewTests {
             FlashcardReview.self,
         ])
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try! ModelContainer(for: schema, configurations: [configuration])
+        do {
+            return try ModelContainer(for: schema, configurations: [configuration])
+        } catch {
+            fatalError("Test container creation failed: \(error)")
+        }
     }
 
     private func createTestFlashcard(
@@ -47,7 +51,11 @@ struct StudySessionViewTests {
         card.fsrsState = fsrsState
         context.insert(card)
         context.insert(fsrsState)
-        try! context.save()
+        do {
+            try context.save()
+        } catch {
+            fatalError("Test card save failed: \(error)")
+        }
         return card
     }
 

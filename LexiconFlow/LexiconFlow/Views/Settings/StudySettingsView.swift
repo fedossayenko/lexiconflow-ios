@@ -8,11 +8,6 @@
 import SwiftUI
 
 struct StudySettingsView: View {
-    @AppStorage("studyLimit") private var studyLimit = 20
-    @AppStorage("defaultStudyMode") private var studyMode = "scheduled"
-    @AppStorage("dailyGoal") private var dailyGoal = 20
-    @AppStorage("gestureEnabled") private var gestureEnabled = true
-
     private let limitOptions = [10, 20, 30, 50, 100]
     private let goalOptions = [10, 20, 30, 50, 100]
 
@@ -20,14 +15,20 @@ struct StudySettingsView: View {
         Form {
             // Study Session Limits
             Section {
-                Picker("Cards per Session", selection: $studyLimit) {
+                Picker("Cards per Session", selection: Binding(
+                    get: { AppSettings.studyLimit },
+                    set: { AppSettings.studyLimit = $0 }
+                )) {
                     ForEach(limitOptions, id: \.self) { limit in
                         Text("\(limit) cards").tag(limit)
                     }
                 }
                 .accessibilityLabel("Cards per session")
 
-                Picker("Daily Goal", selection: $dailyGoal) {
+                Picker("Daily Goal", selection: Binding(
+                    get: { AppSettings.dailyGoal },
+                    set: { AppSettings.dailyGoal = $0 }
+                )) {
                     ForEach(goalOptions, id: \.self) { goal in
                         Text("\(goal) cards").tag(goal)
                     }
@@ -41,7 +42,10 @@ struct StudySettingsView: View {
 
             // Study Mode
             Section {
-                Picker("Default Mode", selection: $studyMode) {
+                Picker("Default Mode", selection: Binding(
+                    get: { AppSettings.defaultStudyMode },
+                    set: { AppSettings.defaultStudyMode = $0 }
+                )) {
                     ForEach(AppSettings.StudyModeOption.allCases, id: \.rawValue) { mode in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(mode.displayName)
@@ -62,7 +66,10 @@ struct StudySettingsView: View {
 
             // Grading Preference
             Section {
-                Toggle("Swipe Gestures", isOn: $gestureEnabled)
+                Toggle("Swipe Gestures", isOn: Binding(
+                    get: { AppSettings.gestureEnabled },
+                    set: { AppSettings.gestureEnabled = $0 }
+                ))
                     .accessibilityLabel("Enable swipe gestures for grading")
             } header: {
                 Text("Grading")
@@ -77,12 +84,12 @@ struct StudySettingsView: View {
                         Text("Today's Progress")
                             .font(.subheadline)
                         Spacer()
-                        Text("0/\(dailyGoal)")
+                        Text("0/\(AppSettings.dailyGoal)")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
 
-                    ProgressView(value: 0.0, total: Double(dailyGoal))
+                    ProgressView(value: 0.0, total: Double(AppSettings.dailyGoal))
 
                     Text("Study sessions coming soon!")
                         .font(.caption)

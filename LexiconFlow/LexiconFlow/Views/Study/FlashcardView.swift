@@ -14,7 +14,7 @@ struct FlashcardView: View {
 
     // MARK: - Gesture State
 
-    @StateObject private var gestureViewModel = CardGestureViewModel()
+    @State private var gestureViewModel = CardGestureViewModel()
     @State private var isDragging = false
     @State private var lastHapticTime = Date()
     @Namespace private var morphingNamespace
@@ -163,7 +163,8 @@ struct FlashcardView: View {
             // Only allow tap to flip if not currently dragging
             guard !isDragging else { return }
 
-            // Morphing spring animation with 3D rotation and depth scale effects
+            // Sequential animation: first flip with scale, then scale back
+            // Using two separate animations for proper sequencing
             withAnimation(.spring(response: AnimationConstants.flipSpringResponse, dampingFraction: AnimationConstants.flipSpringDamping)) {
                 isFlipped.toggle()
                 flipRotation = isFlipped ? AnimationConstants.flipRotationAngle : 0
@@ -171,8 +172,10 @@ struct FlashcardView: View {
                 flipScale = isFlipped ? AnimationConstants.flipScaleMidpoint : 1.0
             }
 
-            // Animate scale back to normal after rotation completes for depth effect
-            DispatchQueue.main.asyncAfter(deadline: .now() + AnimationConstants.flipSpringResponse) {
+            // Second animation: scale back to normal after flip completes
+            // Use a state-driven approach instead of DispatchQueue
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: UInt64(AnimationConstants.flipSpringResponse * 1_000_000_000))
                 withAnimation(.spring(response: AnimationConstants.flipSpringResponse, dampingFraction: AnimationConstants.flipSpringDamping)) {
                     flipScale = 1.0
                 }
