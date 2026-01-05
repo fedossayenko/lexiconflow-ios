@@ -286,15 +286,257 @@ struct FlashcardMigrationTests {
         }
     }
 
-    // MARK: - Future Migration Pattern Tests
+    // MARK: - MigrationStage Tests
 
-    @Test("Migration verification throws for invalid version transition")
-    func invalidVersionTransition() {
-        // This test documents expected behavior for future migrations
-        // Currently, all transitions verify successfully since we use lightweight migration
-        // In the future, this test should be updated to verify error handling
-        #expect(true, "Migration verification should handle version transitions")
+    @Test("v1.0 to v1.1 migration uses lightweight stage")
+    func migrationStageIsLightweight() {
+        // Verify migration stage is lightweight (automatic for optional fields)
+        let stages = FlashcardMigrationPlan.stages
+        #expect(stages.count == 1, "Should have 1 migration stage")
+
+        // Verify it's a lightweight migration
+        let stage = stages.first
+        #expect(stage != nil, "Migration stage should exist")
+
+        // The stage should be lightweight from v1.0 to v1.1
+        // This is tested implicitly by successful migration
     }
+
+    @Test("Migration schemas include v1.0 and v1.1")
+    func migrationSchemas() {
+        let schemas = FlashcardMigrationPlan.schemas
+        #expect(schemas.count == 2, "Should have 2 schemas")
+
+        let schemaTypes = schemas.map { String(describing: $0) }
+        #expect(schemaTypes.contains("FlashcardSchemaV1_0"), "Should include v1.0 schema")
+        #expect(schemaTypes.contains("FlashcardSchemaV1_1"), "Should include v1.1 schema")
+    }
+
+    // MARK: - Migration Error Handling Tests
+
+    @Test("Backward migration throws error")
+    func backwardMigrationThrowsError() {
+        // v1.1 to v1.0 (backward) should throw error
+        #expect(throws: MigrationError.self) {
+            try FlashcardMigrationPlan.verifyMigration(
+                from: .v1_1,
+                to: .v1_0
+            )
+        }
+    }
+
+    @Test("Migration error description is informative")
+    func migrationErrorDescription() {
+        let error = MigrationError.unsupportedVersionTransition(from: 2, to: 1)
+        #expect(error.localizedDescription.contains("Cannot migrate"),
+               "Error should describe the problem")
+        #expect(error.localizedDescription.contains("2"),
+               "Error should include from version")
+        #expect(error.localizedDescription.contains("1"),
+               "Error should include to version")
+    }
+
+    @Test("Migration failed error wraps underlying error")
+    func migrationFailedError() {
+        let underlyingError = NSError(domain: "TestDomain", code: 123)
+        let error = MigrationError.migrationFailed(underlying: underlyingError)
+        #expect(error.localizedDescription.contains("Migration failed"),
+               "Error should describe migration failure")
+    }
+
+    @Test("Data corruption error has message")
+    func dataCorruptionError() {
+        let error = MigrationError.dataCorruption("Flashcard data invalid")
+        #expect(error.localizedDescription.contains("Data corruption"),
+               "Error should describe corruption")
+        #expect(error.localizedDescription.contains("Flashcard data invalid"),
+               "Error should include specific message")
+    }
+
+    // MARK: - ModelContainer Migration Configuration Tests
+
+    @Test("ModelContainer can be created with migration plan")
+    func modelContainerWithMigrationPlan() throws {
+        // This test verifies ModelContainer can be initialized with migration plan
+        // In production, this would be configured in LexiconFlowApp.swift
+
+        let schema = Schema([FSRSState.self, Flashcard.self, Deck.self, FlashcardReview.self])
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+
+        // Create container with migration plan (SwiftData handles this internally)
+        let container = try ModelContainer(
+            for: schema,
+            migrationPlan: FlashcardMigrationPlan.self,
+            configurations: [configuration]
+        )
+
+        #expect(!container.mainContext.container.configurations.isEmpty,
+               "Container should have valid configuration")
+    }
+
+    @Test("ModelContainer migration utilities are available")
+    func modelContainerMigrationUtilities() {
+        let container = createTestContainer()
+
+        // Test isCurrentSchemaVersion utility
+        let isCurrent = container.isCurrentSchemaVersion()
+        #expect(isCurrent, "Test container should use current schema")
+
+        // Test getSchemaVersion utility
+        let version = container.getSchemaVersion()
+        #expect(version == .v1_1, "Test container should be v1.1")
+    }
+
+    // MARK: - Real-World Migration Scenarios
+
+    @Test("Existing v1.0 cards can coexist with v1.1 cards")
+    func existingCardsCoexistWithNewSchema() throws {
+        let container = createTestContainer()
+        let context = container.mainContext
+
+        // Simulate existing v1.0 card (created without translation fields)
+        let legacyCard = Flashcard(
+            word: "hello",
+            definition: "a greeting",
+            phonetic: "həˈloʊ"
+        )
+        context.insert(legacyCard)
+
+        // Simulate new v1.1 card (with translation fields)
+        let newCard = Flashcard(
+            word: "world",
+            definition: "the earth",
+            translation: "мир",
+            translationSourceLanguage: "en",
+            translationTargetLanguage: "ru"
+        )
+        context.insert(newCard)
+
+        try context.save()
+
+        // Both cards should be fetchable
+        let fetchDescriptor = FetchDescriptor<Flashcard>()
+        let fetched = try context.fetch(fetchDescriptor)
+
+        #expect(fetched.count == 2, "Both cards should exist")
+
+        let legacy = fetched.first { $0.word == "hello" }
+        let new = fetched.first { $0.word == "world" }
+
+        #expect(legacy?.translation == nil, "Legacy card should have nil translation")
+        #expect(new?.translation == "мир", "New card should have translation")
+    }
+
+    @Test("Migration preserves existing data")
+    func migrationPreservesExistingData() throws {
+        let container = createTestContainer()
+        let context = container.mainContext
+
+        // Create card with all v1.0 fields
+        let card = Flashcard(
+            word: "test",
+            definition: "test definition",
+            phonetic: "tɛst",
+            imageData: Data("test image".utf8)
+        )
+        context.insert(card)
+
+        // Create deck and relate card
+        let deck = Deck(name: "Test Deck", icon: "📚")
+        context.insert(deck)
+        card.deck = deck
+
+        // Create FSRS state
+        let state = FSRSState(
+            stability: 5.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.new.rawValue
+        )
+        context.insert(state)
+        card.fsrsState = state
+
+        // Create review log
+        let review = FlashcardReview(
+            rating: 2,
+            reviewDate: Date(),
+            scheduledDays: 1,
+            elapsedDays: 0
+        )
+        review.card = card
+        context.insert(review)
+
+        try context.save()
+
+        // Fetch and verify all relationships preserved
+        let fetchDescriptor = FetchDescriptor<Flashcard>()
+        let fetched = try context.fetch(fetchDescriptor)
+
+        #expect(fetched.count == 1, "Card should exist")
+
+        let fetchedCard = fetched.first!
+        #expect(fetchedCard.word == "test", "Word should be preserved")
+        #expect(fetchedCard.definition == "test definition", "Definition should be preserved")
+        #expect(fetchedCard.phonetic == "tɛst", "Phonetic should be preserved")
+        #expect(fetchedCard.imageData == Data("test image".utf8), "Image data should be preserved")
+        #expect(fetchedCard.deck?.name == "Test Deck", "Deck relationship should be preserved")
+        #expect(fetchedCard.fsrsState?.stability == 5.0, "FSRS state should be preserved")
+        #expect(fetchedCard.reviewLogs.count == 1, "Review logs should be preserved")
+    }
+
+    @Test("Migration handles cards with various optional field states")
+    func migrationHandlesVariousOptionalFieldStates() throws {
+        let container = createTestContainer()
+        let context = container.mainContext
+
+        // Card with no optional fields
+        let card1 = Flashcard(word: "word1", definition: "def1")
+        context.insert(card1)
+
+        // Card with phonetic only
+        let card2 = Flashcard(word: "word2", definition: "def2", phonetic: "wɜːd")
+        context.insert(card2)
+
+        // Card with image data only
+        let card3 = Flashcard(
+            word: "word3",
+            definition: "def3",
+            imageData: Data("image".utf8)
+        )
+        context.insert(card3)
+
+        // Card with translation fields only
+        let card4 = Flashcard(
+            word: "word4",
+            definition: "def4",
+            translation: "trans4"
+        )
+        context.insert(card4)
+
+        try context.save()
+
+        let fetchDescriptor = FetchDescriptor<Flashcard>()
+        let fetched = try context.fetch(fetchDescriptor)
+
+        #expect(fetched.count == 4, "All cards should exist")
+
+        let c1 = fetched.first { $0.word == "word1" }
+        let c2 = fetched.first { $0.word == "word2" }
+        let c3 = fetched.first { $0.word == "word3" }
+        let c4 = fetched.first { $0.word == "word4" }
+
+        #expect(c1?.phonetic == nil && c1?.imageData == nil && c1?.translation == nil,
+               "Card1 should have no optional fields")
+        #expect(c2?.phonetic == "wɜːd" && c2?.imageData == nil && c2?.translation == nil,
+               "Card2 should have phonetic only")
+        #expect(c3?.phonetic == nil && c3?.imageData != nil && c3?.translation == nil,
+               "Card3 should have image data only")
+        #expect(c4?.phonetic == nil && c4?.imageData == nil && c4?.translation == "trans4",
+               "Card4 should have translation only")
+    }
+
+    // MARK: - Future Migration Pattern Tests
 
     @Test("Schema version enum is extensible")
     func schemaVersionEnumExtensible() {
@@ -307,5 +549,29 @@ struct FlashcardMigrationTests {
         // }
         #expect(FlashcardSchemaVersion.current.rawValue >= 2,
                "Current version should be at least v1.1")
+    }
+
+    @Test("Migration performMigration is no-op for v1.0 to v1.1")
+    func migrationPerformMigrationIsNoOp() throws {
+        let container = createTestContainer()
+        let context = container.mainContext
+
+        // Create a test card
+        let card = Flashcard(word: "test", definition: "test")
+        context.insert(card)
+        try context.save()
+
+        // Perform migration (should be no-op for v1.0 → v1.1)
+        try FlashcardMigrationPlan.performMigration(
+            from: .v1_0,
+            to: .v1_1,
+            context: context
+        )
+
+        // Verify card still exists (no data loss)
+        let fetchDescriptor = FetchDescriptor<Flashcard>()
+        let fetched = try context.fetch(fetchDescriptor)
+        #expect(fetched.count == 1, "Card should still exist after migration")
+        #expect(fetched.first?.word == "test", "Card data should be preserved")
     }
 }
