@@ -60,6 +60,9 @@ enum AppSettings {
     /// Daily study goal in number of cards
     @AppStorage("dailyGoal") static var dailyGoal: Int = 20
 
+    /// Gesture preference for card grading (swipe gestures vs buttons)
+    @AppStorage("gestureEnabled") static var gestureEnabled: Bool = true
+
     // MARK: - Appearance Settings (NEW)
 
     /// Dark mode preference

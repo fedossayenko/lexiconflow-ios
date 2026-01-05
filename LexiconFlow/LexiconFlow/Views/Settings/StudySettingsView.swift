@@ -11,6 +11,7 @@ struct StudySettingsView: View {
     @AppStorage("studyLimit") private var studyLimit = 20
     @AppStorage("defaultStudyMode") private var studyMode = "scheduled"
     @AppStorage("dailyGoal") private var dailyGoal = 20
+    @AppStorage("gestureEnabled") private var gestureEnabled = true
 
     private let limitOptions = [10, 20, 30, 50, 100]
     private let goalOptions = [10, 20, 30, 50, 100]
@@ -57,6 +58,16 @@ struct StudySettingsView: View {
                 Text("Study Mode")
             } footer: {
                 Text("Scheduled: Respects FSRS due dates\nCram: Practice without affecting progress")
+            }
+
+            // Grading Preference
+            Section {
+                Toggle("Swipe Gestures", isOn: $gestureEnabled)
+                    .accessibilityLabel("Enable swipe gestures for grading")
+            } header: {
+                Text("Grading")
+            } footer: {
+                Text("Swipe gestures: Drag card left/right to grade\nButtons: Tap rating buttons to grade")
             }
 
             // Statistics Preview
