@@ -19,6 +19,13 @@ struct FlashcardView: View {
     @State private var lastHapticTime = Date()
     @Namespace private var morphingNamespace
 
+    // MARK: - Morphing Animation State
+
+    /// Current scale during flip animation (0.95-1.0)
+    @State private var flipScale: CGFloat = 1.0
+    /// Current rotation angle during flip animation
+    @State private var flipRotation: Double = 0
+
     // MARK: - Constants
 
     /// Animation-related constants
@@ -35,6 +42,17 @@ struct FlashcardView: View {
         static let hapticThrottleInterval: TimeInterval = 0.08
         /// Progress threshold distance calculation
         static let swipeThreshold: CGFloat = 100
+
+        // MARK: - Morphing Transition Constants
+
+        /// Spring response for flip morphing animation (lower = snappier feel)
+        static let flipSpringResponse: Double = 0.26
+        /// Spring damping fraction for flip (higher = less oscillation, more controlled)
+        static let flipSpringDamping: CGFloat = 0.78
+        /// Initial scale at midpoint of flip (creates depth effect)
+        static let flipScaleMidpoint: CGFloat = 0.95
+        /// Rotation angle during flip (creates 3D morphing effect)
+        static let flipRotationAngle: Double = 180
     }
 
     /// Determines glass thickness based on FSRS stability.
@@ -60,6 +78,11 @@ struct FlashcardView: View {
     /// Callback when user completes a swipe gesture with CardRating.
     var onSwipe: ((CardRating) -> Void)?
 
+    /// Combined scale effect that accounts for both flip morphing and gesture feedback
+    private var combinedScale: CGFloat {
+        flipScale * gestureViewModel.scale
+    }
+
     var body: some View {
         ZStack {
             if isFlipped {
@@ -76,9 +99,10 @@ struct FlashcardView: View {
         .frame(height: 400)
         .background(Color(.systemBackground))
         .glassEffect(glassThickness)
-        // Gesture visual feedback
+        // Combined morphing and gesture effects
+        .scaleEffect(combinedScale)
+        .rotation3DEffect(.degrees(flipRotation), axis: (x: 0, y: 1, z: 0))
         .offset(x: gestureViewModel.offset.width, y: gestureViewModel.offset.height)
-        .scaleEffect(gestureViewModel.scale)
         .rotationEffect(.degrees(gestureViewModel.rotation))
         .opacity(gestureViewModel.opacity)
         .overlay(
@@ -139,8 +163,19 @@ struct FlashcardView: View {
             // Only allow tap to flip if not currently dragging
             guard !isDragging else { return }
 
-            withAnimation(.easeInOut(duration: 0.3)) {
+            // Morphing spring animation with 3D rotation and depth scale effects
+            withAnimation(.spring(response: AnimationConstants.flipSpringResponse, dampingFraction: AnimationConstants.flipSpringDamping)) {
                 isFlipped.toggle()
+                flipRotation = isFlipped ? AnimationConstants.flipRotationAngle : 0
+                // Subtle scale change for depth perception during morph
+                flipScale = isFlipped ? AnimationConstants.flipScaleMidpoint : 1.0
+            }
+
+            // Animate scale back to normal after rotation completes for depth effect
+            DispatchQueue.main.asyncAfter(deadline: .now() + AnimationConstants.flipSpringResponse) {
+                withAnimation(.spring(response: AnimationConstants.flipSpringResponse, dampingFraction: AnimationConstants.flipSpringDamping)) {
+                    flipScale = 1.0
+                }
             }
         }
         .accessibilityLabel(isFlipped ? "Card back showing definition" : "Card front showing word")
