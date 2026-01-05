@@ -168,17 +168,17 @@ class CardGestureViewModel: ObservableObject {
         return distance >= GestureConstants.swipeThreshold
     }
 
-    /// Converts swipe direction to FSRS rating.
+    /// Converts swipe direction to CardRating.
     ///
     /// - Parameter direction: Detected swipe direction
-    /// - Returns: Corresponding FSRS rating value
-    func ratingForDirection(_ direction: SwipeDirection) -> Int {
+    /// - Returns: Corresponding CardRating value
+    func ratingForDirection(_ direction: SwipeDirection) -> CardRating {
         switch direction {
-        case .right: return 2  // Good
-        case .left:  return 0  // Again
-        case .up:    return 3  // Easy
-        case .down:  return 1  // Hard
-        case .none:  return 2  // Default to Good
+        case .right: return .good   // Right swipe = Good
+        case .left:  return .again  // Left swipe = Again
+        case .up:    return .easy   // Up swipe = Easy
+        case .down:  return .hard   // Down swipe = Hard
+        case .none:  return .good   // Default to Good
         }
     }
 }

@@ -42,7 +42,7 @@ struct StudySessionView: View {
 
                             // Handle swipe-to-rate
                             Task {
-                                await viewModel.submitRating(rating, card: cardToRate)
+                                await viewModel.submitRating(rating.rawValue, card: cardToRate)
                                 withAnimation {
                                     isFlipped = false
                                 }

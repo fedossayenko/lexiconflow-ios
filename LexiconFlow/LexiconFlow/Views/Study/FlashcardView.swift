@@ -56,8 +56,8 @@ struct FlashcardView: View {
         }
     }
 
-    /// Callback when user completes a swipe gesture.
-    var onSwipe: ((Int) -> Void)?
+    /// Callback when user completes a swipe gesture with CardRating.
+    var onSwipe: ((CardRating) -> Void)?
 
     var body: some View {
         ZStack {
@@ -114,8 +114,8 @@ struct FlashcardView: View {
                         // Commit swipe
                         let rating = gestureViewModel.ratingForDirection(direction)
 
-                        // Success haptic
-                        if rating == 2 || rating == 3 {
+                        // Success haptic for good/easy ratings
+                        if rating == .good || rating == .easy {
                             HapticService.shared.triggerSuccess()
                         } else {
                             HapticService.shared.triggerWarning()
@@ -162,7 +162,7 @@ struct FlashcardView: View {
         ),
         isFlipped: .constant(false),
         onSwipe: { rating in
-            print("Rated: \(rating)")
+            print("Rated: \(rating.label)")
         }
     )
     .padding()
