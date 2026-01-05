@@ -51,9 +51,6 @@ enum AppSettings {
     /// Whether haptic feedback is enabled
     @AppStorage("hapticEnabled") static var hapticEnabled: Bool = true
 
-    /// Haptic feedback intensity (0.1 to 1.0)
-    @AppStorage("hapticIntensity") static var hapticIntensity: Double = 1.0
-
     // MARK: - Study Session Settings (NEW)
 
     /// Maximum number of cards to fetch per study session
@@ -79,7 +76,7 @@ enum AppSettings {
     // MARK: - Types
 
     /// Dark mode preference options
-    enum DarkModePreference: String, CaseIterable {
+    enum DarkModePreference: String, CaseIterable, Sendable {
         case system = "system"
         case light = "light"
         case dark = "dark"
@@ -91,10 +88,18 @@ enum AppSettings {
             case .dark: return "Dark"
             }
         }
+
+        var icon: String {
+            switch self {
+            case .system: return "iphone"
+            case .light: return "sun.max.fill"
+            case .dark: return "moon.fill"
+            }
+        }
     }
 
     /// Study mode options
-    enum StudyModeOption: String, CaseIterable {
+    enum StudyModeOption: String, CaseIterable, Sendable {
         case scheduled = "scheduled"
         case cram = "cram"
 

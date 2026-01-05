@@ -18,6 +18,8 @@ import FirebaseCrashlytics
 
 @main
 struct LexiconFlowApp: App {
+    /// Scene phase for app lifecycle management
+    @Environment(\.scenePhase) private var scenePhase
     /// Shared SwiftData ModelContainer for the entire app
     /// - Persists to SQLite database (not in-memory)
     /// - CloudKit sync: DISABLED (will be enabled in Phase 4)
@@ -161,5 +163,24 @@ struct LexiconFlowApp: App {
             ContentView()
         }
         .modelContainer(sharedModelContainer)
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            handleScenePhaseChange(from: oldPhase, to: newPhase)
+        }
+    }
+
+    /// Handles app lifecycle phase changes.
+    private func handleScenePhaseChange(from oldPhase: ScenePhase, to newPhase: ScenePhase) {
+        switch newPhase {
+        case .background:
+            // Reset haptic engine when app goes to background to free resources
+            HapticService.shared.reset()
+        case .active:
+            // Restart haptic engine when app returns to foreground
+            if oldPhase == .background || oldPhase == .inactive {
+                HapticService.shared.restartEngine()
+            }
+        default:
+            break
+        }
     }
 }

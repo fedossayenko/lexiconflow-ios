@@ -251,4 +251,181 @@ struct StudySessionViewModelTests {
         #expect(viewModel.currentIndex == 0)
         #expect(!viewModel.isComplete)
     }
+
+    // MARK: - Concurrency Tests
+
+    @Test("Concurrency: concurrent card mutations")
+    func concurrentCardMutations() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
+
+        // Create cards
+        for i in 1...5 {
+            _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
+        }
+        try context.save()
+
+        viewModel.loadCards()
+
+        // Submit ratings concurrently
+        let initialCards = viewModel.cards
+        await withTaskGroup(of: Void.self) { group in
+            for card in initialCards {
+                group.addTask {
+                    _ = await viewModel.submitRating(2, card: card)
+                }
+            }
+        }
+
+        // All cards should be processed
+        #expect(viewModel.isComplete)
+        #expect(viewModel.currentIndex == initialCards.count)
+    }
+
+    @Test("Concurrency: session state thread safety")
+    func sessionStateThreadSafety() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
+
+        // Create cards
+        for i in 1...10 {
+            _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
+        }
+        try context.save()
+
+        viewModel.loadCards()
+
+        // Concurrent state access
+        await withTaskGroup(of: Void.self) { group in
+            // Read current card
+            group.addTask {
+                _ = viewModel.currentCard
+            }
+
+            // Check is complete
+            group.addTask {
+                _ = viewModel.isComplete
+            }
+
+            // Get cards count
+            group.addTask {
+                _ = viewModel.cards.count
+            }
+
+            // Get current index
+            group.addTask {
+                _ = viewModel.currentIndex
+            }
+        }
+
+        // Should complete without crashes
+        #expect(viewModel.cards.count == 10)
+    }
+
+    @Test("Concurrency: progress updates under concurrent access")
+    func progressUpdatesConcurrent() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
+
+        // Create cards
+        for i in 1...5 {
+            _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
+        }
+        try context.save()
+
+        viewModel.loadCards()
+
+        // Submit ratings and check progress concurrently
+        let cards = viewModel.cards
+        await withTaskGroup(of: Int.self) { group in
+            for (index, card) in cards.enumerated() {
+                group.addTask {
+                    _ = await viewModel.submitRating(2, card: card)
+                    return viewModel.currentIndex
+                }
+            }
+
+            var indices: [Int] = []
+            for await index in group {
+                indices.append(index)
+            }
+
+            // All indices should be valid (0 to count)
+            #expect(indices.allSatisfy { $0 >= 0 && $0 <= cards.count })
+        }
+
+        #expect(viewModel.isComplete)
+    }
+
+    @Test("Concurrency: session completion edge cases")
+    func sessionCompletionEdgeCases() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
+
+        // Create single card
+        _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
+        try context.save()
+
+        viewModel.loadCards()
+
+        let card = viewModel.currentCard
+        #expect(card != nil)
+
+        // Submit rating multiple times concurrently
+        await withTaskGroup(of: Void.self) { group in
+            for _ in 1..<5 {
+                group.addTask {
+                    if let c = card {
+                        _ = await viewModel.submitRating(2, card: c)
+                    }
+                }
+            }
+        }
+
+        // Session should be complete
+        #expect(viewModel.isComplete)
+    }
+
+    @Test("Concurrency: rapid rating submissions")
+    func rapidRatingSubmissions() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
+
+        // Create cards
+        for i in 1...10 {
+            _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
+        }
+        try context.save()
+
+        viewModel.loadCards()
+
+        // Submit all ratings rapidly
+        let cards = viewModel.cards
+        var completionTimes: [Date] = []
+
+        await withTaskGroup(of: Date?.self) { group in
+            for card in cards {
+                group.addTask {
+                    let start = Date()
+                    _ = await viewModel.submitRating(2, card: card)
+                    return viewModel.isComplete ? start : nil
+                }
+            }
+
+            for await time in group {
+                if let time = time {
+                    completionTimes.append(time)
+                }
+            }
+        }
+
+        // Should complete without errors
+        #expect(viewModel.isComplete)
+        #expect(viewModel.currentIndex == cards.count)
+    }
 }

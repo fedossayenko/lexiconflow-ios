@@ -8,15 +8,6 @@
 import SwiftUI
 
 struct AppearanceSettingsView: View {
-    private var darkMode: AppSettings.DarkModePreference {
-        get { AppSettings.darkMode }
-        set { AppSettings.darkMode = newValue }
-    }
-    private var glassEffectsEnabled: Bool {
-        get { AppSettings.glassEffectsEnabled }
-        set { AppSettings.glassEffectsEnabled = newValue }
-    }
-
     var body: some View {
         Form {
             // Theme Selection
@@ -30,7 +21,7 @@ struct AppearanceSettingsView: View {
                             Image(systemName: mode.icon)
                                 .foregroundStyle(.secondary)
                             Text(mode.displayName)
-                                .tag(mode.rawValue)
+                                .tag(mode)
                         }
                     }
                 }
@@ -100,16 +91,6 @@ struct AppearanceSettingsView: View {
             }
         }
         .navigationTitle("Appearance")
-    }
-}
-
-extension AppSettings.DarkModePreference {
-    var icon: String {
-        switch self {
-        case .system: return "iphone"
-        case .light: return "sun.max.fill"
-        case .dark: return "moon.fill"
-        }
     }
 }
 

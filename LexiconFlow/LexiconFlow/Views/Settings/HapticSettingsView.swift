@@ -12,60 +12,23 @@ struct HapticSettingsView: View {
 
     private let hapticService = HapticService.shared
 
+    /// Binding to AppSettings.hapticEnabled following centralized pattern
+    private var isEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { AppSettings.hapticEnabled },
+            set: { AppSettings.hapticEnabled = $0 }
+        )
+    }
+
     var body: some View {
         Form {
             Section {
-                Toggle("Haptic Feedback", isOn: Binding(
-                    get: { AppSettings.hapticEnabled },
-                    set: { AppSettings.hapticEnabled = $0 }
-                ))
+                Toggle("Haptic Feedback", isOn: isEnabledBinding)
                     .accessibilityLabel("Enable haptic feedback")
-
-                if AppSettings.hapticEnabled {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Intensity")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        Slider(value: Binding(
-                            get: { AppSettings.hapticIntensity },
-                            set: { AppSettings.hapticIntensity = $0 }
-                        ), in: 0.1...1.0, step: 0.1)
-                            .accessibilityLabel("Haptic intensity")
-                            .accessibilityValue("\(Int(AppSettings.hapticIntensity * 100))%")
-
-                        HStack(spacing: 12) {
-                            Button("Light") {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    AppSettings.hapticIntensity = 0.3
-                                }
-                            }
-                            .buttonStyle(.bordered)
-                            .accessibilityLabel("Light intensity")
-
-                            Button("Medium") {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    AppSettings.hapticIntensity = 0.6
-                                }
-                            }
-                            .buttonStyle(.bordered)
-                            .accessibilityLabel("Medium intensity")
-
-                            Button("Heavy") {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    AppSettings.hapticIntensity = 1.0
-                                }
-                            }
-                            .buttonStyle(.bordered)
-                            .accessibilityLabel("Heavy intensity")
-                        }
-                    }
-                    .padding(.vertical, 8)
-                }
             } header: {
                 Text("Feedback")
             } footer: {
-                Text("Haptic feedback during card swipes and ratings. Test the intensity below:")
+                Text("Haptic feedback during card swipes and ratings.")
             }
 
             if AppSettings.hapticEnabled {

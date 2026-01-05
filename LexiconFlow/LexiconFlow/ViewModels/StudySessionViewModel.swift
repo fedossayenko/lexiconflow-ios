@@ -12,8 +12,8 @@ import Combine
 // MARK: - StudySessionError
 
 /// Errors that can occur during a study session
-enum StudySessionError: LocalizedError {
-    case reviewSaveFailed(underlying: Error)
+enum StudySessionError: LocalizedError, Sendable {
+    case reviewSaveFailed(underlying: String)
     case invalidRating(Int)
 
     var errorDescription: String? {
@@ -27,8 +27,8 @@ enum StudySessionError: LocalizedError {
 
     var failureReason: String? {
         switch self {
-        case .reviewSaveFailed(let error):
-            return "Underlying error: \(error.localizedDescription)"
+        case .reviewSaveFailed(let message):
+            return "Underlying error: \(message)"
         case .invalidRating:
             return "Rating value out of valid range (0-3)"
         }
@@ -111,7 +111,7 @@ final class StudySessionViewModel: ObservableObject {
         // Only advance if the review was saved successfully
         guard result != nil else {
             lastError = StudySessionError.reviewSaveFailed(
-                underlying: NSError(domain: "LexiconFlow", code: -1)
+                underlying: "Unknown error"
             )
             return
         }

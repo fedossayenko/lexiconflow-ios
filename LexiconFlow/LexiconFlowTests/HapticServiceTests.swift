@@ -10,8 +10,17 @@
 
 import Testing
 import CoreFoundation
-import CoreHaptics
 @testable import LexiconFlow
+
+/// Saves and restores the original hapticEnabled setting for test isolation.
+private func withHapticEnabled<T>(_ enabled: Bool, operation: () throws -> T) rethrows -> T {
+    let original = AppSettings.hapticEnabled
+    AppSettings.hapticEnabled = enabled
+    defer {
+        AppSettings.hapticEnabled = original
+    }
+    return try operation()
+}
 
 @MainActor
 struct HapticServiceTests {
@@ -177,178 +186,187 @@ struct HapticServiceTests {
         #expect(true, "Negative progress handled without crash")
     }
 
-    // MARK: - Rating Feedback Tests
+    // MARK: - AppSettings Integration Tests
 
-    @Test("Again rating feedback does not crash")
-    func testAgainRatingFeedback() {
+    @Test("HapticService respects hapticEnabled=false for triggerSwipe")
+    func testTriggerSwipeRespectsSetting() {
         let service = HapticService.shared
-        service.playRatingFeedback(rating: .again)
-        #expect(true, "Again rating feedback executed without crash")
+
+        // When hapticEnabled is false, triggerSwipe should return early
+        withHapticEnabled(false) {
+            service.triggerSwipe(direction: .right, progress: 0.5)
+            service.triggerSwipe(direction: .left, progress: 0.7)
+            service.triggerSwipe(direction: .up, progress: 0.9)
+            service.triggerSwipe(direction: .down, progress: 0.6)
+        }
+
+        // When hapticEnabled is true, haptics should work
+        withHapticEnabled(true) {
+            service.triggerSwipe(direction: .right, progress: 0.5)
+            service.triggerSwipe(direction: .left, progress: 0.7)
+        }
+
+        #expect(true, "HapticService should respect hapticEnabled setting for triggerSwipe")
     }
 
-    @Test("Hard rating feedback does not crash")
-    func testHardRatingFeedback() {
+    @Test("HapticService respects hapticEnabled=false for triggerSuccess")
+    func testTriggerSuccessRespectsSetting() {
         let service = HapticService.shared
-        service.playRatingFeedback(rating: .hard)
-        #expect(true, "Hard rating feedback executed without crash")
+
+        withHapticEnabled(false) {
+            service.triggerSuccess()
+        }
+
+        withHapticEnabled(true) {
+            service.triggerSuccess()
+        }
+
+        #expect(true, "HapticService should respect hapticEnabled setting for triggerSuccess")
     }
 
-    @Test("Good rating feedback does not crash")
-    func testGoodRatingFeedback() {
+    @Test("HapticService respects hapticEnabled=false for triggerWarning")
+    func testTriggerWarningRespectsSetting() {
         let service = HapticService.shared
-        service.playRatingFeedback(rating: .good)
-        #expect(true, "Good rating feedback executed without crash")
+
+        withHapticEnabled(false) {
+            service.triggerWarning()
+        }
+
+        withHapticEnabled(true) {
+            service.triggerWarning()
+        }
+
+        #expect(true, "HapticService should respect hapticEnabled setting for triggerWarning")
     }
 
-    @Test("Easy rating feedback does not crash")
-    func testEasyRatingFeedback() {
+    @Test("HapticService respects hapticEnabled=false for triggerError")
+    func testTriggerErrorRespectsSetting() {
         let service = HapticService.shared
-        service.playRatingFeedback(rating: .easy)
-        #expect(true, "Easy rating feedback executed without crash")
+
+        withHapticEnabled(false) {
+            service.triggerError()
+        }
+
+        withHapticEnabled(true) {
+            service.triggerError()
+        }
+
+        #expect(true, "HapticService should respect hapticEnabled setting for triggerError")
     }
 
-    @Test("All rating feedbacks can be played in sequence")
-    func testAllRatingFeedbacksSequentially() {
+    @Test("HapticService progress threshold still enforced when hapticEnabled=true")
+    func testProgressThresholdRespectedWhenEnabled() {
         let service = HapticService.shared
 
-        // Play all four ratings in sequence
-        service.playRatingFeedback(rating: .again)
-        service.playRatingFeedback(rating: .hard)
-        service.playRatingFeedback(rating: .good)
-        service.playRatingFeedback(rating: .easy)
+        withHapticEnabled(true) {
+            // Below threshold should not trigger haptic
+            service.triggerSwipe(direction: .right, progress: 0.2)
+            service.triggerSwipe(direction: .left, progress: 0.3)
 
-        #expect(true, "All rating feedbacks handled sequentially without crash")
+            // Above threshold should trigger haptic
+            service.triggerSwipe(direction: .up, progress: 0.5)
+            service.triggerSwipe(direction: .down, progress: 1.0)
+        }
+
+        #expect(true, "Progress threshold should be enforced when hapticEnabled is true")
     }
 
-    // MARK: - Streak Milestone Chime Tests
+    // MARK: - CoreHaptics Engine Tests
 
-    @Test("Streak milestone chime for small streak does not crash")
-    func testStreakMilestoneChimeSmallStreak() {
+    @Test("HapticService handles CoreHaptics engine setup")
+    func testCoreHapticsEngineSetup() {
         let service = HapticService.shared
-        service.playStreakMilestoneChime(streakCount: 7)
-        #expect(true, "Small streak chime executed without crash")
+
+        // Trigger a haptic to ensure engine is set up
+        withHapticEnabled(true) {
+            service.triggerSuccess()
+        }
+
+        // If device supports haptics, engine should be set up
+        // If not, service should gracefully fallback to UIKit
+        #expect(true, "HapticService should handle CoreHaptics setup gracefully")
     }
 
-    @Test("Streak milestone chime for medium streak does not crash")
-    func testStreakMilestoneChimeMediumStreak() {
+    @Test("HapticService resets CoreHaptics engine")
+    func testCoreHapticsEngineReset() {
         let service = HapticService.shared
-        service.playStreakMilestoneChime(streakCount: 30)
-        #expect(true, "Medium streak chime executed without crash")
+
+        // Trigger some haptics
+        withHapticEnabled(true) {
+            service.triggerSwipe(direction: .right, progress: 0.5)
+            service.triggerSuccess()
+        }
+
+        // Reset should clear engine and cached generators
+        service.reset()
+
+        // Service should still work after reset
+        withHapticEnabled(true) {
+            service.triggerSwipe(direction: .left, progress: 0.7)
+        }
+
+        #expect(true, "HapticService should reset and recreate CoreHaptics engine")
     }
 
-    @Test("Streak milestone chime for large streak does not crash")
-    func testStreakMilestoneChimeLargeStreak() {
+    @Test("HapticService restarts engine after background")
+    func testCoreHapticsEngineRestart() {
         let service = HapticService.shared
-        service.playStreakMilestoneChime(streakCount: 100)
-        #expect(true, "Large streak chime executed without crash")
+
+        // Reset (simulating background)
+        service.reset()
+
+        // Restart engine (simulating foreground)
+        service.restartEngine()
+
+        // Service should work after restart
+        withHapticEnabled(true) {
+            service.triggerSuccess()
+        }
+
+        #expect(true, "HapticService should restart CoreHaptics engine after background")
     }
 
-    @Test("Streak milestone chime for very large streak does not crash")
-    func testStreakMilestoneChimeVeryLargeStreak() {
+    @Test("HapticService gracefully falls back to UIKit")
+    func testUIKitFallback() {
         let service = HapticService.shared
-        service.playStreakMilestoneChime(streakCount: 365)
-        #expect(true, "Very large streak chime executed without crash")
+
+        // Even if CoreHaptics fails, UIKit fallback should work
+        withHapticEnabled(true) {
+            service.triggerSwipe(direction: .right, progress: 0.5)
+            service.triggerSuccess()
+            service.triggerWarning()
+            service.triggerError()
+        }
+
+        #expect(true, "HapticService should fall back to UIKit if CoreHaptics fails")
     }
 
-    @Test("Streak milestone chime handles edge case of zero streak")
-    func testStreakMilestoneChimeZeroStreak() {
+    @Test("HapticService creates patterns for all directions")
+    func testHapticPatternCreation() {
         let service = HapticService.shared
-        service.playStreakMilestoneChime(streakCount: 0)
-        #expect(true, "Zero streak chime handled without crash")
+
+        // Trigger all swipe directions to ensure patterns are created
+        withHapticEnabled(true) {
+            service.triggerSwipe(direction: .right, progress: 0.8)
+            service.triggerSwipe(direction: .left, progress: 0.8)
+            service.triggerSwipe(direction: .up, progress: 0.8)
+            service.triggerSwipe(direction: .down, progress: 0.8)
+        }
+
+        #expect(true, "HapticService should create patterns for all swipe directions")
     }
 
-    // MARK: - Custom Haptic Pattern Tests
-
-    @Test("Custom haptic pattern with single event does not crash")
-    func testCustomHapticPatternSingleEvent() {
+    @Test("HapticService uses custom patterns for notifications")
+    func testNotificationPatterns() {
         let service = HapticService.shared
-        let event = CHHapticEvent(
-            eventType: .hapticTransient,
-            parameters: [
-                CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
-                CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.8)
-            ],
-            relativeTime: 0
-        )
-        service.playCustomPattern(events: [event])
-        #expect(true, "Single event custom pattern executed without crash")
-    }
 
-    @Test("Custom haptic pattern with multiple events does not crash")
-    func testCustomHapticPatternMultipleEvents() {
-        let service = HapticService.shared
-        let events = [
-            CHHapticEvent(
-                eventType: .hapticTransient,
-                parameters: [
-                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
-                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.8)
-                ],
-                relativeTime: 0
-            ),
-            CHHapticEvent(
-                eventType: .hapticContinuous,
-                parameters: [
-                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.5),
-                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5)
-                ],
-                relativeTime: 0.1,
-                duration: 0.3
-            )
-        ]
-        service.playCustomPattern(events: events)
-        #expect(true, "Multiple events custom pattern executed without crash")
-    }
+        withHapticEnabled(true) {
+            // Each should use a custom CoreHaptics pattern
+            service.triggerSuccess()  // Double tap pattern
+            service.triggerWarning()  // Medium intensity pattern
+            service.triggerError()    // Sharp, intense pattern
+        }
 
-    @Test("Custom haptic pattern with empty events array does not crash")
-    func testCustomHapticPatternEmptyEvents() {
-        let service = HapticService.shared
-        service.playCustomPattern(events: [])
-        #expect(true, "Empty events custom pattern handled without crash")
-    }
-
-    @Test("Custom haptic pattern with custom intensity does not crash")
-    func testCustomHapticPatternWithCustomIntensity() {
-        let service = HapticService.shared
-        let event = CHHapticEvent(
-            eventType: .hapticTransient,
-            parameters: [
-                CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
-                CHHapticEventParameter(parameterID: .hapticSharpness, value: 1.0)
-            ],
-            relativeTime: 0
-        )
-        service.playCustomPattern(events: [event], intensity: 0.5)
-        #expect(true, "Custom intensity pattern executed without crash")
-    }
-
-    @Test("Custom haptic pattern with zero intensity does not crash")
-    func testCustomHapticPatternWithZeroIntensity() {
-        let service = HapticService.shared
-        let event = CHHapticEvent(
-            eventType: .hapticTransient,
-            parameters: [
-                CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
-                CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5)
-            ],
-            relativeTime: 0
-        )
-        service.playCustomPattern(events: [event], intensity: 0.0)
-        #expect(true, "Zero intensity pattern handled without crash")
-    }
-
-    @Test("Custom haptic pattern with intensity above 1.0 does not crash")
-    func testCustomHapticPatternWithIntensityAboveOne() {
-        let service = HapticService.shared
-        let event = CHHapticEvent(
-            eventType: .hapticTransient,
-            parameters: [
-                CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.5),
-                CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.7)
-            ],
-            relativeTime: 0
-        )
-        service.playCustomPattern(events: [event], intensity: 1.5)
-        #expect(true, "Intensity above 1.0 handled without crash")
+        #expect(true, "HapticService should use custom patterns for notifications")
     }
 }

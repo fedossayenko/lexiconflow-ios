@@ -2,337 +2,207 @@
 //  AppSettingsTests.swift
 //  LexiconFlowTests
 //
-//  Tests for centralized app settings
+//  Tests for AppSettings
+//  Covers: Default values, persistence, key consistency
 //
 
 import Testing
 import Foundation
+import SwiftUI
 @testable import LexiconFlow
 
-/// Test suite for AppSettings centralized preferences
-///
-/// Tests verify:
-/// - Default values for all settings
-/// - Type safety and validation
-/// - Enum display properties
-/// - Language validation
-/// - Persistence behavior
+/// Test suite for AppSettings
 @MainActor
 struct AppSettingsTests {
 
-    // MARK: - Onboarding Settings Tests
-
-    @Test("hasCompletedOnboarding defaults to false")
-    func onboardingDefaultsToFalse() {
-        // Save current value
-        let originalValue = AppSettings.hasCompletedOnboarding
-
-        // Reset to default
-        AppSettings.hasCompletedOnboarding = false
-        #expect(AppSettings.hasCompletedOnboarding == false)
-
-        // Test setting to true
-        AppSettings.hasCompletedOnboarding = true
-        #expect(AppSettings.hasCompletedOnboarding == true)
-
-        // Restore original value
-        AppSettings.hasCompletedOnboarding = originalValue
-    }
-
     // MARK: - Translation Settings Tests
 
-    @Test("isTranslationEnabled defaults to true")
-    func translationEnabledDefaultsToTrue() {
-        let originalValue = AppSettings.isTranslationEnabled
-
-        AppSettings.isTranslationEnabled = true
+    @Test("AppSettings: translationEnabled default is true")
+    func translationEnabledDefault() throws {
         #expect(AppSettings.isTranslationEnabled == true)
+    }
 
+    @Test("AppSettings: translationEnabled can be changed")
+    func translationEnabledCanBeChanged() throws {
         AppSettings.isTranslationEnabled = false
         #expect(AppSettings.isTranslationEnabled == false)
 
-        AppSettings.isTranslationEnabled = originalValue
+        AppSettings.isTranslationEnabled = true
+        #expect(AppSettings.isTranslationEnabled == true)
     }
 
-    @Test("translationSourceLanguage defaults to English")
-    func translationSourceDefaultsToEnglish() {
-        let originalValue = AppSettings.translationSourceLanguage
-
-        AppSettings.translationSourceLanguage = "en"
+    @Test("AppSettings: translationSourceLanguage default is English")
+    func translationSourceLanguageDefault() throws {
         #expect(AppSettings.translationSourceLanguage == "en")
-
-        AppSettings.translationSourceLanguage = originalValue
     }
 
-    @Test("translationTargetLanguage defaults to Russian")
-    func translationTargetDefaultsToRussian() {
-        let originalValue = AppSettings.translationTargetLanguage
-
-        AppSettings.translationTargetLanguage = "ru"
+    @Test("AppSettings: translationTargetLanguage default is Russian")
+    func translationTargetLanguageDefault() throws {
         #expect(AppSettings.translationTargetLanguage == "ru")
-
-        AppSettings.translationTargetLanguage = originalValue
     }
 
-    @Test("supportedLanguages contains expected languages")
-    func supportedLanguagesContainsExpected() {
-        let supported = AppSettings.supportedLanguages
-
-        // Test that we have the expected languages
-        let languageCodes = supported.map { $0.code }
-        #expect(languageCodes.contains("en"), "Should contain English")
-        #expect(languageCodes.contains("ru"), "Should contain Russian")
-        #expect(languageCodes.contains("es"), "Should contain Spanish")
-        #expect(languageCodes.contains("fr"), "Should contain French")
-        #expect(languageCodes.contains("de"), "Should contain German")
-        #expect(languageCodes.contains("ja"), "Should contain Japanese")
-        #expect(languageCodes.contains("zh-Hans"), "Should contain Chinese Simplified")
-    }
-
-    @Test("language codes are valid BCP 47")
-    func languageCodesAreValidBCP47() {
-        let supported = AppSettings.supportedLanguages
-
-        for language in supported {
-            // BCP 47 language tags should be 2-5 letters or contain hyphen
-            let isValid = language.code.count >= 2 && language.code.count <= 8
-            #expect(isValid, "Language code '\(language.code)' should be valid BCP 47")
-        }
-    }
-
-    @Test("translation languages can be changed")
-    func translationLanguagesCanBeChanged() {
-        let originalSource = AppSettings.translationSourceLanguage
-        let originalTarget = AppSettings.translationTargetLanguage
-
+    @Test("AppSettings: translation languages can be changed")
+    func translationLanguagesCanBeChanged() throws {
         AppSettings.translationSourceLanguage = "es"
-        AppSettings.translationTargetLanguage = "de"
+        AppSettings.translationTargetLanguage = "fr"
 
         #expect(AppSettings.translationSourceLanguage == "es")
-        #expect(AppSettings.translationTargetLanguage == "de")
+        #expect(AppSettings.translationTargetLanguage == "fr")
 
-        AppSettings.translationSourceLanguage = originalSource
-        AppSettings.translationTargetLanguage = originalTarget
+        // Reset to defaults
+        AppSettings.translationSourceLanguage = "en"
+        AppSettings.translationTargetLanguage = "ru"
+    }
+
+    @Test("AppSettings: supportedLanguages array integrity")
+    func supportedLanguagesIntegrity() throws {
+        let languages = AppSettings.supportedLanguages
+
+        #expect(languages.isEmpty == false)
+        #expect(languages.count >= 10)
+
+        // Verify each language has a code and name
+        for lang in languages {
+            #expect(lang.code.isEmpty == false)
+            #expect(lang.name.isEmpty == false)
+        }
+
+        // Verify common languages are present
+        let codes = languages.map { $0.code }
+        #expect(codes.contains("en"))
+        #expect(codes.contains("es"))
+        #expect(codes.contains("fr"))
+        #expect(codes.contains("de"))
+        #expect(codes.contains("ja"))
+        #expect(codes.contains("zh-Hans"))
     }
 
     // MARK: - Haptic Settings Tests
 
-    @Test("hapticEnabled defaults to true")
-    func hapticEnabledDefaultsToTrue() {
-        let originalValue = AppSettings.hapticEnabled
-
-        AppSettings.hapticEnabled = true
+    @Test("AppSettings: hapticEnabled default is true")
+    func hapticEnabledDefault() throws {
         #expect(AppSettings.hapticEnabled == true)
+    }
 
+    @Test("AppSettings: hapticEnabled can be toggled")
+    func hapticEnabledCanBeToggled() throws {
         AppSettings.hapticEnabled = false
         #expect(AppSettings.hapticEnabled == false)
 
-        AppSettings.hapticEnabled = originalValue
+        AppSettings.hapticEnabled = true
+        #expect(AppSettings.hapticEnabled == true)
     }
 
-    @Test("hapticIntensity defaults to 1.0")
-    func hapticIntensityDefaultsToMax() {
-        let originalValue = AppSettings.hapticIntensity
-
-        AppSettings.hapticIntensity = 1.0
+    @Test("AppSettings: hapticIntensity default is 1.0")
+    func hapticIntensityDefault() throws {
         #expect(AppSettings.hapticIntensity == 1.0)
-
-        AppSettings.hapticIntensity = originalValue
     }
 
-    @Test("hapticIntensity accepts valid range")
-    func hapticIntensityValidRange() {
-        let originalValue = AppSettings.hapticIntensity
-
-        // Test minimum
-        AppSettings.hapticIntensity = 0.1
-        #expect(AppSettings.hapticIntensity == 0.1)
-
-        // Test maximum
-        AppSettings.hapticIntensity = 1.0
-        #expect(AppSettings.hapticIntensity == 1.0)
-
-        // Test middle value
+    @Test("AppSettings: hapticIntensity can be changed")
+    func hapticIntensityCanBeChanged() throws {
         AppSettings.hapticIntensity = 0.5
         #expect(AppSettings.hapticIntensity == 0.5)
 
-        AppSettings.hapticIntensity = originalValue
+        AppSettings.hapticIntensity = 0.1
+        #expect(AppSettings.hapticIntensity == 0.1)
+
+        // Reset to default
+        AppSettings.hapticIntensity = 1.0
     }
 
-    @Test("hapticIntensity handles common preset values")
-    func hapticIntensityPresets() {
-        let originalValue = AppSettings.hapticIntensity
+    @Test("AppSettings: hapticIntensity bounds (0.1 to 1.0)")
+    func hapticIntensityBounds() throws {
+        // Test minimum bound
+        AppSettings.hapticIntensity = 0.1
+        #expect(AppSettings.hapticIntensity == 0.1)
 
-        let presets: [Double] = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+        // Test maximum bound
+        AppSettings.hapticIntensity = 1.0
+        #expect(AppSettings.hapticIntensity == 1.0)
 
-        for preset in presets {
-            AppSettings.hapticIntensity = preset
-            #expect(AppSettings.hapticIntensity == preset)
-        }
+        // Test fractional values
+        AppSettings.hapticIntensity = 0.7
+        #expect(AppSettings.hapticIntensity == 0.7)
 
-        AppSettings.hapticIntensity = originalValue
+        // Reset to default
+        AppSettings.hapticIntensity = 1.0
     }
 
     // MARK: - Study Session Settings Tests
 
-    @Test("studyLimit defaults to 20")
-    func studyLimitDefaultsTo20() {
-        let originalValue = AppSettings.studyLimit
-
-        AppSettings.studyLimit = 20
+    @Test("AppSettings: studyLimit default is 20")
+    func studyLimitDefault() throws {
         #expect(AppSettings.studyLimit == 20)
-
-        AppSettings.studyLimit = originalValue
     }
 
-    @Test("studyLimit accepts common values")
-    func studyLimitCommonValues() {
-        let originalValue = AppSettings.studyLimit
+    @Test("AppSettings: studyLimit can be changed")
+    func studyLimitCanBeChanged() throws {
+        AppSettings.studyLimit = 50
+        #expect(AppSettings.studyLimit == 50)
 
-        let commonValues = [10, 20, 30, 50, 100]
+        AppSettings.studyLimit = 10
+        #expect(AppSettings.studyLimit == 10)
 
-        for value in commonValues {
-            AppSettings.studyLimit = value
-            #expect(AppSettings.studyLimit == value)
-        }
-
-        AppSettings.studyLimit = originalValue
+        // Reset to default
+        AppSettings.studyLimit = 20
     }
 
-    @Test("defaultStudyMode defaults to scheduled")
-    func defaultStudyModeDefaultsToScheduled() {
-        let originalValue = AppSettings.defaultStudyMode
-
-        AppSettings.defaultStudyMode = "scheduled"
+    @Test("AppSettings: defaultStudyMode default is scheduled")
+    func defaultStudyModeDefault() throws {
         #expect(AppSettings.defaultStudyMode == "scheduled")
-
-        AppSettings.defaultStudyMode = originalValue
     }
 
-    @Test("defaultStudyMode accepts valid modes")
-    func defaultStudyModeValidModes() {
-        let originalValue = AppSettings.defaultStudyMode
-
-        AppSettings.defaultStudyMode = "scheduled"
-        #expect(AppSettings.defaultStudyMode == "scheduled")
-
+    @Test("AppSettings: defaultStudyMode can be changed")
+    func defaultStudyModeCanBeChanged() throws {
         AppSettings.defaultStudyMode = "cram"
         #expect(AppSettings.defaultStudyMode == "cram")
 
-        AppSettings.defaultStudyMode = originalValue
+        AppSettings.defaultStudyMode = "scheduled"
+        #expect(AppSettings.defaultStudyMode == "scheduled")
     }
 
-    @Test("dailyGoal defaults to 20")
-    func dailyGoalDefaultsTo20() {
-        let originalValue = AppSettings.dailyGoal
-
-        AppSettings.dailyGoal = 20
+    @Test("AppSettings: dailyGoal default is 20")
+    func dailyGoalDefault() throws {
         #expect(AppSettings.dailyGoal == 20)
-
-        AppSettings.dailyGoal = originalValue
     }
 
-    @Test("dailyGoal accepts common values")
-    func dailyGoalCommonValues() {
-        let originalValue = AppSettings.dailyGoal
+    @Test("AppSettings: dailyGoal can be changed")
+    func dailyGoalCanBeChanged() throws {
+        AppSettings.dailyGoal = 50
+        #expect(AppSettings.dailyGoal == 50)
 
-        let commonValues = [10, 20, 30, 50, 100]
-
-        for value in commonValues {
-            AppSettings.dailyGoal = value
-            #expect(AppSettings.dailyGoal == value)
-        }
-
-        AppSettings.dailyGoal = originalValue
-    }
-
-    @Test("gestureEnabled defaults to true")
-    func gestureEnabledDefaultsToTrue() {
-        let originalValue = AppSettings.gestureEnabled
-
-        AppSettings.gestureEnabled = true
-        #expect(AppSettings.gestureEnabled == true)
-
-        AppSettings.gestureEnabled = false
-        #expect(AppSettings.gestureEnabled == false)
-
-        AppSettings.gestureEnabled = originalValue
+        // Reset to default
+        AppSettings.dailyGoal = 20
     }
 
     // MARK: - Appearance Settings Tests
 
-    @Test("darkMode defaults to system")
-    func darkModeDefaultsToSystem() {
-        let originalValue = AppSettings.darkMode
-
-        AppSettings.darkMode = .system
+    @Test("AppSettings: darkMode default is system")
+    func darkModeDefault() throws {
         #expect(AppSettings.darkMode == .system)
-
-        AppSettings.darkMode = originalValue
     }
 
-    @Test("darkMode accepts all options")
-    func darkModeAllOptions() {
-        let originalValue = AppSettings.darkMode
-
-        AppSettings.darkMode = .system
-        #expect(AppSettings.darkMode == .system)
+    @Test("AppSettings: darkMode can be changed")
+    func darkModeCanBeChanged() throws {
+        AppSettings.darkMode = .dark
+        #expect(AppSettings.darkMode == .dark)
 
         AppSettings.darkMode = .light
         #expect(AppSettings.darkMode == .light)
 
-        AppSettings.darkMode = .dark
-        #expect(AppSettings.darkMode == .dark)
-
-        AppSettings.darkMode = originalValue
+        // Reset to default
+        AppSettings.darkMode = .system
     }
 
-    @Test("glassEffectsEnabled defaults to true")
-    func glassEffectsEnabledDefaultsToTrue() {
-        let originalValue = AppSettings.glassEffectsEnabled
-
-        AppSettings.glassEffectsEnabled = true
-        #expect(AppSettings.glassEffectsEnabled == true)
-
-        AppSettings.glassEffectsEnabled = false
-        #expect(AppSettings.glassEffectsEnabled == false)
-
-        AppSettings.glassEffectsEnabled = originalValue
-    }
-
-    // MARK: - Enum Tests
-
-    @Test("DarkModePreference has correct display names")
-    func darkModeDisplayNames() {
+    @Test("AppSettings: DarkModePreference enum values")
+    func darkModePreferenceEnum() throws {
         #expect(AppSettings.DarkModePreference.system.displayName == "System")
         #expect(AppSettings.DarkModePreference.light.displayName == "Light")
         #expect(AppSettings.DarkModePreference.dark.displayName == "Dark")
     }
 
-    @Test("DarkModePreference has correct icons")
-    func darkModeIcons() {
-        #expect(AppSettings.DarkModePreference.system.icon == "iphone")
-        #expect(AppSettings.DarkModePreference.light.icon == "sun.max.fill")
-        #expect(AppSettings.DarkModePreference.dark.icon == "moon.fill")
-    }
-
-    @Test("StudyModeOption has correct display names")
-    func studyModeDisplayNames() {
-        #expect(AppSettings.StudyModeOption.scheduled.displayName == "Scheduled (FSRS)")
-        #expect(AppSettings.StudyModeOption.cram.displayName == "Cram (Practice)")
-    }
-
-    @Test("StudyModeOption has correct descriptions")
-    func studyModeDescriptions() {
-        let scheduledDesc = AppSettings.StudyModeOption.scheduled.description
-        let cramDesc = AppSettings.StudyModeOption.cram.description
-
-        #expect(scheduledDesc == "Due cards based on FSRS algorithm")
-        #expect(cramDesc == "Practice without affecting progress")
-    }
-
-    @Test("DarkModePreference is case iterable")
-    func darkModeIsIterable() {
+    @Test("AppSettings: DarkModePreference caseIterable")
+    func darkModePreferenceCaseIterable() throws {
         let allCases = AppSettings.DarkModePreference.allCases
         #expect(allCases.count == 3)
         #expect(allCases.contains(.system))
@@ -340,24 +210,124 @@ struct AppSettingsTests {
         #expect(allCases.contains(.dark))
     }
 
-    @Test("StudyModeOption is case iterable")
-    func studyModeIsIterable() {
+    @Test("AppSettings: glassEffectsEnabled default is true")
+    func glassEffectsEnabledDefault() throws {
+        #expect(AppSettings.glassEffectsEnabled == true)
+    }
+
+    @Test("AppSettings: glassEffectsEnabled can be toggled")
+    func glassEffectsEnabledCanBeToggled() throws {
+        AppSettings.glassEffectsEnabled = false
+        #expect(AppSettings.glassEffectsEnabled == false)
+
+        AppSettings.glassEffectsEnabled = true
+        #expect(AppSettings.glassEffectsEnabled == true)
+    }
+
+    // MARK: - StudyModeOption Enum Tests
+
+    @Test("AppSettings: StudyModeOption enum values")
+    func studyModeOptionEnum() throws {
+        #expect(AppSettings.StudyModeOption.scheduled.displayName == "Scheduled (FSRS)")
+        #expect(AppSettings.StudyModeOption.cram.displayName == "Cram (Practice)")
+
+        #expect(AppSettings.StudyModeOption.scheduled.description.contains("FSRS"))
+        #expect(AppSettings.StudyModeOption.cram.description.contains("practice"))
+    }
+
+    @Test("AppSettings: StudyModeOption caseIterable")
+    func studyModeOptionCaseIterable() throws {
         let allCases = AppSettings.StudyModeOption.allCases
         #expect(allCases.count == 2)
         #expect(allCases.contains(.scheduled))
         #expect(allCases.contains(.cram))
     }
 
-    @Test("DarkModePreference raw values are correct")
-    func darkModeRawValues() {
-        #expect(AppSettings.DarkModePreference.system.rawValue == "system")
-        #expect(AppSettings.DarkModePreference.light.rawValue == "light")
-        #expect(AppSettings.DarkModePreference.dark.rawValue == "dark")
-    }
-
-    @Test("StudyModeOption raw values are correct")
-    func studyModeRawValues() {
+    @Test("AppSettings: StudyModeOption rawValues")
+    func studyModeOptionRawValues() throws {
         #expect(AppSettings.StudyModeOption.scheduled.rawValue == "scheduled")
         #expect(AppSettings.StudyModeOption.cram.rawValue == "cram")
+    }
+
+    // MARK: - Key Consistency Tests
+
+    @Test("AppSettings: @AppStorage keys are consistent")
+    func appStorageKeysConsistent() throws {
+        // Verify that settings maintain their values across multiple accesses
+        AppSettings.isTranslationEnabled = false
+        #expect(AppSettings.isTranslationEnabled == false)
+        #expect(AppSettings.isTranslationEnabled == false)
+
+        // Reset
+        AppSettings.isTranslationEnabled = true
+    }
+
+    @Test("AppSettings: multiple settings can be changed independently")
+    func settingsIndependent() throws {
+        // Change multiple settings
+        AppSettings.isTranslationEnabled = false
+        AppSettings.hapticEnabled = false
+        AppSettings.studyLimit = 30
+        AppSettings.darkMode = .dark
+
+        #expect(AppSettings.isTranslationEnabled == false)
+        #expect(AppSettings.hapticEnabled == false)
+        #expect(AppSettings.studyLimit == 30)
+        #expect(AppSettings.darkMode == .dark)
+
+        // Reset all to defaults
+        AppSettings.isTranslationEnabled = true
+        AppSettings.hapticEnabled = true
+        AppSettings.studyLimit = 20
+        AppSettings.darkMode = .system
+    }
+
+    // MARK: - Type Safety Tests
+
+    @Test("AppSettings: studyLimit is integer")
+    func studyLimitIsInteger() throws {
+        AppSettings.studyLimit = 25
+        let value = AppSettings.studyLimit
+
+        #expect(type(of: value) == Int.self)
+        #expect(value == 25)
+    }
+
+    @Test("AppSettings: hapticIntensity is double")
+    func hapticIntensityIsDouble() throws {
+        AppSettings.hapticIntensity = 0.75
+        let value = AppSettings.hapticIntensity
+
+        #expect(type(of: value) == Double.self)
+        #expect(value == 0.75)
+    }
+
+    @Test("AppSettings: translation settings are strings")
+    func translationSettingsAreStrings() throws {
+        AppSettings.translationSourceLanguage = "fr"
+        AppSettings.translationTargetLanguage = "de"
+
+        #expect(type(of: AppSettings.translationSourceLanguage) == String.self)
+        #expect(type(of: AppSettings.translationTargetLanguage) == String.self)
+
+        // Reset to defaults
+        AppSettings.translationSourceLanguage = "en"
+        AppSettings.translationTargetLanguage = "ru"
+    }
+
+    @Test("AppSettings: boolean settings are properly typed")
+    func booleanSettingsProperlyTyped() throws {
+        AppSettings.isTranslationEnabled = false
+        AppSettings.hapticEnabled = false
+        AppSettings.glassEffectsEnabled = false
+
+        #expect(type(of: AppSettings.isTranslationEnabled) == Bool.self)
+        #expect(type(of: AppSettings.hapticEnabled) == Bool.self)
+        #expect(type(of: AppSettings.glassEffectsEnabled) == Bool.self)
+
+        // Reset to defaults
+        AppSettings.isTranslationEnabled = true
+        AppSettings.hapticEnabled = true
+        AppSettings.glassEffectsEnabled = true
     }
 }

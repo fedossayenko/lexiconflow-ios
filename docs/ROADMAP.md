@@ -39,7 +39,7 @@ This document outlines the phased development approach for Lexicon Flow, from in
 - [x] Implement `Flashcard`, `Deck`, `FlashcardReview`, `FSRSState` models
 - [x] Configure relationships and delete rules
 - [x] Set up `@Attribute(.externalStorage)` for image data
-- [x] Create model migrations strategy
+- [ ] Create model migrations strategy
 - [x] Write unit tests for model validation
 - [x] Implement `ModelActor` for background operations (DataImporter)
 
@@ -80,49 +80,53 @@ This document outlines the phased development approach for Lexicon Flow, from in
 - Implement haptic feedback
 
 ### Week 5: GlassEffectContainer
-- [x] Implement `GlassEffectContainer` for card stack
-- [x] Apply `.glassEffect()` modifier to flashcard
-- [x] Create glass thickness visualization (stability → opacity)
-- [x] Implement glass tint feedback based on swipe direction
-- [x] Performance testing with 50+ overlapping glass elements
-- [x] Optimize for 120Hz ProMotion displays
+- [ ] Implement `GlassEffectContainer` for card stack
+- [ ] Apply `.glassEffect()` modifier to flashcard
+- [ ] Create glass thickness visualization (stability → opacity)
+- [ ] Implement glass tint feedback based on swipe direction
+- [ ] Performance testing with 50+ overlapping glass elements
+- [ ] Optimize for 120Hz ProMotion displays
 
 ### Week 6: Gesture System
-- [x] Implement drag gesture on flashcard
-- [x] Add visual feedback during drag:
+- [ ] Implement drag gesture on flashcard
+- [ ] Add visual feedback during drag:
   - Swipe right (Good) → Green tint, "swelling" effect
   - Swipe left (Again) → Red tint, "shrinking" effect
   - Swipe up (Easy) → Blue tint, lightening effect
   - Swipe down (Hard) → Orange tint, heavy effect
-- [x] Tune gesture recognition thresholds
-- [x] Add cancel gesture (swipe back to center)
-- [x] Implement `.interactive()` modifier for reactive refraction
+- [ ] Tune gesture recognition thresholds
+- [ ] Add cancel gesture (swipe back to center)
+- [ ] Implement `.interactive()` modifier for reactive refraction
 
 ### Week 7: Morphing Transitions
-- [x] Replace standard 3D flip with `glassEffectTransition(.materialize)`
-- [x] Implement `matchedGeometryEffect` for smooth element transitions
-- [x] Create "materialize" animation:
+- [ ] Replace standard 3D flip with `glassEffectTransition(.materialize)`
+- [ ] Implement `matchedGeometryEffect` for smooth element transitions
+- [ ] Create "materialize" animation:
   - Front content blurs into glass
   - Back content sharpens from refraction
-- [x] Add `glassEffectUnion` for deck icon + progress bar merging
-- [x] Implement navigation transitions between views
+- [ ] Add `glassEffectUnion` for deck icon + progress bar merging
+- [ ] Implement navigation transitions between views
 
 ### Week 8: Haptics & Audio Feedback
 - [x] Design `CoreHaptics` patterns:
-  - Again: Heavy thud
-  - Hard: Firm press
-  - Good: Crisp click
-  - Easy: Light tap
-- [x] Implement harmonic chimes for streak building
-- [x] Add audio feedback toggle in settings
-- [x] Test haptic intensity levels
-- [x] A/B test gesture vs. button grading
+  - Again: Light, soft haptic (0.4 intensity, 0.3 sharpness)
+  - Hard: Medium difficulty (0.6 intensity, 0.5 sharpness)
+  - Good: Rising positive feedback (0.7 intensity, 0.8 sharpness)
+  - Easy: Heavy, very easy (0.9 intensity, 1.0 sharpness)
+- [x] Implement graceful UIKit fallback for older devices
+- [x] Add device capability detection
+- [x] Implement haptic throttling (80ms interval)
+- [x] Add haptic lifecycle management (background/foreground)
+- [x] Create comprehensive test coverage (~40 new tests)
+- [ ] Implement harmonic chimes for streak building
+- [ ] Add audio feedback toggle in settings
+- [ ] A/B test gesture vs. button grading
 
 **Exit Criteria:**
-- [x] Glass effects render at 120Hz smoothly
-- [x] Gestures feel natural and responsive
-- [x] Haptic feedback provides clear confirmation
-- [x] Card transitions are "morphing" not "sliding"
+- Glass effects render at 120Hz smoothly
+- Gestures feel natural and responsive
+- Haptic feedback provides clear confirmation
+- Card transitions are "morphing" not "sliding"
 
 ---
 
@@ -303,7 +307,7 @@ This document outlines the phased development approach for Lexicon Flow, from in
 ### Technical Milestones
 
 - [x] **Milestone 1: Core Algorithm** (Week 4)
-- [x] **Milestone 2: Liquid UI Complete** (Week 8)
+- [ ] **Milestone 2: Liquid UI Complete** (Week 8)
 - [ ] **Milestone 3: AI Features Working** (Week 12)
 - [ ] **Milestone 4: Beta Ready** (Week 15)
 - [ ] **Milestone 5: App Store Submission** (Week 16)
