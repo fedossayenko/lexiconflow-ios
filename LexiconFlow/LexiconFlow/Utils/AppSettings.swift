@@ -46,9 +46,6 @@ enum AppSettings {
     /// Whether haptic feedback is enabled
     @AppStorage("hapticEnabled") static var hapticEnabled: Bool = true
 
-    /// Haptic feedback intensity (0.1 to 1.0)
-    @AppStorage("hapticIntensity") static var hapticIntensity: Double = 1.0
-
     // MARK: - Study Session Settings (NEW)
 
     /// Maximum number of cards to fetch per study session

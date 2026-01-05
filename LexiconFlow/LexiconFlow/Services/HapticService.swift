@@ -88,7 +88,7 @@ class HapticService {
 
         let generator = getGenerator(style: style)
         generator.prepare()
-        generator.impactOccurred(intensity: progress * AppSettings.hapticIntensity)
+        generator.impactOccurred(intensity: progress)
     }
 
     /// Triggers success haptic when card is rated positively.

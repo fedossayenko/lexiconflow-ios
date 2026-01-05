@@ -5,7 +5,7 @@
 //  Tests for Settings views including:
 //  - TranslationSettingsView: API key management, language pickers
 //  - AppearanceSettingsView: Theme picker, glass effects toggle
-//  - HapticSettingsView: Toggle, slider, preset buttons
+//  - HapticSettingsView: Toggle, test button
 //  - StudySettingsView: Limit pickers, study mode picker
 //  - DataManagementView: Export/import, reset progress
 //
@@ -100,35 +100,16 @@ struct SettingsViewsTests {
         #expect(true, "HapticSettingsView should have haptic enabled toggle")
     }
 
-    @Test("HapticSettingsView has intensity slider")
-    func hapticSettingsViewSlider() {
-        // Verify Slider with range 0.1...1.0, step 0.1
-        // Bound to @AppStorage("hapticIntensity")
-        #expect(true, "HapticSettingsView should have intensity slider")
-    }
-
-    @Test("HapticSettingsView has preset intensity buttons")
-    func hapticSettingsViewPresetButtons() {
-        // Verify Light (0.3), Medium (0.6), Heavy (1.0) buttons
-        #expect(true, "HapticSettingsView should have preset intensity buttons")
-    }
-
     @Test("HapticSettingsView has test haptic button")
     func hapticSettingsViewTestButton() {
         // Verify Test Haptic button with ProgressView during testing
         #expect(true, "HapticSettingsView should have test haptic button")
     }
 
-    @Test("HapticSettingsView slider visibility tied to toggle")
-    func hapticSettingsViewSliderVisibility() {
-        // Verify slider is hidden when hapticEnabled is false
-        #expect(true, "Intensity slider should be hidden when haptics disabled")
-    }
-
-    @Test("HapticSettingsView preset values are correct")
-    func hapticSettingsViewPresetValues() {
-        // Verify Light = 0.3, Medium = 0.6, Heavy = 1.0
-        #expect(true, "Preset buttons should set correct intensity values")
+    @Test("HapticSettingsView test button visibility tied to toggle")
+    func hapticSettingsViewTestButtonVisibility() {
+        // Verify test button is hidden when hapticEnabled is false
+        #expect(true, "Test button should be hidden when haptics disabled")
     }
 
     // MARK: - StudySettingsView Tests
@@ -246,8 +227,6 @@ struct SettingsViewsTests {
     func hapticSettingsViewAccessibility() {
         // Verify accessibility labels for:
         // - Haptic Feedback toggle
-        // - Intensity slider with value
-        // - Preset buttons
         // - Test Haptic button
         #expect(true, "HapticSettingsView should have proper accessibility labels")
     }
