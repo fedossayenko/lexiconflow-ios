@@ -88,6 +88,16 @@ final class FSRSWrapper {
         )
     }
 
+    /// Convert FSRS CardState to our FlashcardState rawValue
+    private func toFlashcardStateEnum(_ state: CardState) -> String {
+        switch state {
+        case .new: return FlashcardState.new.rawValue
+        case .learning: return FlashcardState.learning.rawValue
+        case .review: return FlashcardState.review.rawValue
+        case .relearning: return FlashcardState.relearning.rawValue
+        }
+    }
+
     /// Convert our FlashcardState rawValue to FSRS CardState
     private func toFSCardState(_ stateEnum: String?) -> CardState {
         switch stateEnum {
@@ -152,18 +162,8 @@ final class FSRSWrapper {
             retrievability = 0.9
         }
 
-        // Convert FSRS CardState to our FlashcardState rawValue
-        let stateEnum: String
-        switch result.card.state {
-        case .new:
-            stateEnum = FlashcardState.new.rawValue
-        case .learning:
-            stateEnum = FlashcardState.learning.rawValue
-        case .review:
-            stateEnum = FlashcardState.review.rawValue
-        case .relearning:
-            stateEnum = FlashcardState.relearning.rawValue
-        }
+        // Use shared helper to convert state
+        let stateEnum = toFlashcardStateEnum(result.card.state)
 
         let scheduledDays = result.card.due.timeIntervalSince(now) / 86400.0
 
@@ -231,18 +231,8 @@ final class FSRSWrapper {
         let fsrsCard = toFSCard(flashcard, elapsedDays: elapsedDays)
         let result = fsrs.forget(card: fsrsCard, now: now)
 
-        // Convert FSRS CardState to our FlashcardState rawValue
-        let stateEnum: String
-        switch result.card.state {
-        case .new:
-            stateEnum = FlashcardState.new.rawValue
-        case .learning:
-            stateEnum = FlashcardState.learning.rawValue
-        case .review:
-            stateEnum = FlashcardState.review.rawValue
-        case .relearning:
-            stateEnum = FlashcardState.relearning.rawValue
-        }
+        // Use shared helper to convert state
+        let stateEnum = toFlashcardStateEnum(result.card.state)
 
         return FSRSReviewResult(
             stability: result.card.stability,

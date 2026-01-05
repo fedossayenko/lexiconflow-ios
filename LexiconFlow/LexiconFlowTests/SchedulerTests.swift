@@ -482,4 +482,185 @@ struct SchedulerTests {
         let totalCount = cards.reduce(0) { $0 + $1.reviewLogs.count }
         #expect(totalCount == 10)
     }
+
+    // MARK: - Concurrency Tests
+
+    @Test("Concurrency: concurrent fetch operations are safe")
+    func concurrentFetchOperations() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // Create 20 cards with various due dates
+        for i in 1...20 {
+            let offset = i % 2 == 0 ? -3600.0 : 3600.0
+            _ = createTestFlashcard(context: context, word: "card\(i)", state: .review, dueOffset: offset)
+        }
+        try context.save()
+
+        // Fetch from multiple tasks concurrently
+        await withTaskGroup(of: Int.self) { group in
+            for _ in 1..<5 {
+                group.addTask {
+                    let cards = scheduler.fetchCards(mode: .scheduled, limit: 20)
+                    return cards.count
+                }
+            }
+        }
+
+        // Should complete without errors
+        let dueCards = scheduler.fetchCards(mode: .scheduled, limit: 20)
+        #expect(dueCards.count == 10) // Half are due
+    }
+
+    @Test("Concurrency: mixed scheduled and cram operations")
+    func concurrentMixedModes() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // Create cards
+        for i in 1...5 {
+            _ = createTestFlashcard(context: context, word: "card\(i)", state: .review)
+        }
+        try context.save()
+
+        // Process reviews in different modes concurrently
+        await withTaskGroup(of: Void.self) { group in
+            for (i, card) in context.fetch(FetchDescriptor<Flashcard>()).enumerated() {
+                group.addTask {
+                    let mode: StudyMode = i % 2 == 0 ? .scheduled : .cram
+                    _ = await scheduler.processReview(
+                        flashcard: card,
+                        rating: 2,
+                        mode: mode
+                    )
+                }
+            }
+        }
+
+        // All reviews should be logged
+        let allCards = context.fetch(FetchDescriptor<Flashcard>())
+        let totalReviews = allCards.reduce(0) { $0 + $1.reviewLogs.count }
+        #expect(totalReviews == 5)
+    }
+
+    @Test("Concurrency: FSRSState updates are serialized")
+    func concurrentFSRSStateUpdates() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        let card = createTestFlashcard(context: context, word: "test", state: .review)
+        try context.save()
+
+        // Process same card multiple times concurrently
+        await withTaskGroup(of: Void.self) { group in
+            for _ in 1..<10 {
+                group.addTask {
+                    _ = await scheduler.processReview(
+                        flashcard: card,
+                        rating: 2,
+                        mode: .scheduled
+                    )
+                }
+            }
+        }
+
+        // All reviews should be logged
+        #expect(card.reviewLogs.count == 10)
+
+        // FSRSState should have final review's values
+        #expect(card.fsrsState?.lastReviewDate != nil)
+    }
+
+    @Test("Concurrency: error handling during concurrent reviews")
+    func concurrentErrorHandling() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // Create some cards without FSRSState to test error handling
+        let card1 = Flashcard(word: "noState", definition: "test")
+        context.insert(card1)
+
+        let card2 = createTestFlashcard(context: context, word: "withState", state: .review)
+        try context.save()
+
+        // Process both concurrently - one should fail gracefully
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask {
+                _ = await scheduler.processReview(flashcard: card1, rating: 2, mode: .scheduled)
+            }
+            group.addTask {
+                _ = await scheduler.processReview(flashcard: card2, rating: 2, mode: .scheduled)
+            }
+        }
+
+        // Card with state should have review
+        #expect(card2.reviewLogs.count == 1)
+    }
+
+    @Test("Concurrency: race condition in due card fetching")
+    func raceConditionInDueCardFetching() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // Create cards and mark some as due during the test
+        for i in 1...10 {
+            let offset = i <= 5 ? -3600.0 : 3600.0
+            _ = createTestFlashcard(context: context, word: "card\(i)", state: .review, dueOffset: offset)
+        }
+        try context.save()
+
+        // Fetch due cards from multiple tasks
+        var results: [Int] = []
+        await withTaskGroup(of: Int.self) { group in
+            for _ in 1..<5 {
+                group.addTask {
+                    return scheduler.fetchCards(mode: .scheduled, limit: 20).count
+                }
+            }
+
+            for await count in group {
+                results.append(count)
+            }
+        }
+
+        // All fetches should return same count
+        #expect(results.allSatisfy { $0 == 5 })
+    }
+
+    @Test("Concurrency: large batch processing")
+    func concurrentLargeBatch() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // Create 100 cards
+        var cards: [Flashcard] = []
+        for i in 1...100 {
+            let card = createTestFlashcard(context: context, word: "card\(i)", state: .review)
+            cards.append(card)
+        }
+        try context.save()
+
+        // Process all concurrently
+        await withTaskGroup(of: Void.self) { group in
+            for card in cards {
+                group.addTask {
+                    _ = await scheduler.processReview(
+                        flashcard: card,
+                        rating: 2,
+                        mode: .scheduled
+                    )
+                }
+            }
+        }
+
+        // All should be processed
+        let totalCount = cards.reduce(0) { $0 + $1.reviewLogs.count }
+        #expect(totalCount == 100)
+    }
 }

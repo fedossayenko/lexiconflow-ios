@@ -12,7 +12,7 @@ import Foundation
 import SwiftData
 
 /// Study mode determines how cards are selected and processed
-enum StudyMode {
+enum StudyMode: Sendable {
     /// Scheduled mode: Cards due for review based on FSRS algorithm
     /// - Updates FSRS state after each review
     /// - Respects due dates and intervals
