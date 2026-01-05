@@ -6,11 +6,15 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct StudySettingsView: View {
     @AppStorage("studyLimit") private var studyLimit = 20
     @AppStorage("defaultStudyMode") private var studyMode = "scheduled"
     @AppStorage("dailyGoal") private var dailyGoal = 20
+
+    @Environment(\.modelContext) private var modelContext
+    @State private var statistics: StudyStatisticsViewModel?
 
     private let limitOptions = [10, 20, 30, 50, 100]
     private let goalOptions = [10, 20, 30, 50, 100]
@@ -61,27 +65,80 @@ struct StudySettingsView: View {
 
             // Statistics Preview
             Section {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Today's Progress")
-                            .font(.subheadline)
-                        Spacer()
-                        Text("0/\(dailyGoal)")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                if let stats = statistics {
+                    if stats.isLoading {
+                        ProgressView("Loading statistics...")
+                    } else {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Today")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    Text("\(stats.todayStudied)")
+                                        .font(.title2)
+                                        .bold()
+                                }
+
+                                Spacer()
+
+                                VStack(alignment: .trailing, spacing: 4) {
+                                    Text("Due")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    Text("\(stats.dueCount)")
+                                        .font(.title2)
+                                        .bold()
+                                        .foregroundStyle(stats.dueCount > 0 ? .orange : .primary)
+                                }
+                            }
+
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Streak")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    Text("\(stats.streakDays) days")
+                                        .font(.title3)
+                                        .foregroundStyle(.secondary)
+                                }
+
+                                Spacer()
+
+                                VStack(alignment: .trailing, spacing: 4) {
+                                    Text("Total")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    Text("\(stats.totalCards)")
+                                        .font(.title3)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+
+                            // Progress bar for daily goal
+                            HStack {
+                                Text("Goal")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                ProgressView(value: Double(stats.todayStudied), total: Double(dailyGoal))
+                                    .tint(stats.todayStudied >= dailyGoal ? .green : .blue)
+                            }
+                        }
                     }
-
-                    ProgressView(value: 0.0, total: Double(dailyGoal))
-
-                    Text("Study sessions coming soon!")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
+                } else {
+                    ProgressView("Loading...")
                 }
             } header: {
                 Text("Statistics")
+            } footer: {
+                Text("Streak counts consecutive days with card reviews.")
             }
         }
         .navigationTitle("Study Settings")
+        .task {
+            // Initialize statistics with proper model context
+            statistics = StudyStatisticsViewModel(modelContext: modelContext)
+        }
     }
 }
 
