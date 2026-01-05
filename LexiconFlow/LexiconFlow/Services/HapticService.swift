@@ -58,16 +58,16 @@ class HapticService {
         do {
             hapticEngine = try CHHapticEngine()
             hapticEngine?.stoppedHandler = { reason in
-                logger.info("Haptic engine stopped: \(reason.rawValue)")
+                Self.logger.info("Haptic engine stopped: \(reason.rawValue)")
             }
             hapticEngine?.resetHandler = { [weak self] in
-                logger.info("Haptic engine reset handler triggered")
+                Self.logger.info("Haptic engine reset handler triggered")
                 self?.setupHapticEngine()
             }
             try hapticEngine?.start()
-            logger.info("CoreHaptics engine started successfully")
+            Self.logger.info("CoreHaptics engine started successfully")
         } catch {
-            logger.error("Failed to create haptic engine: \(error)")
+            Self.logger.error("Failed to create haptic engine: \(error)")
             Analytics.trackError("haptic_engine_failed", error: error)
             hapticEngine = nil
         }
@@ -268,7 +268,7 @@ class HapticService {
             let player = try engine.makePlayer(with: pattern)
             try player.start(atTime: 0)
         } catch {
-            logger.error("Failed to play CoreHaptics swipe: \(error)")
+            Self.logger.error("Failed to play CoreHaptics swipe: \(error)")
             Analytics.trackError("haptic_swipe_failed", error: error)
             // Fallback to UIKit on failure
             triggerUIKitSwipe(direction: direction, progress: progress)
@@ -302,7 +302,7 @@ class HapticService {
                 let player = try engine.makePlayer(with: pattern)
                 try player.start(atTime: 0)
             } catch {
-                logger.error("Failed to play CoreHaptics success: \(error)")
+                Self.logger.error("Failed to play CoreHaptics success: \(error)")
                 Analytics.trackError("haptic_success_failed", error: error)
                 triggerUIKitSuccess()
             }
@@ -323,7 +323,7 @@ class HapticService {
                 let player = try engine.makePlayer(with: pattern)
                 try player.start(atTime: 0)
             } catch {
-                logger.error("Failed to play CoreHaptics warning: \(error)")
+                Self.logger.error("Failed to play CoreHaptics warning: \(error)")
                 Analytics.trackError("haptic_warning_failed", error: error)
                 triggerUIKitWarning()
             }
@@ -344,7 +344,7 @@ class HapticService {
                 let player = try engine.makePlayer(with: pattern)
                 try player.start(atTime: 0)
             } catch {
-                logger.error("Failed to play CoreHaptics error: \(error)")
+                Self.logger.error("Failed to play CoreHaptics error: \(error)")
                 Analytics.trackError("haptic_error_failed", error: error)
                 triggerUIKitError()
             }
@@ -390,7 +390,7 @@ class HapticService {
         mediumGenerator = nil
         heavyGenerator = nil
 
-        logger.info("HapticService reset completed")
+        Self.logger.info("HapticService reset completed")
     }
 
     /// Shuts down the haptic engine permanently.
@@ -472,5 +472,185 @@ class HapticService {
         let generator = getGenerator(style: style)
         generator.prepare()
         generator.impactOccurred(intensity: defaultIntensity * CGFloat(intensity))
+    }
+
+    /// Plays rating-specific haptic feedback for card review.
+    ///
+    /// Each rating has a distinct haptic pattern to provide immediate,
+    /// distinguishable feedback about the review outcome:
+    /// - **Again**: Two sharp taps indicating reset/try again
+    /// - **Hard**: Single soft tap indicating effort was required
+    /// - **Good**: Single medium tap with slight decay indicating success
+    /// - **Easy**: Rising intensity pattern indicating effortless recall
+    ///
+    /// - Parameter rating: The CardRating to generate feedback for
+    func playRatingFeedback(rating: CardRating) {
+        guard AppSettings.hapticEnabled else { return }
+
+        let intensity = Float(AppSettings.hapticIntensity)
+
+        switch rating {
+        case .again:
+            // Two sharp taps for "try again" feedback
+            let events = [
+                CHHapticEvent(
+                    eventType: .hapticTransient,
+                    parameters: [
+                        CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.8),
+                        CHHapticEventParameter(parameterID: .hapticSharpness, value: 1.0)
+                    ],
+                    relativeTime: 0
+                ),
+                CHHapticEvent(
+                    eventType: .hapticTransient,
+                    parameters: [
+                        CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.6),
+                        CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.9)
+                    ],
+                    relativeTime: 0.15
+                )
+            ]
+            playCustomPattern(events: events, intensity: intensity)
+
+        case .hard:
+            // Single soft tap indicating effort
+            let events = [
+                CHHapticEvent(
+                    eventType: .hapticTransient,
+                    parameters: [
+                        CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.4),
+                        CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5)
+                    ],
+                    relativeTime: 0
+                )
+            ]
+            playCustomPattern(events: events, intensity: intensity)
+
+        case .good:
+            // Medium tap with slight decay for confident success
+            let events = [
+                CHHapticEvent(
+                    eventType: .hapticTransient,
+                    parameters: [
+                        CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.7),
+                        CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.7)
+                    ],
+                    relativeTime: 0
+                ),
+                CHHapticEvent(
+                    eventType: .hapticContinuous,
+                    parameters: [
+                        CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.3),
+                        CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.4)
+                    ],
+                    relativeTime: 0.05,
+                    duration: 0.15
+                )
+            ]
+            playCustomPattern(events: events, intensity: intensity)
+
+        case .easy:
+            // Rising intensity pattern for effortless success
+            let events = [
+                CHHapticEvent(
+                    eventType: .hapticTransient,
+                    parameters: [
+                        CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.5),
+                        CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.6)
+                    ],
+                    relativeTime: 0
+                ),
+                CHHapticEvent(
+                    eventType: .hapticContinuous,
+                    parameters: [
+                        CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.8),
+                        CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.8)
+                    ],
+                    relativeTime: 0.08,
+                    duration: 0.2
+                )
+            ]
+            playCustomPattern(events: events, intensity: intensity)
+        }
+    }
+
+    /// Plays harmonic chime pattern for streak milestone achievements.
+    ///
+    /// Creates a musical "chime" effect with three ascending notes that celebrate
+    /// when the user reaches a streak milestone. The pattern uses:
+    /// - Three transient taps at ascending intensities (like a chime or bell)
+    /// - Continuous resonance events for each note to create sustain
+    /// - Precise timing (0.12s intervals) for musical quality
+    ///
+    /// Milestones typically occur at streak values like: 7, 14, 30, 60, 100, 365
+    ///
+    /// - Parameter streakCount: The current streak count (used to scale celebration)
+    func playStreakMilestoneChime(streakCount: Int) {
+        guard AppSettings.hapticEnabled else { return }
+
+        let intensity = Float(AppSettings.hapticIntensity)
+
+        // Three-note harmonic chime pattern (like a celebratory bell)
+        // Notes ascend in intensity: gentle -> medium -> bright
+        let events = [
+            // First note: gentle chime
+            CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.5),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.6)
+                ],
+                relativeTime: 0
+            ),
+            CHHapticEvent(
+                eventType: .hapticContinuous,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.25),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.4)
+                ],
+                relativeTime: 0.02,
+                duration: 0.1
+            ),
+
+            // Second note: medium chime
+            CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.7),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.75)
+                ],
+                relativeTime: 0.12
+            ),
+            CHHapticEvent(
+                eventType: .hapticContinuous,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.35),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5)
+                ],
+                relativeTime: 0.14,
+                duration: 0.12
+            ),
+
+            // Third note: bright celebratory chime
+            CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.9)
+                ],
+                relativeTime: 0.24
+            ),
+            CHHapticEvent(
+                eventType: .hapticContinuous,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.5),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.6)
+                ],
+                relativeTime: 0.26,
+                duration: 0.18
+            )
+        ]
+
+        playCustomPattern(events: events, intensity: intensity)
     }
 }
