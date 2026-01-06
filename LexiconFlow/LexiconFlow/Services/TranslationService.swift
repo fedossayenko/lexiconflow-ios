@@ -449,87 +449,43 @@ final class TranslationService {
         maxRetries: Int = 3
     ) async -> TranslationTaskResult {
         let startTime = Date()
-        var attempt = 0
-        var delay: TimeInterval = 0.5
+        let cardWord = card.word.replacingOccurrences(of: "'", with: "\\'")
 
-        while attempt < maxRetries {
-            do {
-                let result = try await translate(
+        let result = await RetryManager.executeWithRetry(
+            maxRetries: maxRetries,
+            initialDelay: 0.5,
+            operation: {
+                try await self.translate(
                     word: card.word,
                     definition: card.definition,
                     context: nil
                 )
-                let duration = Date().timeIntervalSince(startTime)
-
-                logger.debug("Translation succeeded: \(card.word.replacingOccurrences(of: "'", with: "\\'")) (attempt \(attempt + 1))")
-
-                return TranslationTaskResult(
-                    card: card,
-                    result: .success(result),
-                    duration: duration
-                )
-
-            } catch let error as TranslationError {
-                // Only retry if error is retryable
-                guard error.isRetryable else {
-                    // Non-retryable error
-                    let duration = Date().timeIntervalSince(startTime)
-                    logger.error("Translation failed with non-retryable error: \(card.word.replacingOccurrences(of: "'", with: "\\'")) - \(error.localizedDescription)")
-
-                    return TranslationTaskResult(
-                        card: card,
-                        result: .failure(error),
-                        duration: duration
-                    )
-                }
-
-                // Retryable error
-                attempt += 1
-
-                if attempt < maxRetries {
-                    logger.info("Retrying translation: \(card.word.replacingOccurrences(of: "'", with: "\\'")) in \(delay)s (attempt \(attempt + 1)/\(maxRetries))")
-
-                    // Exponential backoff
-                    do {
-                        try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
-                    } catch {
-                        logger.warning("Task.sleep interrupted: \(error.localizedDescription)")
-                    }
-                    delay *= 2
-                    continue
-                }
-
-                // Max retries exceeded
-                let duration = Date().timeIntervalSince(startTime)
-                logger.error("Translation failed after max retries: \(card.word.replacingOccurrences(of: "'", with: "\\'")) (\(attempt + 1) attempts) - \(error.localizedDescription)")
-
-                return TranslationTaskResult(
-                    card: card,
-                    result: .failure(error),
-                    duration: duration
-                )
-            } catch {
-                // Unknown error type
-                let duration = Date().timeIntervalSince(startTime)
-                let translationError = TranslationError.apiFailed
-
-                logger.error("Translation failed with unknown error: \(card.word.replacingOccurrences(of: "'", with: "\\'")) - \(error.localizedDescription)")
-
-                return TranslationTaskResult(
-                    card: card,
-                    result: .failure(translationError),
-                    duration: duration
-                )
-            }
-        }
-
-        // Should never reach here, but handle gracefully
-        let duration = Date().timeIntervalSince(startTime)
-        return TranslationTaskResult(
-            card: card,
-            result: .failure(.apiFailed),
-            duration: duration
+            },
+            isRetryable: { (error: TranslationError) in
+                error.isRetryable
+            },
+            logContext: "Translation for '\(cardWord)'",
+            logger: logger
         )
+
+        let duration = Date().timeIntervalSince(startTime)
+
+        switch result {
+        case .success(let translation):
+            logger.debug("Translation succeeded: \(cardWord)")
+            return TranslationTaskResult(
+                card: card,
+                result: .success(translation),
+                duration: duration
+            )
+        case .failure(let error):
+            logger.error("Translation failed: \(cardWord) - \(error.localizedDescription)")
+            return TranslationTaskResult(
+                card: card,
+                result: .failure(error),
+                duration: duration
+            )
+        }
     }
 
     // MARK: - Single Translation
@@ -636,7 +592,7 @@ final class TranslationService {
         logger.debug("Extracted content (first 500 chars): \(content.prefix(500))")
 
         // Extract JSON from content (handle markdown code blocks)
-        let jsonContent = extractJSON(from: content)
+        let jsonContent = JSONExtractor.extract(from: content, logger: logger)
         logger.debug("Extracted JSON: \(jsonContent.prefix(500))")
 
         guard let data = jsonContent.data(using: .utf8) else {
@@ -653,45 +609,6 @@ final class TranslationService {
             logger.error("Content that failed to decode: \(String(jsonContent.prefix(500)))")
             throw TranslationError.invalidResponse(reason: error.localizedDescription)
         }
-    }
-
-    // MARK: - JSON Extraction
-
-    /// Extract JSON from text, handling markdown code blocks
-    private func extractJSON(from text: String) -> String {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        // Try to extract from ```json code blocks
-        if let jsonStart = trimmed.range(of: "```json", options: .caseInsensitive) {
-            let afterStart = jsonStart.upperBound
-            if let jsonEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
-                let json = String(trimmed[afterStart..<jsonEnd.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-                logger.debug("Extracted JSON from markdown code block")
-                return json
-            }
-        }
-
-        // Try to extract from ``` code blocks (without json specifier)
-        if let codeStart = trimmed.range(of: "```", options: .caseInsensitive) {
-            let afterStart = codeStart.upperBound
-            if let codeEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
-                let json = String(trimmed[afterStart..<codeEnd.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-                logger.debug("Extracted JSON from generic code block")
-                return json
-            }
-        }
-
-        // Try to extract JSON from { to } (first complete JSON object)
-        if let firstBrace = trimmed.firstIndex(of: "{"),
-           let lastBrace = trimmed.lastIndex(of: "}") {
-            let json = String(trimmed[firstBrace...lastBrace])
-            logger.debug("Extracted JSON from brace delimiters")
-            return json
-        }
-
-        // Return original if no JSON found
-        logger.debug("No JSON extraction patterns matched, using original text")
-        return trimmed
     }
 
     /// Process successful translation result

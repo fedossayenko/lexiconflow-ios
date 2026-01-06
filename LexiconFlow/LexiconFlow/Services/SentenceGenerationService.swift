@@ -272,7 +272,8 @@ actor SentenceGenerationService {
         let rawResponse = try JSONDecoder().decode(ZAIResponse.self, from: data)
         let content = rawResponse.choices.first?.message.content ?? ""
 
-        let jsonContent = extractJSON(from: content)
+        // Extract JSON from content (handle markdown code blocks)
+        let jsonContent = JSONExtractor.extract(from: content, logger: logger)
 
         guard let data = jsonContent.data(using: .utf8) else {
             logger.error("Failed to decode JSON content as UTF-8")
@@ -480,118 +481,46 @@ actor SentenceGenerationService {
         maxRetries: Int = 3
     ) async -> SentenceGenerationResult {
         let startTime = Date()
-        var attempt = 0
-        var delay: TimeInterval = 0.5
 
-        while attempt < maxRetries {
-            do {
-                let result = try await generateSentences(
+        let result = await RetryManager.executeWithRetry(
+            maxRetries: maxRetries,
+            initialDelay: 0.5,
+            operation: {
+                try await self.generateSentences(
                     cardWord: cardWord,
                     cardDefinition: cardDefinition,
                     cardTranslation: cardTranslation,
                     cardCEFR: cardCEFR,
                     count: count
                 )
-                let duration = Date().timeIntervalSince(startTime)
-
-                logger.debug("Generation succeeded: \(cardWord) (attempt \(attempt + 1))")
-
-                return SentenceGenerationResult(
-                    cardId: cardId,
-                    cardWord: cardWord,
-                    result: .success(result),
-                    duration: duration
-                )
-
-            } catch let error as SentenceGenerationError {
-                guard error.isRetryable else {
-                    let duration = Date().timeIntervalSince(startTime)
-                    logger.error("Generation failed with non-retryable error: \(cardWord) - \(error.localizedDescription)")
-
-                    return SentenceGenerationResult(
-                        cardId: cardId,
-                        cardWord: cardWord,
-                        result: .failure(error),
-                        duration: duration
-                    )
-                }
-
-                attempt += 1
-
-                if attempt < maxRetries {
-                    logger.info("Retrying generation: \(cardWord) in \(delay)s (attempt \(attempt + 1)/\(maxRetries))")
-
-                    try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
-                    delay *= 2
-                    continue
-                }
-
-                let duration = Date().timeIntervalSince(startTime)
-                logger.error("Generation failed after max retries: \(cardWord) (\(attempt + 1) attempts)")
-
-                return SentenceGenerationResult(
-                    cardId: cardId,
-                    cardWord: cardWord,
-                    result: .failure(error),
-                    duration: duration
-                )
-            } catch {
-                let duration = Date().timeIntervalSince(startTime)
-                let genError = SentenceGenerationError.apiFailed
-
-                logger.error("Generation failed with unknown error: \(cardWord) - \(error.localizedDescription)")
-
-                return SentenceGenerationResult(
-                    cardId: cardId,
-                    cardWord: cardWord,
-                    result: .failure(genError),
-                    duration: duration
-                )
-            }
-        }
+            },
+            isRetryable: { (error: SentenceGenerationError) in
+                error.isRetryable
+            },
+            logContext: "Sentence generation for '\(cardWord)'",
+            logger: logger
+        )
 
         let duration = Date().timeIntervalSince(startTime)
-        return SentenceGenerationResult(
-            cardId: cardId,
-            cardWord: cardWord,
-            result: .failure(.apiFailed),
-            duration: duration
-        )
-    }
 
-    // MARK: - JSON Extraction
-
-    /// Extract JSON from text, handling markdown code blocks
-    private func extractJSON(from text: String) -> String {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if let jsonStart = trimmed.range(of: "```json", options: .caseInsensitive) {
-            let afterStart = jsonStart.upperBound
-            if let jsonEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
-                let json = String(trimmed[afterStart..<jsonEnd.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-                logger.debug("Extracted JSON from markdown code block")
-                return json
-            }
+        switch result {
+        case .success(let response):
+            logger.debug("Generation succeeded: \(cardWord)")
+            return SentenceGenerationResult(
+                cardId: cardId,
+                cardWord: cardWord,
+                result: .success(response),
+                duration: duration
+            )
+        case .failure(let error):
+            logger.error("Generation failed: \(cardWord) - \(error.localizedDescription)")
+            return SentenceGenerationResult(
+                cardId: cardId,
+                cardWord: cardWord,
+                result: .failure(error),
+                duration: duration
+            )
         }
-
-        if let codeStart = trimmed.range(of: "```", options: .caseInsensitive) {
-            let afterStart = codeStart.upperBound
-            if let codeEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
-                let json = String(trimmed[afterStart..<codeEnd.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-                logger.debug("Extracted JSON from generic code block")
-                return json
-            }
-        }
-
-        if let firstBrace = trimmed.firstIndex(of: "{"),
-           let lastBrace = trimmed.lastIndex(of: "}") {
-            let json = String(trimmed[firstBrace...lastBrace])
-            logger.debug("Extracted JSON from brace delimiters")
-            return json
-        }
-
-        logger.debug("No JSON extraction patterns matched, using original text")
-        return trimmed
     }
 
     // MARK: - Static Fallback Sentences
