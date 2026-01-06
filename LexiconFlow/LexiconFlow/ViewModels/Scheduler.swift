@@ -265,9 +265,9 @@ final class Scheduler {
         // In cram mode, only log the review without updating FSRS
         if mode == .cram {
             // Calculate actual elapsed days for analytics accuracy
-            let elapsedDays = flashcard.fsrsState?.lastReviewDate != nil
-                ? DateMath.elapsedDays(since: flashcard.fsrsState!.lastReviewDate!)
-                : 0
+            // Safe optional chaining with map to avoid force unwrap crashes
+            let elapsedDays = flashcard.fsrsState?.lastReviewDate
+                .map { DateMath.elapsedDays(since: $0) } ?? 0
 
             let log = FlashcardReview(
                 rating: rating,

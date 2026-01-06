@@ -8,6 +8,24 @@
 import SwiftUI
 
 struct SettingsView: View {
+    // MARK: - URL Constants
+
+    /// URL for FSRS algorithm repository
+    /// Uses assert() to validate URL at compile time (debug builds only)
+    private static let fsrsURL: URL = {
+        let urlString = "https://github.com/open-spaced-repetition/fsrs.js"
+        assert(URL(string: urlString) != nil, "Invalid FSRS URL: \(urlString)")
+        return URL(string: urlString)!
+    }()
+
+    /// URL for LexiconFlow iOS repository
+    /// Uses assert() to validate URL at compile time (debug builds only)
+    private static let repoURL: URL = {
+        let urlString = "https://github.com/fedossayenko/lexiconflow-ios"
+        assert(URL(string: urlString) != nil, "Invalid repo URL: \(urlString)")
+        return URL(string: urlString)!
+    }()
+
     var body: some View {
         NavigationStack {
             List {
@@ -72,7 +90,7 @@ struct SettingsView: View {
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel("FSRS v5 algorithm")
 
-                    Link(destination: URL(string: "https://github.com/open-spaced-repetition/fsrs.js")!) {
+                    Link(destination: Self.fsrsURL) {
                         HStack {
                             Label("FSRS Algorithm", systemImage: "arrow.up.right.square")
                                 .foregroundStyle(.secondary)
@@ -84,7 +102,7 @@ struct SettingsView: View {
                     }
                     .accessibilityLabel("Learn more about FSRS algorithm")
 
-                    Link(destination: URL(string: "https://github.com/fedossayenko/lexiconflow-ios")!) {
+                    Link(destination: Self.repoURL) {
                         HStack {
                             Label("GitHub Repository", systemImage: "arrow.up.right.square")
                                 .foregroundStyle(.secondary)

@@ -902,4 +902,39 @@ struct SchedulerTests {
             #expect(card.reviewLogs.count == 1)
         }
     }
+
+    // MARK: - Crash Prevention Tests
+
+    @Test("Cram mode with new card (nil lastReviewDate) doesn't crash")
+    func cramModeNewCardNilLastReviewDate() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // Create a new flashcard (FSRSState is created but lastReviewDate is nil)
+        let flashcard = Flashcard(word: "test", definition: "A test")
+        context.insert(flashcard)
+        try context.save()
+
+        // Verify precondition: FSRSState exists but lastReviewDate is nil
+        #expect(flashcard.fsrsState != nil, "FSRSState should be auto-created")
+        #expect(flashcard.fsrsState?.lastReviewDate == nil, "lastReviewDate should be nil for new card")
+
+        // Should NOT crash with force unwrap error
+        let result = await scheduler.processReview(
+            flashcard: flashcard,
+            rating: 2,
+            mode: .cram
+        )
+
+        // Should successfully create review log
+        #expect(result != nil, "Cram mode review should succeed")
+        #expect(result?.rating == 2)
+        #expect(result?.scheduledDays == 0, "Cram mode should not schedule")
+        #expect(result?.elapsedDays == 0, "Should be 0 when lastReviewDate is nil")
+
+        // FSRS state should not be modified in cram mode
+        #expect(flashcard.fsrsState?.stateEnum == FlashcardState.new.rawValue)
+        #expect(flashcard.fsrsState?.lastReviewDate == nil, "Cram mode should not set lastReviewDate")
+    }
 }
