@@ -14,12 +14,12 @@ struct StudySessionView: View {
     @State private var isFlipped = false
     @State private var showError = false
     let mode: StudyMode
-    let deck: Deck?
+    let decks: [Deck]
     let onComplete: () -> Void
 
-    init(mode: StudyMode, deck: Deck? = nil, onComplete: @escaping () -> Void) {
+    init(mode: StudyMode, decks: [Deck] = [], onComplete: @escaping () -> Void) {
         self.mode = mode
-        self.deck = deck
+        self.decks = decks
         self.onComplete = onComplete
     }
 
@@ -74,7 +74,7 @@ struct StudySessionView: View {
                         }
                     }
                     .padding()
-                    .navigationTitle(mode == .scheduled ? "Study" : "Cram")
+                    .navigationTitle(mode == .learning ? "Learn New" : "Study")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
@@ -99,7 +99,7 @@ struct StudySessionView: View {
             }
             .task {
                 if viewModel == nil {
-                    viewModel = StudySessionViewModel(modelContext: modelContext, deck: deck, mode: mode)
+                    viewModel = StudySessionViewModel(modelContext: modelContext, decks: decks, mode: mode)
                 }
                 if let viewModel = viewModel, viewModel.cards.isEmpty {
                     viewModel.loadCards()
@@ -131,6 +131,23 @@ struct StudySessionView: View {
             .controlSize(.large)
         }
         .padding()
+    }
+}
+
+// MARK: - Backward Compatibility
+
+extension StudySessionView {
+    /// Convenience initializer for single-deck sessions (backward compatibility)
+    /// - Parameters:
+    ///   - mode: Study mode (scheduled or learning)
+    ///   - deck: Single deck to study from (nil = no cards)
+    ///   - onComplete: Callback when session completes
+    init(mode: StudyMode, deck: Deck?, onComplete: @escaping () -> Void) {
+        if let deck = deck {
+            self.init(mode: mode, decks: [deck], onComplete: onComplete)
+        } else {
+            self.init(mode: mode, decks: [], onComplete: onComplete)
+        }
     }
 }
 

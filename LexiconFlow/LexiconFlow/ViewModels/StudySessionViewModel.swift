@@ -49,7 +49,7 @@ enum StudySessionError: LocalizedError, Sendable {
 final class StudySessionViewModel: ObservableObject {
     private let scheduler: Scheduler
     private let mode: StudyMode
-    private let deck: Deck?
+    private let decks: [Deck]
 
     @Published private(set) var cards: [Flashcard] = []
     @Published private(set) var currentIndex = 0
@@ -73,15 +73,20 @@ final class StudySessionViewModel: ObservableObject {
         currentIndex < cards.count
     }
 
-    init(modelContext: ModelContext, deck: Deck? = nil, mode: StudyMode) {
+    /// Initialize with multiple decks for study session
+    /// - Parameters:
+    ///   - modelContext: SwiftData model context
+    ///   - decks: Array of decks to study from (empty array = no cards)
+    ///   - mode: Study mode (scheduled or learning)
+    init(modelContext: ModelContext, decks: [Deck] = [], mode: StudyMode) {
         self.mode = mode
-        self.deck = deck
+        self.decks = decks
         self.scheduler = Scheduler(modelContext: modelContext)
     }
 
     /// Load cards for the study session
     func loadCards() {
-        cards = scheduler.fetchCards(for: deck, mode: mode, limit: 20)
+        cards = scheduler.fetchCards(for: decks, mode: mode, limit: 20)
         currentIndex = 0
         isComplete = cards.isEmpty
     }
@@ -137,5 +142,22 @@ final class StudySessionViewModel: ObservableObject {
     func reset() {
         currentIndex = 0
         isComplete = false
+    }
+}
+
+// MARK: - Backward Compatibility
+
+extension StudySessionViewModel {
+    /// Convenience initializer for single-deck sessions (backward compatibility)
+    /// - Parameters:
+    ///   - modelContext: SwiftData model context
+    ///   - deck: Single deck to study from (nil = no cards)
+    ///   - mode: Study mode (scheduled or learning)
+    convenience init(modelContext: ModelContext, deck: Deck?, mode: StudyMode) {
+        if let deck = deck {
+            self.init(modelContext: modelContext, decks: [deck], mode: mode)
+        } else {
+            self.init(modelContext: modelContext, decks: [], mode: mode)
+        }
     }
 }

@@ -264,7 +264,7 @@ struct SettingsViewsTests {
         let original = AppSettings.defaultStudyMode
 
         // Test each mode value (stored as strings)
-        for modeStr in ["scheduled", "cram"] {
+        for modeStr in ["scheduled", "learning"] {
             AppSettings.defaultStudyMode = modeStr
             #expect(AppSettings.defaultStudyMode == modeStr, "AppSettings.defaultStudyMode should persist: \(modeStr)")
         }

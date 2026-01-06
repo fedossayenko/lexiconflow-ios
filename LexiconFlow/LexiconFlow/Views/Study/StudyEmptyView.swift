@@ -24,11 +24,9 @@ struct StudyEmptyView: View {
     private var modeDescription: String {
         switch mode {
         case .learning:
-            return "You've learned all your new cards. Add more cards to your decks or switch to Scheduled or Cram mode."
+            return "You've learned all your new cards. Add more cards to your decks or switch to Scheduled mode."
         case .scheduled:
-            return "No cards are due for review right now. Check back later or switch to Learn New or Cram mode."
-        case .cram:
-            return "No cards available for cram. Add some cards to your decks first."
+            return "No cards are due for review right now. Check back later or switch to Learn New mode."
         }
     }
 
@@ -38,8 +36,6 @@ struct StudyEmptyView: View {
             return "No new cards"
         case .scheduled:
             return "All caught up!"
-        case .cram:
-            return "No cards available"
         }
     }
 
@@ -49,8 +45,6 @@ struct StudyEmptyView: View {
             return "plus.circle"
         case .scheduled:
             return "checkmark.circle.fill"
-        case .cram:
-            return "tray"
         }
     }
 
@@ -58,50 +52,19 @@ struct StudyEmptyView: View {
     private var modeSwitchButtons: some View {
         switch mode {
         case .learning:
-            VStack(spacing: 12) {
-                Button("Switch to Scheduled Mode") {
-                    onSwitchMode(.scheduled)
-                }
-                .buttonStyle(.bordered)
-                .accessibilityLabel("Switch to Scheduled Mode")
-                .accessibilityHint("Review only cards that are due")
-                Button("Switch to Cram Mode") {
-                    onSwitchMode(.cram)
-                }
-                .buttonStyle(.bordered)
-                .accessibilityLabel("Switch to Cram Mode")
-                .accessibilityHint("Practice all cards regardless of due date")
+            Button("Switch to Scheduled Mode") {
+                onSwitchMode(.scheduled)
             }
+            .buttonStyle(.bordered)
+            .accessibilityLabel("Switch to Scheduled Mode")
+            .accessibilityHint("Review only cards that are due")
         case .scheduled:
-            HStack(spacing: 12) {
-                Button("Learn New") {
-                    onSwitchMode(.learning)
-                }
-                .buttonStyle(.bordered)
-                .accessibilityLabel("Switch to Learning Mode")
-                .accessibilityHint("Learn new cards for the first time")
-                Button("Switch to Cram Mode") {
-                    onSwitchMode(.cram)
-                }
-                .buttonStyle(.bordered)
-                .accessibilityLabel("Switch to Cram Mode")
-                .accessibilityHint("Practice all cards regardless of due date")
+            Button("Learn New") {
+                onSwitchMode(.learning)
             }
-        case .cram:
-            HStack(spacing: 12) {
-                Button("Learn New") {
-                    onSwitchMode(.learning)
-                }
-                .buttonStyle(.bordered)
-                .accessibilityLabel("Switch to Learning Mode")
-                .accessibilityHint("Learn new cards for the first time")
-                Button("Switch to Scheduled Mode") {
-                    onSwitchMode(.scheduled)
-                }
-                .buttonStyle(.bordered)
-                .accessibilityLabel("Switch to Scheduled Mode")
-                .accessibilityHint("Review only cards that are due")
-            }
+            .buttonStyle(.bordered)
+            .accessibilityLabel("Switch to Learning Mode")
+            .accessibilityHint("Learn new cards for the first time")
         }
     }
 }

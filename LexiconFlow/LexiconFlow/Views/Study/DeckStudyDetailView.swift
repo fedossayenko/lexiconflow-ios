@@ -51,11 +51,6 @@ struct DeckStudyDetailView: View {
                     scheduledSection
                 }
 
-                // Cram (only if has any cards)
-                if stats.totalCount > 0 {
-                    cramSection
-                }
-
                 Spacer()
             }
             .padding()
@@ -105,16 +100,6 @@ struct DeckStudyDetailView: View {
             description: "\(stats.dueCount) cards due for review",
             color: .orange,
             action: { startSession(.scheduled) }
-        )
-    }
-
-    private var cramSection: some View {
-        studyModeCard(
-            icon: "arrow.triangle.2.circlepath",
-            title: "Practice Only",
-            description: "Review all \(stats.totalCount) cards without affecting progress",
-            color: .purple,
-            action: { startSession(.cram) }
         )
     }
 

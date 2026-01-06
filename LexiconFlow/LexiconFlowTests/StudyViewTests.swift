@@ -48,13 +48,6 @@ struct StudyViewTests {
         #expect(mode == .scheduled, "Scheduled mode should be equal to .scheduled")
     }
 
-    @Test("StudyMode cram case exists")
-    func testCramModeExists() {
-        // Verify the cram mode can be instantiated
-        let mode = StudyMode.cram
-        #expect(mode == .cram, "Cram mode should be equal to .cram")
-    }
-
     // MARK: - Due Count Tests
 
     @Test("Scheduled mode counts only due cards")
@@ -85,58 +78,6 @@ struct StudyViewTests {
         let dueCount = scheduler.dueCardCount()
 
         #expect(dueCount == 2, "Should count only due cards (2), excluding new and future cards")
-    }
-
-    @Test("Cram mode excludes new cards")
-    func testCramModeExcludesNew() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
-
-        // Create test cards
-        // New cards (should be excluded)
-        createTestCard(in: context, word: "New1", state: .new)
-        createTestCard(in: context, word: "New2", state: .new)
-
-        // Non-new cards (should be included)
-        createTestCard(in: context, word: "Review", state: .review)
-        createTestCard(in: context, word: "Learning", state: .learning)
-
-        try context.save()
-
-        // Count using the same predicate as StudyView
-        let stateDescriptor = FetchDescriptor<FSRSState>(
-            predicate: #Predicate<FSRSState> { state in
-                state.stateEnum != "new"
-            }
-        )
-
-        let count = try context.fetchCount(stateDescriptor)
-
-        #expect(count == 2, "Should count only non-new cards (2)")
-    }
-
-    @Test("Cram mode includes learning and review states")
-    func testCramModeIncludesAllNonNew() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
-
-        // Create cards in various states
-        createTestCard(in: context, word: "Learning", state: .learning)
-        createTestCard(in: context, word: "Review", state: .review)
-        createTestCard(in: context, word: "Relearning", state: .relearning)
-        createTestCard(in: context, word: "New", state: .new)
-
-        try context.save()
-
-        let stateDescriptor = FetchDescriptor<FSRSState>(
-            predicate: #Predicate<FSRSState> { state in
-                state.stateEnum != "new"
-            }
-        )
-
-        let count = try context.fetchCount(stateDescriptor)
-
-        #expect(count == 3, "Should include learning, review, and relearning (3)")
     }
 
     @Test("Empty database returns zero count")
@@ -170,17 +111,12 @@ struct StudyViewTests {
         // Scheduled mode count
         let scheduledCount = scheduler.dueCardCount()
 
-        // Cram mode count (excludes new)
-        let cramDescriptor = FetchDescriptor<FSRSState>(
-            predicate: #Predicate<FSRSState> { state in
-                state.stateEnum != "new"
-            }
-        )
-        let cramCount = try context.fetchCount(cramDescriptor)
+        // Learning mode count
+        let learningCount = scheduler.newCardCount()
 
-        // Verify counts are different
+        // Verify counts
         #expect(scheduledCount == 1, "Scheduled mode should count 1 due card")
-        #expect(cramCount == 1, "Cram mode should count 1 non-new card")
+        #expect(learningCount == 1, "Learning mode should count 1 new card")
     }
 
     // MARK: - Session Lifecycle Tests
@@ -239,28 +175,6 @@ struct StudyViewTests {
         let dueCount = scheduler.dueCardCount()
 
         #expect(dueCount == 0, "All new cards should return 0 due count")
-    }
-
-    @Test("All new cards returns zero for cram mode")
-    func testAllNewCardsCram() async throws {
-        let container = createTestContainer()
-        let context = container.mainContext
-
-        // Create only new cards
-        createTestCard(in: context, word: "New1", state: .new)
-        createTestCard(in: context, word: "New2", state: .new)
-
-        try context.save()
-
-        let stateDescriptor = FetchDescriptor<FSRSState>(
-            predicate: #Predicate<FSRSState> { state in
-                state.stateEnum != "new"
-            }
-        )
-
-        let count = try context.fetchCount(stateDescriptor)
-
-        #expect(count == 0, "All new cards should return 0 for cram mode")
     }
 
     @Test("Mixed state cards counted correctly")

@@ -123,8 +123,8 @@ struct AppSettingsTests {
 
     @Test("AppSettings: defaultStudyMode can be changed")
     func defaultStudyModeCanBeChanged() throws {
-        AppSettings.defaultStudyMode = "cram"
-        #expect(AppSettings.defaultStudyMode == "cram")
+        AppSettings.defaultStudyMode = "learning"
+        #expect(AppSettings.defaultStudyMode == "learning")
 
         AppSettings.defaultStudyMode = "scheduled"
         #expect(AppSettings.defaultStudyMode == "scheduled")
@@ -198,10 +198,10 @@ struct AppSettingsTests {
     @Test("AppSettings: StudyModeOption enum values")
     func studyModeOptionEnum() throws {
         #expect(AppSettings.StudyModeOption.scheduled.displayName == "Scheduled (FSRS)")
-        #expect(AppSettings.StudyModeOption.cram.displayName == "Cram (Practice)")
+        #expect(AppSettings.StudyModeOption.learning.displayName == "Learn New")
 
         #expect(AppSettings.StudyModeOption.scheduled.description.contains("FSRS"))
-        #expect(AppSettings.StudyModeOption.cram.description.contains("Practice"))
+        #expect(AppSettings.StudyModeOption.learning.description.contains("new cards"))
     }
 
     @Test("AppSettings: StudyModeOption caseIterable")
@@ -209,13 +209,13 @@ struct AppSettingsTests {
         let allCases = AppSettings.StudyModeOption.allCases
         #expect(allCases.count == 2)
         #expect(allCases.contains(.scheduled))
-        #expect(allCases.contains(.cram))
+        #expect(allCases.contains(.learning))
     }
 
     @Test("AppSettings: StudyModeOption rawValues")
     func studyModeOptionRawValues() throws {
         #expect(AppSettings.StudyModeOption.scheduled.rawValue == "scheduled")
-        #expect(AppSettings.StudyModeOption.cram.rawValue == "cram")
+        #expect(AppSettings.StudyModeOption.learning.rawValue == "learning")
     }
 
     // MARK: - Key Consistency Tests
@@ -289,5 +289,129 @@ struct AppSettingsTests {
         AppSettings.isTranslationEnabled = true
         AppSettings.hapticEnabled = true
         AppSettings.glassEffectsEnabled = true
+    }
+
+    // MARK: - Deck Selection Settings Tests (Phase 9)
+
+    @Test("AppSettings: selectedDeckIDs default is empty set")
+    func selectedDeckIDsDefault() throws {
+        // Reset to default
+        AppSettings.selectedDeckIDs = []
+        #expect(AppSettings.selectedDeckIDs.isEmpty)
+    }
+
+    @Test("AppSettings: selectedDeckIDs can store UUIDs")
+    func selectedDeckIDsCanStore() throws {
+        let uuid1 = UUID()
+        let uuid2 = UUID()
+        let uuid3 = UUID()
+
+        AppSettings.selectedDeckIDs = [uuid1, uuid2, uuid3]
+
+        #expect(AppSettings.selectedDeckIDs.count == 3)
+        #expect(AppSettings.selectedDeckIDs.contains(uuid1))
+        #expect(AppSettings.selectedDeckIDs.contains(uuid2))
+        #expect(AppSettings.selectedDeckIDs.contains(uuid3))
+
+        // Reset to default
+        AppSettings.selectedDeckIDs = []
+    }
+
+    @Test("AppSettings: selectedDeckIDs persistence")
+    func selectedDeckIDSPersistence() throws {
+        let originalUUIDs: Set<UUID> = [UUID(), UUID(), UUID()]
+        AppSettings.selectedDeckIDs = originalUUIDs
+
+        // Re-read from storage
+        let retrieved = AppSettings.selectedDeckIDs
+
+        #expect(retrieved.count == 3)
+        #expect(retrieved == originalUUIDs)
+
+        // Reset to default
+        AppSettings.selectedDeckIDs = []
+    }
+
+    @Test("AppSettings: selectedDeckIDs handles empty set")
+    func selectedDeckIDsEmptySet() throws {
+        AppSettings.selectedDeckIDs = []
+
+        #expect(AppSettings.selectedDeckIDs.isEmpty)
+        #expect(AppSettings.selectedDeckCount == 0)
+    }
+
+    @Test("AppSettings: selectedDeckCount reflects actual count")
+    func selectedDeckCount() throws {
+        #expect(AppSettings.selectedDeckCount == 0)
+
+        AppSettings.selectedDeckIDs = [UUID(), UUID()]
+
+        #expect(AppSettings.selectedDeckCount == 2)
+
+        // Reset to default
+        AppSettings.selectedDeckIDs = []
+    }
+
+    @Test("AppSettings: hasSelectedDecks returns correct value")
+    func hasSelectedDecks() throws {
+        #expect(AppSettings.hasSelectedDecks == false)
+
+        AppSettings.selectedDeckIDs = [UUID()]
+
+        #expect(AppSettings.hasSelectedDecks == true)
+
+        // Reset to default
+        AppSettings.selectedDeckIDs = []
+
+        #expect(AppSettings.hasSelectedDecks == false)
+    }
+
+    @Test("AppSettings: selectedDeckIDs JSON encoding roundtrip")
+    func selectedDeckIDsJSONRoundtrip() throws {
+        let testUUIDs: Set<UUID> = [
+            UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+            UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
+            UUID(uuidString: "00000000-0000-0000-0000-000000000003")!
+        ]
+
+        AppSettings.selectedDeckIDs = testUUIDs
+
+        // Simulate persistence by re-reading
+        let retrieved = AppSettings.selectedDeckIDs
+
+        #expect(retrieved.count == 3)
+        #expect(retrieved.contains(testUUIDs.first!))
+        #expect(retrieved.contains(testUUIDs.dropFirst().first!))
+        #expect(retrieved.contains(testUUIDs.dropFirst(2).first!))
+
+        // Reset to default
+        AppSettings.selectedDeckIDs = []
+    }
+
+    @Test("AppSettings: selectedDeckIDs handles invalid JSON gracefully")
+    func selectedDeckIDsInvalidJSON() throws {
+        // Set invalid JSON data directly
+        UserDefaults.standard.set("invalid json", forKey: "selectedDeckIDsData")
+        UserDefaults.standard.synchronize()
+
+        // Should return empty set gracefully
+        let retrieved = AppSettings.selectedDeckIDs
+        #expect(retrieved.isEmpty)
+
+        // Reset to default
+        UserDefaults.standard.removeObject(forKey: "selectedDeckIDsData")
+        UserDefaults.standard.synchronize()
+    }
+
+    @Test("AppSettings: selectedDeckIDs type is Set<UUID>")
+    func selectedDeckIDsType() throws {
+        AppSettings.selectedDeckIDs = [UUID()]
+        let value = AppSettings.selectedDeckIDs
+
+        #expect(type(of: value) == Set<UUID>.self)
+        #expect(value.count == 1)
+
+        // Reset to default
+        AppSettings.selectedDeckIDs = []
     }
 }

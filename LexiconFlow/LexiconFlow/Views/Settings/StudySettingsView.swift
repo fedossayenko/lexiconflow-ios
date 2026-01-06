@@ -60,7 +60,7 @@ struct StudySettingsView: View {
             } header: {
                 Text("Study Mode")
             } footer: {
-                Text("Scheduled: Respects FSRS due dates\nCram: Practice without affecting progress")
+                Text("Learn New: Study cards you haven't seen before\nScheduled: Review cards due based on FSRS algorithm")
             }
 
             // Statistics Preview

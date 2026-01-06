@@ -64,16 +64,6 @@ struct StudySessionViewTests {
         #expect(!onCompleteCalled, "onComplete should not be called initially")
     }
 
-    @Test("StudySessionView initializes with cram mode")
-    func studySessionViewInitializesWithCramMode() {
-        var onCompleteCalled = false
-        let view = StudySessionView(mode: .cram) {
-            onCompleteCalled = true
-        }
-
-        #expect(view.mode == .cram, "View should store cram mode")
-    }
-
     // MARK: - Card Reference Pattern Tests (Critical Race Condition)
 
     @Test("Cards have unique persistent IDs")
@@ -104,18 +94,6 @@ struct StudySessionViewTests {
 
         #expect(card.fsrsState != nil, "Card should have FSRSState attached")
         #expect(card.fsrsState?.stateEnum == FlashcardState.learning.rawValue, "State should match creation")
-    }
-
-    // MARK: - Mode Tests
-
-    @Test("Scheduled mode and cram mode are different")
-    func scheduledAndCramModesAreDifferent() {
-        let scheduledView = StudySessionView(mode: .scheduled) {}
-        let cramView = StudySessionView(mode: .cram) {}
-
-        #expect(scheduledView.mode == .scheduled, "Scheduled view should have .scheduled mode")
-        #expect(cramView.mode == .cram, "Cram view should have .cram mode")
-        #expect(scheduledView.mode != cramView.mode, "Modes should be different")
     }
 
     // MARK: - Edge Cases

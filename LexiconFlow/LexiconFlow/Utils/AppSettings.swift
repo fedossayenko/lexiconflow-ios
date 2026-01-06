@@ -54,11 +54,47 @@ enum AppSettings {
     /// Maximum number of cards to fetch per study session
     @AppStorage("studyLimit") static var studyLimit: Int = 20
 
-    /// Default study mode ("scheduled" or "cram")
+    /// Default study mode ("learning" or "scheduled")
     @AppStorage("defaultStudyMode") static var defaultStudyMode: String = "scheduled"
 
     /// Daily study goal in number of cards
     @AppStorage("dailyGoal") static var dailyGoal: Int = 20
+
+    // MARK: - Deck Selection Settings (NEW)
+
+    /// Raw JSON data for selected deck IDs
+    /// Stored as JSON array of UUID strings for UserDefaults compatibility
+    @AppStorage("selectedDeckIDsData") static var selectedDeckIDsData: String = "[]"
+
+    /// Selected deck IDs for multi-deck study sessions
+    /// Uses JSON encoding for reliable persistence
+    static var selectedDeckIDs: Set<UUID> {
+        get {
+            guard let data = selectedDeckIDsData.data(using: .utf8),
+                  let ids = try? JSONDecoder().decode([String].self, from: data) else {
+                return []
+            }
+            return Set(ids.compactMap { UUID(uuidString: $0) })
+        }
+        set {
+            let ids = Array(newValue.map { $0.uuidString })
+            guard let data = try? JSONEncoder().encode(ids),
+                  let string = String(data: data, encoding: .utf8) else {
+                return
+            }
+            selectedDeckIDsData = string
+        }
+    }
+
+    /// Check if any decks are selected
+    static var hasSelectedDecks: Bool {
+        !selectedDeckIDs.isEmpty
+    }
+
+    /// Count of selected decks
+    static var selectedDeckCount: Int {
+        selectedDeckIDs.count
+    }
 
     // MARK: - Appearance Settings (NEW)
 
@@ -120,20 +156,20 @@ enum AppSettings {
 
     /// Study mode options
     enum StudyModeOption: String, CaseIterable, Sendable {
+        case learning = "learning"
         case scheduled = "scheduled"
-        case cram = "cram"
 
         var displayName: String {
             switch self {
+            case .learning: return "Learn New"
             case .scheduled: return "Scheduled (FSRS)"
-            case .cram: return "Cram (Practice)"
             }
         }
 
         var description: String {
             switch self {
+            case .learning: return "Study new cards for the first time"
             case .scheduled: return "Due cards based on FSRS algorithm"
-            case .cram: return "Practice without affecting progress"
             }
         }
     }
