@@ -84,7 +84,7 @@ final class Flashcard {
     /// - SwiftData auto-initializes this property
     /// - Cascade delete: deleting card removes all generated sentences
     /// - Sentences have 7-day TTL expiration
-    @Relationship(deleteRule: .cascade, inverse: \GeneratedSentence.flashcard) var generatedSentences: [GeneratedSentence] = []
+    @Relationship(deleteRule: .cascade) var generatedSentences: [GeneratedSentence] = []
 
     // MARK: - Initialization
 

@@ -91,25 +91,6 @@ final class GeneratedSentence {
         self.source = source
         // flashcard relationship auto-initialized by SwiftData
     }
-
-    /// Initialize with explicit expiration date
-    init(
-        id: UUID = UUID(),
-        sentenceText: String,
-        cefrLevel: String,
-        generatedAt: Date,
-        expiresAt: Date,
-        isFavorite: Bool = false,
-        source: SentenceSource = .aiGenerated
-    ) {
-        self.id = id
-        self.sentenceText = sentenceText
-        self.cefrLevel = cefrLevel
-        self.generatedAt = generatedAt
-        self.expiresAt = expiresAt
-        self.isFavorite = isFavorite
-        self.source = source
-    }
 }
 
 // MARK: - Sentence Source
@@ -140,13 +121,9 @@ struct SentenceGenerationResponse: Codable, Sendable {
         /// CEFR level estimate
         let cefrLevel: String
 
-        /// Confidence score (0-1)
-        let confidence: Double
-
         enum CodingKeys: String, CodingKey {
             case sentence = "sentence_text"
             case cefrLevel = "cefr_level"
-            case confidence
         }
     }
 }

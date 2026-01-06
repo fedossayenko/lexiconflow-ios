@@ -11,6 +11,7 @@ import SwiftData
 struct CardBackView: View {
     @Bindable var card: Flashcard
     @State private var viewModel: SentenceGenerationViewModel?
+    @State private var loadTask: Task<Void, Never>?
     @Environment(\.modelContext) private var modelContext
     @State private var showAllSentences = false
 
@@ -93,11 +94,21 @@ struct CardBackView: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Card back")
         .task {
-            // Initialize view model on appear
-            if viewModel == nil {
-                viewModel = SentenceGenerationViewModel(modelContext: modelContext)
-                viewModel?.loadSentences(for: card)
+            // Cancel previous task and create new one
+            loadTask?.cancel()
+            loadTask = Task {
+                // Initialize view model on appear
+                if viewModel == nil {
+                    viewModel = SentenceGenerationViewModel(modelContext: modelContext)
+                }
+                await viewModel?.loadSentences(for: card)
             }
+        }
+        .onDisappear {
+            // Cleanup to prevent memory leaks
+            loadTask?.cancel()
+            loadTask = nil
+            viewModel = nil
         }
     }
 
@@ -133,10 +144,16 @@ struct CardBackView: View {
             .padding(.horizontal)
 
             // Sentences display
-            if let vm = viewModel, vm.hasSentences {
-                sentencesList(viewModel: vm)
-            } else if let vm = viewModel {
-                emptyStatePrompt(viewModel: vm)
+            if let vm = viewModel {
+                if vm.isGenerating {
+                    ProgressView("Generating sentences...")
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding()
+                } else if vm.hasSentences {
+                    sentencesList(viewModel: vm)
+                } else {
+                    emptyStatePrompt(viewModel: vm)
+                }
             }
 
             // Generation message
@@ -192,7 +209,7 @@ struct CardBackView: View {
             if viewModel.validSentences.count > 0 {
                 Button {
                     Task {
-                        await viewModel.regenerateSentences(for: card)
+                        await viewModel.generateSentences(for: card)
                     }
                 } label: {
                     Label("Regenerate", systemImage: "arrow.clockwise")
@@ -227,8 +244,13 @@ struct CardBackView: View {
     }
 
     // MARK: - Helper Methods
+}
 
-    private func cefrColor(for level: String) -> Color {
+// MARK: - View Extensions
+
+extension View {
+    /// Returns color for CEFR level
+    func cefrColor(for level: String) -> Color {
         switch level.uppercased() {
         case "A1", "A2": return .green
         case "B1", "B2": return .blue
@@ -330,15 +352,6 @@ struct SentenceRow: View {
         case .aiGenerated: return "AI"
         case .staticFallback: return "Offline"
         case .userCreated: return "Custom"
-        }
-    }
-
-    private func cefrColor(for level: String) -> Color {
-        switch level.uppercased() {
-        case "A1", "A2": return .green
-        case "B1", "B2": return .blue
-        case "C1", "C2": return .purple
-        default: return .gray
         }
     }
 }

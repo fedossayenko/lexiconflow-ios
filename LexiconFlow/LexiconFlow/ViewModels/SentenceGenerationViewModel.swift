@@ -24,9 +24,6 @@ final class SentenceGenerationViewModel: ObservableObject {
     /// Whether sentences are currently being generated
     @Published var isGenerating = false
 
-    /// Generation progress (0.0 to 1.0)
-    @Published var generationProgress: Double = 0.0
-
     /// Current generation message
     @Published var generationMessage: String?
 
@@ -53,12 +50,6 @@ final class SentenceGenerationViewModel: ObservableObject {
         generatedSentences.filter { !$0.isExpired }
     }
 
-    /// Favorite sentences
-    var favoriteSentences: [GeneratedSentence] {
-        generatedSentences.filter { $0.isFavorite }
-            .sorted { $0.generatedAt > $1.generatedAt }
-    }
-
     // MARK: - Initialization
 
     init(modelContext: ModelContext) {
@@ -72,7 +63,6 @@ final class SentenceGenerationViewModel: ObservableObject {
     /// - Parameter card: The flashcard to generate sentences for
     func generateSentences(for card: Flashcard) async {
         isGenerating = true
-        generationProgress = 0.0
         generationMessage = "Generating sentences..."
         errorMessage = nil
 
@@ -86,11 +76,8 @@ final class SentenceGenerationViewModel: ObservableObject {
                 count: sentencesPerCard
             )
 
-            // Clear existing sentences and create new ones
+            // Store existing sentences for deletion after successful generation
             let existingSentences = card.generatedSentences
-            for sentence in existingSentences {
-                modelContext.delete(sentence)
-            }
 
             // Create new GeneratedSentence records
             var newSentences: [GeneratedSentence] = []
@@ -108,12 +95,16 @@ final class SentenceGenerationViewModel: ObservableObject {
                 newSentences.append(sentence)
             }
 
+            // Delete old sentences only after new ones are created successfully
+            for sentence in existingSentences {
+                modelContext.delete(sentence)
+            }
+
             // Save to SwiftData
             try modelContext.save()
 
             // Update published state
             generatedSentences = newSentences
-            generationProgress = 1.0
             generationMessage = "Generated \(newSentences.count) sentences"
 
             logger.info("Successfully generated and saved \(newSentences.count) sentences for '\(card.word)'")
@@ -135,13 +126,6 @@ final class SentenceGenerationViewModel: ObservableObject {
         }
 
         isGenerating = false
-    }
-
-    /// Regenerate sentences for a flashcard
-    ///
-    /// - Parameter card: The flashcard to regenerate sentences for
-    func regenerateSentences(for card: Flashcard) async {
-        await generateSentences(for: card)
     }
 
     /// Use static fallback sentences (offline mode)
@@ -169,12 +153,16 @@ final class SentenceGenerationViewModel: ObservableObject {
             newSentences.append(sentence)
         }
 
-        try? modelContext.save()
-        generatedSentences = newSentences
-        generationMessage = "\(newSentences.count) offline sentences (no API)"
-        errorMessage = "Offline mode - using fallback sentences"
-
-        logger.info("Used \(newSentences.count) static fallback sentences for '\(card.word)'")
+        do {
+            try modelContext.save()
+            generatedSentences = newSentences
+            generationMessage = "\(newSentences.count) offline sentences (no API)"
+            errorMessage = "Offline mode - using fallback sentences"
+            logger.info("Used \(newSentences.count) static fallback sentences for '\(card.word)'")
+        } catch {
+            logger.error("Failed to save fallback sentences: \(error.localizedDescription)")
+            errorMessage = "Failed to save offline sentences"
+        }
     }
 
     // MARK: - Sentence Management
@@ -184,7 +172,12 @@ final class SentenceGenerationViewModel: ObservableObject {
     /// - Parameter sentence: The sentence to toggle
     func toggleFavorite(_ sentence: GeneratedSentence) {
         sentence.isFavorite.toggle()
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            errorMessage = "Failed to save: \(error.localizedDescription)"
+            logger.error("Failed to save sentence favorite: \(error.localizedDescription)")
+        }
     }
 
     /// Delete a sentence
@@ -192,8 +185,13 @@ final class SentenceGenerationViewModel: ObservableObject {
     /// - Parameter sentence: The sentence to delete
     func deleteSentence(_ sentence: GeneratedSentence) {
         modelContext.delete(sentence)
-        try? modelContext.save()
-        generatedSentences.removeAll { $0.id == sentence.id }
+        do {
+            try modelContext.save()
+            generatedSentences.removeAll { $0.id == sentence.id }
+        } catch {
+            errorMessage = "Failed to delete: \(error.localizedDescription)"
+            logger.error("Failed to delete sentence: \(error.localizedDescription)")
+        }
     }
 
     /// Clean up expired sentences
@@ -202,9 +200,13 @@ final class SentenceGenerationViewModel: ObservableObject {
         for sentence in expired {
             modelContext.delete(sentence)
         }
-        try? modelContext.save()
-        generatedSentences.removeAll { $0.isExpired }
-        logger.info("Cleaned up \(expired.count) expired sentences for '\(card.word)'")
+        do {
+            try modelContext.save()
+            generatedSentences.removeAll { $0.isExpired }
+            logger.info("Cleaned up \(expired.count) expired sentences for '\(card.word)'")
+        } catch {
+            logger.error("Failed to cleanup expired sentences: \(error.localizedDescription)")
+        }
     }
 
     /// Load existing sentences for a card

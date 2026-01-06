@@ -33,10 +33,8 @@ actor SentenceGenerationService {
     private init() {}
 
     /// Fetch API key from Keychain
-    private func getAPIKey() async -> String {
-        await MainActor.run {
-            (try? KeychainManager.getAPIKey()) ?? ""
-        }
+    private func getAPIKey() -> String {
+        (try? KeychainManager.getAPIKey()) ?? ""
     }
 
     /// Set source and target languages
@@ -76,7 +74,6 @@ actor SentenceGenerationService {
         struct SentenceData: Sendable {
             let text: String
             let cefrLevel: String
-            let confidence: Double
         }
     }
 
@@ -176,7 +173,7 @@ actor SentenceGenerationService {
         count: Int = 3
     ) async throws -> SentenceGenerationResponse {
         // Get API key from Keychain
-        let key = await getAPIKey()
+        let key = getAPIKey()
         guard !key.isEmpty else {
             logger.error("Sentence generation failed: API key not configured")
             throw SentenceGenerationError.missingAPIKey
@@ -441,8 +438,7 @@ actor SentenceGenerationService {
                 sentences: response.items.map {
                     SuccessfulGeneration.SentenceData(
                         text: $0.sentence,
-                        cefrLevel: $0.cefrLevel,
-                        confidence: $0.confidence
+                        cefrLevel: $0.cefrLevel
                     )
                 },
                 sourceLanguage: sourceLanguage,
@@ -603,8 +599,7 @@ actor SentenceGenerationService {
         return fallbacks.map { sentence in
             SentenceGenerationResponse.GeneratedSentenceItem(
                 sentence: sentence,
-                cefrLevel: estimateCEFRLevel(sentence),
-                confidence: 0.5
+                cefrLevel: estimateCEFRLevel(sentence)
             )
         }
     }
