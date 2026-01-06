@@ -25,6 +25,7 @@ struct AddFlashcardView: View {
     @State private var imageData: Data?
     @State private var isSaving = false
     @State private var isTranslating = false
+    @State private var isGeneratingSentences = false
     @State private var errorMessage: String?
 
     private let logger = Logger(subsystem: "com.lexiconflow.flashcard", category: "AddFlashcardView")
@@ -107,7 +108,11 @@ struct AddFlashcardView: View {
                     Button(action: { Task { await saveCard() } }) {
                         HStack(spacing: 8) {
                             if isSaving {
-                                if isTranslating {
+                                if isGeneratingSentences {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                    Text("Generating sentences...")
+                                } else if isTranslating {
                                     ProgressView()
                                         .controlSize(.small)
                                     Text("Translating...")
@@ -121,7 +126,7 @@ struct AddFlashcardView: View {
                             }
                         }
                     }
-                    .disabled(word.isEmpty || definition.isEmpty || isSaving || isTranslating)
+                    .disabled(word.isEmpty || definition.isEmpty || isSaving || isTranslating || isGeneratingSentences)
                 }
             }
             .onChange(of: selectedImage) { _, newItem in
@@ -191,6 +196,16 @@ struct AddFlashcardView: View {
         }
 
         isTranslating = false
+
+        // 2b. Automatic sentence generation (if translation enabled)
+        if AppSettings.isTranslationEnabled && TranslationService.shared.isConfigured {
+            isGeneratingSentences = true
+
+            let sentenceVM = SentenceGenerationViewModel(modelContext: modelContext)
+            await sentenceVM.generateSentences(for: flashcard)
+
+            isGeneratingSentences = false
+        }
 
         // 3. Create FSRSState for the card
         let state = FSRSState(

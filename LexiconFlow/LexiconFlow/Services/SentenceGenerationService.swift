@@ -21,6 +21,48 @@ import SwiftData
 /// - Static fallback sentences for offline mode
 /// - Exponential backoff retry on rate limits
 actor SentenceGenerationService {
+    // MARK: - Configuration Constants
+
+    /// Configuration constants for sentence generation operations
+    private enum Config {
+        /// Maximum concurrent sentence generation requests
+        /// Conservative limit to avoid rate limiting with sentence generation API
+        static let defaultMaxConcurrency = 3
+
+        /// Maximum retry attempts for failed generations
+        /// 3 retries allows recovery from transient network issues
+        static let defaultMaxRetries = 3
+
+        /// Initial delay before first retry (seconds)
+        /// 0.5s provides quick recovery while avoiding API rate limits
+        static let initialRetryDelay: TimeInterval = 0.5
+
+        /// Multiplier for exponential backoff
+        /// Each retry waits twice as long as the previous (0.5s, 1s, 2s)
+        static let backoffMultiplier: Double = 2.0
+
+        /// Default number of sentences to generate per flashcard
+        static let defaultSentencesPerCard = 3
+    }
+
+    /// CEFR level word count thresholds
+    ///
+    /// Based on Cambridge English vocabulary guidelines:
+    /// - A1: 500-1000 words (simple sentences, 8 words max)
+    /// - A2: 1000-2000 words (basic sentences, 15 words max)
+    /// - B1: 2000-3000 words (intermediate, 25 words max)
+    /// - B2: 3000-4500 words (upper intermediate, 35 words max)
+    /// - C1: 4500+ words (advanced, 36+ words)
+    private enum CEFRThresholds {
+        static let a1Max = 8
+        static let a2Max = 15
+        static let b1Max = 25
+        static let b2Max = 35
+        static let c1Min = 36
+    }
+
+    // MARK: - Properties
+
     /// Shared singleton instance
     static let shared = SentenceGenerationService()
 
@@ -170,7 +212,7 @@ actor SentenceGenerationService {
         cardDefinition: String,
         cardTranslation: String? = nil,
         cardCEFR: String? = nil,
-        count: Int = 3
+        count: Int = Config.defaultSentencesPerCard
     ) async throws -> SentenceGenerationResponse {
         // Get API key from Keychain
         let key = getAPIKey()
@@ -304,8 +346,8 @@ actor SentenceGenerationService {
     /// - Returns: SentenceBatchResult with success/failure counts
     func generateBatch(
         _ cards: [CardData],
-        sentencesPerCard: Int = 3,
-        maxConcurrency: Int = 3,
+        sentencesPerCard: Int = Config.defaultSentencesPerCard,
+        maxConcurrency: Int = Config.defaultMaxConcurrency,
         progressHandler: (@Sendable (BatchGenerationProgress) -> Void)? = nil
     ) async throws -> SentenceBatchResult {
         guard !cards.isEmpty else {
@@ -478,13 +520,13 @@ actor SentenceGenerationService {
         cardTranslation: String?,
         cardCEFR: String?,
         count: Int,
-        maxRetries: Int = 3
+        maxRetries: Int = Config.defaultMaxRetries
     ) async -> SentenceGenerationResult {
         let startTime = Date()
 
         let result = await RetryManager.executeWithRetry(
             maxRetries: maxRetries,
-            initialDelay: 0.5,
+            initialDelay: Config.initialRetryDelay,
             operation: {
                 try await self.generateSentences(
                     cardWord: cardWord,
@@ -542,10 +584,10 @@ actor SentenceGenerationService {
         let wordCount = sentence.split(separator: " ").count
 
         switch wordCount {
-        case 0...8: return "A1"
-        case 9...15: return "A2"
-        case 16...25: return "B1"
-        case 26...35: return "B2"
+        case 0...CEFRThresholds.a1Max: return "A1"
+        case (CEFRThresholds.a1Max + 1)...CEFRThresholds.a2Max: return "A2"
+        case (CEFRThresholds.a2Max + 1)...CEFRThresholds.b1Max: return "B1"
+        case (CEFRThresholds.b1Max + 1)...CEFRThresholds.b2Max: return "B2"
         default: return "C1"
         }
     }

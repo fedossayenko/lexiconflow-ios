@@ -43,10 +43,46 @@ struct InteractiveGlassModifier: ViewModifier {
 
         return content
             .overlay(
-                effect.tint.clipShape(RoundedRectangle(cornerRadius: 20))
+                ZStack {
+                    // Layer 1: Directional tint
+                    effect.tint.clipShape(RoundedRectangle(cornerRadius: 20))
+
+                    // Layer 2: Specular highlight shift (simulates light refraction)
+                    if progress > 0.1 {
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        .white.opacity(0.3 * progress),
+                                        .clear
+                                    ],
+                                    startPoint: offset.width > 0 ? .leading : .trailing,
+                                    endPoint: offset.width > 0 ? .trailing : .leading
+                                )
+                            )
+                            .blendMode(.screen)
+                    }
+
+                    // Layer 3: Edge glow (creates "glowing rim" effect)
+                    if progress > 0.2 {
+                        RoundedRectangle(cornerRadius: 20)
+                            .strokeBorder(
+                                effect.tint.opacity(progress * 0.5),
+                                lineWidth: 2
+                            )
+                            .blur(radius: 4)
+                    }
+                }
             )
-            .hueRotation(.degrees(progress * 5))  // Subtle color shift
+            .hueRotation(.degrees(progress * 5))
             .saturation(progress > 0 ? 1.0 + (progress * 0.2) : 1.0)
+            .scaleEffect(1.0 + (progress * 0.05))  // Subtle "swelling"
+            .rotation3DEffect(
+                .degrees(progress * 5),
+                axis: (x: 0, y: 1, z: 0),
+                anchor: .center,
+                perspective: 1.0
+            )
     }
 }
 

@@ -30,6 +30,35 @@ class HapticService {
         case down    // Hard rating
     }
 
+    // MARK: - Haptic Intensity Profiles
+
+    /// Haptic intensity profiles for different feedback types
+    ///
+    /// These constants define the intensity multipliers and thresholds
+    /// used throughout the haptic feedback system.
+    private enum HapticProfile {
+        /// Subtle feedback for low-importance interactions
+        static let subtle: CGFloat = 0.3
+
+        /// Light feedback for secondary actions (Again rating)
+        static let light: CGFloat = 0.4
+
+        /// Medium feedback for primary actions (Good, Hard ratings)
+        static let medium: CGFloat = 0.7
+
+        /// Strong feedback for important actions (Easy rating)
+        static let strong: CGFloat = 0.9
+
+        /// Maximum intensity for critical feedback (success confirmation)
+        static let maximum: CGFloat = 1.0
+
+        /// Minimum swipe progress to trigger haptic (30%)
+        /// Prevents overuse during small, unintentional movements
+        static let minimumSwipeProgress: CGFloat = 0.3
+    }
+
+    // MARK: - Properties
+
     /// Cached haptic generators for performance (UIKit fallback)
     private var lightGenerator: UIImpactFeedbackGenerator?
     private var mediumGenerator: UIImpactFeedbackGenerator?
@@ -78,7 +107,7 @@ class HapticService {
             CHHapticEvent(
                 eventType: .hapticTransient,
                 parameters: [
-                    CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity * 0.7)),
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity * HapticProfile.medium)),
                     CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.8)
                 ],
                 relativeTime: 0
@@ -94,7 +123,7 @@ class HapticService {
             CHHapticEvent(
                 eventType: .hapticTransient,
                 parameters: [
-                    CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity * 0.4)),
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity * HapticProfile.light)),
                     CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.3)
                 ],
                 relativeTime: 0
@@ -110,8 +139,8 @@ class HapticService {
             CHHapticEvent(
                 eventType: .hapticTransient,
                 parameters: [
-                    CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity * 0.9)),
-                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 1.0)
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity * HapticProfile.strong)),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: Float(HapticProfile.maximum))
                 ],
                 relativeTime: 0
             )
@@ -142,15 +171,15 @@ class HapticService {
             CHHapticEvent(
                 eventType: .hapticTransient,
                 parameters: [
-                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
-                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.7)
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(HapticProfile.maximum)),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: Float(HapticProfile.medium))
                 ],
                 relativeTime: 0
             ),
             CHHapticEvent(
                 eventType: .hapticTransient,
                 parameters: [
-                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.7),
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(HapticProfile.medium)),
                     CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5)
                 ],
                 relativeTime: 0.1
@@ -186,6 +215,36 @@ class HapticService {
                     CHHapticEventParameter(parameterID: .hapticSharpness, value: 1.0)
                 ],
                 relativeTime: 0
+            )
+        ]
+        return try CHHapticPattern(events: events, parameters: [])
+    }
+
+    /// Creates a streak chime haptic pattern.
+    /// Pattern: Rising harmonic progression for streak milestones.
+    /// Higher streak values produce higher pitch (intensity) haptics.
+    private func createStreakChimePattern(streakCount: Int) throws -> CHHapticPattern {
+        // Harmonic progression: higher pitch for longer streaks
+        // Intensity ranges from 0.5 (streak 5) to 1.0 (streak 30+)
+        let intensity = min(0.5 + (Double(min(streakCount, 30)) / 60.0), 1.0)
+
+        let events = [
+            CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity)),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.9)
+                ],
+                relativeTime: 0
+            ),
+            // Secondary tap for celebratory effect
+            CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity * 0.7)),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.8)
+                ],
+                relativeTime: 0.15
             )
         ]
         return try CHHapticPattern(events: events, parameters: [])
@@ -231,11 +290,11 @@ class HapticService {
     ///   - direction: The direction of the swipe
     ///   - progress: Normalized progress value (0-1) based on swipe distance
     ///
-    /// Haptic intensity scales with progress, with minimum threshold of 0.3
+    /// Haptic intensity scales with progress, with minimum threshold
     /// to prevent overuse during small movements.
     func triggerSwipe(direction: SwipeDirection, progress: CGFloat) {
         guard AppSettings.hapticEnabled else { return }
-        guard progress > 0.3 else { return }
+        guard progress > HapticProfile.minimumSwipeProgress else { return }
 
         // Try CoreHaptics first
         if let engine = hapticEngine {
@@ -349,6 +408,29 @@ class HapticService {
         }
     }
 
+    /// Triggers streak chime haptic for study streak milestones.
+    ///
+    /// Uses harmonic progression with increasing intensity for longer streaks.
+    /// - Parameter streakCount: Current streak count (should be milestone: 5, 10, 15, 20...)
+    func triggerStreakChime(streakCount: Int) {
+        guard AppSettings.hapticEnabled else { return }
+
+        if let engine = hapticEngine {
+            do {
+                let pattern = try createStreakChimePattern(streakCount: streakCount)
+                let player = try engine.makePlayer(with: pattern)
+                try player.start(atTime: 0)
+                logger.info("Streak chime played for streak: \(streakCount)")
+            } catch {
+                logger.error("Failed to play CoreHaptics streak chime: \(error)")
+                Analytics.trackError("streak_chime_failed", error: error)
+                triggerUIKitStreakChime(streakCount: streakCount)
+            }
+        } else {
+            triggerUIKitStreakChime(streakCount: streakCount)
+        }
+    }
+
     // MARK: - UIKit Fallback Methods
 
     /// Triggers success haptic using UIKit (fallback).
@@ -370,6 +452,14 @@ class HapticService {
         let generator = UINotificationFeedbackGenerator()
         generator.prepare()
         generator.notificationOccurred(.error)
+    }
+
+    /// Triggers streak chime using UIKit (fallback).
+    private func triggerUIKitStreakChime(streakCount: Int) {
+        // Use notification feedback for streak milestones
+        let generator = UINotificationFeedbackGenerator()
+        generator.prepare()
+        generator.notificationOccurred(.success)
     }
 
     /// Resets cached haptic generators and stops the haptic engine.

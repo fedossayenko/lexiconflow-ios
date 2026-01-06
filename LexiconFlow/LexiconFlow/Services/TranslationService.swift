@@ -14,6 +14,29 @@ import OSLog
 /// including CEFR levels and context-specific translations.
 /// Network operations run off the main thread to avoid blocking UI.
 final class TranslationService {
+    // MARK: - Configuration Constants
+
+    /// Configuration constants for translation operations
+    private enum Config {
+        /// Maximum concurrent API requests (prevents rate limiting)
+        /// Z.ai API typically handles 5-10 concurrent requests efficiently
+        static let defaultMaxConcurrency = 5
+
+        /// Maximum retry attempts for failed requests
+        /// 3 retries allows recovery from transient network issues
+        static let defaultMaxRetries = 3
+
+        /// Initial delay before first retry (seconds)
+        /// 0.5s provides quick recovery while avoiding API rate limits
+        static let initialRetryDelay: TimeInterval = 0.5
+
+        /// Multiplier for exponential backoff
+        /// Each retry waits twice as long as the previous (0.5s, 1s, 2s)
+        static let backoffMultiplier: Double = 2.0
+    }
+
+    // MARK: - Properties
+
     /// Shared singleton instance
     static let shared = TranslationService()
 
@@ -286,7 +309,7 @@ final class TranslationService {
     /// - Throws: TranslationError if all requests fail
     func translateBatch(
         _ cards: [Flashcard],
-        maxConcurrency: Int = 5,
+        maxConcurrency: Int = Config.defaultMaxConcurrency,
         progressHandler: (@Sendable (BatchTranslationProgress) -> Void)? = nil
     ) async throws -> TranslationBatchResult {
         guard !cards.isEmpty else {
@@ -446,14 +469,14 @@ final class TranslationService {
     /// - Returns: TranslationTaskResult containing the result or error
     private func performTranslationWithRetry(
         card: Flashcard,
-        maxRetries: Int = 3
+        maxRetries: Int = Config.defaultMaxRetries
     ) async -> TranslationTaskResult {
         let startTime = Date()
         let cardWord = card.word.replacingOccurrences(of: "'", with: "\\'")
 
         let result = await RetryManager.executeWithRetry(
             maxRetries: maxRetries,
-            initialDelay: 0.5,
+            initialDelay: Config.initialRetryDelay,
             operation: {
                 try await self.translate(
                     word: card.word,
