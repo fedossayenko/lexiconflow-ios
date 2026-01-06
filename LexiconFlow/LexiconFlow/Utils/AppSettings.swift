@@ -68,6 +68,31 @@ enum AppSettings {
     /// Whether glass morphism effects are enabled
     @AppStorage("glassEffectsEnabled") static var glassEffectsEnabled: Bool = true
 
+    // MARK: - Test Support
+
+    #if DEBUG
+    /// Reset all settings to defaults (for testing)
+    static func resetToDefaults() {
+        let defaults = [
+            "translationEnabled": true,
+            "translationSourceLanguage": "en",
+            "translationTargetLanguage": "ru",
+            "hapticEnabled": true,
+            "audioEnabled": true,
+            "studyLimit": 20,
+            "defaultStudyMode": "scheduled",
+            "dailyGoal": 20,
+            "darkMode": "system",
+            "glassEffectsEnabled": true
+        ] as [String: Any]
+
+        for (key, value) in defaults {
+            UserDefaults.standard.set(value, forKey: key)
+        }
+        UserDefaults.standard.synchronize()
+    }
+    #endif
+
     // MARK: - Types
 
     /// Dark mode preference options

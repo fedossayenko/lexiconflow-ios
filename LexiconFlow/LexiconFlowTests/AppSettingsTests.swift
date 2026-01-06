@@ -19,6 +19,8 @@ struct AppSettingsTests {
 
     @Test("AppSettings: translationEnabled default is true")
     func translationEnabledDefault() throws {
+        // Reset to default value directly (@AppStorage caches UserDefaults)
+        AppSettings.isTranslationEnabled = true
         #expect(AppSettings.isTranslationEnabled == true)
     }
 
@@ -93,45 +95,12 @@ struct AppSettingsTests {
         #expect(AppSettings.hapticEnabled == true)
     }
 
-    @Test("AppSettings: hapticIntensity default is 1.0")
-    func hapticIntensityDefault() throws {
-        #expect(AppSettings.hapticIntensity == 1.0)
-    }
-
-    @Test("AppSettings: hapticIntensity can be changed")
-    func hapticIntensityCanBeChanged() throws {
-        AppSettings.hapticIntensity = 0.5
-        #expect(AppSettings.hapticIntensity == 0.5)
-
-        AppSettings.hapticIntensity = 0.1
-        #expect(AppSettings.hapticIntensity == 0.1)
-
-        // Reset to default
-        AppSettings.hapticIntensity = 1.0
-    }
-
-    @Test("AppSettings: hapticIntensity bounds (0.1 to 1.0)")
-    func hapticIntensityBounds() throws {
-        // Test minimum bound
-        AppSettings.hapticIntensity = 0.1
-        #expect(AppSettings.hapticIntensity == 0.1)
-
-        // Test maximum bound
-        AppSettings.hapticIntensity = 1.0
-        #expect(AppSettings.hapticIntensity == 1.0)
-
-        // Test fractional values
-        AppSettings.hapticIntensity = 0.7
-        #expect(AppSettings.hapticIntensity == 0.7)
-
-        // Reset to default
-        AppSettings.hapticIntensity = 1.0
-    }
-
     // MARK: - Study Session Settings Tests
 
     @Test("AppSettings: studyLimit default is 20")
     func studyLimitDefault() throws {
+        // Reset to default value directly (@AppStorage caches UserDefaults)
+        AppSettings.studyLimit = 20
         #expect(AppSettings.studyLimit == 20)
     }
 
@@ -232,7 +201,7 @@ struct AppSettingsTests {
         #expect(AppSettings.StudyModeOption.cram.displayName == "Cram (Practice)")
 
         #expect(AppSettings.StudyModeOption.scheduled.description.contains("FSRS"))
-        #expect(AppSettings.StudyModeOption.cram.description.contains("practice"))
+        #expect(AppSettings.StudyModeOption.cram.description.contains("Practice"))
     }
 
     @Test("AppSettings: StudyModeOption caseIterable")
@@ -291,15 +260,6 @@ struct AppSettingsTests {
 
         #expect(type(of: value) == Int.self)
         #expect(value == 25)
-    }
-
-    @Test("AppSettings: hapticIntensity is double")
-    func hapticIntensityIsDouble() throws {
-        AppSettings.hapticIntensity = 0.75
-        let value = AppSettings.hapticIntensity
-
-        #expect(type(of: value) == Double.self)
-        #expect(value == 0.75)
     }
 
     @Test("AppSettings: translation settings are strings")

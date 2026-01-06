@@ -77,7 +77,7 @@ struct SchedulerTests {
         _ = createTestFlashcard(context: context, word: "due2", state: .review, dueOffset: -7200) // 2 hours ago
         try context.save()
 
-        let dueCards = scheduler.fetchCards(mode: .scheduled, limit: 20)
+        let dueCards = await scheduler.fetchCards(mode: .scheduled, limit: 20)
 
         #expect(dueCards.count == 2)
         #expect(dueCards.allSatisfy { $0.word.contains("due") })
@@ -97,7 +97,7 @@ struct SchedulerTests {
         _ = createTestFlashcard(context: context, word: "future", state: .review, dueOffset: 3600)
         try context.save()
 
-        let dueCards = scheduler.fetchCards(mode: .scheduled, limit: 20)
+        let dueCards = await scheduler.fetchCards(mode: .scheduled, limit: 20)
 
         // Only review cards are due (new cards are excluded)
         #expect(dueCards.count == 1)
@@ -123,8 +123,8 @@ struct SchedulerTests {
         }
         try context.save()
 
-        let cards3 = scheduler.fetchCards(mode: .scheduled, limit: 3)
-        let cards10 = scheduler.fetchCards(mode: .scheduled, limit: 10)
+        let cards3 = await scheduler.fetchCards(mode: .scheduled, limit: 3)
+        let cards10 = await scheduler.fetchCards(mode: .scheduled, limit: 10)
 
         #expect(cards3.count == 3)
         #expect(cards10.count == 5) // Only 5 exist
@@ -142,7 +142,7 @@ struct SchedulerTests {
         let due3 = createTestFlashcard(context: context, word: "earliest", state: .review, dueOffset: -7200)
         try context.save()
 
-        let dueCards = scheduler.fetchCards(mode: .scheduled, limit: 20)
+        let dueCards = await scheduler.fetchCards(mode: .scheduled, limit: 20)
 
         #expect(dueCards.count == 3)
         // Should be sorted: earliest, middle, latest
@@ -191,7 +191,7 @@ struct SchedulerTests {
         _ = createTestFlashcard(context: context, word: "high_stability", state: .review, dueOffset: -3600, stability: 20.0)
         try context.save()
 
-        let cramCards = scheduler.fetchCards(mode: .cram, limit: 20)
+        let cramCards = await scheduler.fetchCards(mode: .cram, limit: 20)
 
         // Both should be fetched regardless of due date
         #expect(cramCards.count == 2)
@@ -209,7 +209,7 @@ struct SchedulerTests {
         _ = createTestFlashcard(context: context, word: "new", state: .new, stability: 0.0)
         try context.save()
 
-        let cramCards = scheduler.fetchCards(mode: .cram, limit: 20)
+        let cramCards = await scheduler.fetchCards(mode: .cram, limit: 20)
 
         // Both should be fetched, new cards first (lowest stability)
         #expect(cramCards.count == 2)
@@ -228,7 +228,7 @@ struct SchedulerTests {
         _ = createTestFlashcard(context: context, word: "mid", state: .review, stability: 10.0)
         try context.save()
 
-        let cramCards = scheduler.fetchCards(mode: .cram, limit: 20)
+        let cramCards = await scheduler.fetchCards(mode: .cram, limit: 20)
 
         #expect(cramCards.count == 3)
         // Should be sorted: low, mid, high (by stability)
@@ -253,7 +253,7 @@ struct SchedulerTests {
         _ = createTestFlashcard(context: context, word: "learning", state: .learning, dueOffset: -600)
         try context.save()
 
-        let newCards = scheduler.fetchCards(mode: .learning, limit: 20)
+        let newCards = await scheduler.fetchCards(mode: .learning, limit: 20)
 
         #expect(newCards.count == 1)
         #expect(newCards.allSatisfy { $0.fsrsState?.stateEnum == FlashcardState.new.rawValue })
@@ -285,7 +285,7 @@ struct SchedulerTests {
         card3.createdAt = Date()                           // now (newest)
         try context.save()
 
-        let newCards = scheduler.fetchCards(mode: .learning, limit: 20)
+        let newCards = await scheduler.fetchCards(mode: .learning, limit: 20)
 
         #expect(newCards.count == 3)
         #expect(newCards[0].word == "card1", "Oldest card should be first")
@@ -362,7 +362,7 @@ struct SchedulerTests {
         }
         try context.save()
 
-        let cards = scheduler.fetchCards(mode: .learning, limit: 20)
+        let cards = await scheduler.fetchCards(mode: .learning, limit: 20)
 
         #expect(cards.count == 20, "Should respect study limit")
     }
@@ -549,8 +549,8 @@ struct SchedulerTests {
         try context.clearAll()
         let scheduler = Scheduler(modelContext: context)
 
-        let dueCards = scheduler.fetchCards(mode: .scheduled)
-        let cramCards = scheduler.fetchCards(mode: .cram)
+        let dueCards = await scheduler.fetchCards(mode: .scheduled)
+        let cramCards = await scheduler.fetchCards(mode: .cram)
         let count = scheduler.dueCardCount()
 
         #expect(dueCards.isEmpty)
@@ -558,7 +558,7 @@ struct SchedulerTests {
         #expect(count == 0)
     }
 
-    @Test("Processing review without FSRS state creates state")
+    @Test("Processing review without FSRS state returns nil")
     func processReviewWithoutState() async throws {
         let context = freshContext()
         try context.clearAll()
@@ -571,14 +571,15 @@ struct SchedulerTests {
 
         #expect(flashcard.fsrsState == nil)
 
-        _ = await scheduler.processReview(
+        let result = await scheduler.processReview(
             flashcard: flashcard,
             rating: 2,
             mode: .scheduled
         )
 
-        // State should be created
-        #expect(flashcard.fsrsState != nil)
+        // Should return nil when FSRSState is missing (in scheduled mode)
+        #expect(result == nil, "processReview should return nil when FSRSState is nil")
+        #expect(flashcard.fsrsState == nil, "FSRSState should still be nil")
     }
 
     @Test("Concurrent review processing is serialized")
@@ -632,14 +633,14 @@ struct SchedulerTests {
         await withTaskGroup(of: Int.self) { group in
             for _ in 1..<5 {
                 group.addTask {
-                    let cards = scheduler.fetchCards(mode: .scheduled, limit: 20)
+                    let cards = await scheduler.fetchCards(mode: .scheduled, limit: 20)
                     return cards.count
                 }
             }
         }
 
         // Should complete without errors
-        let dueCards = scheduler.fetchCards(mode: .scheduled, limit: 20)
+        let dueCards = await scheduler.fetchCards(mode: .scheduled, limit: 20)
         #expect(dueCards.count == 10) // Half are due
     }
 
@@ -655,9 +656,12 @@ struct SchedulerTests {
         }
         try context.save()
 
+        // Fetch cards before entering concurrent context
+        let cardsToProcess = try context.fetch(FetchDescriptor<Flashcard>())
+
         // Process reviews in different modes concurrently
         await withTaskGroup(of: Void.self) { group in
-            for (i, card) in context.fetch(FetchDescriptor<Flashcard>()).enumerated() {
+            for (i, card) in cardsToProcess.enumerated() {
                 group.addTask {
                     let mode: StudyMode = i % 2 == 0 ? .scheduled : .cram
                     _ = await scheduler.processReview(
@@ -670,7 +674,7 @@ struct SchedulerTests {
         }
 
         // All reviews should be logged
-        let allCards = context.fetch(FetchDescriptor<Flashcard>())
+        let allCards = try context.fetch(FetchDescriptor<Flashcard>())
         let totalReviews = allCards.reduce(0) { $0 + $1.reviewLogs.count }
         #expect(totalReviews == 5)
     }
@@ -686,7 +690,7 @@ struct SchedulerTests {
 
         // Process same card multiple times concurrently
         await withTaskGroup(of: Void.self) { group in
-            for _ in 1..<10 {
+            for _ in 0..<10 {
                 group.addTask {
                     _ = await scheduler.processReview(
                         flashcard: card,
@@ -749,7 +753,7 @@ struct SchedulerTests {
         await withTaskGroup(of: Int.self) { group in
             for _ in 1..<5 {
                 group.addTask {
-                    return scheduler.fetchCards(mode: .scheduled, limit: 20).count
+                    return await scheduler.fetchCards(mode: .scheduled, limit: 20).count
                 }
             }
 

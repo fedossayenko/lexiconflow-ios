@@ -322,7 +322,7 @@ struct FlashcardReviewTests {
         review1.card = flashcard
         context.insert(review1)
 
-        try await Task.sleep(nanoseconds: 10_000_000)
+        try await Task.sleep(nanoseconds: 100_000_000) // 100ms to ensure different timestamps
 
         let review2 = FlashcardReview(
             rating: 3,
@@ -332,7 +332,7 @@ struct FlashcardReviewTests {
         review2.card = flashcard
         context.insert(review2)
 
-        try await Task.sleep(nanoseconds: 10_000_000)
+        try await Task.sleep(nanoseconds: 100_000_000) // 100ms to ensure different timestamps
 
         let review3 = FlashcardReview(
             rating: 3,

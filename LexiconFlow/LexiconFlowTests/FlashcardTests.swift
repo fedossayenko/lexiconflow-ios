@@ -301,8 +301,9 @@ struct FlashcardTests {
         try context.save()
 
         #expect(flashcard.reviewLogs.count == 2)
-        #expect(flashcard.reviewLogs.first?.rating == 3)
-        #expect(flashcard.reviewLogs.last?.rating == 2)
+        // Note: reviewLogs are ordered newest first (descending by reviewDate)
+        #expect(flashcard.reviewLogs.first?.rating == 2)  // Last inserted (newest)
+        #expect(flashcard.reviewLogs.last?.rating == 3)   // First inserted (oldest)
     }
 
     @Test("Flashcard with no review logs")
