@@ -122,6 +122,120 @@ struct ModelTests {
         #expect(flashcard.reviewLogs.allSatisfy { $0.card === flashcard })
     }
 
+    @Test("Flashcard-generatedSentences relationship")
+    func flashcardGeneratedSentencesRelationship() throws {
+        let context = freshContext()
+        try context.clearAll()
+
+        let flashcard = Flashcard(word: "test", definition: "A test")
+        context.insert(flashcard)
+
+        let sentence1 = GeneratedSentence(
+            sentenceText: "First sentence.",
+            cefrLevel: "A1"
+        )
+        sentence1.flashcard = flashcard
+        context.insert(sentence1)
+
+        let sentence2 = GeneratedSentence(
+            sentenceText: "Second sentence.",
+            cefrLevel: "A2"
+        )
+        sentence2.flashcard = flashcard
+        context.insert(sentence2)
+
+        try context.save()
+
+        #expect(flashcard.generatedSentences.count == 2)
+        #expect(flashcard.generatedSentences[0].sentenceText == "First sentence.")
+        #expect(flashcard.generatedSentences[1].sentenceText == "Second sentence.")
+    }
+
+    @Test("Flashcard has empty sentences array by default")
+    func flashcardEmptySentencesDefault() throws {
+        let context = freshContext()
+        try context.clearAll()
+
+        let flashcard = Flashcard(word: "test", definition: "A test")
+        context.insert(flashcard)
+        try context.save()
+
+        #expect(flashcard.generatedSentences.isEmpty)
+    }
+
+    @Test("Flashcard cascade delete deletes all sentences")
+    func flashcardCascadeDeleteSentences() throws {
+        let context = freshContext()
+        try context.clearAll()
+
+        let flashcard = Flashcard(word: "test", definition: "A test")
+        context.insert(flashcard)
+
+        for i in 1...5 {
+            let sentence = GeneratedSentence(
+                sentenceText: "Sentence \(i)",
+                cefrLevel: "A1"
+            )
+            sentence.flashcard = flashcard
+            context.insert(sentence)
+        }
+        try context.save()
+
+        #expect(flashcard.generatedSentences.count == 5)
+
+        // Delete flashcard (should cascade delete all sentences)
+        context.delete(flashcard)
+        try context.save()
+
+        // Verify all sentences are deleted
+        let descriptor = FetchDescriptor<GeneratedSentence>()
+        let results = try context.fetch(descriptor)
+        #expect(results.isEmpty)
+    }
+
+    @Test("Flashcard sentence backfill works correctly")
+    func flashcardSentenceBackfill() throws {
+        let context = freshContext()
+        try context.clearAll()
+
+        let flashcard = Flashcard(word: "test", definition: "A test")
+        context.insert(flashcard)
+
+        // Add initial sentences
+        for i in 1...2 {
+            let sentence = GeneratedSentence(
+                sentenceText: "Old sentence \(i)",
+                cefrLevel: "A1"
+            )
+            sentence.flashcard = flashcard
+            context.insert(sentence)
+        }
+        try context.save()
+
+        let initialCount = flashcard.generatedSentences.count
+        #expect(initialCount == 2)
+
+        // Add new sentences (simulating regeneration)
+        for i in 1...3 {
+            let sentence = GeneratedSentence(
+                sentenceText: "New sentence \(i)",
+                cefrLevel: "A2"
+            )
+            sentence.flashcard = flashcard
+            context.insert(sentence)
+        }
+
+        // Delete old sentences
+        for sentence in flashcard.generatedSentences.filter({ $0.cefrLevel == "A1" }) {
+            context.delete(sentence)
+        }
+
+        try context.save()
+
+        #expect(flashcard.generatedSentences.count == 3)
+        #expect(flashcard.generatedSentences.allSatisfy { $0.cefrLevel == "A2" })
+    }
+
     // MARK: - Deck Tests
 
     @Test("Deck creation and properties")
