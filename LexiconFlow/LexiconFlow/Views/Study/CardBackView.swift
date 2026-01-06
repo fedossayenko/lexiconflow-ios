@@ -231,16 +231,23 @@ struct ReadOnlySentenceRow: View {
 }
 
 #Preview("Read-Only Sentence Row") {
-    let sentence = try! GeneratedSentence(
+    let sentence = (try? GeneratedSentence(
         sentenceText: "The ephemeral beauty of sunset colors fades quickly.",
         cefrLevel: "B2",
         generatedAt: Date(),
         ttlDays: 7,
         isFavorite: true,
         source: .aiGenerated
-    )
+    ))
 
-    return ReadOnlySentenceRow(sentence: sentence)
-        .padding()
-        .background(Color(.systemBackground))
+    return Group {
+        if let sentence = sentence {
+            ReadOnlySentenceRow(sentence: sentence)
+        } else {
+            Text("Preview error: Invalid sentence data")
+                .foregroundStyle(.red)
+        }
+    }
+    .padding()
+    .background(Color(.systemBackground))
 }

@@ -47,8 +47,11 @@ final class SentenceGenerationViewModel: ObservableObject {
     }
 
     /// Non-expired sentences (filtered)
+    ///
+    /// Thread-safe: Captures current date once for consistent filtering
     var validSentences: [GeneratedSentence] {
-        generatedSentences.filter { !$0.isExpired }
+        let now = Date()
+        return generatedSentences.filter { $0.expiresAt > now }
     }
 
     // MARK: - Initialization
@@ -235,8 +238,9 @@ final class SentenceGenerationViewModel: ObservableObject {
     ///
     /// - Parameter card: The flashcard to load sentences for
     func loadSentences(for card: Flashcard) {
-        // Filter out expired sentences
-        let valid = card.generatedSentences.filter { !$0.isExpired }
+        // Capture timestamp once for consistent filtering
+        let now = Date()
+        let valid = card.generatedSentences.filter { $0.expiresAt > now }
             .sorted { $0.generatedAt > $1.generatedAt }
 
         // If all expired, clean them up
