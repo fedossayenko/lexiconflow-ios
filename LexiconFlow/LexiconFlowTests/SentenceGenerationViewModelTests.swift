@@ -68,7 +68,7 @@ struct SentenceGenerationViewModelTests {
         let card = Flashcard(word: "test", definition: "A test")
         context.insert(card)
 
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1",
             source: .aiGenerated
@@ -102,7 +102,7 @@ struct SentenceGenerationViewModelTests {
         context.insert(card)
 
         // Create valid sentence (future expiration)
-        let validSentence = GeneratedSentence(
+        let validSentence = try GeneratedSentence(
             sentenceText: "Valid sentence.",
             cefrLevel: "A1",
             generatedAt: Date(),
@@ -113,7 +113,7 @@ struct SentenceGenerationViewModelTests {
         context.insert(validSentence)
 
         // Create expired sentence (past expiration)
-        let expiredSentence = GeneratedSentence(
+        let expiredSentence = try GeneratedSentence(
             sentenceText: "Expired sentence.",
             cefrLevel: "A1",
             generatedAt: Date().addingTimeInterval(-8 * 24 * 60 * 60), // 8 days ago
@@ -140,7 +140,7 @@ struct SentenceGenerationViewModelTests {
         let card = Flashcard(word: "test", definition: "A test")
         context.insert(card)
 
-        let sentence1 = GeneratedSentence(
+        let sentence1 = try GeneratedSentence(
             sentenceText: "First",
             cefrLevel: "A1",
             source: .aiGenerated
@@ -148,7 +148,7 @@ struct SentenceGenerationViewModelTests {
         sentence1.flashcard = card
         context.insert(sentence1)
 
-        let sentence2 = GeneratedSentence(
+        let sentence2 = try GeneratedSentence(
             sentenceText: "Second",
             cefrLevel: "A2",
             source: .aiGenerated
@@ -176,7 +176,7 @@ struct SentenceGenerationViewModelTests {
         let card = Flashcard(word: "test", definition: "A test")
         context.insert(card)
 
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1",
             source: .aiGenerated
@@ -201,7 +201,7 @@ struct SentenceGenerationViewModelTests {
         context.insert(card)
 
         // Valid sentence
-        let validSentence = GeneratedSentence(
+        let validSentence = try GeneratedSentence(
             sentenceText: "Valid",
             cefrLevel: "A1",
             generatedAt: Date(),
@@ -212,7 +212,7 @@ struct SentenceGenerationViewModelTests {
         context.insert(validSentence)
 
         // Expired sentence
-        let expiredSentence = GeneratedSentence(
+        let expiredSentence = try GeneratedSentence(
             sentenceText: "Expired",
             cefrLevel: "A1",
             generatedAt: Date().addingTimeInterval(-10 * 24 * 60 * 60),
@@ -239,7 +239,7 @@ struct SentenceGenerationViewModelTests {
         context.insert(card)
 
         // Older sentence
-        let oldSentence = GeneratedSentence(
+        let oldSentence = try GeneratedSentence(
             sentenceText: "Old",
             cefrLevel: "A1",
             generatedAt: Date().addingTimeInterval(-1000),
@@ -249,7 +249,7 @@ struct SentenceGenerationViewModelTests {
         context.insert(oldSentence)
 
         // Newer sentence
-        let newSentence = GeneratedSentence(
+        let newSentence = try GeneratedSentence(
             sentenceText: "New",
             cefrLevel: "A1",
             generatedAt: Date().addingTimeInterval(-100),
@@ -291,7 +291,7 @@ struct SentenceGenerationViewModelTests {
         context.insert(card)
 
         // All expired sentences
-        let expired1 = GeneratedSentence(
+        let expired1 = try GeneratedSentence(
             sentenceText: "Expired 1",
             cefrLevel: "A1",
             generatedAt: Date().addingTimeInterval(-10 * 24 * 60 * 60),
@@ -301,7 +301,7 @@ struct SentenceGenerationViewModelTests {
         expired1.flashcard = card
         context.insert(expired1)
 
-        let expired2 = GeneratedSentence(
+        let expired2 = try GeneratedSentence(
             sentenceText: "Expired 2",
             cefrLevel: "A1",
             generatedAt: Date().addingTimeInterval(-10 * 24 * 60 * 60),
@@ -333,7 +333,7 @@ struct SentenceGenerationViewModelTests {
         let card = Flashcard(word: "test", definition: "A test")
         context.insert(card)
 
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1",
             isFavorite: false,
@@ -369,7 +369,7 @@ struct SentenceGenerationViewModelTests {
         let card = Flashcard(word: "test", definition: "A test")
         context.insert(card)
 
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1",
             isFavorite: false,
@@ -393,7 +393,7 @@ struct SentenceGenerationViewModelTests {
         try context.clearAll()
 
         // Create a sentence without a context (simulating error)
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1",
             isFavorite: false,
@@ -417,7 +417,7 @@ struct SentenceGenerationViewModelTests {
         let card = Flashcard(word: "test", definition: "A test")
         context.insert(card)
 
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1",
             source: .aiGenerated
@@ -454,7 +454,7 @@ struct SentenceGenerationViewModelTests {
         let card = Flashcard(word: "test", definition: "A test")
         context.insert(card)
 
-        let sentence1 = GeneratedSentence(
+        let sentence1 = try GeneratedSentence(
             sentenceText: "Sentence 1",
             cefrLevel: "A1",
             source: .aiGenerated
@@ -462,7 +462,7 @@ struct SentenceGenerationViewModelTests {
         sentence1.flashcard = card
         context.insert(sentence1)
 
-        let sentence2 = GeneratedSentence(
+        let sentence2 = try GeneratedSentence(
             sentenceText: "Sentence 2",
             cefrLevel: "A1",
             source: .aiGenerated
@@ -485,7 +485,7 @@ struct SentenceGenerationViewModelTests {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1",
             source: .aiGenerated
@@ -512,7 +512,7 @@ struct SentenceGenerationViewModelTests {
         context.insert(card)
 
         // Valid sentence
-        let valid = GeneratedSentence(
+        let valid = try GeneratedSentence(
             sentenceText: "Valid",
             cefrLevel: "A1",
             generatedAt: Date(),
@@ -523,7 +523,7 @@ struct SentenceGenerationViewModelTests {
         context.insert(valid)
 
         // Expired sentence
-        let expired = GeneratedSentence(
+        let expired = try GeneratedSentence(
             sentenceText: "Expired",
             cefrLevel: "A1",
             generatedAt: Date().addingTimeInterval(-10 * 24 * 60 * 60),
@@ -554,7 +554,7 @@ struct SentenceGenerationViewModelTests {
         let card = Flashcard(word: "test", definition: "A test")
         context.insert(card)
 
-        let valid1 = GeneratedSentence(
+        let valid1 = try GeneratedSentence(
             sentenceText: "Valid 1",
             cefrLevel: "A1",
             generatedAt: Date(),
@@ -564,7 +564,7 @@ struct SentenceGenerationViewModelTests {
         valid1.flashcard = card
         context.insert(valid1)
 
-        let valid2 = GeneratedSentence(
+        let valid2 = try GeneratedSentence(
             sentenceText: "Valid 2",
             cefrLevel: "A1",
             generatedAt: Date().addingTimeInterval(-1),
@@ -594,7 +594,7 @@ struct SentenceGenerationViewModelTests {
         let card = Flashcard(word: "test", definition: "A test")
         context.insert(card)
 
-        let valid = GeneratedSentence(
+        let valid = try GeneratedSentence(
             sentenceText: "Valid",
             cefrLevel: "A1",
             generatedAt: Date(),
@@ -604,7 +604,7 @@ struct SentenceGenerationViewModelTests {
         valid.flashcard = card
         context.insert(valid)
 
-        let expired = GeneratedSentence(
+        let expired = try GeneratedSentence(
             sentenceText: "Expired",
             cefrLevel: "A1",
             generatedAt: Date().addingTimeInterval(-10 * 24 * 60 * 60),
@@ -665,7 +665,7 @@ struct SentenceGenerationViewModelTests {
         let card = Flashcard(word: "test", definition: "A test")
         context.insert(card)
 
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1",
             source: .aiGenerated
@@ -688,7 +688,7 @@ struct SentenceGenerationViewModelTests {
         let card = Flashcard(word: "test", definition: "A test")
         context.insert(card)
 
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1",
             source: .aiGenerated
@@ -715,7 +715,7 @@ struct SentenceGenerationViewModelTests {
         let card = Flashcard(word: "test", definition: "A test")
         context.insert(card)
 
-        let sentence1 = GeneratedSentence(
+        let sentence1 = try GeneratedSentence(
             sentenceText: "Sentence 1",
             cefrLevel: "A1",
             source: .aiGenerated
@@ -723,7 +723,7 @@ struct SentenceGenerationViewModelTests {
         sentence1.flashcard = card
         context.insert(sentence1)
 
-        let sentence2 = GeneratedSentence(
+        let sentence2 = try GeneratedSentence(
             sentenceText: "Sentence 2",
             cefrLevel: "A1",
             source: .aiGenerated

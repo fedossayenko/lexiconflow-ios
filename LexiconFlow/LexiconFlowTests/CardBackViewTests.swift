@@ -82,49 +82,49 @@ struct CardBackViewTests {
 
     @Test("CEFR badge has correct color for A1")
     func testCEFRBadgeColorA1() {
-        let color = cefrColor(for: "A1")
+        let color = Theme.cefrColor(for: "A1")
         // A1/A2 should be green
         #expect(color == .green)
     }
 
     @Test("CEFR badge has correct color for A2")
     func testCEFRBadgeColorA2() {
-        let color = cefrColor(for: "A2")
+        let color = Theme.cefrColor(for: "A2")
         // A1/A2 should be green
         #expect(color == .green)
     }
 
     @Test("CEFR badge has correct color for B1")
     func testCEFRBadgeColorB1() {
-        let color = cefrColor(for: "B1")
+        let color = Theme.cefrColor(for: "B1")
         // B1/B2 should be blue
         #expect(color == .blue)
     }
 
     @Test("CEFR badge has correct color for B2")
     func testCEFRBadgeColorB2() {
-        let color = cefrColor(for: "B2")
+        let color = Theme.cefrColor(for: "B2")
         // B1/B2 should be blue
         #expect(color == .blue)
     }
 
     @Test("CEFR badge has correct color for C1")
     func testCEFRBadgeColorC1() {
-        let color = cefrColor(for: "C1")
+        let color = Theme.cefrColor(for: "C1")
         // C1/C2 should be purple
         #expect(color == .purple)
     }
 
     @Test("CEFR badge has correct color for C2")
     func testCEFRBadgeColorC2() {
-        let color = cefrColor(for: "C2")
+        let color = Theme.cefrColor(for: "C2")
         // C1/C2 should be purple
         #expect(color == .purple)
     }
 
     @Test("CEFR badge has correct color for invalid level")
     func testCEFRBadgeColorInvalid() {
-        let color = cefrColor(for: "X5")
+        let color = Theme.cefrColor(for: "X5")
         // Invalid levels should default to gray
         #expect(color == .gray)
     }
@@ -200,7 +200,7 @@ struct CardBackViewTests {
         let card = Flashcard(word: "test", definition: "A test")
         context.insert(card)
 
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1"
         )
@@ -233,7 +233,7 @@ struct CardBackViewTests {
         context.insert(card)
 
         for i in 1...3 {
-            let sentence = GeneratedSentence(
+            let sentence = try GeneratedSentence(
                 sentenceText: "Sentence \(i)",
                 cefrLevel: "A1"
             )
@@ -252,7 +252,7 @@ struct CardBackViewTests {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "This is a test sentence.",
             cefrLevel: "A1"
         )
@@ -266,7 +266,7 @@ struct CardBackViewTests {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test",
             cefrLevel: "B2"
         )
@@ -281,7 +281,7 @@ struct CardBackViewTests {
         try context.clearAll()
 
         // Expired sentence
-        let expiredSentence = GeneratedSentence(
+        let expiredSentence = try GeneratedSentence(
             sentenceText: "Expired",
             cefrLevel: "A1",
             generatedAt: Date().addingTimeInterval(-10 * 24 * 60 * 60),
@@ -298,7 +298,7 @@ struct CardBackViewTests {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test",
             cefrLevel: "A1",
             isFavorite: false
@@ -322,7 +322,7 @@ struct CardBackViewTests {
         let card = Flashcard(word: "test", definition: "A test")
         context.insert(card)
 
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test",
             cefrLevel: "A1"
         )
@@ -361,7 +361,7 @@ struct CardBackViewTests {
         ]
 
         for (level, expectedColor) in colorMap {
-            let color = cefrColor(for: level)
+            let color = Theme.cefrColor(for: level)
             #expect(color == expectedColor, "CEFR level \(level) should be \(expectedColor)")
         }
     }
@@ -435,15 +435,3 @@ struct CardBackViewTests {
 }
 
 // MARK: - Helper Functions for Testing
-
-/// Helper function to get CEFR badge color
-/// (Copied from CardBackView extension for testing)
-private func cefrColor(for level: String?) -> Color {
-    guard let level = level else { return .gray }
-    switch level {
-    case "A1", "A2": return .green
-    case "B1", "B2": return .blue
-    case "C1", "C2": return .purple
-    default: return .gray
-    }
-}

@@ -318,6 +318,13 @@ actor SentenceGenerationService {
             )
         }
 
+        // Check for existing task BEFORE starting new one to prevent re-entrancy
+        let existingTask = await taskStorage.get()
+        if existingTask != nil && !Task.isCancelled {
+            logger.warning("Batch generation already in progress")
+            throw SentenceGenerationError.invalidConfiguration
+        }
+
         logger.info("Starting batch generation: \(cards.count) cards, \(sentencesPerCard) sentences/card")
 
         let task = Task<SentenceBatchResult, Error> {
@@ -332,10 +339,7 @@ actor SentenceGenerationService {
         await taskStorage.set(task)
 
         do {
-            guard let currentTask = await taskStorage.get() else {
-                throw SentenceGenerationError.invalidConfiguration
-            }
-            return try await currentTask.value
+            return try await task.value
         } catch is CancellationError {
             logger.info("Batch generation cancelled")
             return SentenceBatchResult(

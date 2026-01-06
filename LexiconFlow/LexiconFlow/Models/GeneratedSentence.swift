@@ -59,6 +59,9 @@ final class GeneratedSentence {
 
     // MARK: - Initialization
 
+    /// Valid CEFR levels for validation
+    private static let validCEFRLevels = Set(["A1", "A2", "B1", "B2", "C1", "C2"])
+
     /// Initialize a new generated sentence
     ///
     /// - Parameters:
@@ -69,6 +72,8 @@ final class GeneratedSentence {
     ///   - ttlDays: Time-to-live in days (defaults to 7)
     ///   - isFavorite: Whether user favorited this (defaults to false)
     ///   - source: Source of the sentence (defaults to .aiGenerated)
+    ///
+    /// - Throws: GeneratedSentenceError if validation fails
     init(
         id: UUID = UUID(),
         sentenceText: String,
@@ -77,10 +82,26 @@ final class GeneratedSentence {
         ttlDays: Int = 7,
         isFavorite: Bool = false,
         source: SentenceSource = .aiGenerated
-    ) {
+    ) throws {
+        // Validate sentence text
+        guard !sentenceText.isEmpty else {
+            throw GeneratedSentenceError.emptyText
+        }
+
+        // Validate CEFR level
+        let normalizedLevel = cefrLevel.uppercased()
+        guard Self.validCEFRLevels.contains(normalizedLevel) else {
+            throw GeneratedSentenceError.invalidCEFRLevel(cefrLevel)
+        }
+
+        // Validate TTL
+        guard ttlDays > 0 else {
+            throw GeneratedSentenceError.invalidTTL
+        }
+
         self.id = id
         self.sentenceText = sentenceText
-        self.cefrLevel = cefrLevel
+        self.cefrLevel = normalizedLevel
         self.generatedAt = generatedAt
         self.expiresAt = Calendar.autoupdatingCurrent.date(
             byAdding: .day,
@@ -105,6 +126,37 @@ enum SentenceSource: String, Codable, Sendable {
 
     /// User-created custom sentence
     case userCreated = "user_created"
+}
+
+// MARK: - Validation Errors
+
+/// Errors that can occur during GeneratedSentence validation
+enum GeneratedSentenceError: LocalizedError {
+    case emptyText
+    case invalidCEFRLevel(String)
+    case invalidTTL
+
+    var errorDescription: String? {
+        switch self {
+        case .emptyText:
+            return "Sentence text cannot be empty"
+        case .invalidCEFRLevel(let level):
+            return "Invalid CEFR level: \(level). Must be one of: A1, A2, B1, B2, C1, C2"
+        case .invalidTTL:
+            return "TTL must be positive (greater than 0)"
+        }
+    }
+
+    var recoverySuggestion: String? {
+        switch self {
+        case .emptyText:
+            return "Provide a non-empty sentence text"
+        case .invalidCEFRLevel:
+            return "Use a valid CEFR level (A1, A2, B1, B2, C1, or C2)"
+        case .invalidTTL:
+            return "Specify a positive TTL value (typically 7 days)"
+        }
+    }
 }
 
 // MARK: - Sentence Generation Response

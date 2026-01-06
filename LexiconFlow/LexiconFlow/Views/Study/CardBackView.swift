@@ -37,8 +37,8 @@ struct CardBackView: View {
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
-                    .background(cefrColor(for: cefr).opacity(0.2))
-                    .foregroundStyle(cefrColor(for: cefr))
+                    .background(Theme.cefrColor(for: cefr).opacity(0.2))
+                    .foregroundStyle(Theme.cefrColor(for: cefr))
                     .cornerRadius(12)
                     .accessibilityLabel("CEFR level: \(cefr)")
                 }
@@ -94,8 +94,13 @@ struct CardBackView: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Card back")
         .task {
-            // Cancel previous task and create new one
-            loadTask?.cancel()
+            // Serial cancellation to prevent race condition
+            // Save reference to old task and clear it first
+            let oldTask = loadTask
+            loadTask = nil
+            await oldTask?.cancel()
+
+            // Now create new task (old task is guaranteed cancelled)
             loadTask = Task {
                 // Initialize view model on appear
                 if viewModel == nil {
@@ -246,19 +251,7 @@ struct CardBackView: View {
     // MARK: - Helper Methods
 }
 
-// MARK: - View Extensions
-
-extension View {
-    /// Returns color for CEFR level
-    func cefrColor(for level: String) -> Color {
-        switch level.uppercased() {
-        case "A1", "A2": return .green
-        case "B1", "B2": return .blue
-        case "C1", "C2": return .purple
-        default: return .gray
-        }
-    }
-}
+// MARK: - Helper Methods
 
 #Preview("Card Back") {
     let card = Flashcard(
@@ -298,8 +291,8 @@ struct SentenceRow: View {
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(cefrColor(for: sentence.cefrLevel).opacity(0.15))
-                    .foregroundStyle(cefrColor(for: sentence.cefrLevel))
+                    .background(Theme.cefrColor(for: sentence.cefrLevel).opacity(0.15))
+                    .foregroundStyle(Theme.cefrColor(for: sentence.cefrLevel))
                     .cornerRadius(6)
 
                     // Source badge
@@ -357,7 +350,7 @@ struct SentenceRow: View {
 }
 
 #Preview("Sentence Row") {
-    let sentence = GeneratedSentence(
+    let sentence = try! GeneratedSentence(
         sentenceText: "The ephemeral beauty of sunset colors fades quickly.",
         cefrLevel: "B2",
         generatedAt: Date(),
