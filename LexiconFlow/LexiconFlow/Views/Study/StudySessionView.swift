@@ -14,10 +14,12 @@ struct StudySessionView: View {
     @State private var isFlipped = false
     @State private var showError = false
     let mode: StudyMode
+    let deck: Deck?
     let onComplete: () -> Void
 
-    init(mode: StudyMode, onComplete: @escaping () -> Void) {
+    init(mode: StudyMode, deck: Deck? = nil, onComplete: @escaping () -> Void) {
         self.mode = mode
+        self.deck = deck
         self.onComplete = onComplete
     }
 
@@ -97,7 +99,7 @@ struct StudySessionView: View {
             }
             .task {
                 if viewModel == nil {
-                    viewModel = StudySessionViewModel(modelContext: modelContext, mode: mode)
+                    viewModel = StudySessionViewModel(modelContext: modelContext, deck: deck, mode: mode)
                 }
                 if let viewModel = viewModel, viewModel.cards.isEmpty {
                     viewModel.loadCards()

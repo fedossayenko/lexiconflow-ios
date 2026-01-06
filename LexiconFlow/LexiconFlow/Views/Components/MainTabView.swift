@@ -23,7 +23,7 @@ struct MainTabView: View {
                 .tag(0)
                 .accessibilityIdentifier("decks_tab")
 
-            StudyView()
+            DeckStudyListView()
                 .tabItem {
                     Label("Study", systemImage: "brain.fill")
                 }

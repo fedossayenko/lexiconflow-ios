@@ -91,10 +91,34 @@ struct LexiconFlowApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .task {
+                    await ensureDefaultDeckExists()
+                }
         }
         .modelContainer(sharedModelContainer)
         .onChange(of: scenePhase) { oldPhase, newPhase in
             handleScenePhaseChange(from: oldPhase, to: newPhase)
+        }
+    }
+
+    /// Ensures a default deck exists for new users
+    @MainActor
+    private func ensureDefaultDeckExists() async {
+        let context = sharedModelContainer.mainContext
+        let descriptor = FetchDescriptor<Deck>()
+        let existingDecks = (try? context.fetch(descriptor)) ?? []
+
+        if existingDecks.isEmpty {
+            let defaultDeck = Deck(
+                name: "My Vocabulary",
+                icon: "book.fill",
+                order: 0
+            )
+            context.insert(defaultDeck)
+            try? context.save()
+            Logger(subsystem: "com.lexiconflow.app", category: "LexiconFlowApp")
+                .info("Created default deck: My Vocabulary")
+            Analytics.trackEvent("default_deck_created")
         }
     }
 

@@ -49,6 +49,7 @@ enum StudySessionError: LocalizedError, Sendable {
 final class StudySessionViewModel: ObservableObject {
     private let scheduler: Scheduler
     private let mode: StudyMode
+    private let deck: Deck?
 
     @Published private(set) var cards: [Flashcard] = []
     @Published private(set) var currentIndex = 0
@@ -72,14 +73,15 @@ final class StudySessionViewModel: ObservableObject {
         currentIndex < cards.count
     }
 
-    init(modelContext: ModelContext, mode: StudyMode) {
+    init(modelContext: ModelContext, deck: Deck? = nil, mode: StudyMode) {
         self.mode = mode
+        self.deck = deck
         self.scheduler = Scheduler(modelContext: modelContext)
     }
 
     /// Load cards for the study session
     func loadCards() {
-        cards = scheduler.fetchCards(mode: mode, limit: 20)
+        cards = scheduler.fetchCards(for: deck, mode: mode, limit: 20)
         currentIndex = 0
         isComplete = cards.isEmpty
     }

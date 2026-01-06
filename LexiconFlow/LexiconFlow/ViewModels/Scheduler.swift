@@ -60,18 +60,19 @@ final class Scheduler {
     /// Fetch cards ready for study
     ///
     /// - Parameters:
+    ///   - deck: Optional deck to filter cards (nil = all decks)
     ///   - mode: Study mode (scheduled, learning, or cram)
     ///   - limit: Maximum number of cards to return (defaults to AppSettings.studyLimit)
     /// - Returns: Array of flashcards ready for review
-    func fetchCards(mode: StudyMode = .scheduled, limit: Int? = nil) -> [Flashcard] {
+    func fetchCards(for deck: Deck? = nil, mode: StudyMode = .scheduled, limit: Int? = nil) -> [Flashcard] {
         let effectiveLimit = limit ?? AppSettings.studyLimit
         switch mode {
         case .scheduled:
-            return fetchDueCards(limit: effectiveLimit)
+            return fetchDueCards(for: deck, limit: effectiveLimit)
         case .learning:
-            return fetchNewCards(limit: effectiveLimit)
+            return fetchNewCards(for: deck, limit: effectiveLimit)
         case .cram:
-            return fetchCramCards(limit: effectiveLimit)
+            return fetchCramCards(for: deck, limit: effectiveLimit)
         }
     }
 
@@ -80,12 +81,20 @@ final class Scheduler {
     /// Due cards are those that need review (review/learning/relearning states).
     /// New cards are excluded as they haven't been learned yet.
     ///
-    /// - Parameter limit: Maximum number of cards to return
+    /// - Parameters:
+    ///   - deck: Optional deck to filter cards (nil = all decks)
+    ///   - limit: Maximum number of cards to return
     /// - Returns: Array of due flashcards, sorted by due date ascending
-    private func fetchDueCards(limit: Int) -> [Flashcard] {
+    private func fetchDueCards(for deck: Deck? = nil, limit: Int) -> [Flashcard] {
         let now = Date()
+
+        // Capture deck ID for predicate comparison
+        let deckID = deck?.id
+
         let predicate = #Predicate<FSRSState> { state in
-            state.dueDate <= now && state.stateEnum != "new"
+            state.dueDate <= now &&
+            state.stateEnum != "new" &&
+            (deckID == nil || state.card?.deck?.id == deckID)
         }
         let sortBy = [SortDescriptor(\FSRSState.dueDate, order: .forward)]
         return fetchCards(limit: limit, predicate: predicate, sortBy: sortBy, errorName: "fetch_due_cards")
@@ -97,11 +106,26 @@ final class Scheduler {
     /// the most review based on stability (memory strength).
     /// Includes new cards so they can be studied immediately.
     ///
-    /// - Parameter limit: Maximum number of cards to return
+    /// - Parameters:
+    ///   - deck: Optional deck to filter cards (nil = all decks)
+    ///   - limit: Maximum number of cards to return
     /// - Returns: Array of flashcards sorted by stability ascending
-    private func fetchCramCards(limit: Int) -> [Flashcard] {
+    private func fetchCramCards(for deck: Deck? = nil, limit: Int) -> [Flashcard] {
         let sortBy = [SortDescriptor(\FSRSState.stability, order: .forward)]
-        return fetchCards(limit: limit, predicate: nil, sortBy: sortBy, errorName: "fetch_cram_cards")
+
+        // Capture deck ID for predicate comparison
+        let deckID = deck?.id
+
+        // When deck is specified, filter by deck in predicate
+        let predicate: Predicate<FSRSState>?
+        if deckID != nil {
+            predicate = #Predicate<FSRSState> { state in
+                state.card?.deck?.id == deckID
+            }
+        } else {
+            predicate = nil
+        }
+        return fetchCards(limit: limit, predicate: predicate, sortBy: sortBy, errorName: "fetch_cram_cards")
     }
 
     /// Fetch new cards for initial learning phase
@@ -109,12 +133,18 @@ final class Scheduler {
     /// New cards are those that have never been reviewed (stateEnum == "new").
     /// These cards go through FSRS learning steps before graduating to review state.
     ///
-    /// - Parameter limit: Maximum number of cards to return
+    /// - Parameters:
+    ///   - deck: Optional deck to filter cards (nil = all decks)
+    ///   - limit: Maximum number of cards to return
     /// - Returns: Array of new flashcards, sorted by creation date ascending (oldest first)
-    private func fetchNewCards(limit: Int) -> [Flashcard] {
-        // Fetch states where stateEnum == "new"
+    private func fetchNewCards(for deck: Deck? = nil, limit: Int) -> [Flashcard] {
+        // Capture deck ID for predicate comparison
+        let deckID = deck?.id
+
+        // Fetch states where stateEnum == "new" and deck matches (if specified)
         let predicate = #Predicate<FSRSState> { state in
-            state.stateEnum == "new"
+            state.stateEnum == "new" &&
+            (deckID == nil || state.card?.deck?.id == deckID)
         }
 
         // Use sort descriptor at database level for better performance
@@ -226,6 +256,81 @@ final class Scheduler {
         } catch {
             Analytics.trackError("new_card_count", error: error)
             logger.error("Error counting new cards: \(error)")
+            return 0
+        }
+    }
+
+    /// Count due cards for a specific deck
+    ///
+    /// - Parameter deck: The deck to count cards for
+    /// - Returns: Number of cards currently due for review in the deck
+    func dueCardCount(for deck: Deck) -> Int {
+        let now = Date()
+
+        // Capture deck ID for predicate comparison
+        let deckID = deck.id
+
+        // Count cards with dueDate <= now, excluding new cards, filtered by deck
+        let stateDescriptor = FetchDescriptor<FSRSState>(
+            predicate: #Predicate<FSRSState> { state in
+                state.dueDate <= now &&
+                state.stateEnum != "new" &&
+                state.card?.deck?.id == deckID
+            }
+        )
+
+        do {
+            return try modelContext.fetchCount(stateDescriptor)
+        } catch {
+            Analytics.trackError("due_card_count_deck", error: error)
+            logger.error("Error counting due cards for deck: \(error)")
+            return 0
+        }
+    }
+
+    /// Count new cards for a specific deck
+    ///
+    /// - Parameter deck: The deck to count cards for
+    /// - Returns: Number of new cards awaiting initial review in the deck
+    func newCardCount(for deck: Deck) -> Int {
+        // Capture deck ID for predicate comparison
+        let deckID = deck.id
+
+        let stateDescriptor = FetchDescriptor<FSRSState>(
+            predicate: #Predicate<FSRSState> { state in
+                state.stateEnum == "new" &&
+                state.card?.deck?.id == deckID
+            }
+        )
+
+        do {
+            return try modelContext.fetchCount(stateDescriptor)
+        } catch {
+            Analytics.trackError("new_card_count_deck", error: error)
+            logger.error("Error counting new cards for deck: \(error)")
+            return 0
+        }
+    }
+
+    /// Count total cards for a specific deck
+    ///
+    /// - Parameter deck: The deck to count cards for
+    /// - Returns: Total number of cards in the deck
+    func totalCardCount(for deck: Deck) -> Int {
+        // Capture deck ID for predicate comparison
+        let deckID = deck.id
+
+        let stateDescriptor = FetchDescriptor<FSRSState>(
+            predicate: #Predicate<FSRSState> { state in
+                state.card?.deck?.id == deckID
+            }
+        )
+
+        do {
+            return try modelContext.fetchCount(stateDescriptor)
+        } catch {
+            Analytics.trackError("total_card_count_deck", error: error)
+            logger.error("Error counting total cards for deck: \(error)")
             return 0
         }
     }
