@@ -25,7 +25,8 @@ struct LexiconFlowApp: App {
             FSRSState.self,
             Flashcard.self,
             Deck.self,
-            FlashcardReview.self
+            FlashcardReview.self,
+            GeneratedSentence.self
         ])
 
         // Attempt 1: Try persistent SQLite storage (primary)

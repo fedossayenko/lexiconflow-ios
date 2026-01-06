@@ -79,6 +79,13 @@ final class Flashcard {
     /// - NOTE: Only define inverse on ONE side (FSRSState) to avoid circular macro expansion
     @Relationship(deleteRule: .cascade) var fsrsState: FSRSState?
 
+    /// AI-generated context sentences for this card (one-to-many)
+    /// - Inverse defined on GeneratedSentence.flashcard to avoid circular reference
+    /// - SwiftData auto-initializes this property
+    /// - Cascade delete: deleting card removes all generated sentences
+    /// - Sentences have 7-day TTL expiration
+    @Relationship(deleteRule: .cascade, inverse: \GeneratedSentence.flashcard) var generatedSentences: [GeneratedSentence] = []
+
     // MARK: - Initialization
 
     /// Initialize a new vocabulary card
