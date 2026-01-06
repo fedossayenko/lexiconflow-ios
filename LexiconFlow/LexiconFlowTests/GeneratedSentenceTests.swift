@@ -471,49 +471,30 @@ struct GeneratedSentenceTests {
         #expect(sentence.sentenceText.count > 1000)
     }
 
-    @Test("GeneratedSentence handles unicode in sentenceText")
-    func testUnicodeSentenceText() throws {
-        let unicodeText = "Hello 世界 🌍 Привет"
-        let sentence = try GeneratedSentence(
-            sentenceText: unicodeText,
-            cefrLevel: "A1"
-        )
-
-        #expect(sentence.sentenceText == unicodeText)
-    }
-
-    @Test("GeneratedSentence handles emoji in sentenceText")
-    func testEmojiSentenceText() throws {
-        let emojiText = "This is a test 😊🎉"
-        let sentence = try GeneratedSentence(
-            sentenceText: emojiText,
-            cefrLevel: "A1"
-        )
-
-        #expect(sentence.sentenceText.contains("😊"))
-        #expect(sentence.sentenceText.contains("🎉"))
-    }
-
-    @Test("GeneratedSentence handles CJK characters")
-    func testCJKCharacters() throws {
-        let cjkText = "这是一个测试句子"
-        let sentence = try GeneratedSentence(
-            sentenceText: cjkText,
-            cefrLevel: "A1"
-        )
-
-        #expect(sentence.sentenceText == cjkText)
-    }
-
-    @Test("GeneratedSentence handles RTL languages")
-    func testRTLLanguage() throws {
-        let rtlText = "هذه جملة تجريبية"
-        let sentence = try GeneratedSentence(
-            sentenceText: rtlText,
-            cefrLevel: "A1"
-        )
-
-        #expect(sentence.sentenceText == rtlText)
+    @Test("GeneratedSentence handles various text inputs",
+          arguments: [
+              ("", "empty", false),
+              (String(repeating: "word ", count: 100), "long", true),
+              ("Hello 世界 🌍", "unicode", true),
+              ("This is a test 😊🎉", "emoji", true),
+              ("这是一个测试句子", "CJK", true),
+              ("هذه جملة تجريبية", "RTL", true)
+          ])
+    func testVariousTextInputs(sentenceText: String, _ description: String, shouldSucceed: Bool) throws {
+        if shouldSucceed {
+            let sentence = try GeneratedSentence(
+                sentenceText: sentenceText,
+                cefrLevel: "A1"
+            )
+            #expect(sentence.sentenceText == sentenceText, "\(description) text should be preserved")
+        } else {
+            #expect(throws: GeneratedSentenceError.self) {
+                try GeneratedSentence(
+                    sentenceText: sentenceText,
+                    cefrLevel: "A1"
+                )
+            }
+        }
     }
 
     @Test("GeneratedSentence rejects invalid CEFR level")
