@@ -27,7 +27,13 @@ struct FSRSStateTests {
         let context = freshContext()
         try context.clearAll()
 
-        let state = FSRSState()
+        let state = FSRSState(
+            stability: 0.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.new.rawValue
+        )
         context.insert(state)
         try context.save()
 
@@ -198,7 +204,13 @@ struct FSRSStateTests {
         let context = freshContext()
         try context.clearAll()
 
-        let state = FSRSState()
+        let state = FSRSState(
+            stability: 0.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.new.rawValue
+        )
         context.insert(state)
 
         #expect(state.difficulty == 5.0) // Medium difficulty
@@ -235,7 +247,13 @@ struct FSRSStateTests {
         let context = freshContext()
         try context.clearAll()
 
-        let state = FSRSState()
+        let state = FSRSState(
+            stability: 0.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.new.rawValue
+        )
         context.insert(state)
 
         #expect(state.retrievability == 0.9) // 90% recall probability
@@ -249,7 +267,13 @@ struct FSRSStateTests {
         try context.clearAll()
 
         let before = Date()
-        let state = FSRSState()
+        let state = FSRSState(
+            stability: 0.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.new.rawValue
+        )
         context.insert(state)
         let after = Date()
 
@@ -525,11 +549,23 @@ struct FSRSStateTests {
         let flashcard2 = Flashcard(word: "card2", definition: "test")
         context.insert(flashcard2)
 
-        let state1 = FSRSState(dueDate: Date().addingTimeInterval(86400), stateEnum: FlashcardState.review.rawValue)
+        let state1 = FSRSState(
+            stability: 0.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date().addingTimeInterval(86400),
+            stateEnum: FlashcardState.review.rawValue
+        )
         state1.card = flashcard1
         context.insert(state1)
 
-        let state2 = FSRSState(dueDate: Date(), stateEnum: FlashcardState.review.rawValue)
+        let state2 = FSRSState(
+            stability: 0.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
         state2.card = flashcard2
         context.insert(state2)
 
@@ -540,6 +576,9 @@ struct FSRSStateTests {
         let results = try context.fetch(descriptor)
 
         #expect(results.count == 2)
-        #expect(results.first?.dueDate < results.last?.dueDate)
+        // Optional dates need unwrapping for comparison
+        if let firstDate = results.first?.dueDate, let lastDate = results.last?.dueDate {
+            #expect(firstDate < lastDate)
+        }
     }
 }

@@ -312,15 +312,24 @@ struct StudySessionViewModelTests {
 
         // Submit ratings concurrently
         let initialCards = viewModel.cards
-        await withTaskGroup(of: Void.self) { group in
+        var successCount = 0
+        await withTaskGroup(of: Bool.self) { group in
             for card in initialCards {
                 group.addTask {
-                    _ = await viewModel.submitRating(2, card: card)
+                    let result = await viewModel.submitRating(2, card: card)
+                    return result != nil  // Track success
+                }
+            }
+
+            for await success in group {
+                if success {
+                    successCount += 1
                 }
             }
         }
 
-        // All cards should be processed
+        // Verify all cards were processed successfully
+        #expect(successCount == initialCards.count, "Expected \(initialCards.count) successful submissions, got \(successCount)")
         #expect(viewModel.isComplete)
         #expect(viewModel.currentIndex == initialCards.count)
     }
@@ -343,22 +352,30 @@ struct StudySessionViewModelTests {
         await withTaskGroup(of: Void.self) { group in
             // Read current card
             group.addTask {
-                _ = viewModel.currentCard
+                await MainActor.run {
+                    _ = viewModel.currentCard
+                }
             }
 
             // Check is complete
             group.addTask {
-                _ = viewModel.isComplete
+                await MainActor.run {
+                    _ = viewModel.isComplete
+                }
             }
 
             // Get cards count
             group.addTask {
-                _ = viewModel.cards.count
+                await MainActor.run {
+                    _ = viewModel.cards.count
+                }
             }
 
             // Get current index
             group.addTask {
-                _ = viewModel.currentIndex
+                await MainActor.run {
+                    _ = viewModel.currentIndex
+                }
             }
         }
 
@@ -383,10 +400,10 @@ struct StudySessionViewModelTests {
         // Submit ratings and check progress concurrently
         let cards = viewModel.cards
         await withTaskGroup(of: Int.self) { group in
-            for (index, card) in cards.enumerated() {
+            for (_ /* index */, card) in cards.enumerated() {
                 group.addTask {
                     _ = await viewModel.submitRating(2, card: card)
-                    return viewModel.currentIndex
+                    return await MainActor.run { viewModel.currentIndex }
                 }
             }
 
@@ -455,7 +472,7 @@ struct StudySessionViewModelTests {
                 group.addTask {
                     let start = Date()
                     _ = await viewModel.submitRating(2, card: card)
-                    return viewModel.isComplete ? start : nil
+                    return await MainActor.run { viewModel.isComplete ? start : nil }
                 }
             }
 

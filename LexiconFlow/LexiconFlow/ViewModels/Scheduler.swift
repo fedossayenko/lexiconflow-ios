@@ -10,6 +10,7 @@
 
 import Foundation
 import SwiftData
+import OSLog
 
 /// Study mode determines how cards are selected and processed
 enum StudyMode: Sendable {
@@ -43,6 +44,9 @@ enum StudyMode: Sendable {
 final class Scheduler {
     /// The SwiftData model context
     private let modelContext: ModelContext
+
+    /// Logger for scheduler operations
+    private let logger = Logger(subsystem: "com.lexiconflow.scheduler", category: "Scheduler")
 
     /// Initialize scheduler with a model context
     ///
@@ -113,19 +117,29 @@ final class Scheduler {
             state.stateEnum == "new"
         }
 
-        var stateDescriptor = FetchDescriptor<FSRSState>(predicate: predicate)
+        // Use sort descriptor at database level for better performance
+        var stateDescriptor = FetchDescriptor<FSRSState>(
+            predicate: predicate,
+            sortBy: [SortDescriptor(\FSRSState.card?.createdAt, order: .forward)]
+        )
 
         do {
             let states = try modelContext.fetch(stateDescriptor)
 
-            // Convert to cards and sort by creation date (oldest first)
-            let cards = states.compactMap { $0.card }
-                .sorted { $0.createdAt < $1.createdAt }
+            // Convert to cards, logging any nil relationships
+            let cards = states.compactMap { state -> Flashcard? in
+                if let card = state.card {
+                    return card
+                } else {
+                    logger.warning("FSRSState with nil card relationship detected")
+                    return nil
+                }
+            }
 
             return Array(cards.prefix(limit))
         } catch {
             Analytics.trackError("fetch_new_cards", error: error)
-            print("❌ Scheduler: Error fetching new cards: \(error)")
+            logger.error("Error fetching new cards: \(error)")
             return []
         }
     }
@@ -151,11 +165,21 @@ final class Scheduler {
 
         do {
             let states = try modelContext.fetch(stateDescriptor)
-            let cards = states.compactMap { $0.card }
+
+            // Convert to cards, logging any nil relationships
+            let cards = states.compactMap { state -> Flashcard? in
+                if let card = state.card {
+                    return card
+                } else {
+                    logger.warning("FSRSState with nil card relationship detected")
+                    return nil
+                }
+            }
+
             return Array(cards.prefix(limit))
         } catch {
             Analytics.trackError(errorName, error: error)
-            print("❌ Scheduler: Error fetching cards: \(error)")
+            logger.error("Error fetching cards: \(error)")
             return []
         }
     }
@@ -180,7 +204,7 @@ final class Scheduler {
             return try modelContext.fetchCount(stateDescriptor)
         } catch {
             Analytics.trackError("due_card_count", error: error)
-            print("❌ Scheduler: Error counting due cards: \(error)")
+            logger.error("Error counting due cards: \(error)")
             return 0
         }
     }
@@ -201,7 +225,7 @@ final class Scheduler {
             return try modelContext.fetchCount(stateDescriptor)
         } catch {
             Analytics.trackError("new_card_count", error: error)
-            print("❌ Scheduler: Error counting new cards: \(error)")
+            logger.error("Error counting new cards: \(error)")
             return 0
         }
     }
@@ -232,13 +256,24 @@ final class Scheduler {
     ) async -> FlashcardReview? {
         let now = Date()
 
+        // Validate: flashcard must have FSRSState for non-cram modes
+        guard mode == .cram || flashcard.fsrsState != nil else {
+            logger.error("Cannot process review: FSRSState is nil for \(flashcard.word)")
+            return nil
+        }
+
         // In cram mode, only log the review without updating FSRS
         if mode == .cram {
+            // Calculate actual elapsed days for analytics accuracy
+            let elapsedDays = flashcard.fsrsState?.lastReviewDate != nil
+                ? DateMath.elapsedDays(since: flashcard.fsrsState!.lastReviewDate!)
+                : 0
+
             let log = FlashcardReview(
                 rating: rating,
                 reviewDate: now,
                 scheduledDays: 0, // No scheduling in cram mode
-                elapsedDays: 0
+                elapsedDays: elapsedDays
             )
             log.card = flashcard
             modelContext.insert(log)
@@ -252,7 +287,7 @@ final class Scheduler {
                     "rating": "\(rating)",
                     "card": flashcard.word
                 ])
-                print("❌ Scheduler: Failed to save cram review: \(error)")
+                logger.error("Failed to save cram review: \(error)")
                 // In production: show user alert
                 return nil
             }
@@ -296,7 +331,7 @@ final class Scheduler {
                 "rating": "\(rating)",
                 "card": flashcard.word
             ])
-            print("❌ Scheduler: Error processing review: \(error)")
+            logger.error("Error processing review: \(error)")
             return nil
         }
     }
@@ -382,7 +417,7 @@ final class Scheduler {
             Analytics.trackError("reset_card", error: error, metadata: [
                 "card": flashcard.word
             ])
-            print("❌ Scheduler: Failed to save reset: \(error)")
+            logger.error("Failed to save reset: \(error)")
             return false
         }
     }

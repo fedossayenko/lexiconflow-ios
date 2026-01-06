@@ -32,12 +32,12 @@ struct FlashcardTests {
         let flashcard = Flashcard(
             word: "ephemeral",
             definition: "lasting for a very short time",
-            phonetic: "ɪˈfem(ə)rəl",
             translation: "efímero",
             translationSourceLanguage: "en",
             translationTargetLanguage: "es",
             cefrLevel: "C2",
             contextSentence: "The ephemeral beauty of cherry blossoms",
+            phonetic: "ɪˈfem(ə)rəl",
             imageData: imageData
         )
 
@@ -283,27 +283,19 @@ struct FlashcardTests {
         context.insert(flashcard)
 
         let review1 = FlashcardReview(
-            flashcard: flashcard,
             rating: 3,
-            timeTaken: 5.0,
             scheduledDays: 1.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 1.0,
-            difficulty: 5.0
+            elapsedDays: 1.0
         )
+        review1.card = flashcard
         context.insert(review1)
 
         let review2 = FlashcardReview(
-            flashcard: flashcard,
             rating: 2,
-            timeTaken: 3.0,
             scheduledDays: 3.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 2.0,
-            difficulty: 5.5
+            elapsedDays: 1.0
         )
+        review2.card = flashcard
         context.insert(review2)
 
         try context.save()
@@ -365,15 +357,11 @@ struct FlashcardTests {
         context.insert(flashcard)
 
         let review = FlashcardReview(
-            flashcard: flashcard,
             rating: 3,
-            timeTaken: 5.0,
             scheduledDays: 1.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 1.0,
-            difficulty: 5.0
+            elapsedDays: 1.0
         )
+        review.card = flashcard
         context.insert(review)
 
         try context.save()
@@ -410,15 +398,11 @@ struct FlashcardTests {
         context.insert(state)
 
         let review = FlashcardReview(
-            flashcard: flashcard,
             rating: 3,
-            timeTaken: 5.0,
             scheduledDays: 1.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 1.0,
-            difficulty: 5.0
+            elapsedDays: 1.0
         )
+        review.card = flashcard
         context.insert(review)
 
         try context.save()

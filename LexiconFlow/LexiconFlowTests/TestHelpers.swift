@@ -65,7 +65,7 @@ enum TestContainers {
                 return try ModelContainer(for: schema, configurations: [fallbackConfig])
             } catch {
                 // Last resort: minimal container
-                return ModelContainer(for: schema, configurations: [fallbackConfig])
+                return try! ModelContainer(for: schema, configurations: [fallbackConfig])
             }
         }
     }()
