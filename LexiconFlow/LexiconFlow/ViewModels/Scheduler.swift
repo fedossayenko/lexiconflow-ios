@@ -10,6 +10,7 @@
 
 import Foundation
 import SwiftData
+import OSLog
 
 /// Study mode determines how cards are selected and processed
 enum StudyMode: Sendable {
@@ -17,6 +18,12 @@ enum StudyMode: Sendable {
     /// - Updates FSRS state after each review
     /// - Respects due dates and intervals
     case scheduled
+
+    /// Learning mode: New cards only (initial learning phase)
+    /// - Updates FSRS state after each review
+    /// - Cards go through learning steps before graduating to review state
+    /// - Ordered by creation date (oldest first)
+    case learning
 
     /// Cram mode: Review cards regardless of due date
     /// - Does NOT update FSRS state (for temporary review)
@@ -38,6 +45,9 @@ final class Scheduler {
     /// The SwiftData model context
     private let modelContext: ModelContext
 
+    /// Logger for scheduler operations
+    private let logger = Logger(subsystem: "com.lexiconflow.scheduler", category: "Scheduler")
+
     /// Initialize scheduler with a model context
     ///
     /// - Parameter modelContext: SwiftData model context
@@ -50,7 +60,7 @@ final class Scheduler {
     /// Fetch cards ready for study
     ///
     /// - Parameters:
-    ///   - mode: Study mode (scheduled or cram)
+    ///   - mode: Study mode (scheduled, learning, or cram)
     ///   - limit: Maximum number of cards to return (defaults to AppSettings.studyLimit)
     /// - Returns: Array of flashcards ready for review
     func fetchCards(mode: StudyMode = .scheduled, limit: Int? = nil) -> [Flashcard] {
@@ -58,6 +68,8 @@ final class Scheduler {
         switch mode {
         case .scheduled:
             return fetchDueCards(limit: effectiveLimit)
+        case .learning:
+            return fetchNewCards(limit: effectiveLimit)
         case .cram:
             return fetchCramCards(limit: effectiveLimit)
         }
@@ -92,6 +104,46 @@ final class Scheduler {
         return fetchCards(limit: limit, predicate: nil, sortBy: sortBy, errorName: "fetch_cram_cards")
     }
 
+    /// Fetch new cards for initial learning phase
+    ///
+    /// New cards are those that have never been reviewed (stateEnum == "new").
+    /// These cards go through FSRS learning steps before graduating to review state.
+    ///
+    /// - Parameter limit: Maximum number of cards to return
+    /// - Returns: Array of new flashcards, sorted by creation date ascending (oldest first)
+    private func fetchNewCards(limit: Int) -> [Flashcard] {
+        // Fetch states where stateEnum == "new"
+        let predicate = #Predicate<FSRSState> { state in
+            state.stateEnum == "new"
+        }
+
+        // Use sort descriptor at database level for better performance
+        var stateDescriptor = FetchDescriptor<FSRSState>(
+            predicate: predicate,
+            sortBy: [SortDescriptor(\FSRSState.card?.createdAt, order: .forward)]
+        )
+
+        do {
+            let states = try modelContext.fetch(stateDescriptor)
+
+            // Convert to cards, logging any nil relationships
+            let cards = states.compactMap { state -> Flashcard? in
+                if let card = state.card {
+                    return card
+                } else {
+                    logger.warning("FSRSState with nil card relationship detected")
+                    return nil
+                }
+            }
+
+            return Array(cards.prefix(limit))
+        } catch {
+            Analytics.trackError("fetch_new_cards", error: error)
+            logger.error("Error fetching new cards: \(error)")
+            return []
+        }
+    }
+
     /// Generic fetch method for cards with configurable predicate and sort
     ///
     /// - Parameters:
@@ -113,11 +165,21 @@ final class Scheduler {
 
         do {
             let states = try modelContext.fetch(stateDescriptor)
-            let cards = states.compactMap { $0.card }
+
+            // Convert to cards, logging any nil relationships
+            let cards = states.compactMap { state -> Flashcard? in
+                if let card = state.card {
+                    return card
+                } else {
+                    logger.warning("FSRSState with nil card relationship detected")
+                    return nil
+                }
+            }
+
             return Array(cards.prefix(limit))
         } catch {
             Analytics.trackError(errorName, error: error)
-            print("❌ Scheduler: Error fetching cards: \(error)")
+            logger.error("Error fetching cards: \(error)")
             return []
         }
     }
@@ -142,7 +204,28 @@ final class Scheduler {
             return try modelContext.fetchCount(stateDescriptor)
         } catch {
             Analytics.trackError("due_card_count", error: error)
-            print("❌ Scheduler: Error counting due cards: \(error)")
+            logger.error("Error counting due cards: \(error)")
+            return 0
+        }
+    }
+
+    /// Count total new cards available for learning
+    ///
+    /// New cards are those that have never been reviewed (stateEnum == "new").
+    ///
+    /// - Returns: Number of new cards awaiting initial review
+    func newCardCount() -> Int {
+        let stateDescriptor = FetchDescriptor<FSRSState>(
+            predicate: #Predicate<FSRSState> { state in
+                state.stateEnum == "new"
+            }
+        )
+
+        do {
+            return try modelContext.fetchCount(stateDescriptor)
+        } catch {
+            Analytics.trackError("new_card_count", error: error)
+            logger.error("Error counting new cards: \(error)")
             return 0
         }
     }
@@ -159,11 +242,12 @@ final class Scheduler {
     /// 5. Saves changes to the database
     ///
     /// In cram mode, the rating is logged but FSRS state is NOT updated.
+    /// In scheduled or learning mode, FSRS state is updated based on rating.
     ///
     /// - Parameters:
     ///   - flashcard: The flashcard being reviewed
     ///   - rating: The user's rating (0=Again, 1=Hard, 2=Good, 3=Easy)
-    ///   - mode: Study mode (scheduled or cram)
+    ///   - mode: Study mode (scheduled, learning, or cram)
     /// - Returns: The created FlashcardReview entry (or nil if save failed)
     func processReview(
         flashcard: Flashcard,
@@ -172,13 +256,24 @@ final class Scheduler {
     ) async -> FlashcardReview? {
         let now = Date()
 
+        // Validate: flashcard must have FSRSState for non-cram modes
+        guard mode == .cram || flashcard.fsrsState != nil else {
+            logger.error("Cannot process review: FSRSState is nil for \(flashcard.word)")
+            return nil
+        }
+
         // In cram mode, only log the review without updating FSRS
         if mode == .cram {
+            // Calculate actual elapsed days for analytics accuracy
+            let elapsedDays = flashcard.fsrsState?.lastReviewDate != nil
+                ? DateMath.elapsedDays(since: flashcard.fsrsState!.lastReviewDate!)
+                : 0
+
             let log = FlashcardReview(
                 rating: rating,
                 reviewDate: now,
                 scheduledDays: 0, // No scheduling in cram mode
-                elapsedDays: 0
+                elapsedDays: elapsedDays
             )
             log.card = flashcard
             modelContext.insert(log)
@@ -192,13 +287,13 @@ final class Scheduler {
                     "rating": "\(rating)",
                     "card": flashcard.word
                 ])
-                print("❌ Scheduler: Failed to save cram review: \(error)")
+                logger.error("Failed to save cram review: \(error)")
                 // In production: show user alert
                 return nil
             }
         }
 
-        // In scheduled mode, run the FSRS algorithm
+        // In scheduled or learning mode, run the FSRS algorithm
         do {
             // Get DTO from FSRSWrapper actor
             let result = try await FSRSWrapper.shared.processReview(
@@ -236,7 +331,7 @@ final class Scheduler {
                 "rating": "\(rating)",
                 "card": flashcard.word
             ])
-            print("❌ Scheduler: Error processing review: \(error)")
+            logger.error("Error processing review: \(error)")
             return nil
         }
     }
@@ -322,7 +417,7 @@ final class Scheduler {
             Analytics.trackError("reset_card", error: error, metadata: [
                 "card": flashcard.word
             ])
-            print("❌ Scheduler: Failed to save reset: \(error)")
+            logger.error("Failed to save reset: \(error)")
             return false
         }
     }

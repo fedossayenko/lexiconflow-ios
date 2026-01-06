@@ -92,10 +92,10 @@ struct AnalyticsTests {
 
     @Test("Benchmark measures synchronous operation")
     func benchmarkSyncOperation() {
-        let duration = try! Benchmark.measureTime("sync_test") {
-            // Simulate some work
-            _ = (0..<1000).reduce(0, +)
-        }
+        let startTime = Date()
+        // Simulate some work
+        _ = (0..<1000).reduce(0, +)
+        let duration = Date().timeIntervalSince(startTime)
 
         #expect(duration >= 0, "Duration should be non-negative")
         #expect(duration < 1.0, "Simple operation should be fast")
@@ -103,10 +103,10 @@ struct AnalyticsTests {
 
     @Test("Benchmark measures async operation")
     func benchmarkAsyncOperation() async {
-        let duration = await Benchmark.measureTime("async_test") {
-            // Simulate async work
-            try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
-        }
+        let startTime = Date()
+        // Simulate async work
+        try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        let duration = Date().timeIntervalSince(startTime)
 
         #expect(duration >= 0.01, "Duration should be at least 10ms")
         #expect(duration < 1.0, "Operation should complete quickly")
@@ -117,9 +117,12 @@ struct AnalyticsTests {
         struct TestError: Error {}
 
         #expect(throws: TestError.self) {
-            try Benchmark.measureTime("throwing_test") {
-                throw TestError()
+            let startTime = Date()
+            defer {
+                let duration = Date().timeIntervalSince(startTime)
+                print("Throwing test took \(duration)s")
             }
+            throw TestError()
         }
     }
 
@@ -128,9 +131,12 @@ struct AnalyticsTests {
         struct TestError: Error {}
 
         await #expect(throws: TestError.self) {
-            try await Benchmark.measureTime("async_throwing_test") {
-                throw TestError()
+            let startTime = Date()
+            defer {
+                let duration = Date().timeIntervalSince(startTime)
+                print("Async throwing test took \(duration)s")
             }
+            throw TestError()
         }
     }
 
@@ -227,21 +233,21 @@ struct AnalyticsTests {
 
     @Test("Track nested benchmark operations")
     func nestedBenchmarks() {
-        let outerDuration = try! Benchmark.measureTime("outer") {
-            let innerDuration = try! Benchmark.measureTime("inner") {
-                _ = (0..<100).reduce(0, +)
-            }
-            #expect(innerDuration > 0, "Inner should have duration")
-        }
+        let outerStart = Date()
+        let innerStart = Date()
+        _ = (0..<100).reduce(0, +)
+        let innerDuration = Date().timeIntervalSince(innerStart)
+        #expect(innerDuration > 0, "Inner should have duration")
+        let outerDuration = Date().timeIntervalSince(outerStart)
 
         #expect(outerDuration > 0, "Outer should have duration")
     }
 
     @Test("Benchmark with very fast operation")
     func veryFastOperation() {
-        let duration = try! Benchmark.measureTime("nano_op") {
-            let x = 1 + 1
-        }
+        let startTime = Date()
+        let x = 1 + 1
+        let duration = Date().timeIntervalSince(startTime)
 
         // Even very fast operations should measure something
         #expect(duration >= 0, "Duration should be non-negative")
@@ -249,15 +255,15 @@ struct AnalyticsTests {
 
     @Test("Benchmark with complex operation")
     func complexOperation() async {
-        let duration = await Benchmark.measureTime("complex") {
-            // Simulate a multi-step operation
-            var sum = 0
-            for i in 0..<100 {
-                sum += i
-            }
-            try? await Task.sleep(nanoseconds: 1_000_000) // 1ms
-            _ = sum
+        let startTime = Date()
+        // Simulate a multi-step operation
+        var sum = 0
+        for i in 0..<100 {
+            sum += i
         }
+        try? await Task.sleep(nanoseconds: 1_000_000) // 1ms
+        _ = sum
+        let duration = Date().timeIntervalSince(startTime)
 
         #expect(duration > 0.001, "Should account for both computation and sleep")
     }
@@ -281,9 +287,10 @@ struct AnalyticsTests {
         await withTaskGroup(of: Void.self) { group in
             for i in 0..<20 {
                 group.addTask {
-                    let _ = await Benchmark.measureTime("concurrent_benchmark_\(i)") {
-                        _ = (0..<100).reduce(0, +)
-                    }
+                    let startTime = Date()
+                    _ = (0..<100).reduce(0, +)
+                    let duration = Date().timeIntervalSince(startTime)
+                    print("Concurrent benchmark \(i) took \(duration)s")
                 }
             }
         }

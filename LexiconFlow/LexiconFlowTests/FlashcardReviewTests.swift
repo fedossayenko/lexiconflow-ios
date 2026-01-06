@@ -31,27 +31,19 @@ struct FlashcardReviewTests {
         context.insert(flashcard)
 
         let review = FlashcardReview(
-            flashcard: flashcard,
             rating: 3,
-            timeTaken: 5.5,
             scheduledDays: 3.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 2.0,
-            difficulty: 5.5
+            elapsedDays: 1.0
         )
+        review.card = flashcard
 
         context.insert(review)
         try context.save()
 
-        #expect(review.flashcard?.word == "test")
+        #expect(review.card?.word == "test")
         #expect(review.rating == 3)
-        #expect(review.timeTaken == 5.5)
         #expect(review.scheduledDays == 3.0)
         #expect(review.elapsedDays == 1.0)
-        #expect(review.state == "review")
-        #expect(review.stability == 2.0)
-        #expect(review.difficulty == 5.5)
     }
 
     @Test("FlashcardReview creation with minimal fields")
@@ -63,22 +55,18 @@ struct FlashcardReviewTests {
         context.insert(flashcard)
 
         let review = FlashcardReview(
-            flashcard: flashcard,
             rating: 2,
-            timeTaken: 0,
             scheduledDays: 0,
-            elapsedDays: 0,
-            state: "new",
-            stability: 0,
-            difficulty: 5
+            elapsedDays: 0
         )
+        review.card = flashcard
 
         context.insert(review)
         try context.save()
 
         #expect(review.rating == 2)
-        #expect(review.timeTaken == 0)
         #expect(review.scheduledDays == 0)
+        #expect(review.elapsedDays == 0)
     }
 
     // MARK: - Rating Tests
@@ -92,15 +80,11 @@ struct FlashcardReviewTests {
         context.insert(flashcard)
 
         let review = FlashcardReview(
-            flashcard: flashcard,
             rating: 0,
-            timeTaken: 10.0,
             scheduledDays: 0,
-            elapsedDays: 1.0,
-            state: "relearning",
-            stability: 0.1,
-            difficulty: 6.0
+            elapsedDays: 1.0
         )
+        review.card = flashcard
 
         context.insert(review)
         try context.save()
@@ -117,15 +101,11 @@ struct FlashcardReviewTests {
         context.insert(flashcard)
 
         let review = FlashcardReview(
-            flashcard: flashcard,
             rating: 1,
-            timeTaken: 8.0,
             scheduledDays: 1.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 1.0,
-            difficulty: 5.5
+            elapsedDays: 1.0
         )
+        review.card = flashcard
 
         context.insert(review)
         try context.save()
@@ -142,15 +122,11 @@ struct FlashcardReviewTests {
         context.insert(flashcard)
 
         let review = FlashcardReview(
-            flashcard: flashcard,
             rating: 2,
-            timeTaken: 5.0,
             scheduledDays: 3.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 2.0,
-            difficulty: 5.0
+            elapsedDays: 1.0
         )
+        review.card = flashcard
 
         context.insert(review)
         try context.save()
@@ -167,15 +143,11 @@ struct FlashcardReviewTests {
         context.insert(flashcard)
 
         let review = FlashcardReview(
-            flashcard: flashcard,
             rating: 3,
-            timeTaken: 2.0,
             scheduledDays: 7.0,
-            elapsedDays: 3.0,
-            state: "review",
-            stability: 5.0,
-            difficulty: 4.0
+            elapsedDays: 3.0
         )
+        review.card = flashcard
 
         context.insert(review)
         try context.save()
@@ -196,27 +168,23 @@ struct FlashcardReviewTests {
         let beforeCreation = Date()
 
         let review = FlashcardReview(
-            flashcard: flashcard,
             rating: 2,
-            timeTaken: 5.0,
             scheduledDays: 1.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 1.0,
-            difficulty: 5.0
+            elapsedDays: 1.0
         )
+        review.card = flashcard
 
         context.insert(review)
 
         let afterCreation = Date()
         try context.save()
 
-        #expect(review.timestamp >= beforeCreation)
-        #expect(review.timestamp <= afterCreation)
+        #expect(review.reviewDate >= beforeCreation)
+        #expect(review.reviewDate <= afterCreation)
     }
 
     @Test("FlashcardReview timestamp ordering")
-    func reviewTimestampOrdering() throws {
+    func reviewTimestampOrdering() async throws {
         let context = freshContext()
         try context.clearAll()
 
@@ -224,112 +192,27 @@ struct FlashcardReviewTests {
         context.insert(flashcard)
 
         let review1 = FlashcardReview(
-            flashcard: flashcard,
             rating: 2,
-            timeTaken: 5.0,
             scheduledDays: 1.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 1.0,
-            difficulty: 5.0
+            elapsedDays: 1.0
         )
+        review1.card = flashcard
         context.insert(review1)
 
         // Small delay to ensure different timestamps
-        try Task.sleep(nanoseconds: 10_000_000) // 0.01 seconds
+        try await Task.sleep(nanoseconds: 10_000_000) // 0.01 seconds
 
         let review2 = FlashcardReview(
-            flashcard: flashcard,
             rating: 3,
-            timeTaken: 3.0,
             scheduledDays: 3.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 2.0,
-            difficulty: 4.5
+            elapsedDays: 1.0
         )
+        review2.card = flashcard
         context.insert(review2)
 
         try context.save()
 
-        #expect(review1.timestamp < review2.timestamp)
-    }
-
-    // MARK: - Time Taken Tests
-
-    @Test("FlashcardReview timeTaken: zero seconds")
-    func reviewTimeTakenZero() throws {
-        let context = freshContext()
-        try context.clearAll()
-
-        let flashcard = Flashcard(word: "test", definition: "test")
-        context.insert(flashcard)
-
-        let review = FlashcardReview(
-            flashcard: flashcard,
-            rating: 3,
-            timeTaken: 0,
-            scheduledDays: 1.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 1.0,
-            difficulty: 5.0
-        )
-
-        context.insert(review)
-        try context.save()
-
-        #expect(review.timeTaken == 0)
-    }
-
-    @Test("FlashcardReview timeTaken: fractional seconds")
-    func reviewTimeTakenFractional() throws {
-        let context = freshContext()
-        try context.clearAll()
-
-        let flashcard = Flashcard(word: "test", definition: "test")
-        context.insert(flashcard)
-
-        let review = FlashcardReview(
-            flashcard: flashcard,
-            rating: 2,
-            timeTaken: 3.7,
-            scheduledDays: 1.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 1.0,
-            difficulty: 5.0
-        )
-
-        context.insert(review)
-        try context.save()
-
-        #expect(review.timeTaken == 3.7)
-    }
-
-    @Test("FlashcardReview timeTaken: large value")
-    func reviewTimeTakenLarge() throws {
-        let context = freshContext()
-        try context.clearAll()
-
-        let flashcard = Flashcard(word: "test", definition: "test")
-        context.insert(flashcard)
-
-        let review = FlashcardReview(
-            flashcard: flashcard,
-            rating: 1,
-            timeTaken: 300.0, // 5 minutes
-            scheduledDays: 1.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 1.0,
-            difficulty: 5.0
-        )
-
-        context.insert(review)
-        try context.save()
-
-        #expect(review.timeTaken == 300.0)
+        #expect(review1.reviewDate < review2.reviewDate)
     }
 
     // MARK: - Scheduled/Elapsed Days Tests
@@ -343,15 +226,11 @@ struct FlashcardReviewTests {
         context.insert(flashcard)
 
         let review = FlashcardReview(
-            flashcard: flashcard,
             rating: 2,
-            timeTaken: 5.0,
             scheduledDays: 7.0,
-            elapsedDays: 6.5,
-            state: "review",
-            stability: 5.0,
-            difficulty: 5.0
+            elapsedDays: 6.5
         )
+        review.card = flashcard
 
         context.insert(review)
         try context.save()
@@ -369,97 +248,16 @@ struct FlashcardReviewTests {
         context.insert(flashcard)
 
         let review = FlashcardReview(
-            flashcard: flashcard,
             rating: 2,
-            timeTaken: 5.0,
             scheduledDays: 0,
-            elapsedDays: 0,
-            state: "new",
-            stability: 0,
-            difficulty: 5.0
+            elapsedDays: 0
         )
+        review.card = flashcard
 
         context.insert(review)
         try context.save()
 
         #expect(review.elapsedDays == 0)
-    }
-
-    // MARK: - State String Tests
-
-    @Test("FlashcardReview state: new")
-    func reviewStateNew() throws {
-        let context = freshContext()
-        try context.clearAll()
-
-        let flashcard = Flashcard(word: "test", definition: "test")
-        context.insert(flashcard)
-
-        let review = FlashcardReview(
-            flashcard: flashcard,
-            rating: 2,
-            timeTaken: 5.0,
-            scheduledDays: 0,
-            elapsedDays: 0,
-            state: "new",
-            stability: 0,
-            difficulty: 5.0
-        )
-
-        context.insert(review)
-        try context.save()
-
-        #expect(review.state == "new")
-    }
-
-    @Test("FlashcardReview state: learning")
-    func reviewStateLearning() throws {
-        let context = freshContext()
-        try context.clearAll()
-
-        let flashcard = Flashcard(word: "test", definition: "test")
-        context.insert(flashcard)
-
-        let review = FlashcardReview(
-            flashcard: flashcard,
-            rating: 2,
-            timeTaken: 5.0,
-            scheduledDays: 0,
-            elapsedDays: 0,
-            state: "learning",
-            stability: 0.5,
-            difficulty: 5.0
-        )
-
-        context.insert(review)
-        try context.save()
-
-        #expect(review.state == "learning")
-    }
-
-    @Test("FlashcardReview state: review")
-    func reviewStateReview() throws {
-        let context = freshContext()
-        try context.clearAll()
-
-        let flashcard = Flashcard(word: "test", definition: "test")
-        context.insert(flashcard)
-
-        let review = FlashcardReview(
-            flashcard: flashcard,
-            rating: 2,
-            timeTaken: 5.0,
-            scheduledDays: 3.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 2.0,
-            difficulty: 5.0
-        )
-
-        context.insert(review)
-        try context.save()
-
-        #expect(review.state == "review")
     }
 
     // MARK: - Review-Flashcard Relationship Tests
@@ -473,21 +271,17 @@ struct FlashcardReviewTests {
         context.insert(flashcard)
 
         let review = FlashcardReview(
-            flashcard: flashcard,
             rating: 3,
-            timeTaken: 5.0,
             scheduledDays: 1.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 1.0,
-            difficulty: 5.0
+            elapsedDays: 1.0
         )
+        review.card = flashcard
 
         context.insert(review)
         try context.save()
 
-        #expect(review.flashcard?.word == "hola")
-        #expect(review.flashcard?.definition == "hello")
+        #expect(review.card?.word == "hola")
+        #expect(review.card?.definition == "hello")
     }
 
     @Test("FlashcardReview with no flashcard (should not happen in practice)")
@@ -498,26 +292,22 @@ struct FlashcardReviewTests {
         // Create a review without associating it with a flashcard
         // This shouldn't happen in practice but tests the optional
         let review = FlashcardReview(
-            flashcard: nil,
             rating: 2,
-            timeTaken: 5.0,
             scheduledDays: 1.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 1.0,
-            difficulty: 5.0
+            elapsedDays: 1.0
         )
+        // Don't set review.card - leave it nil
 
         context.insert(review)
         try context.save()
 
-        #expect(review.flashcard == nil)
+        #expect(review.card == nil)
     }
 
     // MARK: - Multiple Reviews Tests
 
     @Test("Flashcard with multiple reviews")
-    func flashcardWithMultipleReviews() throws {
+    func flashcardWithMultipleReviews() async throws {
         let context = freshContext()
         try context.clearAll()
 
@@ -525,43 +315,31 @@ struct FlashcardReviewTests {
         context.insert(flashcard)
 
         let review1 = FlashcardReview(
-            flashcard: flashcard,
             rating: 2,
-            timeTaken: 5.0,
             scheduledDays: 1.0,
-            elapsedDays: 0,
-            state: "learning",
-            stability: 0.5,
-            difficulty: 5.0
+            elapsedDays: 0
         )
+        review1.card = flashcard
         context.insert(review1)
 
-        try Task.sleep(nanoseconds: 10_000_000)
+        try await Task.sleep(nanoseconds: 100_000_000) // 100ms to ensure different timestamps
 
         let review2 = FlashcardReview(
-            flashcard: flashcard,
             rating: 3,
-            timeTaken: 4.0,
             scheduledDays: 3.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 2.0,
-            difficulty: 4.8
+            elapsedDays: 1.0
         )
+        review2.card = flashcard
         context.insert(review2)
 
-        try Task.sleep(nanoseconds: 10_000_000)
+        try await Task.sleep(nanoseconds: 100_000_000) // 100ms to ensure different timestamps
 
         let review3 = FlashcardReview(
-            flashcard: flashcard,
             rating: 3,
-            timeTaken: 3.0,
             scheduledDays: 7.0,
-            elapsedDays: 3.0,
-            state: "review",
-            stability: 5.0,
-            difficulty: 4.5
+            elapsedDays: 3.0
         )
+        review3.card = flashcard
         context.insert(review3)
 
         try context.save()
@@ -572,8 +350,8 @@ struct FlashcardReviewTests {
         #expect(flashcard.reviewLogs[2].rating == 3)
 
         // Verify ordering (oldest to newest)
-        #expect(flashcard.reviewLogs[0].timestamp < flashcard.reviewLogs[1].timestamp)
-        #expect(flashcard.reviewLogs[1].timestamp < flashcard.reviewLogs[2].timestamp)
+        #expect(flashcard.reviewLogs[0].reviewDate < flashcard.reviewLogs[1].reviewDate)
+        #expect(flashcard.reviewLogs[1].reviewDate < flashcard.reviewLogs[2].reviewDate)
     }
 
     // MARK: - Cascade Delete Tests
@@ -587,15 +365,11 @@ struct FlashcardReviewTests {
         context.insert(flashcard)
 
         let review = FlashcardReview(
-            flashcard: flashcard,
             rating: 3,
-            timeTaken: 5.0,
             scheduledDays: 1.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 1.0,
-            difficulty: 5.0
+            elapsedDays: 1.0
         )
+        review.card = flashcard
         context.insert(review)
 
         try context.save()
@@ -619,15 +393,11 @@ struct FlashcardReviewTests {
 
         for i in 1...5 {
             let review = FlashcardReview(
-                flashcard: flashcard,
                 rating: i % 4,
-                timeTaken: Double(i),
                 scheduledDays: 1.0,
-                elapsedDays: 1.0,
-                state: "review",
-                stability: 1.0,
-                difficulty: 5.0
+                elapsedDays: 1.0
             )
+            review.card = flashcard
             context.insert(review)
         }
 
@@ -656,27 +426,19 @@ struct FlashcardReviewTests {
         context.insert(flashcard2)
 
         let review1 = FlashcardReview(
-            flashcard: flashcard1,
             rating: 2,
-            timeTaken: 5.0,
             scheduledDays: 1.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 1.0,
-            difficulty: 5.0
+            elapsedDays: 1.0
         )
+        review1.card = flashcard1
         context.insert(review1)
 
         let review2 = FlashcardReview(
-            flashcard: flashcard2,
             rating: 3,
-            timeTaken: 3.0,
             scheduledDays: 1.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 2.0,
-            difficulty: 4.5
+            elapsedDays: 1.0
         )
+        review2.card = flashcard2
         context.insert(review2)
 
         try context.save()
@@ -690,8 +452,8 @@ struct FlashcardReviewTests {
         #expect(results.first?.rating == 3)
     }
 
-    @Test("Query: fetch reviews by state")
-    func fetchReviewsByState() throws {
+    @Test("Query: fetch reviews by elapsed days")
+    func fetchReviewsByElapsedDays() throws {
         let context = freshContext()
         try context.clearAll()
 
@@ -702,33 +464,25 @@ struct FlashcardReviewTests {
         context.insert(flashcard2)
 
         let review1 = FlashcardReview(
-            flashcard: flashcard1,
             rating: 2,
-            timeTaken: 5.0,
             scheduledDays: 0,
-            elapsedDays: 0,
-            state: "learning",
-            stability: 0.5,
-            difficulty: 5.0
+            elapsedDays: 0
         )
+        review1.card = flashcard1
         context.insert(review1)
 
         let review2 = FlashcardReview(
-            flashcard: flashcard2,
             rating: 3,
-            timeTaken: 3.0,
             scheduledDays: 3.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 2.0,
-            difficulty: 4.5
+            elapsedDays: 1.0
         )
+        review2.card = flashcard2
         context.insert(review2)
 
         try context.save()
 
-        // Fetch reviews in learning state
-        let predicate = #Predicate<FlashcardReview> { $0.state == "learning" }
+        // Fetch reviews with zero elapsed days
+        let predicate = #Predicate<FlashcardReview> { $0.elapsedDays == 0 }
         let descriptor = FetchDescriptor<FlashcardReview>(predicate: predicate)
         let results = try context.fetch(descriptor)
 
@@ -736,7 +490,7 @@ struct FlashcardReviewTests {
     }
 
     @Test("Query: fetch reviews sorted by timestamp")
-    func fetchReviewsSortedByTimestamp() throws {
+    func fetchReviewsSortedByTimestamp() async throws {
         let context = freshContext()
         try context.clearAll()
 
@@ -746,30 +500,26 @@ struct FlashcardReviewTests {
         // Create multiple reviews
         for i in 1...3 {
             let review = FlashcardReview(
-                flashcard: flashcard,
                 rating: 2,
-                timeTaken: 5.0,
                 scheduledDays: 1.0,
-                elapsedDays: 1.0,
-                state: "review",
-                stability: 1.0,
-                difficulty: 5.0
+                elapsedDays: 1.0
             )
+            review.card = flashcard
             context.insert(review)
 
             // Small delay to ensure different timestamps
-            try Task.sleep(nanoseconds: 10_000_000)
+            try await Task.sleep(nanoseconds: 10_000_000)
         }
 
         try context.save()
 
-        // Fetch sorted by timestamp (oldest first)
-        let descriptor = FetchDescriptor<FlashcardReview>(sortBy: [SortDescriptor(\.timestamp)])
+        // Fetch sorted by reviewDate (oldest first)
+        let descriptor = FetchDescriptor<FlashcardReview>(sortBy: [SortDescriptor(\.reviewDate)])
         let results = try context.fetch(descriptor)
 
         #expect(results.count == 3)
-        #expect(results[0].timestamp < results[1].timestamp)
-        #expect(results[1].timestamp < results[2].timestamp)
+        #expect(results[0].reviewDate < results[1].reviewDate)
+        #expect(results[1].reviewDate < results[2].reviewDate)
     }
 
     @Test("Query: fetch reviews for specific flashcard")
@@ -784,37 +534,29 @@ struct FlashcardReviewTests {
         context.insert(flashcard2)
 
         let review1 = FlashcardReview(
-            flashcard: flashcard1,
             rating: 2,
-            timeTaken: 5.0,
             scheduledDays: 1.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 1.0,
-            difficulty: 5.0
+            elapsedDays: 1.0
         )
+        review1.card = flashcard1
         context.insert(review1)
 
         let review2 = FlashcardReview(
-            flashcard: flashcard2,
             rating: 3,
-            timeTaken: 3.0,
             scheduledDays: 1.0,
-            elapsedDays: 1.0,
-            state: "review",
-            stability: 2.0,
-            difficulty: 4.5
+            elapsedDays: 1.0
         )
+        review2.card = flashcard2
         context.insert(review2)
 
         try context.save()
 
         // Fetch reviews for flashcard1 using its word
-        let predicate = #Predicate<FlashcardReview> { $0.flashcard?.word == "card1" }
+        let predicate = #Predicate<FlashcardReview> { $0.card?.word == "card1" }
         let descriptor = FetchDescriptor<FlashcardReview>(predicate: predicate)
         let results = try context.fetch(descriptor)
 
         #expect(results.count == 1)
-        #expect(results.first?.flashcard?.word == "card1")
+        #expect(results.first?.card?.word == "card1")
     }
 }

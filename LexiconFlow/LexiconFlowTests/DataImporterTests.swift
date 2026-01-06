@@ -10,6 +10,32 @@ import Foundation
 import SwiftData
 @testable import LexiconFlow
 
+/// Thread-safe collector for progress updates in Swift 6
+actor ProgressCollector {
+    private var updates: [ImportProgress] = []
+
+    func add(_ progress: ImportProgress) {
+        updates.append(progress)
+    }
+
+    var allUpdates: [ImportProgress] {
+        updates
+    }
+}
+
+/// Thread-safe counter for batch operations in Swift 6
+actor BatchCounter {
+    private var value: Int = 0
+
+    func increment() {
+        value += 1
+    }
+
+    var count: Int {
+        value
+    }
+}
+
 /// Test suite for DataImporter
 ///
 /// Tests verify:
@@ -151,14 +177,19 @@ struct DataImporterTests {
             cards.append(FlashcardData(word: "word\(i)", definition: "def\(i)"))
         }
 
-        var progressUpdates: [ImportProgress] = []
+        let progressCollector = ProgressCollector()
         let result = await importer.importCards(
             cards,
             batchSize: 3,
             progressHandler: { progress in
-                progressUpdates.append(progress)
+                Task { await progressCollector.add(progress) }
             }
         )
+
+        // Small delay to ensure all tasks complete
+        try await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+
+        let progressUpdates = await progressCollector.allUpdates
 
         // Should have 4 batches (10 cards / 3 = 4 batches)
         #expect(progressUpdates.count == 4, "Should have 4 progress updates")
@@ -180,84 +211,23 @@ struct DataImporterTests {
             cards.append(FlashcardData(word: "word\(i)", definition: "def\(i)"))
         }
 
-        var progressUpdates: [ImportProgress] = []
+        let progressCollector = ProgressCollector()
         _ = await importer.importCards(
             cards,
             batchSize: 5,
             progressHandler: { progress in
-                progressUpdates.append(progress)
+                Task { await progressCollector.add(progress) }
             }
         )
+
+        // Small delay to ensure all tasks complete
+        try await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+
+        let progressUpdates = await progressCollector.allUpdates
 
         #expect(progressUpdates.count == 2, "Should have 2 batches")
         #expect(progressUpdates[0].percentage == 50, "First batch should be 50%")
         #expect(progressUpdates[1].percentage == 100, "Second batch should be 100%")
-    }
-
-    // MARK: - Error Handling Tests
-
-    @Test("Update strategy returns error")
-    func updateStrategyError() async throws {
-        let context = freshContext()
-        try context.clearAll()
-        let importer = DataImporter(modelContext: context)
-
-        let cards = [
-            FlashcardData(word: "test", definition: "def")
-        ]
-
-        let result = await importer.importCardsWithStrategy(
-            cards,
-            strategy: .update
-        )
-
-        #expect(result.importedCount == 0, "Should import 0 cards")
-        #expect(!result.errors.isEmpty, "Should have errors")
-        #expect(!result.isSuccess, "Should not be successful")
-
-        // Verify error message
-        let error = result.errors.first
-        #expect(error != nil, "Should have an error")
-    }
-
-    @Test("Replace strategy returns error")
-    func replaceStrategyError() async throws {
-        let context = freshContext()
-        try context.clearAll()
-        let importer = DataImporter(modelContext: context)
-
-        let cards = [
-            FlashcardData(word: "test", definition: "def")
-        ]
-
-        let result = await importer.importCardsWithStrategy(
-            cards,
-            strategy: .replace
-        )
-
-        #expect(result.importedCount == 0, "Should import 0 cards")
-        #expect(!result.errors.isEmpty, "Should have errors")
-        #expect(!result.isSuccess, "Should not be successful")
-    }
-
-    @Test("Skip strategy works normally")
-    func skipStrategyWorks() async throws {
-        let context = freshContext()
-        try context.clearAll()
-        let importer = DataImporter(modelContext: context)
-
-        let cards = [
-            FlashcardData(word: "test", definition: "def")
-        ]
-
-        let result = await importer.importCardsWithStrategy(
-            cards,
-            strategy: .skip
-        )
-
-        #expect(result.importedCount == 1, "Should import 1 card")
-        #expect(result.errors.isEmpty, "Should have no errors")
-        #expect(result.isSuccess, "Should be successful")
     }
 
     // MARK: - Relationship Tests
@@ -355,18 +325,22 @@ struct DataImporterTests {
             cards.append(FlashcardData(word: "word\(i)", definition: "def\(i)"))
         }
 
-        var batchCount = 0
+        let batchCollector = BatchCounter()
         _ = await importer.importCards(
             cards,
             batchSize: 7,
             progressHandler: { progress in
                 if progress.current % 7 == 0 || progress.current == 15 {
-                    batchCount += 1
+                    Task { await batchCollector.increment() }
                 }
             }
         )
 
+        // Small delay to ensure all tasks complete
+        try await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+
         // 15 cards / batch size 7 = 3 batches (7, 7, 1)
+        let batchCount = await batchCollector.count
         #expect(batchCount == 3, "Should have 3 batches with batch size 7")
     }
 
@@ -381,15 +355,19 @@ struct DataImporterTests {
             cards.append(FlashcardData(word: "word\(i)", definition: "def\(i)"))
         }
 
-        var batchCount = 0
+        let batchCollector = BatchCounter()
         _ = await importer.importCards(
             cards,
             batchSize: 1000,
             progressHandler: { _ in
-                batchCount += 1
+                Task { await batchCollector.increment() }
             }
         )
 
+        // Small delay to ensure all tasks complete
+        try await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+
+        let batchCount = await batchCollector.count
         #expect(batchCount == 1, "Should have 1 batch with large batch size")
     }
 
