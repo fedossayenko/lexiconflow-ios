@@ -23,6 +23,11 @@ extension ModelContext {
             self.delete(review)
         }
 
+        let sentences = try self.fetch(FetchDescriptor<GeneratedSentence>())
+        for sentence in sentences {
+            self.delete(sentence)
+        }
+
         let states = try self.fetch(FetchDescriptor<FSRSState>())
         for state in states {
             self.delete(state)
@@ -51,7 +56,8 @@ enum TestContainers {
             Flashcard.self,
             Deck.self,
             FSRSState.self,
-            FlashcardReview.self
+            FlashcardReview.self,
+            GeneratedSentence.self
         ])
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
 
