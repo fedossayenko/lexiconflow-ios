@@ -147,8 +147,10 @@ struct ModelTests {
         try context.save()
 
         #expect(flashcard.generatedSentences.count == 2)
-        #expect(flashcard.generatedSentences[0].sentenceText == "First sentence.")
-        #expect(flashcard.generatedSentences[1].sentenceText == "Second sentence.")
+        // Sort by generatedAt since SwiftData doesn't guarantee insertion order
+        let sortedSentences = flashcard.generatedSentences.sorted { $0.generatedAt < $1.generatedAt }
+        #expect(sortedSentences[0].sentenceText == "First sentence.")
+        #expect(sortedSentences[1].sentenceText == "Second sentence.")
     }
 
     @Test("Flashcard has empty sentences array by default")
