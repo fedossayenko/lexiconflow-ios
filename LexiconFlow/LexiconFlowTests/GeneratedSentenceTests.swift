@@ -27,7 +27,7 @@ struct GeneratedSentenceTests {
     @Test("GeneratedSentence init with all parameters")
     func testInitAllParameters() throws {
         let id = UUID()
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             id: id,
             sentenceText: "This is a test sentence.",
             cefrLevel: "A1",
@@ -46,7 +46,7 @@ struct GeneratedSentenceTests {
 
     @Test("GeneratedSentence init with defaults")
     func testInitDefaults() throws {
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "B2"
         )
@@ -60,11 +60,11 @@ struct GeneratedSentenceTests {
 
     @Test("GeneratedSentence generates unique IDs")
     func testUniqueIDs() throws {
-        let sentence1 = GeneratedSentence(
+        let sentence1 = try GeneratedSentence(
             sentenceText: "Sentence 1",
             cefrLevel: "A1"
         )
-        let sentence2 = GeneratedSentence(
+        let sentence2 = try GeneratedSentence(
             sentenceText: "Sentence 2",
             cefrLevel: "A1"
         )
@@ -75,7 +75,7 @@ struct GeneratedSentenceTests {
     @Test("GeneratedSentence calculates expiresAt correctly")
     func testExpiresAtCalculation() throws {
         let now = Date()
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test",
             cefrLevel: "A1",
             generatedAt: now,
@@ -95,7 +95,7 @@ struct GeneratedSentenceTests {
 
     @Test("GeneratedSentence initializes with nil flashcard")
     func testInitNilFlashcard() throws {
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test",
             cefrLevel: "A1"
         )
@@ -107,7 +107,7 @@ struct GeneratedSentenceTests {
 
     @Test("isExpired returns false for future date")
     func testIsExpiredFalse() throws {
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test",
             cefrLevel: "A1",
             generatedAt: Date(),
@@ -119,7 +119,7 @@ struct GeneratedSentenceTests {
 
     @Test("isExpired returns true for past date")
     func testIsExpiredTrue() throws {
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test",
             cefrLevel: "A1",
             generatedAt: Date().addingTimeInterval(-10 * 24 * 60 * 60),
@@ -132,22 +132,22 @@ struct GeneratedSentenceTests {
     @Test("isExpired returns false for exactly now")
     func testIsExpiredNow() throws {
         // Create sentence that expires in 1 second
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test",
             cefrLevel: "A1",
-            generatedAt: Date(),
-            ttlDays: 0,
+            generatedAt: Date().addingTimeInterval(-1),
+            ttlDays: 1,
             source: .staticFallback
         )
 
-        // expiresAt should be same as generatedAt or very close
+        // expiresAt should be very close to now
         // isExpired checks Date() > expiresAt, so at exact moment should be false or close
         #expect(sentence.isExpired || !sentence.isExpired) // May vary by millisecond
     }
 
     @Test("daysUntilExpiration positive for future")
     func testDaysUntilExpirationPositive() throws {
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test",
             cefrLevel: "A1",
             generatedAt: Date(),
@@ -160,7 +160,7 @@ struct GeneratedSentenceTests {
 
     @Test("daysUntilExpiration negative for past")
     func testDaysUntilExpirationNegative() throws {
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test",
             cefrLevel: "A1",
             generatedAt: Date().addingTimeInterval(-10 * 24 * 60 * 60),
@@ -173,7 +173,7 @@ struct GeneratedSentenceTests {
     @Test("daysUntilExpiration zero for today")
     func testDaysUntilExpirationZero() throws {
         // Create sentence that expires today
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test",
             cefrLevel: "A1",
             generatedAt: Date().addingTimeInterval(-6 * 24 * 60 * 60),
@@ -186,7 +186,7 @@ struct GeneratedSentenceTests {
 
     @Test("isExpired with TTL zero")
     func testIsExpiredTTLOne() throws {
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test",
             cefrLevel: "A1",
             generatedAt: Date().addingTimeInterval(-2),
@@ -206,7 +206,7 @@ struct GeneratedSentenceTests {
         let card = Flashcard(word: "test", definition: "A test")
         context.insert(card)
 
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1"
         )
@@ -226,14 +226,14 @@ struct GeneratedSentenceTests {
         let card = Flashcard(word: "test", definition: "A test")
         context.insert(card)
 
-        let sentence1 = GeneratedSentence(
+        let sentence1 = try GeneratedSentence(
             sentenceText: "Sentence 1",
             cefrLevel: "A1"
         )
         sentence1.flashcard = card
         context.insert(sentence1)
 
-        let sentence2 = GeneratedSentence(
+        let sentence2 = try GeneratedSentence(
             sentenceText: "Sentence 2",
             cefrLevel: "A1"
         )
@@ -261,7 +261,7 @@ struct GeneratedSentenceTests {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1"
         )
@@ -284,7 +284,7 @@ struct GeneratedSentenceTests {
         context.insert(card)
 
         for i in 1...5 {
-            let sentence = GeneratedSentence(
+            let sentence = try GeneratedSentence(
                 sentenceText: "Sentence \(i)",
                 cefrLevel: "A1"
             )
@@ -305,7 +305,7 @@ struct GeneratedSentenceTests {
         context.insert(card)
 
         for i in 1...3 {
-            let sentence = GeneratedSentence(
+            let sentence = try GeneratedSentence(
                 sentenceText: "Sentence \(i)",
                 cefrLevel: "A1"
             )
@@ -450,20 +450,20 @@ struct GeneratedSentenceTests {
 
     // MARK: - Edge Cases Tests
 
-    @Test("GeneratedSentence handles empty sentenceText")
+    @Test("GeneratedSentence rejects empty sentenceText")
     func testEmptySentenceText() throws {
-        let sentence = GeneratedSentence(
-            sentenceText: "",
-            cefrLevel: "A1"
-        )
-
-        #expect(sentence.sentenceText.isEmpty)
+        #expect(throws: GeneratedSentenceError.self) {
+            try GeneratedSentence(
+                sentenceText: "",
+                cefrLevel: "A1"
+            )
+        }
     }
 
     @Test("GeneratedSentence handles very long sentenceText")
     func testLongSentenceText() throws {
         let longText = String(repeating: "This is a long sentence. ", count: 100)
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: longText,
             cefrLevel: "A1"
         )
@@ -471,87 +471,67 @@ struct GeneratedSentenceTests {
         #expect(sentence.sentenceText.count > 1000)
     }
 
-    @Test("GeneratedSentence handles unicode in sentenceText")
-    func testUnicodeSentenceText() throws {
-        let unicodeText = "Hello 世界 🌍 Привет"
-        let sentence = GeneratedSentence(
-            sentenceText: unicodeText,
-            cefrLevel: "A1"
-        )
-
-        #expect(sentence.sentenceText == unicodeText)
+    @Test("GeneratedSentence handles various text inputs",
+          arguments: [
+              ("", "empty", false),
+              (String(repeating: "word ", count: 100), "long", true),
+              ("Hello 世界 🌍", "unicode", true),
+              ("This is a test 😊🎉", "emoji", true),
+              ("这是一个测试句子", "CJK", true),
+              ("هذه جملة تجريبية", "RTL", true)
+          ])
+    func testVariousTextInputs(sentenceText: String, _ description: String, shouldSucceed: Bool) throws {
+        if shouldSucceed {
+            let sentence = try GeneratedSentence(
+                sentenceText: sentenceText,
+                cefrLevel: "A1"
+            )
+            #expect(sentence.sentenceText == sentenceText, "\(description) text should be preserved")
+        } else {
+            #expect(throws: GeneratedSentenceError.self) {
+                try GeneratedSentence(
+                    sentenceText: sentenceText,
+                    cefrLevel: "A1"
+                )
+            }
+        }
     }
 
-    @Test("GeneratedSentence handles emoji in sentenceText")
-    func testEmojiSentenceText() throws {
-        let emojiText = "This is a test 😊🎉"
-        let sentence = GeneratedSentence(
-            sentenceText: emojiText,
-            cefrLevel: "A1"
-        )
-
-        #expect(sentence.sentenceText.contains("😊"))
-        #expect(sentence.sentenceText.contains("🎉"))
-    }
-
-    @Test("GeneratedSentence handles CJK characters")
-    func testCJKCharacters() throws {
-        let cjkText = "这是一个测试句子"
-        let sentence = GeneratedSentence(
-            sentenceText: cjkText,
-            cefrLevel: "A1"
-        )
-
-        #expect(sentence.sentenceText == cjkText)
-    }
-
-    @Test("GeneratedSentence handles RTL languages")
-    func testRTLLanguage() throws {
-        let rtlText = "هذه جملة تجريبية"
-        let sentence = GeneratedSentence(
-            sentenceText: rtlText,
-            cefrLevel: "A1"
-        )
-
-        #expect(sentence.sentenceText == rtlText)
-    }
-
-    @Test("GeneratedSentence handles invalid CEFR level")
+    @Test("GeneratedSentence rejects invalid CEFR level")
     func testInvalidCEFRLevel() throws {
-        let sentence = GeneratedSentence(
-            sentenceText: "Test",
-            cefrLevel: "X5" // Invalid level
-        )
-
-        #expect(sentence.cefrLevel == "X5")
+        #expect(throws: GeneratedSentenceError.self) {
+            try GeneratedSentence(
+                sentenceText: "Test",
+                cefrLevel: "X5" // Invalid level
+            )
+        }
     }
 
-    @Test("GeneratedSentence handles empty CEFR level")
+    @Test("GeneratedSentence rejects empty CEFR level")
     func testEmptyCEFRLevel() throws {
-        let sentence = GeneratedSentence(
-            sentenceText: "Test",
-            cefrLevel: ""
-        )
-
-        #expect(sentence.cefrLevel.isEmpty)
+        #expect(throws: GeneratedSentenceError.self) {
+            try GeneratedSentence(
+                sentenceText: "Test",
+                cefrLevel: ""
+            )
+        }
     }
 
-    @Test("GeneratedSentence TTL with negative days")
+    @Test("GeneratedSentence rejects TTL with negative days")
     func testTTLNegativeDays() throws {
-        let sentence = GeneratedSentence(
-            sentenceText: "Test",
-            cefrLevel: "A1",
-            generatedAt: Date(),
-            ttlDays: -1
-        )
-
-        // Should handle gracefully (expires in past)
-        #expect(sentence.isExpired)
+        #expect(throws: GeneratedSentenceError.self) {
+            try GeneratedSentence(
+                sentenceText: "Test",
+                cefrLevel: "A1",
+                generatedAt: Date(),
+                ttlDays: -1
+            )
+        }
     }
 
     @Test("GeneratedSentence TTL with very large days")
     func testTTLLargeDays() throws {
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test",
             cefrLevel: "A1",
             generatedAt: Date(),
@@ -564,7 +544,7 @@ struct GeneratedSentenceTests {
 
     @Test("GeneratedSentence favorite toggling")
     func testFavoriteToggle() throws {
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test",
             cefrLevel: "A1",
             isFavorite: false
@@ -577,19 +557,19 @@ struct GeneratedSentenceTests {
 
     @Test("GeneratedSentence source tracking")
     func testSourceTracking() throws {
-        let aiSentence = GeneratedSentence(
+        let aiSentence = try GeneratedSentence(
             sentenceText: "AI generated",
             cefrLevel: "A1",
             source: .aiGenerated
         )
 
-        let fallbackSentence = GeneratedSentence(
+        let fallbackSentence = try GeneratedSentence(
             sentenceText: "Fallback",
             cefrLevel: "A1",
             source: .staticFallback
         )
 
-        let userSentence = GeneratedSentence(
+        let userSentence = try GeneratedSentence(
             sentenceText: "User created",
             cefrLevel: "A1",
             source: .userCreated
@@ -604,7 +584,7 @@ struct GeneratedSentenceTests {
     func testTimezoneHandling() throws {
         // Create sentence at specific time
         let specificDate = Date()
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test",
             cefrLevel: "A1",
             generatedAt: specificDate,
@@ -619,7 +599,7 @@ struct GeneratedSentenceTests {
     @Test("GeneratedSentence expiresAt exactly 7 days later")
     func testExpiresAtExactly7Days() throws {
         let now = Date()
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test",
             cefrLevel: "A1",
             generatedAt: now,
@@ -633,7 +613,7 @@ struct GeneratedSentenceTests {
 
     @Test("GeneratedSentence handles nil flashcard relationship")
     func testNilFlashcardRelationship() throws {
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test",
             cefrLevel: "A1"
         )
@@ -648,7 +628,7 @@ struct GeneratedSentenceTests {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1",
             isFavorite: true,
@@ -674,7 +654,7 @@ struct GeneratedSentenceTests {
         try context.clearAll()
 
         let now = Date()
-        let sentence = GeneratedSentence(
+        let sentence = try GeneratedSentence(
             sentenceText: "Full test sentence with all fields.",
             cefrLevel: "B2",
             generatedAt: now,

@@ -47,6 +47,24 @@ enum GlassThickness {
         case .thick: return 0.3
         }
     }
+
+    /// Blur radius for refraction effect (simulates light bending through glass)
+    var refractionBlur: CGFloat {
+        switch self {
+        case .thin: return 2
+        case .regular: return 5
+        case .thick: return 8
+        }
+    }
+
+    /// Specular highlight intensity (creates "shiny" appearance)
+    var specularOpacity: Double {
+        switch self {
+        case .thin: return 0.15
+        case .regular: return 0.25
+        case .thick: return 0.35
+        }
+    }
 }
 
 /// A view modifier that applies a glass morphism effect to the view.
@@ -58,16 +76,48 @@ struct GlassEffectModifier<S: InsettableShape>: ViewModifier {
         content
             .clipShape(shape)
             .background {
-                // Glass material background
-                shape
-                    .fill(thickness.material)
+                ZStack {
+                    // Layer 1: Base material
+                    shape.fill(thickness.material)
+
+                    // Layer 2: Refraction blur (simulates light bending through glass)
+                    shape
+                        .fill(.ultraThinMaterial)
+                        .blur(radius: thickness.refractionBlur)
+
+                    // Layer 3: Specular highlight (creates "shiny" appearance)
+                    shape
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    .white.opacity(thickness.specularOpacity),
+                                    .clear,
+                                    .white.opacity(thickness.specularOpacity * 0.5)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .blendMode(.overlay)
+                }
             }
             .overlay {
-                // Subtle border for depth
+                // Inner glow for depth
                 shape
-                    .strokeBorder(.white.opacity(thickness.overlayOpacity), lineWidth: 1)
+                    .strokeBorder(
+                        LinearGradient(
+                            colors: [
+                                .white.opacity(thickness.overlayOpacity),
+                                .white.opacity(0)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1.5
+                    )
             }
-            .shadow(color: .black.opacity(0.1), radius: thickness.shadowRadius, x: 0, y: 2)
+            .shadow(color: .black.opacity(0.15), radius: thickness.shadowRadius, x: 0, y: 4)
+            .modifier(DynamicLightingModifier(thickness: thickness))
     }
 }
 

@@ -25,7 +25,9 @@ struct AddFlashcardView: View {
     @State private var imageData: Data?
     @State private var isSaving = false
     @State private var isTranslating = false
+    @State private var isGeneratingSentences = false
     @State private var errorMessage: String?
+    @State private var saveTask: Task<Void, Never>?
 
     private let logger = Logger(subsystem: "com.lexiconflow.flashcard", category: "AddFlashcardView")
 
@@ -100,14 +102,21 @@ struct AddFlashcardView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
+                        saveTask?.cancel()
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(action: { Task { await saveCard() } }) {
+                    Button(action: {
+                        saveTask = Task { await saveCard() }
+                    }) {
                         HStack(spacing: 8) {
                             if isSaving {
-                                if isTranslating {
+                                if isGeneratingSentences {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                    Text("Generating sentences...")
+                                } else if isTranslating {
                                     ProgressView()
                                         .controlSize(.small)
                                     Text("Translating...")
@@ -121,7 +130,7 @@ struct AddFlashcardView: View {
                             }
                         }
                     }
-                    .disabled(word.isEmpty || definition.isEmpty || isSaving || isTranslating)
+                    .disabled(word.isEmpty || definition.isEmpty || isSaving || isTranslating || isGeneratingSentences)
                 }
             }
             .onChange(of: selectedImage) { _, newItem in
@@ -151,7 +160,16 @@ struct AddFlashcardView: View {
     }
 
     private func saveCard() async {
+        guard !Task.isCancelled else { return }
+
         isSaving = true
+        defer {
+            Task { @MainActor in
+                isSaving = false
+                isTranslating = false
+                isGeneratingSentences = false
+            }
+        }
 
         // 1. Create Flashcard
         let flashcard = Flashcard(
@@ -162,7 +180,7 @@ struct AddFlashcardView: View {
         )
         flashcard.deck = selectedDeck
 
-        // 2. Automatic translation - NEW
+        // 2. Automatic translation
         isTranslating = true
 
         if AppSettings.isTranslationEnabled && TranslationService.shared.isConfigured {
@@ -184,13 +202,37 @@ struct AddFlashcardView: View {
                 }
             } catch {
                 logger.error("Translation failed: \(error.localizedDescription)")
-                // Card is still saved without translation
+                Analytics.trackError("translation_failed", error: error)
+                errorMessage = "Translation failed, but card will be saved without it"
+                // Auto-dismiss after 3 seconds
+                Task {
+                    try? await Task.sleep(nanoseconds: 3_000_000_000)
+                    if errorMessage?.contains("Translation failed") == true {
+                        errorMessage = nil
+                    }
+                }
             }
         } else if AppSettings.isTranslationEnabled && !TranslationService.shared.isConfigured {
             logger.warning("Translation enabled but API key not configured, skipping")
         }
 
         isTranslating = false
+
+        // 2b. Automatic sentence generation (if translation enabled)
+        if AppSettings.isTranslationEnabled && TranslationService.shared.isConfigured {
+            isGeneratingSentences = true
+
+            do {
+                let sentenceVM = SentenceGenerationViewModel(modelContext: modelContext)
+                await sentenceVM.generateSentences(for: flashcard)
+            } catch {
+                logger.error("Sentence generation failed: \(error.localizedDescription)")
+                Analytics.trackError("sentence_generation_failed", error: error)
+                // Card will still be saved without sentences
+            }
+
+            isGeneratingSentences = false
+        }
 
         // 3. Create FSRSState for the card
         let state = FSRSState(
@@ -202,16 +244,18 @@ struct AddFlashcardView: View {
         )
         flashcard.fsrsState = state
 
-        modelContext.insert(flashcard)
-        modelContext.insert(state)
-
+        // 4. Insert and save in one atomic operation
         do {
+            modelContext.insert(flashcard)
+            modelContext.insert(state)
             try modelContext.save()
             dismiss()
         } catch {
+            // Rollback: delete from context if save fails
+            modelContext.delete(flashcard)
+            modelContext.delete(state)
             Analytics.trackError("save_flashcard", error: error)
             errorMessage = "Failed to save flashcard: \(error.localizedDescription)"
-            isSaving = false
         }
     }
 }

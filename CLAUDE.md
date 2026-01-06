@@ -445,6 +445,123 @@ LexiconFlow/
 - **Coverage Target**: >80% for new code
 - **Test Execution**: Use `-parallel-testing-enabled NO` for shared container tests
 
+## Code Quality Standards
+
+### Force Unwrap Policy
+- **NEVER** use force unwrap (`!`) in production code
+- Use optional binding (`if let`, `guard let`) or nil coalescing (`??`)
+- Exception: Static constants validated at init with `assert()`
+
+**Examples:**
+```swift
+// ❌ AVOID: Force unwrap crashes on nil
+let elapsedDays = flashcard.fsrsState!.lastReviewDate!
+
+// ✅ CORRECT: Optional binding with map
+let elapsedDays = flashcard.fsrsState?.lastReviewDate
+    .map { DateMath.elapsedDays(since: $0) } ?? 0
+
+// ✅ ACCEPTABLE: Static constant with assert
+private static let apiURL: URL = {
+    let urlString = "https://api.example.com"
+    assert(URL(string: urlString) != nil, "Invalid URL: \(urlString)")
+    return URL(string: urlString)!
+}()
+```
+
+### FatalError Policy
+- **NEVER** use `fatalError` in app initialization
+- Use 3-tier graceful degradation: persistent → in-memory → minimal
+- Always allow error UI to be shown to user
+
+**Example:**
+```swift
+// ❌ AVOID: Crashes app on database error
+fatalError("Could not create ModelContainer: \(error)")
+
+// ✅ CORRECT: Graceful degradation
+do {
+    return try ModelContainer(for: schema, configurations: [config])
+} catch {
+    logger.critical("ModelContainer creation failed: \(error)")
+    // Fallback to in-memory, then minimal app
+    return try ModelContainer(for: [])
+}
+```
+
+### Concurrency Best Practices
+- Use `@MainActor` for all ViewModels
+- Use `actor` for services with mutable state
+- Return DTOs from actors, not SwiftData models
+- Add rollback logic when state changes fail to persist
+
+**Example:**
+```swift
+// ✅ CORRECT: Actor returns DTO
+@MainActor
+func processReview(flashcard: Flashcard, rating: Int) async throws {
+    // Get DTO from actor
+    let dto = try await FSRSWrapper.shared.processReview(
+        flashcard: flashcard,
+        rating: rating
+    )
+
+    // Apply updates on MainActor
+    flashcard.fsrsState?.stability = dto.stability
+    try modelContext.save()
+}
+```
+
+### Magic Numbers
+- Always document magic numbers with constants
+- Use private enums for related constants
+- Add Cambridge English references for CEFR thresholds
+
+**Example:**
+```swift
+// ❌ AVOID: Undocumented magic number
+if wordCount <= 8 { return "A1" }
+
+// ✅ CORRECT: Documented constant with reference
+private enum CEFRThresholds {
+    /// Based on Cambridge English vocabulary guidelines
+    /// A1: 500-1000 words (simple sentences, 8 words max)
+    static let a1Max = 8
+}
+
+if wordCount <= CEFRThresholds.a1Max { return "A1" }
+```
+
+### Error Handling
+- Always show errors to users with Analytics tracking
+- Use typed errors with `isRetryable` property
+- Implement exponential backoff for transient failures
+
+**Example:**
+```swift
+// ✅ CORRECT: User-facing error with tracking
+struct TranslationError: LocalizedError {
+    var isRetryable: Bool = true
+}
+
+do {
+    try await translate()
+} catch {
+    Analytics.trackError("translation_failed", error: error)
+    errorMessage = error.localizedDescription
+}
+```
+
+### Code Duplication
+- Extract duplicate code into shared utilities
+- Use generic functions for reusable patterns
+- Prefer composition over copy-paste
+
+**Shared Utilities Created:**
+- `JSONExtractor.extract()` - Extracts JSON from markdown responses
+- `RetryManager.executeWithRetry()` - Generic retry with exponential backoff
+- `DateMath.elapsedDays()` - Timezone-aware date calculations
+
 ## Development Workflow
 
 ### Branch Strategy
@@ -477,7 +594,6 @@ Comprehensive documentation in `/docs/`:
 
 ## Known Limitations
 
-- No linting tools configured (consider adding SwiftLint)
 - "Liquid Glass" UI not yet implemented (planned for Phase 2)
 - AI integration not yet implemented (planned for Phase 3)
 - SwiftData migration strategy not yet defined (translation fields added as optional)

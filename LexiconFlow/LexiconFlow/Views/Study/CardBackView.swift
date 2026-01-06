@@ -10,9 +10,6 @@ import SwiftData
 
 struct CardBackView: View {
     @Bindable var card: Flashcard
-    @State private var viewModel: SentenceGenerationViewModel?
-    @State private var loadTask: Task<Void, Never>?
-    @Environment(\.modelContext) private var modelContext
     @State private var showAllSentences = false
 
     var body: some View {
@@ -37,8 +34,8 @@ struct CardBackView: View {
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
-                    .background(cefrColor(for: cefr).opacity(0.2))
-                    .foregroundStyle(cefrColor(for: cefr))
+                    .background(Theme.cefrColor(for: cefr).opacity(0.2))
+                    .foregroundStyle(Theme.cefrColor(for: cefr))
                     .cornerRadius(12)
                     .accessibilityLabel("CEFR level: \(cefr)")
                 }
@@ -93,110 +90,44 @@ struct CardBackView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Card back")
-        .task {
-            // Cancel previous task and create new one
-            loadTask?.cancel()
-            loadTask = Task {
-                // Initialize view model on appear
-                if viewModel == nil {
-                    viewModel = SentenceGenerationViewModel(modelContext: modelContext)
-                }
-                await viewModel?.loadSentences(for: card)
-            }
-        }
-        .onDisappear {
-            // Cleanup to prevent memory leaks
-            loadTask?.cancel()
-            loadTask = nil
-            viewModel = nil
-        }
     }
 
     // MARK: - Sentence Section
 
     @ViewBuilder
     private var sentenceSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Header with generate button
-            HStack {
+        // Filter valid (non-expired) sentences
+        let validSentences = card.generatedSentences.filter { !$0.isExpired }
+
+        // Only show section if there are valid sentences
+        if !validSentences.isEmpty {
+            VStack(alignment: .leading, spacing: 16) {
+                // Header (no button)
                 Text("AI Sentences")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                     .frame(maxWidth: .infinity, alignment: .leading)
-
-                if let vm = viewModel {
-                    if vm.isGenerating {
-                        ProgressView()
-                            .scaleEffect(0.7)
-                    } else {
-                        Button {
-                            Task {
-                                await vm.generateSentences(for: card)
-                            }
-                        } label: {
-                            Image(systemName: vm.hasSentences ? "arrow.clockwise" : "sparkles")
-                                .font(.caption)
-                        }
-                        .disabled(vm.isGenerating)
-                    }
-                }
-            }
-            .padding(.horizontal)
-
-            // Sentences display
-            if let vm = viewModel {
-                if vm.isGenerating {
-                    ProgressView("Generating sentences...")
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding()
-                } else if vm.hasSentences {
-                    sentencesList(viewModel: vm)
-                } else {
-                    emptyStatePrompt(viewModel: vm)
-                }
-            }
-
-            // Generation message
-            if let vm = viewModel, let message = vm.generationMessage {
-                Text(message)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal)
-            }
 
-            // Error message
-            if let vm = viewModel, let error = vm.errorMessage {
-                Text(error)
-                    .font(.caption2)
-                    .foregroundStyle(.red)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
+                // Sentences display
+                sentencesList(sentences: validSentences)
             }
+            .padding(.vertical, 8)
         }
-        .padding(.vertical, 8)
     }
 
-    /// Display generated sentences
-    private func sentencesList(viewModel: SentenceGenerationViewModel) -> some View {
-        let sentencesToShow = showAllSentences ? viewModel.validSentences : Array(viewModel.validSentences.prefix(2))
+    /// Display generated sentences (read-only)
+    private func sentencesList(sentences: [GeneratedSentence]) -> some View {
+        let sentencesToShow = showAllSentences ? sentences : Array(sentences.prefix(2))
 
         return VStack(spacing: 12) {
             ForEach(sentencesToShow, id: \.id) { sentence in
-                SentenceRow(
-                    sentence: sentence,
-                    onFavoriteToggle: {
-                        viewModel.toggleFavorite(sentence)
-                    },
-                    onDelete: {
-                        viewModel.deleteSentence(sentence)
-                    }
-                )
+                ReadOnlySentenceRow(sentence: sentence)
             }
 
             // Show more button
-            if viewModel.validSentences.count > 2 && !showAllSentences {
-                Button("Show \(viewModel.validSentences.count - 2) more sentences") {
+            if sentences.count > 2 && !showAllSentences {
+                Button("Show \(sentences.count - 2) more sentences") {
                     withAnimation {
                         showAllSentences = true
                     }
@@ -204,61 +135,13 @@ struct CardBackView: View {
                 .font(.caption)
                 .foregroundStyle(Color.accentColor)
             }
-
-            // Regenerate button
-            if viewModel.validSentences.count > 0 {
-                Button {
-                    Task {
-                        await viewModel.generateSentences(for: card)
-                    }
-                } label: {
-                    Label("Regenerate", systemImage: "arrow.clockwise")
-                        .font(.caption)
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .disabled(viewModel.isGenerating)
-            }
         }
-    }
-
-    /// Empty state prompt
-    private func emptyStatePrompt(viewModel: SentenceGenerationViewModel) -> some View {
-        Button {
-            Task {
-                await viewModel.generateSentences(for: card)
-            }
-        } label: {
-            VStack(spacing: 8) {
-                Image(systemName: "sparkles")
-                    .font(.title2)
-                    .foregroundStyle(.tertiary)
-
-                Text("Generate AI Sentences")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding()
-        }
-        .disabled(viewModel.isGenerating)
     }
 
     // MARK: - Helper Methods
 }
 
-// MARK: - View Extensions
-
-extension View {
-    /// Returns color for CEFR level
-    func cefrColor(for level: String) -> Color {
-        switch level.uppercased() {
-        case "A1", "A2": return .green
-        case "B1", "B2": return .blue
-        case "C1", "C2": return .purple
-        default: return .gray
-        }
-    }
-}
+// MARK: - Helper Methods
 
 #Preview("Card Back") {
     let card = Flashcard(
@@ -271,12 +154,10 @@ extension View {
         .background(Color(.systemBackground))
 }
 
-// MARK: - Sentence Row Component
+// MARK: - Read-Only Sentence Row Component
 
-struct SentenceRow: View {
+struct ReadOnlySentenceRow: View {
     let sentence: GeneratedSentence
-    let onFavoriteToggle: () -> Void
-    let onDelete: () -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -293,13 +174,13 @@ struct SentenceRow: View {
                         Text(sentence.cefrLevel)
                             .font(.caption2)
                             .fontWeight(.semibold)
-                        Text("AI")
+                        Text(sourceLabel(for: sentence.source))
                             .font(.caption2)
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(cefrColor(for: sentence.cefrLevel).opacity(0.15))
-                    .foregroundStyle(cefrColor(for: sentence.cefrLevel))
+                    .background(Theme.cefrColor(for: sentence.cefrLevel).opacity(0.15))
+                    .foregroundStyle(Theme.cefrColor(for: sentence.cefrLevel))
                     .cornerRadius(6)
 
                     // Source badge
@@ -321,25 +202,18 @@ struct SentenceRow: View {
                         .font(.caption2)
                         .foregroundStyle(.orange)
                 }
-            }
 
-            // Action buttons
-            VStack(spacing: 8) {
-                Button {
-                    onFavoriteToggle()
-                } label: {
-                    Image(systemName: sentence.isFavorite ? "star.fill" : "star")
-                        .foregroundStyle(sentence.isFavorite ? .yellow : .secondary)
+                // Favorite indicator (display only)
+                if sentence.isFavorite {
+                    HStack(spacing: 4) {
+                        Image(systemName: "star.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.yellow)
+                        Text("Favorite")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-                .buttonStyle(.borderless)
-
-                Button {
-                    onDelete()
-                } label: {
-                    Image(systemName: "xmark.circle")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.borderless)
             }
         }
         .padding()
@@ -356,21 +230,24 @@ struct SentenceRow: View {
     }
 }
 
-#Preview("Sentence Row") {
-    let sentence = GeneratedSentence(
+#Preview("Read-Only Sentence Row") {
+    let sentence = (try? GeneratedSentence(
         sentenceText: "The ephemeral beauty of sunset colors fades quickly.",
         cefrLevel: "B2",
         generatedAt: Date(),
         ttlDays: 7,
         isFavorite: true,
         source: .aiGenerated
-    )
+    ))
 
-    return SentenceRow(
-        sentence: sentence,
-        onFavoriteToggle: {},
-        onDelete: {}
-    )
+    return Group {
+        if let sentence = sentence {
+            ReadOnlySentenceRow(sentence: sentence)
+        } else {
+            Text("Preview error: Invalid sentence data")
+                .foregroundStyle(.red)
+        }
+    }
     .padding()
     .background(Color(.systemBackground))
 }

@@ -9,6 +9,12 @@ import SwiftUI
 import SwiftData
 import OSLog
 
+/// Empty model for minimal fallback container when all storage attempts fail
+@Model
+final class EmptyModel {
+    init() {}
+}
+
 @main
 struct LexiconFlowApp: App {
     /// Scene phase for app lifecycle management
@@ -63,15 +69,22 @@ struct LexiconFlowApp: App {
             message: "All storage attempts failed, using minimal container"
         )
 
+        // Create container with empty schema as absolute last resort
+        // This prevents crash but allows error UI to be shown to the user
+        // Empty schema means no models are available
         do {
-            // Create container with empty schema as absolute last resort
-            // This prevents crash but allows error UI to be shown
-            return try ModelContainer(for: schema, configurations: [])
+            let minimalContainer = try ModelContainer(for: EmptyModel.self)
+            logger.critical("Minimal container created successfully. App will run with no data persistence.")
+            Analytics.trackIssue(
+                "model_container_complete_failure",
+                message: "All storage attempts failed, using minimal container"
+            )
+            return minimalContainer
         } catch {
-            // If this somehow fails, we have no choice but to crash
-            // This should never happen with an empty configuration
+            // If even the minimal container fails, we have no choice but to crash
+            // This should never happen with a simple empty model
             logger.critical("Minimal container creation failed: \(error.localizedDescription)")
-            fatalError("Could not create any ModelContainer: \(error)")
+            fatalError("Could not create minimal ModelContainer: \(error)")
         }
     }()
 

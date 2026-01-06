@@ -15,13 +15,15 @@ enum GlassTransitionStyle {
     case dissolve
     /// Stretch/snap morph (state changes)
     case liquid
+    /// Glass materialization effect (blur + opacity morphing)
+    case materialize
 }
 
 extension View {
     /// Applies glass morphism transition effect.
     ///
     /// - Parameters:
-    ///   - style: The transition style (scaleFade, dissolve, or liquid)
+    ///   - style: The transition style (scaleFade, dissolve, liquid, or materialize)
     /// - Returns: A view with the glass transition applied
     ///
     /// Note: AnyView is used here because SwiftUI's transition modifiers
@@ -41,6 +43,24 @@ extension View {
             return AnyView(self.transition(.opacity))
         case .liquid:
             return AnyView(self.transition(.move(edge: .trailing).combined(with: .opacity)))
+        case .materialize:
+            // Glass materialization effect with subtle opacity morphing
+            // Creates the illusion of content materializing from glass
+            //
+            // TECHNICAL NOTE: AnyView type erasure causes SwiftUI accessibilityHint ambiguity.
+            // The .materialize transition creates issues where accessibility hints are not
+            // properly propagated to VoiceOver when applied via AnyView.
+            //
+            // WORKAROUND: FlashcardView currently uses .scaleFade transition instead.
+            // This provides smooth animations without the accessibility issues.
+            //
+            // FUTURE: Revisit when SwiftUI provides better type-erased transition modifiers
+            // or when a non-AnyView approach for dynamic transitions is available.
+            // Tracking: https://forums.swift.org/t/swiftui-type-erasure-and-accessibility (if applicable)
+            return AnyView(self.transition(.asymmetric(
+                insertion: .opacity.combined(with: .scale(scale: 0.98)),
+                removal: .opacity.combined(with: .scale(scale: 1.02))
+            )))
         }
     }
 }

@@ -130,14 +130,14 @@ struct ModelTests {
         let flashcard = Flashcard(word: "test", definition: "A test")
         context.insert(flashcard)
 
-        let sentence1 = GeneratedSentence(
+        let sentence1 = try GeneratedSentence(
             sentenceText: "First sentence.",
             cefrLevel: "A1"
         )
         sentence1.flashcard = flashcard
         context.insert(sentence1)
 
-        let sentence2 = GeneratedSentence(
+        let sentence2 = try GeneratedSentence(
             sentenceText: "Second sentence.",
             cefrLevel: "A2"
         )
@@ -174,7 +174,7 @@ struct ModelTests {
         context.insert(flashcard)
 
         for i in 1...5 {
-            let sentence = GeneratedSentence(
+            let sentence = try GeneratedSentence(
                 sentenceText: "Sentence \(i)",
                 cefrLevel: "A1"
             )
@@ -205,7 +205,7 @@ struct ModelTests {
 
         // Add initial sentences
         for i in 1...2 {
-            let sentence = GeneratedSentence(
+            let sentence = try GeneratedSentence(
                 sentenceText: "Old sentence \(i)",
                 cefrLevel: "A1"
             )
@@ -219,7 +219,7 @@ struct ModelTests {
 
         // Add new sentences (simulating regeneration)
         for i in 1...3 {
-            let sentence = GeneratedSentence(
+            let sentence = try GeneratedSentence(
                 sentenceText: "New sentence \(i)",
                 cefrLevel: "A2"
             )

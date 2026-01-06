@@ -124,22 +124,26 @@ struct FlashcardView: View {
                         }
 
                         // Reset with animation
+                        isDragging = false
                         withAnimation(.spring(response: AnimationConstants.commitSpringResponse, dampingFraction: AnimationConstants.commitSpringDamping)) {
                             gestureViewModel.resetGestureState()
                         }
-                        isDragging = false
 
                         // Notify parent
                         onSwipe?(rating)
                     } else {
                         // Cancel swipe - snap back
+                        isDragging = false
                         withAnimation(.spring(response: AnimationConstants.cancelSpringResponse, dampingFraction: AnimationConstants.cancelSpringDamping)) {
                             gestureViewModel.resetGestureState()
                         }
-                        isDragging = false
                     }
                 }
         )
+        .accessibilityLabel(isFlipped ? "Card back showing definition" : "Card front showing word")
+        .accessibilityHint("Double tap to flip card, or swipe in any direction to rate")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("flashcard")
         .onTapGesture {
             // Only allow tap to flip if not currently dragging
             guard !isDragging else { return }
@@ -148,10 +152,7 @@ struct FlashcardView: View {
                 isFlipped.toggle()
             }
         }
-        .accessibilityLabel(isFlipped ? "Card back showing definition" : "Card front showing word")
-        .accessibilityHint("Double tap to flip card, or swipe in any direction to rate")
-        .accessibilityAddTraits(.isButton)
-        .accessibilityIdentifier("flashcard")
+        .id("flashcard-base")
     }
 }
 

@@ -36,6 +36,7 @@ final class SentenceGenerationViewModel: ObservableObject {
     // MARK: - Dependencies
 
     private let modelContext: ModelContext
+    private let generator: any SentenceGenerationProtocol
     private let service = SentenceGenerationService.shared
 
     // MARK: - Computed Properties
@@ -46,14 +47,21 @@ final class SentenceGenerationViewModel: ObservableObject {
     }
 
     /// Non-expired sentences (filtered)
+    ///
+    /// Thread-safe: Captures current date once for consistent filtering
     var validSentences: [GeneratedSentence] {
-        generatedSentences.filter { !$0.isExpired }
+        let now = Date()
+        return generatedSentences.filter { $0.expiresAt > now }
     }
 
     // MARK: - Initialization
 
-    init(modelContext: ModelContext) {
+    init(
+        modelContext: ModelContext,
+        generator: (any SentenceGenerationProtocol)? = nil
+    ) {
         self.modelContext = modelContext
+        self.generator = generator ?? ProductionSentenceGenerator()
     }
 
     // MARK: - Sentence Generation
@@ -67,12 +75,12 @@ final class SentenceGenerationViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            // Call the sentence generation service
-            let response = try await service.generateSentences(
-                cardWord: card.word,
-                cardDefinition: card.definition,
-                cardTranslation: card.translation,
-                cardCEFR: card.cefrLevel,
+            // Call the sentence generation protocol
+            let response = try await generator.generateSentences(
+                for: card.word,
+                definition: card.definition,
+                translation: card.translation,
+                cefrLevel: card.cefrLevel,
                 count: sentencesPerCard
             )
 
@@ -82,7 +90,7 @@ final class SentenceGenerationViewModel: ObservableObject {
             // Create new GeneratedSentence records
             var newSentences: [GeneratedSentence] = []
             for item in response.items {
-                let sentence = GeneratedSentence(
+                let sentence = try GeneratedSentence(
                     sentenceText: item.sentence,
                     cefrLevel: item.cefrLevel,
                     generatedAt: Date(),
@@ -140,17 +148,23 @@ final class SentenceGenerationViewModel: ObservableObject {
 
         var newSentences: [GeneratedSentence] = []
         for fallback in fallbacks {
-            let sentence = GeneratedSentence(
-                sentenceText: fallback.sentence,
-                cefrLevel: fallback.cefrLevel,
-                generatedAt: Date(),
-                ttlDays: 7,
-                isFavorite: false,
-                source: .staticFallback
-            )
-            sentence.flashcard = card
-            modelContext.insert(sentence)
-            newSentences.append(sentence)
+            do {
+                let sentence = try GeneratedSentence(
+                    sentenceText: fallback.sentence,
+                    cefrLevel: fallback.cefrLevel,
+                    generatedAt: Date(),
+                    ttlDays: 7,
+                    isFavorite: false,
+                    source: .staticFallback
+                )
+                sentence.flashcard = card
+                modelContext.insert(sentence)
+                newSentences.append(sentence)
+            } catch {
+                logger.error("Failed to create fallback sentence: \(error.localizedDescription)")
+                // Skip invalid sentence and continue
+                continue
+            }
         }
 
         do {
@@ -171,12 +185,17 @@ final class SentenceGenerationViewModel: ObservableObject {
     ///
     /// - Parameter sentence: The sentence to toggle
     func toggleFavorite(_ sentence: GeneratedSentence) {
+        let oldValue = sentence.isFavorite
         sentence.isFavorite.toggle()
+
         do {
             try modelContext.save()
         } catch {
+            // ROLLBACK on failure - UI and database must stay in sync
+            sentence.isFavorite = oldValue
             errorMessage = "Failed to save: \(error.localizedDescription)"
             logger.error("Failed to save sentence favorite: \(error.localizedDescription)")
+            Analytics.trackError("toggle_favorite_failed", error: error)
         }
     }
 
@@ -184,13 +203,19 @@ final class SentenceGenerationViewModel: ObservableObject {
     ///
     /// - Parameter sentence: The sentence to delete
     func deleteSentence(_ sentence: GeneratedSentence) {
+        // Save for error tracking (can't rollback delete)
+        let sentenceID = sentence.id
+
         modelContext.delete(sentence)
+
         do {
             try modelContext.save()
-            generatedSentences.removeAll { $0.id == sentence.id }
+            generatedSentences.removeAll { $0.id == sentenceID }
         } catch {
+            // Can't rollback delete, but should log and notify user
+            logger.error("Failed to delete sentence \(sentenceID): \(error.localizedDescription)")
             errorMessage = "Failed to delete: \(error.localizedDescription)"
-            logger.error("Failed to delete sentence: \(error.localizedDescription)")
+            Analytics.trackError("delete_sentence_failed", error: error)
         }
     }
 
@@ -213,8 +238,9 @@ final class SentenceGenerationViewModel: ObservableObject {
     ///
     /// - Parameter card: The flashcard to load sentences for
     func loadSentences(for card: Flashcard) {
-        // Filter out expired sentences
-        let valid = card.generatedSentences.filter { !$0.isExpired }
+        // Capture timestamp once for consistent filtering
+        let now = Date()
+        let valid = card.generatedSentences.filter { $0.expiresAt > now }
             .sorted { $0.generatedAt > $1.generatedAt }
 
         // If all expired, clean them up

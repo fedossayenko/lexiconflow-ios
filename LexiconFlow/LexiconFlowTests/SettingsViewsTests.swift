@@ -39,11 +39,34 @@ struct SettingsViewsTests {
 
     @Test("TranslationSettingsView bindable properties exist")
     func translationSettingsViewBindable() {
-        // Verify view uses @AppStorage for:
-        // - translationEnabled
-        // - translationSourceLanguage
-        // - translationTargetLanguage
-        #expect(true, "TranslationSettingsView should use @AppStorage bindings")
+        // Save original values
+        let originalEnabled = AppSettings.isTranslationEnabled
+        let originalSource = AppSettings.translationSourceLanguage
+        let originalTarget = AppSettings.translationTargetLanguage
+
+        // Test translation enabled toggle
+        AppSettings.isTranslationEnabled = true
+        #expect(AppSettings.isTranslationEnabled == true, "AppSettings.isTranslationEnabled should be true")
+
+        AppSettings.isTranslationEnabled = false
+        #expect(AppSettings.isTranslationEnabled == false, "AppSettings.isTranslationEnabled should be false")
+
+        // Test source language (test a few key languages)
+        for lang in ["en", "es", "fr", "de", "ja"] {
+            AppSettings.translationSourceLanguage = lang
+            #expect(AppSettings.translationSourceLanguage == lang, "AppSettings.translationSourceLanguage should persist: \(lang)")
+        }
+
+        // Test target language
+        for lang in ["en", "es", "fr", "de", "ja"] {
+            AppSettings.translationTargetLanguage = lang
+            #expect(AppSettings.translationTargetLanguage == lang, "AppSettings.translationTargetLanguage should persist: \(lang)")
+        }
+
+        // Restore original values
+        AppSettings.isTranslationEnabled = originalEnabled
+        AppSettings.translationSourceLanguage = originalSource
+        AppSettings.translationTargetLanguage = originalTarget
     }
 
     // MARK: - AppearanceSettingsView Tests
@@ -88,16 +111,34 @@ struct SettingsViewsTests {
 
     @Test("AppearanceSettingsView picker selection updates AppSettings")
     func appearanceSettingsViewPickerSelectionUpdatesStorage() {
-        // Verify that selecting a picker option updates AppSettings.darkMode
-        // The view uses computed properties that get/set AppSettings.darkMode
-        // Expected behavior: .system -> .light -> .dark selections all persist
-        #expect(true, "Picker selection should persist to AppSettings.darkMode")
+        // Save original value
+        let original = AppSettings.darkMode
+
+        // Test each mode value
+        for mode in [AppSettings.DarkModePreference.system, .light, .dark] {
+            AppSettings.darkMode = mode
+            #expect(AppSettings.darkMode == mode, "AppSettings.darkMode should persist: \(mode)")
+        }
+
+        // Restore original value
+        AppSettings.darkMode = original
     }
 
     @Test("AppearanceSettingsView glass effects toggle updates AppSettings")
     func appearanceSettingsViewGlassEffectsToggleUpdatesStorage() {
-        // Verify that toggling glass effects updates AppSettings.glassEffectsEnabled
-        #expect(true, "Glass effects toggle should persist to AppSettings.glassEffectsEnabled")
+        // Save original value
+        let original = AppSettings.glassEffectsEnabled
+
+        // Test enabling glass effects
+        AppSettings.glassEffectsEnabled = true
+        #expect(AppSettings.glassEffectsEnabled == true, "AppSettings.glassEffectsEnabled should be true")
+
+        // Test disabling glass effects
+        AppSettings.glassEffectsEnabled = false
+        #expect(AppSettings.glassEffectsEnabled == false, "AppSettings.glassEffectsEnabled should be false")
+
+        // Restore original value
+        AppSettings.glassEffectsEnabled = original
     }
 
     // MARK: - HapticSettingsView Tests
@@ -189,20 +230,47 @@ struct SettingsViewsTests {
 
     @Test("StudySettingsView has cards per session picker")
     func studySettingsViewCardsPerSessionPicker() {
-        // Verify @AppStorage("studyLimit") picker with options [10, 20, 30, 50, 100]
-        #expect(true, "StudySettingsView should have cards per session picker")
+        // Save original value
+        let original = AppSettings.studyLimit
+
+        // Test each option
+        for limit in [10, 20, 30, 50, 100] {
+            AppSettings.studyLimit = limit
+            #expect(AppSettings.studyLimit == limit, "AppSettings.studyLimit should persist: \(limit)")
+        }
+
+        // Restore original value
+        AppSettings.studyLimit = original
     }
 
     @Test("StudySettingsView has daily goal picker")
     func studySettingsViewDailyGoalPicker() {
-        // Verify @AppStorage("dailyGoal") picker with options [10, 20, 30, 50, 100]
-        #expect(true, "StudySettingsView should have daily goal picker")
+        // Save original value
+        let original = AppSettings.dailyGoal
+
+        // Test each option
+        for goal in [10, 20, 30, 50, 100] {
+            AppSettings.dailyGoal = goal
+            #expect(AppSettings.dailyGoal == goal, "AppSettings.dailyGoal should persist: \(goal)")
+        }
+
+        // Restore original value
+        AppSettings.dailyGoal = original
     }
 
     @Test("StudySettingsView has default study mode picker")
     func studySettingsViewDefaultModePicker() {
-        // Verify @AppStorage("defaultStudyMode") picker with StudyModeOption cases
-        #expect(true, "StudySettingsView should have default study mode picker")
+        // Save original value
+        let original = AppSettings.defaultStudyMode
+
+        // Test each mode value (stored as strings)
+        for modeStr in ["scheduled", "cram"] {
+            AppSettings.defaultStudyMode = modeStr
+            #expect(AppSettings.defaultStudyMode == modeStr, "AppSettings.defaultStudyMode should persist: \(modeStr)")
+        }
+
+        // Restore original value
+        AppSettings.defaultStudyMode = original
     }
 
     @Test("StudySettingsView has statistics section")

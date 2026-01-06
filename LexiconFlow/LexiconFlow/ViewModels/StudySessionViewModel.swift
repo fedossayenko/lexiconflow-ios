@@ -111,7 +111,7 @@ final class StudySessionViewModel: ObservableObject {
         // Only advance if the review was saved successfully
         guard result != nil else {
             lastError = StudySessionError.reviewSaveFailed(
-                underlying: "Unknown error"
+                underlying: "Review processing failed - check logs for details"
             )
             return
         }

@@ -108,6 +108,46 @@ struct GlassEffectModifierTests {
         #expect(thickness.overlayOpacity == 0.3)
     }
 
+    // MARK: - GlassThickness RefractionBlur Tests
+
+    @Test("Thin glass has refraction blur of 2")
+    func thinGlassRefractionBlurIs2() async throws {
+        let thickness = GlassThickness.thin
+        #expect(thickness.refractionBlur == 2)
+    }
+
+    @Test("Regular glass has refraction blur of 5")
+    func regularGlassRefractionBlurIs5() async throws {
+        let thickness = GlassThickness.regular
+        #expect(thickness.refractionBlur == 5)
+    }
+
+    @Test("Thick glass has refraction blur of 8")
+    func thickGlassRefractionBlurIs8() async throws {
+        let thickness = GlassThickness.thick
+        #expect(thickness.refractionBlur == 8)
+    }
+
+    // MARK: - GlassThickness SpecularOpacity Tests
+
+    @Test("Thin glass has specular opacity of 0.15")
+    func thinGlassSpecularOpacityIs0Point15() async throws {
+        let thickness = GlassThickness.thin
+        #expect(thickness.specularOpacity == 0.15)
+    }
+
+    @Test("Regular glass has specular opacity of 0.25")
+    func regularGlassSpecularOpacityIs0Point25() async throws {
+        let thickness = GlassThickness.regular
+        #expect(thickness.specularOpacity == 0.25)
+    }
+
+    @Test("Thick glass has specular opacity of 0.35")
+    func thickGlassSpecularOpacityIs0Point35() async throws {
+        let thickness = GlassThickness.thick
+        #expect(thickness.specularOpacity == 0.35)
+    }
+
     // MARK: - GlassEffectModifier Tests
 
     @Test("GlassEffectModifier applies clip shape")

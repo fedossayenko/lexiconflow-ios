@@ -21,6 +21,48 @@ import SwiftData
 /// - Static fallback sentences for offline mode
 /// - Exponential backoff retry on rate limits
 actor SentenceGenerationService {
+    // MARK: - Configuration Constants
+
+    /// Configuration constants for sentence generation operations
+    private enum Config {
+        /// Maximum concurrent sentence generation requests
+        /// Conservative limit to avoid rate limiting with sentence generation API
+        static let defaultMaxConcurrency = 3
+
+        /// Maximum retry attempts for failed generations
+        /// 3 retries allows recovery from transient network issues
+        static let defaultMaxRetries = 3
+
+        /// Initial delay before first retry (seconds)
+        /// 0.5s provides quick recovery while avoiding API rate limits
+        static let initialRetryDelay: TimeInterval = 0.5
+
+        /// Multiplier for exponential backoff
+        /// Each retry waits twice as long as the previous (0.5s, 1s, 2s)
+        static let backoffMultiplier: Double = 2.0
+
+        /// Default number of sentences to generate per flashcard
+        static let defaultSentencesPerCard = 3
+    }
+
+    /// CEFR level word count thresholds
+    ///
+    /// Based on Cambridge English vocabulary guidelines:
+    /// - A1: 500-1000 words (simple sentences, 8 words max)
+    /// - A2: 1000-2000 words (basic sentences, 15 words max)
+    /// - B1: 2000-3000 words (intermediate, 25 words max)
+    /// - B2: 3000-4500 words (upper intermediate, 35 words max)
+    /// - C1: 4500+ words (advanced, 36+ words)
+    private enum CEFRThresholds {
+        static let a1Max = 8
+        static let a2Max = 15
+        static let b1Max = 25
+        static let b2Max = 35
+        static let c1Min = 36
+    }
+
+    // MARK: - Properties
+
     /// Shared singleton instance
     static let shared = SentenceGenerationService()
 
@@ -170,7 +212,7 @@ actor SentenceGenerationService {
         cardDefinition: String,
         cardTranslation: String? = nil,
         cardCEFR: String? = nil,
-        count: Int = 3
+        count: Int = Config.defaultSentencesPerCard
     ) async throws -> SentenceGenerationResponse {
         // Get API key from Keychain
         let key = getAPIKey()
@@ -272,7 +314,8 @@ actor SentenceGenerationService {
         let rawResponse = try JSONDecoder().decode(ZAIResponse.self, from: data)
         let content = rawResponse.choices.first?.message.content ?? ""
 
-        let jsonContent = extractJSON(from: content)
+        // Extract JSON from content (handle markdown code blocks)
+        let jsonContent = JSONExtractor.extract(from: content, logger: logger)
 
         guard let data = jsonContent.data(using: .utf8) else {
             logger.error("Failed to decode JSON content as UTF-8")
@@ -303,8 +346,8 @@ actor SentenceGenerationService {
     /// - Returns: SentenceBatchResult with success/failure counts
     func generateBatch(
         _ cards: [CardData],
-        sentencesPerCard: Int = 3,
-        maxConcurrency: Int = 3,
+        sentencesPerCard: Int = Config.defaultSentencesPerCard,
+        maxConcurrency: Int = Config.defaultMaxConcurrency,
         progressHandler: (@Sendable (BatchGenerationProgress) -> Void)? = nil
     ) async throws -> SentenceBatchResult {
         guard !cards.isEmpty else {
@@ -316,6 +359,13 @@ actor SentenceGenerationService {
                 errors: [],
                 successfulGenerations: []
             )
+        }
+
+        // Check for existing task BEFORE starting new one to prevent re-entrancy
+        let existingTask = await taskStorage.get()
+        if existingTask != nil && !Task.isCancelled {
+            logger.warning("Batch generation already in progress")
+            throw SentenceGenerationError.invalidConfiguration
         }
 
         logger.info("Starting batch generation: \(cards.count) cards, \(sentencesPerCard) sentences/card")
@@ -332,10 +382,7 @@ actor SentenceGenerationService {
         await taskStorage.set(task)
 
         do {
-            guard let currentTask = await taskStorage.get() else {
-                throw SentenceGenerationError.invalidConfiguration
-            }
-            return try await currentTask.value
+            return try await task.value
         } catch is CancellationError {
             logger.info("Batch generation cancelled")
             return SentenceBatchResult(
@@ -473,121 +520,49 @@ actor SentenceGenerationService {
         cardTranslation: String?,
         cardCEFR: String?,
         count: Int,
-        maxRetries: Int = 3
+        maxRetries: Int = Config.defaultMaxRetries
     ) async -> SentenceGenerationResult {
         let startTime = Date()
-        var attempt = 0
-        var delay: TimeInterval = 0.5
 
-        while attempt < maxRetries {
-            do {
-                let result = try await generateSentences(
+        let result = await RetryManager.executeWithRetry(
+            maxRetries: maxRetries,
+            initialDelay: Config.initialRetryDelay,
+            operation: {
+                try await self.generateSentences(
                     cardWord: cardWord,
                     cardDefinition: cardDefinition,
                     cardTranslation: cardTranslation,
                     cardCEFR: cardCEFR,
                     count: count
                 )
-                let duration = Date().timeIntervalSince(startTime)
-
-                logger.debug("Generation succeeded: \(cardWord) (attempt \(attempt + 1))")
-
-                return SentenceGenerationResult(
-                    cardId: cardId,
-                    cardWord: cardWord,
-                    result: .success(result),
-                    duration: duration
-                )
-
-            } catch let error as SentenceGenerationError {
-                guard error.isRetryable else {
-                    let duration = Date().timeIntervalSince(startTime)
-                    logger.error("Generation failed with non-retryable error: \(cardWord) - \(error.localizedDescription)")
-
-                    return SentenceGenerationResult(
-                        cardId: cardId,
-                        cardWord: cardWord,
-                        result: .failure(error),
-                        duration: duration
-                    )
-                }
-
-                attempt += 1
-
-                if attempt < maxRetries {
-                    logger.info("Retrying generation: \(cardWord) in \(delay)s (attempt \(attempt + 1)/\(maxRetries))")
-
-                    try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
-                    delay *= 2
-                    continue
-                }
-
-                let duration = Date().timeIntervalSince(startTime)
-                logger.error("Generation failed after max retries: \(cardWord) (\(attempt + 1) attempts)")
-
-                return SentenceGenerationResult(
-                    cardId: cardId,
-                    cardWord: cardWord,
-                    result: .failure(error),
-                    duration: duration
-                )
-            } catch {
-                let duration = Date().timeIntervalSince(startTime)
-                let genError = SentenceGenerationError.apiFailed
-
-                logger.error("Generation failed with unknown error: \(cardWord) - \(error.localizedDescription)")
-
-                return SentenceGenerationResult(
-                    cardId: cardId,
-                    cardWord: cardWord,
-                    result: .failure(genError),
-                    duration: duration
-                )
-            }
-        }
+            },
+            isRetryable: { (error: SentenceGenerationError) in
+                error.isRetryable
+            },
+            logContext: "Sentence generation for '\(cardWord)'",
+            logger: logger
+        )
 
         let duration = Date().timeIntervalSince(startTime)
-        return SentenceGenerationResult(
-            cardId: cardId,
-            cardWord: cardWord,
-            result: .failure(.apiFailed),
-            duration: duration
-        )
-    }
 
-    // MARK: - JSON Extraction
-
-    /// Extract JSON from text, handling markdown code blocks
-    private func extractJSON(from text: String) -> String {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if let jsonStart = trimmed.range(of: "```json", options: .caseInsensitive) {
-            let afterStart = jsonStart.upperBound
-            if let jsonEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
-                let json = String(trimmed[afterStart..<jsonEnd.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-                logger.debug("Extracted JSON from markdown code block")
-                return json
-            }
+        switch result {
+        case .success(let response):
+            logger.debug("Generation succeeded: \(cardWord)")
+            return SentenceGenerationResult(
+                cardId: cardId,
+                cardWord: cardWord,
+                result: .success(response),
+                duration: duration
+            )
+        case .failure(let error):
+            logger.error("Generation failed: \(cardWord) - \(error.localizedDescription)")
+            return SentenceGenerationResult(
+                cardId: cardId,
+                cardWord: cardWord,
+                result: .failure(error),
+                duration: duration
+            )
         }
-
-        if let codeStart = trimmed.range(of: "```", options: .caseInsensitive) {
-            let afterStart = codeStart.upperBound
-            if let codeEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
-                let json = String(trimmed[afterStart..<codeEnd.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-                logger.debug("Extracted JSON from generic code block")
-                return json
-            }
-        }
-
-        if let firstBrace = trimmed.firstIndex(of: "{"),
-           let lastBrace = trimmed.lastIndex(of: "}") {
-            let json = String(trimmed[firstBrace...lastBrace])
-            logger.debug("Extracted JSON from brace delimiters")
-            return json
-        }
-
-        logger.debug("No JSON extraction patterns matched, using original text")
-        return trimmed
     }
 
     // MARK: - Static Fallback Sentences
@@ -609,10 +584,10 @@ actor SentenceGenerationService {
         let wordCount = sentence.split(separator: " ").count
 
         switch wordCount {
-        case 0...8: return "A1"
-        case 9...15: return "A2"
-        case 16...25: return "B1"
-        case 26...35: return "B2"
+        case 0...CEFRThresholds.a1Max: return "A1"
+        case (CEFRThresholds.a1Max + 1)...CEFRThresholds.a2Max: return "A2"
+        case (CEFRThresholds.a2Max + 1)...CEFRThresholds.b1Max: return "B1"
+        case (CEFRThresholds.b1Max + 1)...CEFRThresholds.b2Max: return "B2"
         default: return "C1"
         }
     }
