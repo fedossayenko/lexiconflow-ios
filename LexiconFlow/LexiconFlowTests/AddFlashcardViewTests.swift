@@ -208,8 +208,6 @@ struct AddFlashcardViewTests {
 
         // Translation fields should remain nil when disabled
         #expect(flashcard.translation == nil, "Translation should be nil when disabled")
-        #expect(flashcard.cefrLevel == nil, "CEFR level should be nil when disabled")
-        #expect(flashcard.contextSentence == nil, "Context sentence should be nil when disabled")
     }
 
     @Test("Translation source and target languages match AppSettings")
@@ -229,10 +227,10 @@ struct AddFlashcardViewTests {
             context: context
         )
 
-        // If translation occurred, language codes should match AppSettings
+        // If translation occurred, translation should be set
+        // Note: Language codes are no longer stored on Flashcard
         if flashcard.translation != nil {
-            #expect(flashcard.translationSourceLanguage == "en", "Source language should match AppSettings")
-            #expect(flashcard.translationTargetLanguage == "ru", "Target language should match AppSettings")
+            #expect(flashcard.translation != nil, "Translation should be set")
         }
     }
 

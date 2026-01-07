@@ -160,9 +160,7 @@ struct DeckDetailView: View {
             let count = untranslatedCards.count
 
             Button("Translate \(count) Cards") {
-                Task {
-                    await translateAllCards()
-                }
+                translateAllCards()
             }
             .disabled(count == 0)
 
@@ -208,12 +206,13 @@ struct DeckDetailView: View {
             let startTime = Date()
 
             do {
-                let result = try await TranslationService.shared.translateBatch(
-                    cardsToTranslate,
+                // Branch based on device capability
+                // Use on-device translation (iOS 26+)
+                logger.info("Using on-device translation (iOS 26 Translation framework)")
+                let result = try await OnDeviceTranslationService.shared.translateBatch(
+                    cardsToTranslate.map(\.word),
                     maxConcurrency: 5,
                     progressHandler: { progress in
-                        // Since TranslationService is @MainActor and we're in a Task on main actor,
-                        // we can directly update @State variables
                         translationProgress = TranslationProgress(
                             current: progress.current,
                             total: progress.total,
@@ -221,49 +220,63 @@ struct DeckDetailView: View {
                         )
                     }
                 )
-
-                // Apply results
-                applyTranslationResults(result, cards: cardsToTranslate, startTime: startTime)
+                // Apply on-device translation results
+                applyOnDeviceTranslationResults(result, cards: cardsToTranslate, startTime: startTime)
 
             } catch let error as TranslationService.TranslationError {
                 handleTranslationError(error)
+            } catch let error as OnDeviceTranslationError {
+                handleOnDeviceTranslationError(error)
             } catch {
                 handleTranslationError(.apiFailed)
             }
         }
     }
 
-    private func applyTranslationResults(
-        _ result: TranslationService.TranslationBatchResult,
+    private func applyOnDeviceTranslationResults(
+        _ result: OnDeviceTranslationService.BatchTranslationResult,
         cards: [Flashcard],
         startTime: Date
     ) {
         // Apply each successful translation to its card
+        // Note: On-device translation only provides translation text (no CEFR/context sentences)
         for translation in result.successfulTranslations {
-            translation.card.translation = translation.translation
-            translation.card.cefrLevel = translation.cefrLevel
-            translation.card.contextSentence = translation.contextSentence
-            translation.card.translationSourceLanguage = translation.sourceLanguage
-            translation.card.translationTargetLanguage = translation.targetLanguage
+            // Match word to card
+            if let card = cards.first(where: { $0.word == translation.sourceText }) {
+                card.translation = translation.translatedText
+            }
         }
 
         // Save all changes with proper error handling
         do {
             try modelContext.save()
-            logger.info("Successfully saved translations: \(result.successCount) cards")
+            logger.info("Successfully saved on-device translations: \(result.successCount) cards")
 
             // Create result for UI
             translationResult = TranslationResult(
                 translatedCount: result.successCount,
                 skippedCount: 0,
                 failedCount: result.failedCount,
-                failedWords: []
+                failedWords: result.errors.map { error in
+                    switch error {
+                    case .unsupportedLanguagePair(let source, _):
+                        return source
+                    case .languagePackNotAvailable(let source, _):
+                        return source
+                    case .languagePackDownloadFailed(let language):
+                        return language
+                    case .translationFailed(let reason):
+                        return reason
+                    case .emptyInput:
+                        return "empty input"
+                    }
+                }
             )
 
-            logger.info("Batch translation complete: \(result.successCount) success, \(result.failedCount) failed, \(String(format: "%.2f", result.totalDuration))s")
+            logger.info("On-device batch translation complete: \(result.successCount) success, \(result.failedCount) failed, \(String(format: "%.2f", result.totalDuration))s")
 
         } catch {
-            logger.error("Failed to save translations: \(error.localizedDescription)")
+            logger.error("Failed to save on-device translations: \(error.localizedDescription)")
 
             // Update result to reflect failure
             translationResult = TranslationResult(
@@ -273,7 +286,7 @@ struct DeckDetailView: View {
                 failedWords: cards.map { $0.word }
             )
 
-            Analytics.trackError("translation_save_failed", error: error)
+            Analytics.trackError("on_device_translation_save_failed", error: error)
         }
 
         // Clear state
@@ -284,6 +297,22 @@ struct DeckDetailView: View {
 
     private func handleTranslationError(_ error: TranslationService.TranslationError) {
         logger.error("Batch translation failed: \(error.localizedDescription)")
+
+        translationResult = TranslationResult(
+            translatedCount: 0,
+            skippedCount: 0,
+            failedCount: deck.cards.filter { $0.translation == nil }.count,
+            failedWords: []
+        )
+
+        // Clear state
+        isTranslating = false
+        translationProgress = nil
+        showingTranslationResult = true
+    }
+
+    private func handleOnDeviceTranslationError(_ error: OnDeviceTranslationError) {
+        logger.error("On-device translation failed: \(error.localizedDescription)")
 
         translationResult = TranslationResult(
             translatedCount: 0,

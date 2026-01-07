@@ -108,19 +108,8 @@ enum RetryManager {
             return .failure(error)
         }
 
-        // Fallback: try one more time and let it throw naturally if it fails
-        // This handles edge cases where the error type doesn't match
-        do {
-            let result = try await operation()
-            return .success(result)
-        } catch let error as ErrorType {
-            return .failure(error)
-        } catch {
-            // If we still can't cast to ErrorType, this is a programming error
-            logger.error("\(logContext): Cannot convert error to expected type - \(error.localizedDescription)")
-            // Since we can't create an arbitrary ErrorType, we need to rethrow or handle differently
-            // In this case, we'll try the operation one more time and let it propagate
-            return .failure(error as! ErrorType)
-        }
+        // This should never happen - operation should have either succeeded or failed
+        // If we reach here, there's a bug in the retry logic
+        fatalError("RetryManager completed without success or failure - this should never happen")
     }
 }

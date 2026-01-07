@@ -76,11 +76,12 @@ final class SentenceGenerationViewModel: ObservableObject {
 
         do {
             // Call the sentence generation protocol
+            // Note: CEFR level is no longer stored on Flashcard, generator will infer it
             let response = try await generator.generateSentences(
                 for: card.word,
                 definition: card.definition,
                 translation: card.translation,
-                cefrLevel: card.cefrLevel,
+                cefrLevel: nil,  // Generator will infer CEFR level
                 count: sentencesPerCard
             )
 

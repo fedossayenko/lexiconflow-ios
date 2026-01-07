@@ -202,13 +202,12 @@ final class TranslationService {
     }
 
     /// Successful translation with data to apply
+    ///
+    /// Note: Only translation text is included. CEFR levels and context sentences
+    /// are generated separately by SentenceGenerationService.
     struct SuccessfulTranslation: Sendable {
         let card: Flashcard
         let translation: String
-        let cefrLevel: String
-        let contextSentence: String
-        let sourceLanguage: String
-        let targetLanguage: String
     }
 
     /// Overall result of a batch translation operation
@@ -431,13 +430,10 @@ final class TranslationService {
                   let item = response.items.first else {
                 return nil
             }
+            // Note: Only translation text is stored; CEFR/context sentences are not stored on card
             return SuccessfulTranslation(
                 card: result.card,
-                translation: item.targetTranslation,
-                cefrLevel: item.cefrLevel,
-                contextSentence: item.contextSentence,
-                sourceLanguage: sourceLanguage,
-                targetLanguage: targetLanguage
+                translation: item.targetTranslation
             )
         }
 

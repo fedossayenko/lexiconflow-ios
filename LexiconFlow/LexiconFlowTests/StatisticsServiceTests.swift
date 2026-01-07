@@ -338,7 +338,7 @@ struct StatisticsServiceTests {
             startTime: startTime,
             endTime: endTime,
             cardsReviewed: 10,
-            mode: .scheduled
+            modeEnum: "scheduled"
         )
 
         let result = await StatisticsService.shared.calculateStudyStreak(

@@ -23,23 +23,6 @@ struct CardBackView: View {
                     .foregroundStyle(.secondary)
                     .accessibilityLabel("Word: \(card.word)")
 
-                // CEFR Level badge - NEW
-                if let cefr = card.cefrLevel {
-                    HStack(spacing: 6) {
-                        Text("CEFR")
-                            .font(.caption2)
-                        Text(cefr)
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(Theme.cefrColor(for: cefr).opacity(0.2))
-                    .foregroundStyle(Theme.cefrColor(for: cefr))
-                    .cornerRadius(12)
-                    .accessibilityLabel("CEFR level: \(cefr)")
-                }
-
                 // Translation - NEW
                 if let translation = card.translation {
                     VStack(alignment: .leading, spacing: 8) {

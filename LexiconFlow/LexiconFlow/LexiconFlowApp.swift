@@ -17,6 +17,20 @@ final class EmptyModel {
 
 @main
 struct LexiconFlowApp: App {
+    /// Pre-initialized empty container for absolute worst case fallback
+    /// This is used when even runtime container creation fails
+    private static let emptyFallbackContainer: ModelContainer = {
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+        let schema = Schema([EmptyModel.self])
+        do {
+            return try ModelContainer(for: schema, configurations: [configuration])
+        } catch {
+            // If this fails during static initialization, the app cannot launch on this device
+            // This is a catastrophic failure indicating SwiftData is completely broken
+            fatalError("SwiftData is completely non-functional on this device: \(error)")
+        }
+    }()
+
     /// Scene phase for app lifecycle management
     @Environment(\.scenePhase) private var scenePhase
     /// Shared SwiftData ModelContainer for the entire app
@@ -27,6 +41,7 @@ struct LexiconFlowApp: App {
         let logger = Logger(subsystem: "com.lexiconflow.app", category: "LexiconFlowApp")
 
         // Define the schema with all models
+        // SwiftData automatically handles lightweight migrations (dropping optional fields)
         let schema = Schema([
             FSRSState.self,
             Flashcard.self,
@@ -83,11 +98,15 @@ struct LexiconFlowApp: App {
             )
             return minimalContainer
         } catch {
-            // Absolute last resort - if even empty model fails, crash is unavoidable
-            logger.critical("Minimal container creation failed: \(error.localizedDescription)")
-            Analytics.trackError("model_container_minimal_failed", error: error)
-            // At this point, there's no way to recover - crash with clear message
-            fatalError("Could not create minimal ModelContainer: \(error)")
+            // Last resort: return pre-initialized empty container
+            // User will see error UI but app won't crash
+            logger.critical("All ModelContainer creation attempts failed: \(error.localizedDescription)")
+            Analytics.trackIssue(
+                "model_container_utter_failure",
+                message: "Even minimal container failed, using pre-initialized empty container"
+            )
+            // Return pre-initialized empty container - app will show error UI to user
+            return emptyFallbackContainer
         }
     }()
 

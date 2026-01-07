@@ -2,30 +2,33 @@
 //  TranslationSettingsView.swift
 //  LexiconFlow
 //
-//  Settings view for configuring translation API and language preferences
+//  Settings view for configuring on-device translation
 //
 
 import SwiftUI
 import OSLog
 
-/// Settings view for translation configuration
+/// Settings view for on-device translation configuration
 ///
 /// Allows users to:
-/// - Configure their Z.ai API key
-/// - Set source and target languages
 /// - Enable/disable automatic translation
+/// - Configure source and target languages
+/// - Download language packs for on-device translation
+@MainActor
 struct TranslationSettingsView: View {
-    @State private var showAPIKeyField = false
-    @State private var apiKey = ""
-    @State private var tempAPIKey = ""
-    @State private var isValidating = false
-    @State private var isValid = false
-    @State private var validationError: String?
+    // MARK: - On-Device Translation State
+    @State private var sourceLanguageDownloaded = false
+    @State private var targetLanguageDownloaded = false
+    @State private var isCheckingAvailability = false
+    @State private var isDownloadingLanguage = false
+    @State private var downloadError: String?
 
     private let logger = Logger(subsystem: "com.lexiconflow.translation", category: "TranslationSettingsView")
+    private let onDeviceService = OnDeviceTranslationService.shared
 
     var body: some View {
         Form {
+            // Translation Settings
             Section {
                 Toggle("Enable Auto-Translation", isOn: Binding(
                     get: { AppSettings.isTranslationEnabled },
@@ -35,7 +38,13 @@ struct TranslationSettingsView: View {
                 if AppSettings.isTranslationEnabled {
                     Picker("Source Language", selection: Binding(
                         get: { AppSettings.translationSourceLanguage },
-                        set: { AppSettings.translationSourceLanguage = $0 }
+                        set: { newLang in
+                            AppSettings.translationSourceLanguage = newLang
+                            // Recheck availability when language changes
+                            Task {
+                                await checkLanguageAvailability()
+                            }
+                        }
                     )) {
                         ForEach(AppSettings.supportedLanguages, id: \.0) { code, name in
                             Text(name).tag(code)
@@ -44,131 +53,215 @@ struct TranslationSettingsView: View {
 
                     Picker("Target Language", selection: Binding(
                         get: { AppSettings.translationTargetLanguage },
-                        set: { AppSettings.translationTargetLanguage = $0 }
+                        set: { newLang in
+                            AppSettings.translationTargetLanguage = newLang
+                            // Recheck availability when language changes
+                            Task {
+                                await checkLanguageAvailability()
+                            }
+                        }
                     )) {
                         ForEach(AppSettings.supportedLanguages, id: \.0) { code, name in
                             Text(name).tag(code)
                         }
                     }
+
+                    // On-Device Language Availability
+                    OnDeviceLanguageStatusView(
+                        sourceDownloaded: sourceLanguageDownloaded,
+                        targetDownloaded: targetLanguageDownloaded,
+                        isChecking: isCheckingAvailability,
+                        isDownloading: isDownloadingLanguage,
+                        downloadError: downloadError,
+                        onDownloadSource: {
+                            Task { await downloadLanguagePack(.source) }
+                        },
+                        onDownloadTarget: {
+                            Task { await downloadLanguagePack(.target) }
+                        }
+                    )
                 }
             } header: {
-                Text("Translation")
+                Text("Translation Settings")
             } footer: {
-                Text("Automatically translate flashcard words during creation using Z.ai API.")
-            }
-
-            Section {
-                if showAPIKeyField {
-                    SecureField("API Key", text: $tempAPIKey)
-                        .textContentType(.password)
-
-                    if let validationError = validationError {
-                        Text(validationError)
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                    }
-
-                    HStack {
-                        Button("Validate") {
-                            Task {
-                                await validateAPIKey()
-                            }
-                        }
-                        .disabled(tempAPIKey.isEmpty || isValidating)
-
-                        if isValidating {
-                            ProgressView()
-                                .controlSize(.small)
-                        }
-
-                        Spacer()
-
-                        if isValid {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(.green)
-                        }
-                    }
-
-                    Button("Save") {
-                        Task {
-                            do {
-                                try KeychainManager.setAPIKey(tempAPIKey)
-                                apiKey = tempAPIKey
-                                do {
-                                    try TranslationService.shared.setAPIKey(tempAPIKey)
-                                } catch {
-                                    // Log but don't fail - Keychain is the source of truth
-                                    logger.error("Failed to update TranslationService: \(error.localizedDescription)")
-                                }
-                                showAPIKeyField = false
-                                logger.info("API key saved securely to Keychain")
-                            } catch {
-                                validationError = "Failed to save API key: \(error.localizedDescription)"
-                                Analytics.trackError("api_key_save", error: error)
-                            }
-                        }
-                    }
-                    .disabled(tempAPIKey.isEmpty || !isValid)
-                } else {
-                    HStack {
-                        Text(apiKey.isEmpty ? "No API key configured" : "API key configured")
-                            .foregroundStyle(apiKey.isEmpty ? .secondary : .primary)
-
-                        Spacer()
-
-                        Button(apiKey.isEmpty ? "Add Key" : "Change Key") {
-                            tempAPIKey = apiKey
-                            showAPIKeyField = true
-                            isValid = false
-                            validationError = nil
-                        }
-                    }
-                }
-            } header: {
-                Text("Z.ai API Configuration")
-            } footer: {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Enter your Z.ai API key to enable automatic translation.")
-                    Text("Get your key at: https://z.ai")
-                        .foregroundStyle(.secondary)
-                }
+                Text("Automatically translate flashcard words using on-device translation. Language packs must be downloaded first.")
             }
         }
         .navigationTitle("Translation Settings")
         .onAppear {
-            loadAPIKey()
+            // Check language availability on appear
+            Task {
+                await checkLanguageAvailability()
+            }
         }
     }
 
-    // MARK: - API Key Management
+    // MARK: - Language Availability
 
-    private func loadAPIKey() {
-        if let key = try? KeychainManager.getAPIKey() {
-            apiKey = key
-        }
-    }
-
-    // MARK: - API Key Validation
-
-    private func validateAPIKey() async {
-        isValidating = true
-        validationError = nil
-        defer { isValidating = false }
+    /// Check if selected language packs are downloaded for on-device translation
+    private func checkLanguageAvailability() async {
+        isCheckingAvailability = true
+        downloadError = nil
 
         do {
-            // Validate WITHOUT storing to Keychain first
-            // The key is only stored after user clicks "Save"
-            isValid = try await TranslationService.shared.validateAPIKey(tempAPIKey)
+            sourceLanguageDownloaded = await onDeviceService.isLanguageAvailable(AppSettings.translationSourceLanguage)
+            targetLanguageDownloaded = await onDeviceService.isLanguageAvailable(AppSettings.translationTargetLanguage)
 
-            if !isValid {
-                validationError = "API key validation failed: server returned empty response"
+            logger.debug("""
+                Language availability check:
+                - Source (\(AppSettings.translationSourceLanguage)): \(sourceLanguageDownloaded ? "Downloaded" : "Not downloaded")
+                - Target (\(AppSettings.translationTargetLanguage)): \(targetLanguageDownloaded ? "Downloaded" : "Not downloaded")
+                """)
+        } catch {
+            logger.error("Failed to check language availability: \(error.localizedDescription)")
+            downloadError = error.localizedDescription
+        }
+
+        isCheckingAvailability = false
+    }
+
+    /// Download language pack for on-device translation
+    private func downloadLanguagePack(_ languageType: LanguageType) async {
+        isDownloadingLanguage = true
+        downloadError = nil
+
+        let languageCode = languageType == .source
+            ? AppSettings.translationSourceLanguage
+            : AppSettings.translationTargetLanguage
+
+        logger.info("Requesting language pack download for '\(languageCode)'")
+
+        do {
+            try await onDeviceService.requestLanguageDownload(languageCode)
+            logger.info("Language pack download initiated for '\(languageCode)'")
+
+            // Refresh availability after download request
+            await checkLanguageAvailability()
+        } catch {
+            logger.error("Failed to download language pack: \(error.localizedDescription)")
+            downloadError = error.localizedDescription
+            Analytics.trackError("language_pack_download", error: error)
+        }
+
+        isDownloadingLanguage = false
+    }
+}
+
+// MARK: - Supporting Types
+
+/// Language type for download operations
+private enum LanguageType {
+    case source
+    case target
+}
+
+/// View component for displaying on-device language pack status
+private struct OnDeviceLanguageStatusView: View {
+    let sourceDownloaded: Bool
+    let targetDownloaded: Bool
+    let isChecking: Bool
+    let isDownloading: Bool
+    let downloadError: String?
+    let onDownloadSource: () -> Void
+    let onDownloadTarget: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if isChecking {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Checking language pack availability...")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                // Source Language Status
+                LanguageStatusRow(
+                    languageName: "Source Language",
+                    languageCode: AppSettings.translationSourceLanguage,
+                    isDownloaded: sourceDownloaded,
+                    isDownloading: isDownloading,
+                    onTap: onDownloadSource
+                )
+
+                // Target Language Status
+                LanguageStatusRow(
+                    languageName: "Target Language",
+                    languageCode: AppSettings.translationTargetLanguage,
+                    isDownloaded: targetDownloaded,
+                    isDownloading: isDownloading,
+                    onTap: onDownloadTarget
+                )
+
+                // Error Message
+                if let error = downloadError {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
+                }
+
+                // Info Message
+                if sourceDownloaded && targetDownloaded {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                        Text("All language packs downloaded. Translation is ready.")
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+/// Row component for displaying individual language pack status
+private struct LanguageStatusRow: View {
+    let languageName: String
+    let languageCode: String
+    let isDownloaded: Bool
+    let isDownloading: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Image(systemName: isDownloaded ? "checkmark.circle.fill" : "arrow.down.circle")
+                        .foregroundStyle(isDownloaded ? .green : .blue)
+                    Text(languageName)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                    Text("(\(languageCode))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Text(isDownloaded ? "Downloaded" : "Language pack required")
+                    .font(.caption2)
+                    .foregroundStyle(isDownloaded ? .green : .secondary)
             }
 
-            logger.info("API key validation completed: isValid=\(isValid)")
-        } catch {
-            isValid = false
-            validationError = error.localizedDescription
-            Analytics.trackError("api_key_validation", error: error)
+            Spacer()
+
+            if !isDownloaded && !isDownloading {
+                Button("Download") {
+                    onTap()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+
+            if isDownloading {
+                ProgressView()
+                    .controlSize(.small)
+            }
         }
     }
 }

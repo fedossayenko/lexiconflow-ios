@@ -26,6 +26,9 @@ struct AddFlashcardView: View {
     @State private var isSaving = false
     @State private var isTranslating = false
     @State private var isGeneratingSentences = false
+    @State private var isCheckingLanguageAvailability = false
+    @State private var showLanguageDownloadPrompt = false
+    @State private var missingLanguage: String?
     @State private var errorMessage: String?
     @State private var saveTask: Task<Void, Never>?
 
@@ -130,7 +133,7 @@ struct AddFlashcardView: View {
                             }
                         }
                     }
-                    .disabled(word.isEmpty || definition.isEmpty || isSaving || isTranslating || isGeneratingSentences)
+                    .disabled(word.isEmpty || definition.isEmpty || isSaving || isTranslating || isGeneratingSentences || isCheckingLanguageAvailability)
                 }
             }
             .onChange(of: selectedImage) { _, newItem in
@@ -156,6 +159,24 @@ struct AddFlashcardView: View {
             } message: {
                 Text(errorMessage ?? "An unknown error occurred")
             }
+            .alert("Download Language Pack", isPresented: $showLanguageDownloadPrompt) {
+                Button("Cancel", role: .cancel) {
+                    missingLanguage = nil
+                }
+                Button("Download") {
+                    if let language = missingLanguage {
+                        Task {
+                            await downloadLanguagePack(language)
+                        }
+                    }
+                }
+            } message: {
+                if let language = missingLanguage {
+                    Text("Language pack for \(language) is required for on-device translation. Download it now?")
+                } else {
+                    Text("Language pack download required")
+                }
+            }
         }
     }
 
@@ -180,45 +201,17 @@ struct AddFlashcardView: View {
         )
         flashcard.deck = selectedDeck
 
-        // 2. Automatic translation
+        // 2. Automatic translation (on-device only)
         isTranslating = true
 
-        if AppSettings.isTranslationEnabled && TranslationService.shared.isConfigured {
-            do {
-                let result = try await TranslationService.shared.translate(
-                    word: word,
-                    definition: definition,
-                    context: nil
-                )
-
-                if let item = result.items.first {
-                    flashcard.translation = item.targetTranslation
-                    flashcard.cefrLevel = item.cefrLevel
-                    flashcard.contextSentence = item.contextSentence
-                    flashcard.translationSourceLanguage = "en"
-                    flashcard.translationTargetLanguage = AppSettings.translationTargetLanguage
-
-                    logger.info("Translation successful: '\(word)' -> '\(item.targetTranslation)' (CEFR: \(item.cefrLevel))")
-                }
-            } catch {
-                logger.error("Translation failed: \(error.localizedDescription)")
-                Analytics.trackError("translation_failed", error: error)
-                errorMessage = "Translation failed, but card will be saved without it"
-                // Auto-dismiss after 3 seconds
-                Task {
-                    try? await Task.sleep(nanoseconds: 3_000_000_000)
-                    if errorMessage?.contains("Translation failed") == true {
-                        errorMessage = nil
-                    }
-                }
-            }
-        } else if AppSettings.isTranslationEnabled && !TranslationService.shared.isConfigured {
-            logger.warning("Translation enabled but API key not configured, skipping")
+        if AppSettings.isTranslationEnabled {
+            await performOnDeviceTranslation(flashcard: flashcard)
         }
 
         isTranslating = false
 
         // 2b. Automatic sentence generation (if translation enabled)
+        // Note: Sentence generation uses cloud TranslationService separately
         if AppSettings.isTranslationEnabled && TranslationService.shared.isConfigured {
             isGeneratingSentences = true
 
@@ -257,6 +250,120 @@ struct AddFlashcardView: View {
             Analytics.trackError("save_flashcard", error: error)
             errorMessage = "Failed to save flashcard: \(error.localizedDescription)"
         }
+    }
+
+    // MARK: - Translation
+
+    /// Perform on-device translation for a flashcard
+    @MainActor
+    private func performOnDeviceTranslation(flashcard: Flashcard) async {
+        let sourceLanguage = AppSettings.translationSourceLanguage
+        let targetLanguage = AppSettings.translationTargetLanguage
+
+        logger.info("Attempting on-device translation: \(sourceLanguage) -> \(targetLanguage)")
+
+        // Check language pack availability
+        isCheckingLanguageAvailability = true
+
+        let sourceAvailable = await OnDeviceTranslationService.shared.isLanguageAvailable(sourceLanguage)
+        let targetAvailable = await OnDeviceTranslationService.shared.isLanguageAvailable(targetLanguage)
+
+        isCheckingLanguageAvailability = false
+
+        // Prompt for language pack download if needed
+        if !sourceAvailable {
+            missingLanguage = AppSettings.supportedLanguages.first { $0.code == sourceLanguage }?.name ?? sourceLanguage
+            showLanguageDownloadPrompt = true
+            logger.warning("Source language pack not available: \(sourceLanguage)")
+            return
+        }
+
+        if !targetAvailable {
+            missingLanguage = AppSettings.supportedLanguages.first { $0.code == targetLanguage }?.name ?? targetLanguage
+            showLanguageDownloadPrompt = true
+            logger.warning("Target language pack not available: \(targetLanguage)")
+            return
+        }
+
+        // Perform on-device translation
+        do {
+            // Configure languages
+            await OnDeviceTranslationService.shared.setLanguages(
+                source: sourceLanguage,
+                target: targetLanguage
+            )
+
+            // Translate the word
+            let translatedWord = try await OnDeviceTranslationService.shared.translate(
+                text: word,
+                from: sourceLanguage,
+                to: targetLanguage
+            )
+
+            // Note: On-device translation only provides translated text
+            // We don't get CEFR level or context sentence from iOS Translation framework
+            flashcard.translation = translatedWord
+
+            logger.info("On-device translation successful: '\(word)' -> '\(translatedWord)'")
+
+        } catch let error as OnDeviceTranslationError {
+            logger.error("On-device translation failed: \(error.localizedDescription)")
+
+            // Handle specific error types
+            switch error {
+            case .languagePackNotAvailable:
+                errorMessage = "Language pack not available. Please download it in Settings."
+                Analytics.trackError("on_device_translation_no_language_pack", error: error)
+
+            case .unsupportedLanguagePair:
+                errorMessage = "Language pair not supported on this device"
+                Analytics.trackError("on_device_translation_unsupported_pair", error: error)
+
+            default:
+                errorMessage = "Translation failed: \(error.localizedDescription)"
+                Analytics.trackError("on_device_translation_failed", error: error)
+            }
+
+            // Auto-dismiss after 3 seconds
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            if errorMessage?.contains("Translation failed") == true || errorMessage?.contains("Language pack") == true {
+                errorMessage = nil
+            }
+
+        } catch {
+            logger.error("Unexpected on-device translation error: \(error.localizedDescription)")
+            Analytics.trackError("on_device_translation_unexpected", error: error)
+            errorMessage = "Translation failed, but card will be saved without it"
+        }
+    }
+
+    /// Download a missing language pack
+    @MainActor
+    private func downloadLanguagePack(_ languageCode: String) async {
+        logger.info("Requesting language pack download for: \(languageCode)")
+
+        do {
+            try await OnDeviceTranslationService.shared.requestLanguageDownload(languageCode)
+
+            // Success - retry translation
+            logger.info("Language pack download initiated successfully")
+
+            // Show success message
+            errorMessage = "Language pack downloaded. You can now save the card."
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            errorMessage = nil
+
+        } catch {
+            logger.error("Language pack download failed: \(error.localizedDescription)")
+            Analytics.trackError("language_pack_download_failed", error: error)
+            errorMessage = "Failed to download language pack: \(error.localizedDescription)"
+
+            // Auto-dismiss after 3 seconds
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            errorMessage = nil
+        }
+
+        missingLanguage = nil
     }
 }
 
