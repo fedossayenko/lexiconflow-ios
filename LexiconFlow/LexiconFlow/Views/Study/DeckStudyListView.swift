@@ -13,6 +13,7 @@ struct DeckStudyListView: View {
     @Query(sort: \Deck.order, animation: .default) private var decks: [Deck]
 
     @State private var deckStats: [Deck.ID: DeckStudyStats] = [:]
+    @State private var isLoading = false
 
     var body: some View {
         NavigationStack {
@@ -24,8 +25,17 @@ struct DeckStudyListView: View {
                 }
             }
             .navigationTitle("Decks")
-            .onAppear {
-                refreshDeckStats()
+            .task {
+                isLoading = true
+                await refreshDeckStats()
+                isLoading = false
+            }
+            .overlay {
+                if isLoading {
+                    ProgressView("Loading statistics...")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(.ultraThinMaterial)
+                }
             }
         }
     }
@@ -63,7 +73,7 @@ struct DeckStudyListView: View {
         }
     }
 
-    private func refreshDeckStats() {
+    private func refreshDeckStats() async {
         let scheduler = Scheduler(modelContext: modelContext)
 
         for deck in decks {
@@ -81,12 +91,6 @@ struct DeckStudyListView: View {
 }
 
 // MARK: - Supporting Types
-
-struct DeckStudyStats {
-    var newCount: Int = 0
-    var dueCount: Int = 0
-    var totalCount: Int = 0
-}
 
 struct DeckStudyRow: View {
     let deck: Deck
@@ -129,6 +133,10 @@ struct DeckStudyRow: View {
         .padding()
         .background(.ultraThinMaterial, in: .rect(cornerRadius: 12))
         .contentShape(.rect(cornerRadius: 12))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Deck: \(deck.name)")
+        .accessibilityHint("Tap to view deck details")
+        .accessibilityValue("\(stats.totalCount) cards, \(stats.newCount) new, \(stats.dueCount) due")
     }
 }
 

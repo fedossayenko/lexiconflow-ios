@@ -8,13 +8,6 @@
 import SwiftUI
 import SwiftData
 
-/// Statistics for a single deck in selection UI
-struct DeckSelectionStats {
-    var newCount: Int = 0
-    var dueCount: Int = 0
-    var totalCount: Int = 0
-}
-
 /// View for selecting multiple decks to study from
 struct DeckSelectionView: View {
     @Environment(\.modelContext) private var modelContext
@@ -23,16 +16,14 @@ struct DeckSelectionView: View {
     @Query(sort: \Deck.order) private var decks: [Deck]
 
     @State private var selectedDeckIDs: Set<UUID>
-    @State private var deckStats: [UUID: DeckSelectionStats] = [:]
+    @State private var deckStats: [UUID: DeckStudyStats] = [:]
     @State private var isLoading = true
+    @State private var errorMessage: String?
+    @State private var scheduler: Scheduler?
 
     init() {
         // Initialize with persisted selection
         _selectedDeckIDs = State(initialValue: AppSettings.selectedDeckIDs)
-    }
-
-    private var scheduler: Scheduler {
-        Scheduler(modelContext: modelContext)
     }
 
     var body: some View {
@@ -68,12 +59,20 @@ struct DeckSelectionView: View {
                 }
             }
             .task {
+                if scheduler == nil {
+                    scheduler = Scheduler(modelContext: modelContext)
+                }
                 await loadStats()
             }
             .onAppear {
                 // Re-sync local state from AppSettings when sheet is presented
                 // This fixes the bug where cached view instance shows stale selection
                 selectedDeckIDs = AppSettings.selectedDeckIDs
+            }
+            .alert("Error", isPresented: .constant(errorMessage != nil)) {
+                Button("OK") { errorMessage = nil }
+            } message: {
+                Text(errorMessage ?? "Unknown error")
             }
         }
     }
@@ -85,7 +84,7 @@ struct DeckSelectionView: View {
             Text("Create decks first to select them for study")
         } actions: {
             NavigationLink("Create Deck") {
-                Text("Deck creation would go here")
+                AddDeckView()
             }
         }
     }
@@ -95,7 +94,7 @@ struct DeckSelectionView: View {
             ForEach(decks) { deck in
                 DeckSelectionRow(
                     deck: deck,
-                    stats: deckStats[deck.id] ?? DeckSelectionStats(),
+                    stats: deckStats[deck.id] ?? DeckStudyStats(),
                     isSelected: selectedDeckIDs.contains(deck.id)
                 ) {
                     toggleSelection(deck.id)
@@ -139,6 +138,8 @@ struct DeckSelectionView: View {
             .font(.subheadline)
             .foregroundStyle(.secondary)
         }
+        .accessibilityLabel("Quick actions")
+        .accessibilityHint("Select multiple decks at once")
     }
 
     private func toggleSelection(_ deckID: UUID) {
@@ -177,14 +178,19 @@ struct DeckSelectionView: View {
         isLoading = true
         defer { isLoading = false }
 
-        var stats: [UUID: DeckSelectionStats] = [:]
+        guard let scheduler = scheduler else {
+            errorMessage = "Failed to initialize scheduler"
+            return
+        }
+
+        var stats: [UUID: DeckStudyStats] = [:]
 
         for deck in decks {
             let newCount = scheduler.newCardCount(for: deck)
             let dueCount = scheduler.dueCardCount(for: deck)
             let totalCount = scheduler.totalCardCount(for: deck)
 
-            stats[deck.id] = DeckSelectionStats(
+            stats[deck.id] = DeckStudyStats(
                 newCount: newCount,
                 dueCount: dueCount,
                 totalCount: totalCount
@@ -198,7 +204,7 @@ struct DeckSelectionView: View {
 /// Single row in deck selection list
 struct DeckSelectionRow: View {
     let deck: Deck
-    let stats: DeckSelectionStats
+    let stats: DeckStudyStats
     let isSelected: Bool
     let onTap: () -> Void
 
@@ -233,6 +239,10 @@ struct DeckSelectionRow: View {
             .padding(.vertical, 4)
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Deck: \(deck.name)")
+        .accessibilityHint("Tap to toggle selection")
+        .accessibilityValue(isSelected ? "Selected" : "Not selected")
     }
 
     private var statsText: String {
@@ -264,7 +274,13 @@ struct DeckSelectionRow: View {
 }
 
 private func makeDeckSelectionPreview() -> some View {
-    let container = try! ModelContainer(for: Deck.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container: ModelContainer
+    do {
+        container = try ModelContainer(for: Deck.self, configurations: config)
+    } catch {
+        fatalError("Failed to create preview container: \(error)")
+    }
     let context = ModelContext(container)
 
     // Create sample decks

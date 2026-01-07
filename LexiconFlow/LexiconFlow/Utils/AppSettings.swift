@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import OSLog
 
 /// Centralized app settings to prevent scattered @AppStorage keys
 ///
@@ -13,6 +14,7 @@ import SwiftUI
 /// preventing naming conflicts and ensuring consistency across the app.
 @MainActor
 enum AppSettings {
+    private static let logger = Logger(subsystem: "com.lexiconflow.settings", category: "AppSettings")
     // MARK: - Translation Settings
 
     /// Whether automatic translation is enabled
@@ -70,19 +72,40 @@ enum AppSettings {
     /// Uses JSON encoding for reliable persistence
     static var selectedDeckIDs: Set<UUID> {
         get {
-            guard let data = selectedDeckIDsData.data(using: .utf8),
-                  let ids = try? JSONDecoder().decode([String].self, from: data) else {
+            guard let data = selectedDeckIDsData.data(using: .utf8) else {
+                logger.error("Failed to convert selectedDeckIDsData to UTF-8")
                 return []
             }
-            return Set(ids.compactMap { UUID(uuidString: $0) })
+            do {
+                let ids = try JSONDecoder().decode([String].self, from: data)
+                let validUUIDs = ids.compactMap { uuidString -> UUID? in
+                    guard let uuid = UUID(uuidString: uuidString) else {
+                        logger.warning("Invalid UUID string in selectedDeckIDs: \(uuidString)")
+                        return nil
+                    }
+                    return uuid
+                }
+                if validUUIDs.count < ids.count {
+                    logger.warning("Dropped \(ids.count - validUUIDs.count) invalid UUIDs from selection")
+                }
+                return Set(validUUIDs)
+            } catch {
+                logger.error("Failed to decode selectedDeckIDs: \(error)")
+                return []
+            }
         }
         set {
             let ids = Array(newValue.map { $0.uuidString })
-            guard let data = try? JSONEncoder().encode(ids),
-                  let string = String(data: data, encoding: .utf8) else {
-                return
+            do {
+                let data = try JSONEncoder().encode(ids)
+                guard let string = String(data: data, encoding: .utf8) else {
+                    logger.error("Failed to convert encoded data to UTF-8")
+                    return
+                }
+                selectedDeckIDsData = string
+            } catch {
+                logger.error("Failed to encode selectedDeckIDs: \(error)")
             }
-            selectedDeckIDsData = string
         }
     }
 

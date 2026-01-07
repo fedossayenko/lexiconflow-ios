@@ -17,7 +17,11 @@ extension ModelContext {
     /// Clears all entities from the context without recreating container
     /// This is much faster than creating a new ModelContainer for each test
     func clearAll() throws {
-        // First, fetch and delete all existing entities to properly clear this context's cache
+        // IMPORTANT: Delete in reverse dependency order to avoid relationship issues
+        // 1. Delete dependent entities first (reviews, sentences, states)
+        // 2. Then delete their parents (cards)
+        // 3. Finally delete decks
+
         let reviews = try self.fetch(FetchDescriptor<FlashcardReview>())
         for review in reviews {
             self.delete(review)
@@ -35,6 +39,9 @@ extension ModelContext {
 
         let cards = try self.fetch(FetchDescriptor<Flashcard>())
         for card in cards {
+            // Clear relationships before deleting to prevent cascade issues
+            card.fsrsState = nil
+            card.deck = nil
             self.delete(card)
         }
 

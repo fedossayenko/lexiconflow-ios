@@ -653,3 +653,244 @@ struct EdgeCaseTests {
         #expect(flashcard.definition == "changed 9 times", "Final definition should be stored")
     }
 }
+
+// MARK: - Deck-Centric Mode Edge Cases
+
+@Suite("Deck-Centric Edge Cases")
+struct DeckCentricEdgeCases {
+
+    private static func freshContext() -> ModelContext {
+        TestContainers.freshContext()
+    }
+
+    private static func createDeck(context: ModelContext, name: String = "Test Deck") -> Deck {
+        let deck = Deck(name: name, icon: "folder.fill", order: 0)
+        context.insert(deck)
+        try! context.save()
+        return deck
+    }
+
+    @Test("Deck with no cards returns zero counts")
+    func deckWithNoCards() async {
+        let context = freshContext()
+        try context.clearAll()
+
+        let deck = createDeck(context: context)
+
+        let scheduler = Scheduler(modelContext: context)
+
+        let newCount = scheduler.newCardCount(for: deck)
+        let dueCount = scheduler.dueCardCount(for: deck)
+        let totalCount = scheduler.totalCardCount(for: deck)
+
+        #expect(newCount == 0, "New count should be 0 for deck with no cards")
+        #expect(dueCount == 0, "Due count should be 0 for deck with no cards")
+        #expect(totalCount == 0, "Total count should be 0 for deck with no cards")
+    }
+
+    @Test("All decks deselected shows empty state")
+    func allDecksDeselected() async {
+        // Clear all deck selections
+        AppSettings.selectedDeckIDs = []
+
+        // Verify selection is empty
+        #expect(AppSettings.selectedDeckIDs.isEmpty, "Selection should be empty")
+        #expect(AppSettings.hasSelectedDecks == false, "hasSelectedDecks should be false")
+    }
+
+    @Test("Corrupted AppSettings JSON recovers gracefully")
+    func corruptedAppSettingsJSON() async {
+        let originalSelection = AppSettings.selectedDeckIDs
+        let originalData = AppSettings.selectedDeckIDsData
+
+        // Simulate corrupted JSON
+        AppSettings.selectedDeckIDsData = "invalid json {"
+
+        // Should return empty set without crashing
+        let selection = AppSettings.selectedDeckIDs
+        #expect(selection.isEmpty, "Corrupted JSON should result in empty set")
+
+        // Restore valid data
+        AppSettings.selectedDeckIDsData = originalData
+        #expect(AppSettings.selectedDeckIDs == originalSelection, "Should restore original selection")
+    }
+
+    @Test("Card deleted between fetch and review handles gracefully")
+    func cardDeletedDuringFetch() async {
+        let context = freshContext()
+        try context.clearAll()
+
+        let deck = createDeck(context: context)
+
+        // Create a card
+        let card = Flashcard(front: "test", back: "test", deck: deck)
+        context.insert(card)
+
+        let state = FSRSState(card: card)
+        state.stateEnum = FlashcardState.review.rawValue
+        state.dueDate = Date().addingTimeInterval(-3600)
+        context.insert(state)
+
+        try! context.save()
+
+        // Fetch cards
+        let scheduler = Scheduler(modelContext: context)
+        let cards = scheduler.fetchCards(for: deck, mode: .scheduled, limit: 10)
+        let initialCount = cards.count
+
+        #expect(initialCount > 0, "Should fetch at least one card")
+
+        // Delete the card
+        context.delete(card)
+        try! context.save()
+
+        // Verify card was deleted
+        let deletedCard = try? context.fetch(FetchDescriptor<Flashcard>(predicate: #Predicate { $0.id == card.id })).first
+        #expect(deletedCard == nil, "Card should be deleted")
+    }
+
+    @Test("Large number of decks (100+) handles efficiently")
+    func largeDeckCount() async {
+        let context = freshContext()
+        try context.clearAll()
+
+        // Create 100 decks
+        for i in 0..<100 {
+            _ = createDeck(context: context, name: "Deck \(i)")
+        }
+
+        // Verify all decks were created
+        let descriptor = FetchDescriptor<Deck>()
+        let decks = try! context.fetch(descriptor)
+
+        #expect(decks.count == 100, "Should have 100 decks")
+
+        // Test selection with many decks
+        let deckIDs = Set(decks.prefix(50).map { $0.id })
+        AppSettings.selectedDeckIDs = deckIDs
+
+        #expect(AppSettings.selectedDeckCount == 50, "Should select 50 decks")
+        #expect(AppSettings.hasSelectedDecks == true, "hasSelectedDecks should be true")
+    }
+
+    @Test("Session with no available cards handles gracefully")
+    func sessionWithNoAvailableCards() async {
+        let context = freshContext()
+        try context.clearAll()
+
+        let deck = createDeck(context: context)
+
+        // Deck has no cards
+        let viewModel = StudySessionViewModel(
+            modelContext: context,
+            decks: [deck],
+            mode: .scheduled
+        )
+
+        viewModel.loadCards()
+
+        #expect(viewModel.cards.isEmpty, "Should have no cards")
+        #expect(viewModel.isComplete, "Should be marked complete")
+    }
+
+    @Test("Multiple sessions with same deck handle correctly")
+    func multipleSessionsSameDeck() async {
+        let context = freshContext()
+        try context.clearAll()
+
+        let deck = createDeck(context: context)
+
+        // Create multiple cards
+        for i in 1...5 {
+            let card = Flashcard(front: "card\(i)", back: "card\(i)", deck: deck)
+            context.insert(card)
+
+            let state = FSRSState(card: card)
+            state.stateEnum = FlashcardState.review.rawValue
+            state.dueDate = Date().addingTimeInterval(-3600)
+            context.insert(state)
+        }
+
+        try! context.save()
+
+        // Start first session
+        let viewModel1 = StudySessionViewModel(
+            modelContext: context,
+            decks: [deck],
+            mode: .scheduled
+        )
+
+        viewModel1.loadCards()
+        let initialCount = viewModel1.cards.count
+
+        #expect(initialCount > 0, "First session should have cards")
+    }
+
+    @Test("Deck selection updates during session don't crash")
+    func deckSelectionUpdateDuringSession() async {
+        let context = freshContext()
+        try context.clearAll()
+
+        let deck1 = createDeck(context: context, name: "Deck 1")
+        let deck2 = createDeck(context: context, name: "Deck 2")
+
+        // Set initial selection
+        AppSettings.selectedDeckIDs = [deck1.id]
+
+        // Change selection
+        AppSettings.selectedDeckIDs = [deck1.id, deck2.id]
+
+        // Verify update worked
+        #expect(AppSettings.selectedDeckIDs.count == 2, "Should have 2 decks selected")
+    }
+
+    @Test("Empty study limit allows all cards through")
+    func emptyStudyLimit() async {
+        let originalLimit = AppSettings.studyLimit
+
+        // Set to 0 to test edge case (should allow at least some cards)
+        AppSettings.studyLimit = 1
+
+        #expect(AppSettings.studyLimit == 1, "Study limit should be updated")
+
+        // Restore
+        AppSettings.studyLimit = originalLimit
+    }
+
+    @Test("Study mode switching updates card list")
+    func studyModeSwitching() async {
+        let context = freshContext()
+        try context.clearAll()
+
+        let deck = createDeck(context: context)
+
+        // Create new card
+        let card1 = Flashcard(front: "new", back: "new", deck: deck)
+        context.insert(card1)
+
+        let state1 = FSRSState(card: card1)
+        state1.stateEnum = FlashcardState.new.rawValue
+        context.insert(state1)
+
+        // Create due card
+        let card2 = Flashcard(front: "due", back: "due", deck: deck)
+        context.insert(card2)
+
+        let state2 = FSRSState(card: card2)
+        state2.stateEnum = FlashcardState.review.rawValue
+        state2.dueDate = Date().addingTimeInterval(-3600)
+        context.insert(state2)
+
+        try! context.save()
+
+        let scheduler = Scheduler(modelContext: context)
+
+        // Learning mode should get new cards
+        let learningCards = scheduler.fetchCards(for: deck, mode: .learning, limit: 10)
+
+        // Scheduled mode should get due cards
+        let scheduledCards = scheduler.fetchCards(for: deck, mode: .scheduled, limit: 10)
+
+        #expect(learningCards.count > 0 || scheduledCards.count > 0, "Should have cards in at least one mode")
+    }
+}

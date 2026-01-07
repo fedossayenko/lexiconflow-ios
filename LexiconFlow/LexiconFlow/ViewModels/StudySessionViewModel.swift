@@ -8,6 +8,7 @@
 import Foundation
 import SwiftData
 import Combine
+import OSLog
 
 // MARK: - StudySessionError
 
@@ -50,6 +51,7 @@ final class StudySessionViewModel: ObservableObject {
     private let scheduler: Scheduler
     private let mode: StudyMode
     private let decks: [Deck]
+    private let logger = Logger(subsystem: "com.lexiconflow.session", category: "StudySessionViewModel")
 
     @Published private(set) var cards: [Flashcard] = []
     @Published private(set) var currentIndex = 0
@@ -86,7 +88,7 @@ final class StudySessionViewModel: ObservableObject {
 
     /// Load cards for the study session
     func loadCards() {
-        cards = scheduler.fetchCards(for: decks, mode: mode, limit: 20)
+        cards = scheduler.fetchCards(for: decks, mode: mode, limit: AppSettings.studyLimit)
         currentIndex = 0
         isComplete = cards.isEmpty
     }
@@ -142,22 +144,5 @@ final class StudySessionViewModel: ObservableObject {
     func reset() {
         currentIndex = 0
         isComplete = false
-    }
-}
-
-// MARK: - Backward Compatibility
-
-extension StudySessionViewModel {
-    /// Convenience initializer for single-deck sessions (backward compatibility)
-    /// - Parameters:
-    ///   - modelContext: SwiftData model context
-    ///   - deck: Single deck to study from (nil = no cards)
-    ///   - mode: Study mode (scheduled or learning)
-    convenience init(modelContext: ModelContext, deck: Deck?, mode: StudyMode) {
-        if let deck = deck {
-            self.init(modelContext: modelContext, decks: [deck], mode: mode)
-        } else {
-            self.init(modelContext: modelContext, decks: [], mode: mode)
-        }
     }
 }

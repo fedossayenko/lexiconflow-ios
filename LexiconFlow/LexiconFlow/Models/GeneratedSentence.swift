@@ -131,7 +131,7 @@ enum SentenceSource: String, Codable, Sendable {
 // MARK: - Validation Errors
 
 /// Errors that can occur during GeneratedSentence validation
-enum GeneratedSentenceError: LocalizedError {
+enum GeneratedSentenceError: LocalizedError, Equatable {
     case emptyText
     case invalidCEFRLevel(String)
     case invalidTTL

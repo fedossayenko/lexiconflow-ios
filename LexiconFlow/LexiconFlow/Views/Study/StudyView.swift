@@ -7,12 +7,13 @@
 
 import SwiftUI
 import SwiftData
+import OSLog
 
 struct StudyView: View {
+    private static let logger = Logger(subsystem: "com.lexiconflow.study", category: "StudyView")
     @Environment(\.modelContext) private var modelContext
 
     @Query(sort: \Deck.order) private var decks: [Deck]
-    @Query private var flashcards: [Flashcard]
 
     @State private var studyMode: StudyMode = .scheduled
     @State private var selectedDecks: [Deck] = []
@@ -228,6 +229,13 @@ struct StudyView: View {
         let selectedIDs = AppSettings.selectedDeckIDs
         selectedDecks = decks.filter { selectedIDs.contains($0.id) }
 
+        // Validate that selected decks still exist
+        let validDeckIDs = Set(selectedDecks.map { $0.id })
+        if validDeckIDs != selectedIDs {
+            Self.logger.warning("Some selected decks no longer exist, updating selection")
+            AppSettings.selectedDeckIDs = validDeckIDs
+        }
+
         // Refresh counts
         refreshCounts()
 
@@ -263,7 +271,13 @@ struct StudyView: View {
 }
 
 private func makeStudyViewWithDecksPreview() -> some View {
-    let container = try! ModelContainer(for: Deck.self, Flashcard.self, FSRSState.self, FlashcardReview.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container: ModelContainer
+    do {
+        container = try ModelContainer(for: Deck.self, Flashcard.self, FSRSState.self, FlashcardReview.self, configurations: config)
+    } catch {
+        fatalError("Failed to create preview container: \(error)")
+    }
     let context = ModelContext(container)
 
     // Create decks

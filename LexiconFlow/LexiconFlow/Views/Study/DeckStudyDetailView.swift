@@ -129,6 +129,9 @@ struct DeckStudyDetailView: View {
             .background(.ultraThinMaterial, in: .rect(cornerRadius: 12))
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(description)")
+        .accessibilityHint("Tap to start study session")
     }
 
     private func refreshStats() {

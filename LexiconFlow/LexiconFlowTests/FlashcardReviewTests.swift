@@ -345,13 +345,16 @@ struct FlashcardReviewTests {
         try context.save()
 
         #expect(flashcard.reviewLogs.count == 3)
-        #expect(flashcard.reviewLogs[0].rating == 2)
-        #expect(flashcard.reviewLogs[1].rating == 3)
-        #expect(flashcard.reviewLogs[2].rating == 3)
+
+        // Sort reviews by date to verify ordering (SwiftData doesn't guarantee relationship order)
+        let sortedReviews = flashcard.reviewLogs.sorted { $0.reviewDate < $1.reviewDate }
+        #expect(sortedReviews[0].rating == 2)
+        #expect(sortedReviews[1].rating == 3)
+        #expect(sortedReviews[2].rating == 3)
 
         // Verify ordering (oldest to newest)
-        #expect(flashcard.reviewLogs[0].reviewDate < flashcard.reviewLogs[1].reviewDate)
-        #expect(flashcard.reviewLogs[1].reviewDate < flashcard.reviewLogs[2].reviewDate)
+        #expect(sortedReviews[0].reviewDate < sortedReviews[1].reviewDate)
+        #expect(sortedReviews[1].reviewDate < sortedReviews[2].reviewDate)
     }
 
     // MARK: - Cascade Delete Tests
