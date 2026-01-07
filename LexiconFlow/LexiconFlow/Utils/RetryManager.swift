@@ -110,6 +110,12 @@ enum RetryManager {
 
         // This should never happen - operation should have either succeeded or failed
         // If we reach here, there's a bug in the retry logic
-        fatalError("RetryManager completed without success or failure - this should never happen")
+        logger.critical("RetryManager completed without success or failure - this should never happen")
+        return .failure(RetryManagerError.unknownCompletion)
     }
+}
+
+/// Error type for RetryManager failures
+enum RetryManagerError: Error {
+    case unknownCompletion
 }

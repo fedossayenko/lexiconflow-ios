@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import OSLog
 
 /// View for selecting multiple decks to study from
 struct DeckSelectionView: View {
@@ -279,7 +280,9 @@ private func makeDeckSelectionPreview() -> some View {
     do {
         container = try ModelContainer(for: Deck.self, configurations: config)
     } catch {
-        fatalError("Failed to create preview container: \(error)")
+        Logger(subsystem: "com.lexiconflow.preview", category: "DeckSelectionView")
+            .error("Failed to create preview container: \(error)")
+        return Text("Preview Unavailable")
     }
     let context = ModelContext(container)
 
