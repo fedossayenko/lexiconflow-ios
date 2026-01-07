@@ -121,13 +121,14 @@ struct FlashcardDetailView: View {
         .onChange(of: viewModel.exportError != nil) { _, hasError in
             showingExportError = hasError
         }
-        .task(id: currentFilter) {
-            // Track filter changes with automatic task lifecycle management
-            // Task is cancelled when filter changes or view disappears
-            await Analytics.trackEvent("review_history_filter_changed", metadata: [
-                "filter": currentFilter.rawValue,
-                "flashcard_word": flashcard.word
-            ])
+        .onChange(of: currentFilter) { _, newFilter in
+            // Track filter changes for analytics
+            Task {
+                await Analytics.trackEvent("review_history_filter_changed", metadata: [
+                    "filter": newFilter.rawValue,
+                    "flashcard_word": flashcard.word
+                ])
+            }
         }
     }
 
@@ -369,8 +370,16 @@ private extension Preview {
         do {
             return try ModelContainer(for: Flashcard.self, configurations: config)
         } catch {
-            // Preview failure indicates a real problem - use fatalError for development
-            fatalError("Failed to create preview container: \(error.localizedDescription)")
+            // Preview failure indicates a real problem - log and use fallback
+            assertionFailure("Failed to create preview container: \(error.localizedDescription)")
+            // Fallback: create container with no schema (minimal recovery)
+            do {
+                return try ModelContainer(for: Schema(), configurations: config)
+            } catch {
+                // Last resort: in-memory empty container
+                let fallbackConfig = ModelConfiguration(isStoredInMemoryOnly: true)
+                return try! ModelContainer(for: Schema(), configurations: fallbackConfig)
+            }
         }
     }
 }

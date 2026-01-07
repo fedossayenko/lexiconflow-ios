@@ -25,6 +25,28 @@ public struct RetryManagerError: Error {
     init(_ error: any Error) {
         self.underlyingError = error
     }
+
+    /// Create a type mismatch error with expected and actual type information
+    ///
+    /// Used when a retry operation throws an error that doesn't match the declared ErrorType.
+    /// This indicates a programming error in the operation's type signature.
+    ///
+    /// - Parameters:
+    ///   - expected: The expected error type name
+    ///   - actual: The actual error type that was thrown
+    /// - Returns: A RetryManagerError with descriptive information
+    public static func typeMismatch(expected: String, actual: String) -> RetryManagerError {
+        let error = NSError(
+            domain: "com.lexiconflow.retrymanager",
+            code: -1,
+            userInfo: [
+                NSLocalizedDescriptionKey: "Type mismatch: expected \(expected), got \(actual). Check operation signature.",
+                "expectedType": expected,
+                "actualType": actual
+            ]
+        )
+        return RetryManagerError(error)
+    }
 }
 
 /// Generic retry manager with exponential backoff
@@ -117,9 +139,14 @@ enum RetryManager {
                 // Unknown error type that doesn't match ErrorType
                 // This is a programming error - operation should throw ErrorType
                 logger.error("\(logContext): Operation threw unexpected error type - \(error.localizedDescription)")
-                // Cannot continue without typed error for Result return type
-                // Exit loop and return last known error or fail
-                break
+                // Store as last error (will be handled below)
+                // Since we can't convert to ErrorType, we'll need to handle this case
+                attempt += 1
+                if attempt < maxRetries {
+                    logger.info("\(logContext): Retrying in \(delay)s (attempt \(attempt + 1)/\(maxRetries))")
+                    try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                    delay *= 2
+                }
             }
         }
 
@@ -130,18 +157,12 @@ enum RetryManager {
 
         // If we reach here, operation repeatedly threw non-ErrorType errors
         // This indicates a programming error in the operation signature
-        // Log critical failure and return an error if possible
+        // Log critical failure for debugging
         logger.critical("\(logContext): Operation signature mismatch - cannot convert errors to expected type")
-        // Since we can't create an arbitrary ErrorType, we need to try one more time
-        // and let any type mismatch crash at runtime (programming error)
-        do {
-            return .success(try await operation())
-        } catch let error as ErrorType {
-            return .failure(error)
-        } catch {
-            // Programming error: operation signature doesn't match declared ErrorType
-            // This should never happen in production with correct type annotations
-            fatalError("Operation threw \(type(of: error)) but expected \(ErrorType.self). Check operation signature.")
-        }
+
+        // Programming error: operation signature doesn't match declared ErrorType
+        // Use preconditionFailure which can be disabled with -Ounchecked compile flag
+        // In production with proper type annotations, this branch should never execute
+        preconditionFailure("Operation threw error type that doesn't match declared ErrorType. Check operation signature.")
     }
 }
