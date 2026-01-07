@@ -657,13 +657,14 @@ struct EdgeCaseTests {
 // MARK: - Deck-Centric Mode Edge Cases
 
 @Suite("Deck-Centric Edge Cases")
+@MainActor
 struct DeckCentricEdgeCases {
 
-    private static func freshContext() -> ModelContext {
+    private func freshContext() -> ModelContext {
         TestContainers.freshContext()
     }
 
-    private static func createDeck(context: ModelContext, name: String = "Test Deck") -> Deck {
+    private func createDeck(context: ModelContext, name: String = "Test Deck") -> Deck {
         let deck = Deck(name: name, icon: "folder.fill", order: 0)
         context.insert(deck)
         try! context.save()
@@ -671,7 +672,7 @@ struct DeckCentricEdgeCases {
     }
 
     @Test("Deck with no cards returns zero counts")
-    func deckWithNoCards() async {
+    func deckWithNoCards() async throws {
         let context = freshContext()
         try context.clearAll()
 
@@ -716,19 +717,25 @@ struct DeckCentricEdgeCases {
     }
 
     @Test("Card deleted between fetch and review handles gracefully")
-    func cardDeletedDuringFetch() async {
+    func cardDeletedDuringFetch() async throws {
         let context = freshContext()
         try context.clearAll()
 
         let deck = createDeck(context: context)
 
         // Create a card
-        let card = Flashcard(front: "test", back: "test", deck: deck)
+        let card = Flashcard(word: "test", definition: "test")
+        card.deck = deck
         context.insert(card)
 
-        let state = FSRSState(card: card)
-        state.stateEnum = FlashcardState.review.rawValue
-        state.dueDate = Date().addingTimeInterval(-3600)
+        let state = FSRSState(
+            stability: 0.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date().addingTimeInterval(-3600),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        state.card = card
         context.insert(state)
 
         try! context.save()
@@ -745,12 +752,13 @@ struct DeckCentricEdgeCases {
         try! context.save()
 
         // Verify card was deleted
-        let deletedCard = try? context.fetch(FetchDescriptor<Flashcard>(predicate: #Predicate { $0.id == card.id })).first
+        let cardID = card.id
+        let deletedCard = try? context.fetch(FetchDescriptor<Flashcard>(predicate: #Predicate { $0.id == cardID })).first
         #expect(deletedCard == nil, "Card should be deleted")
     }
 
     @Test("Large number of decks (100+) handles efficiently")
-    func largeDeckCount() async {
+    func largeDeckCount() async throws {
         let context = freshContext()
         try context.clearAll()
 
@@ -774,7 +782,7 @@ struct DeckCentricEdgeCases {
     }
 
     @Test("Session with no available cards handles gracefully")
-    func sessionWithNoAvailableCards() async {
+    func sessionWithNoAvailableCards() async throws {
         let context = freshContext()
         try context.clearAll()
 
@@ -794,7 +802,7 @@ struct DeckCentricEdgeCases {
     }
 
     @Test("Multiple sessions with same deck handle correctly")
-    func multipleSessionsSameDeck() async {
+    func multipleSessionsSameDeck() async throws {
         let context = freshContext()
         try context.clearAll()
 
@@ -802,12 +810,18 @@ struct DeckCentricEdgeCases {
 
         // Create multiple cards
         for i in 1...5 {
-            let card = Flashcard(front: "card\(i)", back: "card\(i)", deck: deck)
+            let card = Flashcard(word: "card\(i)", definition: "card\(i)")
+            card.deck = deck
             context.insert(card)
 
-            let state = FSRSState(card: card)
-            state.stateEnum = FlashcardState.review.rawValue
-            state.dueDate = Date().addingTimeInterval(-3600)
+            let state = FSRSState(
+                stability: 0.0,
+                difficulty: 5.0,
+                retrievability: 0.9,
+                dueDate: Date().addingTimeInterval(-3600),
+                stateEnum: FlashcardState.review.rawValue
+            )
+            state.card = card
             context.insert(state)
         }
 
@@ -827,7 +841,7 @@ struct DeckCentricEdgeCases {
     }
 
     @Test("Deck selection updates during session don't crash")
-    func deckSelectionUpdateDuringSession() async {
+    func deckSelectionUpdateDuringSession() async throws {
         let context = freshContext()
         try context.clearAll()
 
@@ -858,27 +872,40 @@ struct DeckCentricEdgeCases {
     }
 
     @Test("Study mode switching updates card list")
-    func studyModeSwitching() async {
+    func studyModeSwitching() async throws {
         let context = freshContext()
         try context.clearAll()
 
         let deck = createDeck(context: context)
 
         // Create new card
-        let card1 = Flashcard(front: "new", back: "new", deck: deck)
+        let card1 = Flashcard(word: "new", definition: "new")
+        card1.deck = deck
         context.insert(card1)
 
-        let state1 = FSRSState(card: card1)
-        state1.stateEnum = FlashcardState.new.rawValue
+        let state1 = FSRSState(
+            stability: 0.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.new.rawValue
+        )
+        state1.card = card1
         context.insert(state1)
 
         // Create due card
-        let card2 = Flashcard(front: "due", back: "due", deck: deck)
+        let card2 = Flashcard(word: "due", definition: "due")
+        card2.deck = deck
         context.insert(card2)
 
-        let state2 = FSRSState(card: card2)
-        state2.stateEnum = FlashcardState.review.rawValue
-        state2.dueDate = Date().addingTimeInterval(-3600)
+        let state2 = FSRSState(
+            stability: 0.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date().addingTimeInterval(-3600),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        state2.card = card2
         context.insert(state2)
 
         try! context.save()

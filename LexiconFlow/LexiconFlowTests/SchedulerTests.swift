@@ -1017,32 +1017,39 @@ struct SchedulerTests {
 // MARK: - SwiftData Rollback Tests
 
 @Suite("SwiftData Rollback Tests")
+@MainActor
 struct SwiftDataRollbackTests {
 
-    private static func freshContext() -> ModelContext {
+    private func freshContext() -> ModelContext {
         TestContainers.freshContext()
     }
 
-    private static func createTestDeck(context: ModelContext) -> Deck {
+    private func createTestDeck(context: ModelContext) -> Deck {
         let deck = Deck(name: "Test Deck", icon: "folder.fill", order: 0)
         context.insert(deck)
         try! context.save()
         return deck
     }
 
-    private static func createTestFlashcard(
+    private func createTestFlashcard(
         context: ModelContext,
         word: String = "test",
         state: FlashcardState = .new,
         dueOffset: TimeInterval = 0
     ) -> Flashcard {
         let deck = createTestDeck(context: context)
-        let card = Flashcard(front: word, back: word, deck: deck)
+        let card = Flashcard(word: word, definition: word)
+        card.deck = deck
         context.insert(card)
 
-        let fsrsState = FSRSState(card: card)
-        fsrsState.stateEnum = state.rawValue
-        fsrsState.dueDate = Date().addingTimeInterval(dueOffset)
+        let fsrsState = FSRSState(
+            stability: 0.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date().addingTimeInterval(dueOffset),
+            stateEnum: state.rawValue
+        )
+        fsrsState.card = card
 
         context.insert(fsrsState)
         try! context.save()
@@ -1096,7 +1103,7 @@ struct SwiftDataRollbackTests {
     }
 
     @Test("Statistics load failure handles gracefully")
-    func statsLoadFailure() async {
+    func statsLoadFailure() async throws {
         let context = freshContext()
         try context.clearAll()
 
@@ -1139,7 +1146,7 @@ struct SwiftDataRollbackTests {
     }
 
     @Test("Deck deletion during session handles gracefully")
-    func deckDeletionDuringSession() async {
+    func deckDeletionDuringSession() async throws {
         let context = freshContext()
         try context.clearAll()
 
@@ -1169,12 +1176,13 @@ struct SwiftDataRollbackTests {
     }
 
     @Test("Corrupted FSRSState recovery")
-    func corruptedStateRecovery() async {
+    func corruptedStateRecovery() async throws {
         let context = freshContext()
         try context.clearAll()
 
         let deck = createTestDeck(context: context)
-        let card = Flashcard(front: "test", back: "test", deck: deck)
+        let card = Flashcard(word: "test", definition: "test")
+        card.deck = deck
 
         // Create card with corrupted state (nil FSRSState)
         context.insert(card)

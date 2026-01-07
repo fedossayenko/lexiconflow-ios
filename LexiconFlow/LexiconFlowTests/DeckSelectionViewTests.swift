@@ -16,13 +16,13 @@ struct DeckSelectionViewTests {
 
     // MARK: - Test Container Setup
 
-    private static func makeTestContainer() -> ModelContainer {
+    private func makeTestContainer() -> ModelContainer {
         let schema = Schema([Deck.self, Flashcard.self, FSRSState.self, FlashcardReview.self])
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         return try! ModelContainer(for: schema, configurations: [configuration])
     }
 
-    private static func insertTestData(context: ModelContext) -> (Deck, Deck, Deck) {
+    private func insertTestData(context: ModelContext) -> (Deck, Deck, Deck) {
         let deck1 = Deck(name: "Vocabulary", icon: "book.fill", order: 0)
         let deck2 = Deck(name: "Phrases", icon: "text.bubble", order: 1)
         let deck3 = Deck(name: "Grammar", icon: "text.alignleft", order: 2)
@@ -32,16 +32,28 @@ struct DeckSelectionViewTests {
         context.insert(deck3)
 
         // Add some cards to deck1
-        let card1 = Flashcard(front: "Hello", back: "Hola", deck: deck1)
-        let card2 = Flashcard(front: "Goodbye", back: "Adiós", deck: deck1)
+        let card1 = Flashcard(word: "Hello", definition: "Hola")
+        card1.deck = deck1
+        let card2 = Flashcard(word: "Goodbye", definition: "Adiós")
+        card2.deck = deck1
 
-        let state1 = FSRSState(card: card1)
-        state1.dueDate = Date().addingTimeInterval(-1000) // Due
-        state1.stateEnum = "review"
+        let state1 = FSRSState(
+            stability: 0.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date().addingTimeInterval(-1000),
+            stateEnum: "review"
+        )
+        state1.card = card1
 
-        let state2 = FSRSState(card: card2)
-        state2.dueDate = Date().addingTimeInterval(86400 * 30) // New
-        state2.stateEnum = "new"
+        let state2 = FSRSState(
+            stability: 0.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date().addingTimeInterval(86400 * 30),
+            stateEnum: "new"
+        )
+        state2.card = card2
 
         context.insert(card1)
         context.insert(card2)
@@ -290,10 +302,14 @@ struct DeckSelectionViewTests {
         // Simulate concurrent updates
         await withTaskGroup(of: Void.self) { group in
             group.addTask {
-                AppSettings.selectedDeckIDs = [deck1.id]
+                await MainActor.run {
+                    AppSettings.selectedDeckIDs = [deck1.id]
+                }
             }
             group.addTask {
-                AppSettings.selectedDeckIDs = [deck2.id, deck3.id]
+                await MainActor.run {
+                    AppSettings.selectedDeckIDs = [deck2.id, deck3.id]
+                }
             }
         }
 

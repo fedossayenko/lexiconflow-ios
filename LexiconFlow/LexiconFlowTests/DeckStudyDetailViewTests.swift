@@ -14,27 +14,39 @@ import SwiftData
 @Suite("DeckStudyDetailView Tests")
 struct DeckStudyDetailViewTests {
 
-    private static func makeTestContainer() -> ModelContainer {
+    private func makeTestContainer() -> ModelContainer {
         let schema = Schema([Deck.self, Flashcard.self, FSRSState.self, FlashcardReview.self])
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         return try! ModelContainer(for: schema, configurations: [configuration])
     }
 
-    private static func insertDeckWithCards(context: ModelContext) -> Deck {
+    private func insertDeckWithCards(context: ModelContext) -> Deck {
         let deck = Deck(name: "Vocabulary", icon: "book.fill", order: 0)
         context.insert(deck)
 
         // Add cards
-        let card1 = Flashcard(front: "Hello", back: "Hola", deck: deck)
-        let card2 = Flashcard(front: "Goodbye", back: "Adiós", deck: deck)
+        let card1 = Flashcard(word: "Hello", definition: "Hola")
+        card1.deck = deck
+        let card2 = Flashcard(word: "Goodbye", definition: "Adiós")
+        card2.deck = deck
 
-        let state1 = FSRSState(card: card1)
-        state1.dueDate = Date().addingTimeInterval(-1000) // Due
-        state1.stateEnum = "review"
+        let state1 = FSRSState(
+            stability: 0.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date().addingTimeInterval(-1000),
+            stateEnum: "review"
+        )
+        state1.card = card1
 
-        let state2 = FSRSState(card: card2)
-        state2.dueDate = Date().addingTimeInterval(86400 * 30) // New
-        state2.stateEnum = "new"
+        let state2 = FSRSState(
+            stability: 0.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date().addingTimeInterval(86400 * 30),
+            stateEnum: "new"
+        )
+        state2.card = card2
 
         context.insert(card1)
         context.insert(card2)

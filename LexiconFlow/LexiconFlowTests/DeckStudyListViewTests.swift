@@ -14,13 +14,13 @@ import SwiftData
 @Suite("DeckStudyListView Tests")
 struct DeckStudyListViewTests {
 
-    private static func makeTestContainer() -> ModelContainer {
+    private func makeTestContainer() -> ModelContainer {
         let schema = Schema([Deck.self, Flashcard.self, FSRSState.self, FlashcardReview.self])
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         return try! ModelContainer(for: schema, configurations: [configuration])
     }
 
-    private static func insertDecks(context: ModelContext) -> (Deck, Deck, Deck) {
+    private func insertDecks(context: ModelContext) -> (Deck, Deck, Deck) {
         let deck1 = Deck(name: "Vocabulary", icon: "book.fill", order: 0)
         let deck2 = Deck(name: "Phrases", icon: "text.bubble", order: 1)
         let deck3 = Deck(name: "Grammar", icon: "text.alignleft", order: 2)
@@ -30,10 +30,16 @@ struct DeckStudyListViewTests {
         context.insert(deck3)
 
         // Add cards to deck1
-        let card1 = Flashcard(front: "Hello", back: "Hola", deck: deck1)
-        let state1 = FSRSState(card: card1)
-        state1.dueDate = Date().addingTimeInterval(-1000)
-        state1.stateEnum = "review"
+        let card1 = Flashcard(word: "Hello", definition: "Hola")
+        card1.deck = deck1
+        let state1 = FSRSState(
+            stability: 0.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date().addingTimeInterval(-1000),
+            stateEnum: "review"
+        )
+        state1.card = card1
 
         context.insert(card1)
         context.insert(state1)
