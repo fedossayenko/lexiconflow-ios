@@ -32,6 +32,8 @@ struct LexiconFlowApp: App {
             Flashcard.self,
             Deck.self,
             FlashcardReview.self,
+            StudySession.self,
+            DailyStats.self,
             GeneratedSentence.self
         ])
 
@@ -81,9 +83,10 @@ struct LexiconFlowApp: App {
             )
             return minimalContainer
         } catch {
-            // If even the minimal container fails, we have no choice but to crash
-            // This should never happen with a simple empty model
+            // Absolute last resort - if even empty model fails, crash is unavoidable
             logger.critical("Minimal container creation failed: \(error.localizedDescription)")
+            Analytics.trackError("model_container_minimal_failed", error: error)
+            // At this point, there's no way to recover - crash with clear message
             fatalError("Could not create minimal ModelContainer: \(error)")
         }
     }()
@@ -128,6 +131,12 @@ struct LexiconFlowApp: App {
         case .background:
             // Reset haptic engine when app goes to background to free resources
             HapticService.shared.reset()
+
+            // Aggregate DailyStats from completed StudySession records
+            // This runs in the background to prepare pre-aggregated statistics for dashboard
+            Task {
+                await aggregateDailyStatsInBackground()
+            }
         case .active:
             // Restart haptic engine when app returns to foreground
             if oldPhase == .background || oldPhase == .inactive {
@@ -135,6 +144,38 @@ struct LexiconFlowApp: App {
             }
         default:
             break
+        }
+    }
+
+    /// Aggregate DailyStats from StudySession records in the background
+    ///
+    /// Called when app backgrounds to maintain pre-aggregated statistics for dashboard performance.
+    /// This ensures the dashboard loads quickly even with large amounts of study data.
+    ///
+    /// **Why Background?**: Aggregation can be expensive with many sessions. Running it when
+    /// the app backgrounds ensures it doesn't block UI interactions and completes before the
+    /// next app launch.
+    private func aggregateDailyStatsInBackground() async {
+        let logger = Logger(subsystem: "com.lexiconflow.app", category: "LexiconFlowApp")
+
+        logger.debug("Starting background DailyStats aggregation")
+
+        // Create a new background context for this operation
+        // IMPORTANT: Create new context for background operations, not mainContext
+        let context = ModelContext(sharedModelContainer)
+
+        // Call StatisticsService to aggregate sessions
+        do {
+            let aggregatedCount = try await StatisticsService.shared.aggregateDailyStats(context: context)
+
+            if aggregatedCount > 0 {
+                logger.info("Background aggregation complete: \(aggregatedCount) days updated")
+            } else {
+                logger.debug("Background aggregation complete: No new sessions to aggregate")
+            }
+        } catch {
+            logger.error("Background aggregation failed: \(error.localizedDescription)")
+            Analytics.trackError("background_aggregate_daily_stats", error: error)
         }
     }
 }

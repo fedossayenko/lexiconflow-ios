@@ -2,7 +2,7 @@
 //  MainTabView.swift
 //  LexiconFlow
 //
-//  Root navigation container with 3 tabs: Decks, Study, Settings
+//  Root navigation container with 4 tabs: Decks, Study, Statistics, Settings
 //
 
 import SwiftUI
@@ -17,28 +17,43 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            DeckListView()
-                .tabItem {
-                    Label("Decks", systemImage: "book.fill")
-                }
-                .tag(0)
-                .accessibilityIdentifier("decks_tab")
+            NavigationStack {
+                DeckListView()
+            }
+            .tabItem {
+                Label("Decks", systemImage: "book.fill")
+            }
+            .tag(0)
+            .accessibilityIdentifier("decks_tab")
 
-            StudyView()
-                .tabItem {
-                    Label("Study", systemImage: "brain.fill")
-                }
-                .tag(1)
-                .badge(dueCardCount)
-                .accessibilityIdentifier("study_tab")
-                .accessibilityLabel(dueCardCount > 0 ? "Study, \(dueCardCount) cards due" : "Study")
+            NavigationStack {
+                StudyView()
+            }
+            .tabItem {
+                Label("Study", systemImage: "brain.fill")
+            }
+            .tag(1)
+            .badge(dueCardCount)
+            .accessibilityIdentifier("study_tab")
+            .accessibilityLabel(dueCardCount > 0 ? "Study, \(dueCardCount) cards due" : "Study")
 
-            SettingsView()
-                .tabItem {
-                    Label("Settings", systemImage: "gearshape.fill")
-                }
-                .tag(2)
-                .accessibilityIdentifier("settings_tab")
+            NavigationStack {
+                StatisticsDashboardView()
+            }
+            .tabItem {
+                Label("Statistics", systemImage: "chart.bar.fill")
+            }
+            .tag(2)
+            .accessibilityIdentifier("statistics_tab")
+
+            NavigationStack {
+                SettingsView()
+            }
+            .tabItem {
+                Label("Settings", systemImage: "gearshape.fill")
+            }
+            .tag(3)
+            .accessibilityIdentifier("settings_tab")
         }
         .onAppear {
             refreshDueCount()
@@ -66,5 +81,5 @@ struct MainTabView: View {
 
 #Preview {
     MainTabView()
-        .modelContainer(for: [Flashcard.self, Deck.self, FSRSState.self, FlashcardReview.self], inMemory: true)
+        .modelContainer(for: [Flashcard.self, Deck.self, FSRSState.self, FlashcardReview.self, StudySession.self, DailyStats.self], inMemory: true)
 }

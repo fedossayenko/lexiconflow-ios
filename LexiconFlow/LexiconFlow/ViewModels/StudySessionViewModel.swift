@@ -50,6 +50,7 @@ enum StudySessionError: LocalizedError, Sendable {
 final class StudySessionViewModel: ObservableObject {
     private let scheduler: Scheduler
     private let mode: StudyMode
+    private let modelContext: ModelContext
     private let decks: [Deck]
     private let logger = Logger(subsystem: "com.lexiconflow.session", category: "StudySessionViewModel")
 
@@ -58,6 +59,9 @@ final class StudySessionViewModel: ObservableObject {
     @Published private(set) var isComplete = false
     @Published private(set) var isProcessing = false
     @Published private(set) var lastError: Error?
+
+    /// The current study session record (created when cards are loaded)
+    private var currentStudySession: StudySession?
 
     /// The current card being displayed
     var currentCard: Flashcard? {
@@ -82,6 +86,7 @@ final class StudySessionViewModel: ObservableObject {
     ///   - mode: Study mode (scheduled or learning)
     init(modelContext: ModelContext, decks: [Deck] = [], mode: StudyMode) {
         self.mode = mode
+        self.modelContext = modelContext
         self.decks = decks
         self.scheduler = Scheduler(modelContext: modelContext)
     }
@@ -91,6 +96,47 @@ final class StudySessionViewModel: ObservableObject {
         cards = scheduler.fetchCards(for: decks, mode: mode, limit: AppSettings.studyLimit)
         currentIndex = 0
         isComplete = cards.isEmpty
+
+        // Create study session record if cards were loaded
+        if !cards.isEmpty {
+            createStudySession()
+        }
+    }
+
+    /// Create a new StudySession record
+    private func createStudySession() {
+        let session = StudySession(startTime: Date(), mode: mode)
+        modelContext.insert(session)
+
+        do {
+            try modelContext.save()
+            currentStudySession = session
+            logger.info("Created study session: \(session.id)")
+        } catch {
+            Analytics.trackError("create_study_session", error: error)
+            logger.error("Failed to create study session: \(error)")
+            // Continue without session tracking - don't block study
+        }
+    }
+
+    /// Finalize the study session (set end time and card count)
+    func finalizeSession() {
+        guard let session = currentStudySession, session.isActive else {
+            return
+        }
+
+        session.endTime = Date()
+        session.cardsReviewed = currentIndex
+
+        do {
+            try modelContext.save()
+            logger.info("Finalized study session: \(session.id) with \(self.currentIndex) cards")
+        } catch {
+            Analytics.trackError("finalize_study_session", error: error)
+            logger.error("Failed to finalize study session: \(error)")
+        }
+
+        currentStudySession = nil
     }
 
     /// Submit a rating for a specific card
@@ -114,7 +160,8 @@ final class StudySessionViewModel: ObservableObject {
         let result = await scheduler.processReview(
             flashcard: card,
             rating: rating,
-            mode: mode
+            mode: mode,
+            studySession: currentStudySession
         )
 
         // Only advance if the review was saved successfully
@@ -131,6 +178,8 @@ final class StudySessionViewModel: ObservableObject {
 
         if currentIndex >= cards.count {
             isComplete = true
+            // Auto-finalize when session completes
+            finalizeSession()
         }
     }
 
@@ -142,7 +191,16 @@ final class StudySessionViewModel: ObservableObject {
 
     /// Reset the session (e.g., to start over)
     func reset() {
+        // Finalize existing session if active
+        finalizeSession()
+
+        // Reset state
         currentIndex = 0
         isComplete = false
+    }
+
+    /// Clean up when view is dismissed (finalizes session if still active)
+    func cleanup() {
+        finalizeSession()
     }
 }

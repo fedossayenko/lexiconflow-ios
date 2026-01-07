@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "011-fsrs-v5-algorithm-integration",
-  "state": "completed",
+  "spec": "002-study-statistics-dashboard",
+  "state": "complete",
   "subtasks": {
-    "completed": 13,
-    "total": 13,
+    "completed": 30,
+    "total": 30,
     "in_progress": 0,
     "failed": 0
   },
   "phase": {
-    "current": "Phase 4: Documentation and Acceptance",
-    "id": null,
-    "total": 2
+    "current": "",
+    "id": 0,
+    "total": 0
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 8,
-    "started_at": "2026-01-05T21:48:33.605534"
+    "number": 23,
+    "started_at": "2026-01-06T19:29:45.084551"
   },
-  "last_update": "2026-01-05T22:15:00.000000"
+  "last_update": "2026-01-06T21:04:27.643481"
 }

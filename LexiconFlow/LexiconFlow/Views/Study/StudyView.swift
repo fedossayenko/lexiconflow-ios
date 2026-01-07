@@ -19,6 +19,7 @@ struct StudyView: View {
     @State private var selectedDecks: [Deck] = []
     @State private var dueCount = 0
     @State private var newCount = 0
+    @State private var totalCount = 0
     @State private var isSessionActive = false
     @State private var showDeckSelection = false
     @State private var sessionCards: [Flashcard] = []
@@ -88,6 +89,7 @@ struct StudyView: View {
                     Picker("Study Mode", selection: $studyMode) {
                         Text("Learn New").tag(StudyMode.learning)
                         Text("Scheduled").tag(StudyMode.scheduled)
+                        Text("Cram").tag(StudyMode.cram)
                     }
                     .pickerStyle(.segmented)
                     .accessibilityLabel("Study mode selector")
@@ -185,6 +187,8 @@ struct StudyView: View {
             return "\(newCount) new"
         case .scheduled:
             return "\(dueCount) due"
+        case .cram:
+            return "\(totalCount) total"
         }
     }
 
@@ -194,6 +198,8 @@ struct StudyView: View {
             return "cards to learn"
         case .scheduled:
             return "cards for review"
+        case .cram:
+            return "cards to practice"
         }
     }
 
@@ -203,6 +209,8 @@ struct StudyView: View {
             return "plus.circle.fill"
         case .scheduled:
             return "calendar.badge.clock"
+        case .cram:
+            return "repeat"
         }
     }
 
@@ -212,6 +220,8 @@ struct StudyView: View {
             return .green
         case .scheduled:
             return dueCount > 0 ? .orange : .gray
+        case .cram:
+            return .purple
         }
     }
 
@@ -248,6 +258,7 @@ struct StudyView: View {
         let scheduler = Scheduler(modelContext: modelContext)
         dueCount = scheduler.dueCardCount(for: selectedDecks)
         newCount = scheduler.newCardCount(for: selectedDecks)
+        totalCount = scheduler.totalCardCount(for: selectedDecks)
     }
 
     private func startSession() {

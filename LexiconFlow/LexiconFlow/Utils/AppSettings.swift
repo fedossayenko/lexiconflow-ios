@@ -62,6 +62,11 @@ enum AppSettings {
     /// Daily study goal in number of cards
     @AppStorage("dailyGoal") static var dailyGoal: Int = 20
 
+    // MARK: - Statistics Settings (NEW)
+
+    /// Selected time range for statistics dashboard ("7d", "30d", "all")
+    @AppStorage("statisticsTimeRange") static var statisticsTimeRange: String = "7d"
+
     // MARK: - Deck Selection Settings (NEW)
 
     /// Raw JSON data for selected deck IDs
@@ -141,6 +146,7 @@ enum AppSettings {
             "studyLimit": 20,
             "defaultStudyMode": "scheduled",
             "dailyGoal": 20,
+            "statisticsTimeRange": "7d",
             "darkMode": "system",
             "glassEffectsEnabled": true
         ] as [String: Any]

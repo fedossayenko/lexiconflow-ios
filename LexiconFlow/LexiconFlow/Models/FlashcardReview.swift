@@ -49,6 +49,11 @@ final class FlashcardReview {
     /// - Inverse points to Flashcard.reviewLogs
     @Relationship(deleteRule: .nullify, inverse: \Flashcard.reviewLogs) var card: Flashcard?
 
+    /// The study session this review belongs to (optional)
+    /// - Deleting study session sets this to nil (review kept for card analytics)
+    /// - Inverse points to StudySession.reviewsLog
+    @Relationship(deleteRule: .nullify, inverse: \StudySession.reviewsLog) var studySession: StudySession?
+
     // MARK: - Initialization
 
     /// Initialize a new review log entry
