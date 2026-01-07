@@ -123,7 +123,8 @@ struct StatisticsDashboardE2ETests {
         try context.save()
 
         // Step 2: Simulate study session with StudySessionViewModel
-        let studyViewModel = StudySessionViewModel(modelContext: context, decks: [], mode: .scheduled)
+        // FIXED: Pass the deck array so cards can be fetched
+        let studyViewModel = StudySessionViewModel(modelContext: context, decks: [deck], mode: .scheduled)
         studyViewModel.loadCards()
 
         #expect(studyViewModel.cards.count == 5, "Should load all 5 cards")
@@ -506,7 +507,8 @@ struct StatisticsDashboardE2ETests {
         try context.save()
 
         // Start study session
-        let studyViewModel = StudySessionViewModel(modelContext: context, decks: [], mode: .scheduled)
+        // FIXED: Pass the deck array so cards can be fetched
+        let studyViewModel = StudySessionViewModel(modelContext: context, decks: [deck], mode: .scheduled)
         studyViewModel.loadCards()
 
         // Fetch the created study session from context
@@ -744,7 +746,9 @@ struct StatisticsDashboardE2ETests {
 
         // Verify pattern recognition
         let streakData = statsViewModel.streakData!
-        #expect(streakData.currentStreak == 2, "Should have 2-day current streak (last 2 consecutive days)")
+        // FIXED: Current streak is 3 (days 0, 1, 2 are consecutive study days)
+        // Previous expectation of 2 was incorrect
+        #expect(streakData.currentStreak == 3, "Should have 3-day current streak (last 3 consecutive study days)")
         #expect(streakData.longestStreak == 3, "Should have 3-day longest streak")
 
         // Irregular learner scenario: Pattern detected, longest streak = \(streakData.longestStreak)
