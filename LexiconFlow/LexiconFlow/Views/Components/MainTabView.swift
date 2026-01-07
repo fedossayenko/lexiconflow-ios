@@ -2,7 +2,7 @@
 //  MainTabView.swift
 //  LexiconFlow
 //
-//  Root navigation container with 3 tabs: Decks, Study, Settings
+//  Root navigation container with 4 tabs: Decks, Study, Statistics, Settings
 //
 
 import SwiftUI
@@ -33,11 +33,18 @@ struct MainTabView: View {
                 .accessibilityIdentifier("study_tab")
                 .accessibilityLabel(dueCardCount > 0 ? "Study, \(dueCardCount) cards due" : "Study")
 
+            StatisticsDashboardView()
+                .tabItem {
+                    Label("Statistics", systemImage: "chart.bar.fill")
+                }
+                .tag(2)
+                .accessibilityIdentifier("statistics_tab")
+
             SettingsView()
                 .tabItem {
                     Label("Settings", systemImage: "gearshape.fill")
                 }
-                .tag(2)
+                .tag(3)
                 .accessibilityIdentifier("settings_tab")
         }
         .onAppear {
@@ -66,5 +73,5 @@ struct MainTabView: View {
 
 #Preview {
     MainTabView()
-        .modelContainer(for: [Flashcard.self, Deck.self, FSRSState.self, FlashcardReview.self], inMemory: true)
+        .modelContainer(for: [Flashcard.self, Deck.self, FSRSState.self, FlashcardReview.self, StudySession.self, DailyStats.self], inMemory: true)
 }

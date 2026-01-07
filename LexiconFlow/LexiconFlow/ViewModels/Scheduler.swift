@@ -24,6 +24,11 @@ enum StudyMode: Sendable {
     /// - Cards go through learning steps before graduating to review state
     /// - Ordered by creation date (oldest first)
     case learning
+
+    /// Cram mode: Practice mode that doesn't update FSRS state
+    /// - Only logs reviews for analytics
+    /// - Doesn't modify due dates or intervals
+    case cram
 }
 
 /// Scheduler for managing card reviews and study sessions
@@ -56,7 +61,7 @@ final class Scheduler {
     ///
     /// - Parameters:
     ///   - deck: Optional deck to filter cards (nil = all decks)
-    ///   - mode: Study mode (scheduled or learning)
+    ///   - mode: Study mode (scheduled, learning, or cram)
     ///   - limit: Maximum number of cards to return (defaults to AppSettings.studyLimit)
     /// - Returns: Array of flashcards ready for review
     func fetchCards(for deck: Deck? = nil, mode: StudyMode = .scheduled, limit: Int? = nil) -> [Flashcard] {
@@ -66,6 +71,8 @@ final class Scheduler {
             return fetchDueCards(for: deck, limit: effectiveLimit)
         case .learning:
             return fetchNewCards(for: deck, limit: effectiveLimit)
+        case .cram:
+            return fetchCramCards(for: deck, limit: effectiveLimit)
         }
     }
 
@@ -73,7 +80,7 @@ final class Scheduler {
     ///
     /// - Parameters:
     ///   - decks: Array of decks to filter cards (empty = no cards)
-    ///   - mode: Study mode (scheduled or learning)
+    ///   - mode: Study mode (scheduled, learning, or cram)
     ///   - limit: Maximum number of cards to return (defaults to AppSettings.studyLimit)
     /// - Returns: Array of flashcards ready for review from selected decks
     func fetchCards(for decks: [Deck], mode: StudyMode = .scheduled, limit: Int? = nil) -> [Flashcard] {
@@ -89,6 +96,8 @@ final class Scheduler {
             return fetchDueCards(for: decks, limit: effectiveLimit)
         case .learning:
             return fetchNewCards(for: decks, limit: effectiveLimit)
+        case .cram:
+            return fetchCramCards(for: decks, limit: effectiveLimit)
         }
     }
 
@@ -317,6 +326,46 @@ final class Scheduler {
         }
     }
 
+    /// Fetch cards for cram (practice) mode from a single deck
+    ///
+    /// Cram mode returns all cards for practice without considering due dates.
+    /// Reviews are logged but FSRS state is not updated.
+    ///
+    /// - Parameters:
+    ///   - deck: Optional deck to filter cards (nil = all decks)
+    ///   - limit: Maximum number of cards to return
+    /// - Returns: Array of flashcards for cram practice
+    private func fetchCramCards(for deck: Deck? = nil, limit: Int) -> [Flashcard] {
+        let deckID = deck?.id
+
+        // Query all cards (no state filter for cram mode)
+        let stateDescriptor = FetchDescriptor<FSRSState>()
+
+        do {
+            let states = try modelContext.fetch(stateDescriptor)
+
+            // Convert to cards and filter by deck in-memory
+            let cards = states.compactMap { state -> Flashcard? in
+                guard let card = state.card else {
+                    logger.warning("FSRSState with nil card relationship detected")
+                    return nil
+                }
+                // Filter by deck in-memory
+                if let deckID = deckID, card.deck?.id != deckID {
+                    return nil
+                }
+                return card
+            }
+
+            // Randomize order for variety in cram mode
+            return Array(cards.shuffled().prefix(limit))
+        } catch {
+            Analytics.trackError("fetch_cram_cards", error: error)
+            logger.error("Error fetching cram cards: \(error)")
+            return []
+        }
+    }
+
     // MARK: - Multi-Deck Card Fetching
 
     /// Fetch cards that are due for scheduled review from multiple decks
@@ -403,6 +452,46 @@ final class Scheduler {
         } catch {
             Analytics.trackError("fetch_new_cards_multi", error: error)
             logger.error("Error fetching new cards for multiple decks: \(error)")
+            return []
+        }
+    }
+
+    /// Fetch cards for cram (practice) mode from multiple decks
+    ///
+    /// Cram mode returns all cards for practice without considering due dates.
+    /// Reviews are logged but FSRS state is not updated.
+    ///
+    /// - Parameters:
+    ///   - decks: Array of decks to filter cards
+    ///   - limit: Maximum number of cards to return
+    /// - Returns: Array of flashcards for cram practice
+    private func fetchCramCards(for decks: [Deck], limit: Int) -> [Flashcard] {
+        let deckIDs = Set(decks.map { $0.id })
+
+        // Query all cards (no state filter for cram mode)
+        let stateDescriptor = FetchDescriptor<FSRSState>()
+
+        do {
+            let states = try modelContext.fetch(stateDescriptor)
+
+            // Convert to cards and filter by selected decks in-memory
+            let cards = states.compactMap { state -> Flashcard? in
+                guard let card = state.card else {
+                    logger.warning("FSRSState with nil card relationship detected")
+                    return nil
+                }
+                // Only include cards from selected decks
+                guard let deckID = card.deck?.id, deckIDs.contains(deckID) else {
+                    return nil
+                }
+                return card
+            }
+
+            // Randomize order for variety in cram mode
+            return Array(cards.shuffled().prefix(limit))
+        } catch {
+            Analytics.trackError("fetch_cram_cards_multi", error: error)
+            logger.error("Error fetching cram cards for multiple decks: \(error)")
             return []
         }
     }
@@ -503,18 +592,20 @@ final class Scheduler {
     /// 1. Calls the FSRS algorithm to get updated state values (via DTO)
     /// 2. Applies the updates to the SwiftData flashcard model
     /// 3. Updates the lastReviewDate cache
-    /// 4. Creates a FlashcardReview entry
+    /// 4. Creates a FlashcardReview entry linked to the study session
     /// 5. Saves changes to the database
     ///
     /// - Parameters:
     ///   - flashcard: The flashcard being reviewed
     ///   - rating: The user's rating (0=Again, 1=Hard, 2=Good, 3=Easy)
-    ///   - mode: Study mode (scheduled or learning)
+    ///   - mode: Study mode (scheduled, learning, or cram)
+    ///   - studySession: The active study session (optional, for analytics)
     /// - Returns: The created FlashcardReview entry (or nil if save failed)
     func processReview(
         flashcard: Flashcard,
         rating: Int,
-        mode: StudyMode = .scheduled
+        mode: StudyMode = .scheduled,
+        studySession: StudySession? = nil
     ) async -> FlashcardReview? {
         let now = Date()
 
@@ -524,7 +615,39 @@ final class Scheduler {
             return nil
         }
 
-        // Run the FSRS algorithm
+        // In cram mode, only log the review without updating FSRS
+        if mode == .cram {
+            // Calculate actual elapsed days for analytics accuracy
+            // Safe optional chaining with map to avoid force unwrap crashes
+            let elapsedDays = flashcard.fsrsState?.lastReviewDate
+                .map { DateMath.elapsedDays(since: $0) } ?? 0
+
+            let log = FlashcardReview(
+                rating: rating,
+                reviewDate: now,
+                scheduledDays: 0, // No scheduling in cram mode
+                elapsedDays: elapsedDays
+            )
+            log.card = flashcard
+            log.studySession = studySession
+            modelContext.insert(log)
+
+            // CRITICAL: Propagate save errors instead of silent failure
+            do {
+                try modelContext.save()
+                return log
+            } catch {
+                Analytics.trackError("save_cram_review", error: error, metadata: [
+                    "rating": "\(rating)",
+                    "card": flashcard.word
+                ])
+                logger.error("Failed to save cram review: \(error)")
+                // In production: show user alert
+                return nil
+            }
+        }
+
+        // In scheduled or learning mode, run the FSRS algorithm
         do {
             // Get DTO from FSRSWrapper actor
             let result = try await FSRSWrapper.shared.processReview(
@@ -544,6 +667,7 @@ final class Scheduler {
                 elapsedDays: result.elapsedDays
             )
             log.card = flashcard
+            log.studySession = studySession
             modelContext.insert(log)
 
             // Save changes

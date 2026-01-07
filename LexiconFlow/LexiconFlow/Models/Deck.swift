@@ -40,6 +40,12 @@ final class Deck {
     /// - SwiftData auto-initializes this property
     @Relationship(deleteRule: .nullify, inverse: \Flashcard.deck) var cards: [Flashcard] = []
 
+    /// All study sessions for this deck
+    /// - Deleting deck sets studySession.deck to nil (sessions preserved in history)
+    /// - Inverse points to StudySession.deck
+    /// - SwiftData auto-initializes this property
+    @Relationship(deleteRule: .nullify, inverse: \StudySession.deck) var studySessions: [StudySession] = []
+
     // MARK: - Initialization
 
     /// Initialize a new deck

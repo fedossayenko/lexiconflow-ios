@@ -18,9 +18,19 @@ extension ModelContext {
     /// This is much faster than creating a new ModelContainer for each test
     func clearAll() throws {
         // IMPORTANT: Delete in reverse dependency order to avoid relationship issues
-        // 1. Delete dependent entities first (reviews, sentences, states)
+        // 1. Delete dependent entities first (reviews, sentences, states, daily stats, study sessions)
         // 2. Then delete their parents (cards)
         // 3. Finally delete decks
+
+        let dailyStats = try self.fetch(FetchDescriptor<DailyStats>())
+        for stats in dailyStats {
+            self.delete(stats)
+        }
+
+        let studySessions = try self.fetch(FetchDescriptor<StudySession>())
+        for session in studySessions {
+            self.delete(session)
+        }
 
         let reviews = try self.fetch(FetchDescriptor<FlashcardReview>())
         for review in reviews {
@@ -64,7 +74,9 @@ enum TestContainers {
             Deck.self,
             FSRSState.self,
             FlashcardReview.self,
-            GeneratedSentence.self
+            GeneratedSentence.self,
+            StudySession.self,
+            DailyStats.self
         ])
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
 

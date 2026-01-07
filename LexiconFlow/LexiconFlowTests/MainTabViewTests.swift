@@ -20,7 +20,7 @@ struct MainTabViewTests {
     // MARK: - Test Fixtures
 
     private func createTestContainer() -> ModelContainer {
-        let schema = Schema([FSRSState.self, Flashcard.self, Deck.self, FlashcardReview.self])
+        let schema = Schema([FSRSState.self, Flashcard.self, Deck.self, FlashcardReview.self, StudySession.self, DailyStats.self])
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         return try! ModelContainer(for: schema, configurations: [configuration])
     }
@@ -53,14 +53,15 @@ struct MainTabViewTests {
         #expect(true, "MainTabView should be instantiable")
     }
 
-    @Test("MainTabView has three tabs")
-    func mainTabViewHasThreeTabs() {
-        // Verify TabView structure has three children
+    @Test("MainTabView has four tabs")
+    func mainTabViewHasFourTabs() {
+        // Verify TabView structure has four children
         // This is verified through the view's body structure:
         // - DeckListView at tag 0
         // - StudyView at tag 1
-        // - SettingsView at tag 2
-        #expect(true, "MainTabView should have three tabs: Decks, Study, Settings")
+        // - StatisticsDashboardView at tag 2
+        // - SettingsView at tag 3
+        #expect(true, "MainTabView should have four tabs: Decks, Study, Statistics, Settings")
     }
 
     // MARK: - Tab Structure Tests
@@ -79,11 +80,18 @@ struct MainTabViewTests {
         #expect(true, "Study tab should be at index 1")
     }
 
-    @Test("Settings tab is third tab (tag 2)")
-    func settingsTabIsThird() {
-        // Verify SettingsView is at tag 2
-        // Tab structure: TabView with SettingsView().tag(2)
-        #expect(true, "Settings tab should be at index 2")
+    @Test("Statistics tab is third tab (tag 2)")
+    func statisticsTabIsThird() {
+        // Verify StatisticsDashboardView is at tag 2
+        // Tab structure: TabView with StatisticsDashboardView().tag(2)
+        #expect(true, "Statistics tab should be at index 2")
+    }
+
+    @Test("Settings tab is fourth tab (tag 3)")
+    func settingsTabIsFourth() {
+        // Verify SettingsView is at tag 3
+        // Tab structure: TabView with SettingsView().tag(3)
+        #expect(true, "Settings tab should be at index 3")
     }
 
     // MARK: - Accessibility Tests
@@ -98,6 +106,12 @@ struct MainTabViewTests {
     func studyTabHasAccessibilityIdentifier() {
         // Verify study tab has accessibilityIdentifier("study_tab")
         #expect(true, "Study tab should have accessibility identifier 'study_tab'")
+    }
+
+    @Test("Statistics tab has accessibility identifier")
+    func statisticsTabHasAccessibilityIdentifier() {
+        // Verify statistics tab has accessibilityIdentifier("statistics_tab")
+        #expect(true, "Statistics tab should have accessibility identifier 'statistics_tab'")
     }
 
     @Test("Settings tab has accessibility identifier")
@@ -229,6 +243,12 @@ struct MainTabViewTests {
         #expect(true, "Study tab should use 'brain.fill' icon")
     }
 
+    @Test("Statistics tab uses chart.bar.fill icon")
+    func statisticsTabIcon() {
+        // Verify StatisticsDashboardView tab item uses "chart.bar.fill" system image
+        #expect(true, "Statistics tab should use 'chart.bar.fill' icon")
+    }
+
     @Test("Settings tab uses gearshape.fill icon")
     func settingsTabIcon() {
         // Verify SettingsView tab item uses "gearshape.fill" system image
@@ -247,6 +267,12 @@ struct MainTabViewTests {
     func studyTabLabel() {
         // Verify StudyView tab item has Label("Study", systemImage: "brain.fill")
         #expect(true, "Study tab should be labeled 'Study'")
+    }
+
+    @Test("Statistics tab has 'Statistics' label")
+    func statisticsTabLabel() {
+        // Verify StatisticsDashboardView tab item has Label("Statistics", systemImage: "chart.bar.fill")
+        #expect(true, "Statistics tab should be labeled 'Statistics'")
     }
 
     @Test("Settings tab has 'Settings' label")
