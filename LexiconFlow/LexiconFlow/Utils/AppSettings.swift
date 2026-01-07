@@ -26,6 +26,15 @@ enum AppSettings {
     /// Target language code for translation (e.g., "ru")
     @AppStorage("translationTargetLanguage") static var translationTargetLanguage: String = "ru"
 
+    // MARK: - Sentence Generation Settings (NEW)
+
+    /// Whether AI-powered sentence generation is enabled
+    ///
+    /// **Note**: This is an optional cloud feature that requires an API key.
+    /// Disabled by default. Can be enabled in future "Premium" tier.
+    /// When disabled, flashcards work normally but without example sentences.
+    @AppStorage("sentenceGenerationEnabled") static var isSentenceGenerationEnabled: Bool = false
+
     /// Supported translation languages for on-device translation (24 languages supported by iOS Translation framework)
     static let supportedLanguages: [(code: String, name: String)] = [
         ("ar", "Arabic"),
@@ -155,6 +164,7 @@ enum AppSettings {
             "translationEnabled": true,
             "translationSourceLanguage": "en",
             "translationTargetLanguage": "ru",
+            "sentenceGenerationEnabled": false,
             "hapticEnabled": true,
             "audioEnabled": true,
             "studyLimit": 20,
