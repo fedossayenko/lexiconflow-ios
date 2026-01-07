@@ -145,7 +145,7 @@ struct AddFlashcardView: View {
                     } catch {
                         errorMessage = "Failed to load image: \(error.localizedDescription)"
                         logger.error("Image loading failed: \(error.localizedDescription)")
-                        Analytics.trackError("image_load_failed", error: error)
+                        await Analytics.trackError("image_load_failed", error: error)
                     }
                 }
             }
@@ -220,7 +220,7 @@ struct AddFlashcardView: View {
                 await sentenceVM.generateSentences(for: flashcard)
             } catch {
                 logger.error("Sentence generation failed: \(error.localizedDescription)")
-                Analytics.trackError("sentence_generation_failed", error: error)
+                await Analytics.trackError("sentence_generation_failed", error: error)
                 // Card will still be saved without sentences
             }
 
@@ -247,7 +247,7 @@ struct AddFlashcardView: View {
             // Rollback: delete from context if save fails
             modelContext.delete(flashcard)
             modelContext.delete(state)
-            Analytics.trackError("save_flashcard", error: error)
+            await Analytics.trackError("save_flashcard", error: error)
             errorMessage = "Failed to save flashcard: \(error.localizedDescription)"
         }
     }
@@ -313,15 +313,15 @@ struct AddFlashcardView: View {
             switch error {
             case .languagePackNotAvailable:
                 errorMessage = "Language pack not available. Please download it in Settings."
-                Analytics.trackError("on_device_translation_no_language_pack", error: error)
+                Task { await Analytics.trackError("on_device_translation_no_language_pack", error: error) }
 
             case .unsupportedLanguagePair:
                 errorMessage = "Language pair not supported on this device"
-                Analytics.trackError("on_device_translation_unsupported_pair", error: error)
+                Task { await Analytics.trackError("on_device_translation_unsupported_pair", error: error) }
 
             default:
                 errorMessage = "Translation failed: \(error.localizedDescription)"
-                Analytics.trackError("on_device_translation_failed", error: error)
+                Task { await Analytics.trackError("on_device_translation_failed", error: error) }
             }
 
             // Auto-dismiss after 3 seconds
@@ -332,7 +332,7 @@ struct AddFlashcardView: View {
 
         } catch {
             logger.error("Unexpected on-device translation error: \(error.localizedDescription)")
-            Analytics.trackError("on_device_translation_unexpected", error: error)
+            Task { await Analytics.trackError("on_device_translation_unexpected", error: error) }
             errorMessage = "Translation failed, but card will be saved without it"
         }
     }
@@ -355,7 +355,7 @@ struct AddFlashcardView: View {
 
         } catch {
             logger.error("Language pack download failed: \(error.localizedDescription)")
-            Analytics.trackError("language_pack_download_failed", error: error)
+            Task { await Analytics.trackError("language_pack_download_failed", error: error) }
             errorMessage = "Failed to download language pack: \(error.localizedDescription)"
 
             // Auto-dismiss after 3 seconds

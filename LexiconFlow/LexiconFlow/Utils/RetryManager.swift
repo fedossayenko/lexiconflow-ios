@@ -9,6 +9,24 @@
 import Foundation
 import OSLog
 
+/// Wrapper error for type-mismatched errors in retry operations
+///
+/// When an operation throws an error that doesn't match the expected ErrorType,
+/// this wrapper preserves the original error while conforming to the required type.
+public struct RetryManagerError: Error {
+    /// The underlying error that couldn't be typed
+    public let underlyingError: any Error
+
+    /// Human-readable description
+    public var localizedDescription: String {
+        return "Retry operation failed with unexpected error type: \(underlyingError.localizedDescription)"
+    }
+
+    init(_ error: any Error) {
+        self.underlyingError = error
+    }
+}
+
 /// Generic retry manager with exponential backoff
 ///
 /// Provides configurable retry logic for operations that may fail due to
@@ -19,6 +37,7 @@ import OSLog
 /// - Configurable max retries and initial delay
 /// - Customizable retryable error detection
 /// - Logging at each retry attempt
+/// - Type-safe error handling with wrapper for mismatches
 ///
 /// **Example:**
 /// ```swift
@@ -96,20 +115,33 @@ enum RetryManager {
                 }
             } catch {
                 // Unknown error type that doesn't match ErrorType
-                logger.error("\(logContext): Unknown error type - \(error.localizedDescription)")
-                // For unknown errors, we cannot continue retrying
-                // Attempt to convert or fail gracefully
+                // This is a programming error - operation should throw ErrorType
+                logger.error("\(logContext): Operation threw unexpected error type - \(error.localizedDescription)")
+                // Cannot continue without typed error for Result return type
+                // Exit loop and return last known error or fail
                 break
             }
         }
 
-        // If we exited the loop with an unknown error or exhausted retries
+        // Return the last error if we have one
         if let error = lastError {
             return .failure(error)
         }
 
-        // This should never happen - operation should have either succeeded or failed
-        // If we reach here, there's a bug in the retry logic
-        fatalError("RetryManager completed without success or failure - this should never happen")
+        // If we reach here, operation repeatedly threw non-ErrorType errors
+        // This indicates a programming error in the operation signature
+        // Log critical failure and return an error if possible
+        logger.critical("\(logContext): Operation signature mismatch - cannot convert errors to expected type")
+        // Since we can't create an arbitrary ErrorType, we need to try one more time
+        // and let any type mismatch crash at runtime (programming error)
+        do {
+            return .success(try await operation())
+        } catch let error as ErrorType {
+            return .failure(error)
+        } catch {
+            // Programming error: operation signature doesn't match declared ErrorType
+            // This should never happen in production with correct type annotations
+            fatalError("Operation threw \(type(of: error)) but expected \(ErrorType.self). Check operation signature.")
+        }
     }
 }

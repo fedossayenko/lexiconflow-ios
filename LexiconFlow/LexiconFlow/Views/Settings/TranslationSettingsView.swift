@@ -140,7 +140,7 @@ struct TranslationSettingsView: View {
         } catch {
             logger.error("Failed to download language pack: \(error.localizedDescription)")
             downloadError = error.localizedDescription
-            Analytics.trackError("language_pack_download", error: error)
+            await Analytics.trackError("language_pack_download", error: error)
         }
 
         isDownloadingLanguage = false

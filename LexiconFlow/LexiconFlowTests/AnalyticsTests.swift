@@ -21,19 +21,19 @@ struct AnalyticsTests {
     // MARK: - Event Tracking Tests
 
     @Test("Track event without crashing")
-    func trackEvent() {
+    func trackEvent() async {
         // Should not crash with basic event
-        Analytics.trackEvent("test_event")
+        await Analytics.trackEvent("test_event")
 
         // Should not crash with metadata
-        Analytics.trackEvent("test_event_with_metadata", metadata: [
+        await Analytics.trackEvent("test_event_with_metadata", metadata: [
             "key1": "value1",
             "key2": "value2"
         ])
     }
 
     @Test("Track error without crashing")
-    func trackError() {
+    func trackError() async {
         let testError = NSError(
             domain: "test.domain",
             code: 100,
@@ -41,47 +41,74 @@ struct AnalyticsTests {
         )
 
         // Should not crash
-        Analytics.trackError("test_error", error: testError)
+        await Analytics.trackError("test_error", error: testError)
 
         // Should not crash with metadata
-        Analytics.trackError("test_error_with_metadata", error: testError, metadata: [
+        await Analytics.trackError("test_error_with_metadata", error: testError, metadata: [
             "context": "test_context"
         ])
     }
 
     @Test("Track performance without crashing")
-    func trackPerformance() {
+    func trackPerformance() async {
         // Should not crash
-        Analytics.trackPerformance("test_operation", duration: 0.123)
+        await Analytics.trackPerformance("test_operation", duration: 0.123)
 
         // Should not crash with metadata
-        Analytics.trackPerformance("test_operation_with_metadata", duration: 1.5, metadata: [
+        await Analytics.trackPerformance("test_operation_with_metadata", duration: 1.5, metadata: [
             "iterations": "100",
             "result": "success"
         ])
     }
 
-    @Test("Track issue without crashing")
-    func trackIssue() {
-        Analytics.trackIssue("test_issue", message: "Something unusual happened")
+    @Test("Handle empty event name")
+    func emptyEventName() async {
+        await Analytics.trackEvent("", metadata: [:])
+        // Should not crash
+    }
 
-        Analytics.trackIssue(
-            "test_issue_with_metadata",
-            message: "Issue with context",
-            metadata: ["state": "unusual"]
-        )
+    @Test("Handle special characters in metadata")
+    func specialCharactersInMetadata() async {
+        await Analytics.trackEvent("special_chars", metadata: [
+            "emoji": "🎉📚",
+            "quotes": "\"quoted\"",
+            "newlines": "line1\nline2",
+            "unicode": "日本語"
+        ])
+        // Should not crash
+    }
+
+    @Test("Handle very long metadata values")
+    func longMetadataValues() async {
+        let longValue = String(repeating: "a", count: 10000)
+
+        await Analytics.trackEvent("long_value", metadata: [
+            "long": longValue
+        ])
+        // Should not crash
+    }
+
+    @Test("Handle nil error gracefully")
+    func nilErrorHandling() async {
+        // Create an optional error that's nil
+        let optionalError: Error? = nil
+
+        if let error = optionalError {
+            await Analytics.trackError("nil_test", error: error)
+        }
+        // Should not crash
     }
 
     // MARK: - User Management Tests
 
     @Test("Set user ID without crashing")
-    func setUserId() {
-        Analytics.setUserId("test_user_123")
+    func setUserId() async {
+        await Analytics.setUserId("test_user_123")
     }
 
     @Test("Set user properties without crashing")
-    func setUserProperties() {
-        Analytics.setUserProperties([
+    func setUserProperties() async {
+        await Analytics.setUserProperties([
             "premium": "true",
             "study_streak": "30",
             "decks_count": "5"
@@ -140,79 +167,50 @@ struct AnalyticsTests {
         }
     }
 
-    // MARK: - Edge Case Tests
+    @Test("Track issue without crashing")
+    func trackIssue() async {
+        await Analytics.trackIssue("test_issue", message: "Something unusual happened")
 
-    @Test("Handle empty event name")
-    func emptyEventName() {
-        Analytics.trackEvent("", metadata: [:])
-        // Should not crash
-    }
-
-    @Test("Handle special characters in metadata")
-    func specialCharactersInMetadata() {
-        Analytics.trackEvent("special_chars", metadata: [
-            "emoji": "🎉📚",
-            "quotes": "\"quoted\"",
-            "newlines": "line1\nline2",
-            "unicode": "日本語"
-        ])
-        // Should not crash
-    }
-
-    @Test("Handle very long metadata values")
-    func longMetadataValues() {
-        let longValue = String(repeating: "a", count: 10000)
-
-        Analytics.trackEvent("long_value", metadata: [
-            "long": longValue
-        ])
-        // Should not crash
-    }
-
-    @Test("Handle nil error gracefully")
-    func nilErrorHandling() {
-        // Create an optional error that's nil
-        let optionalError: Error? = nil
-
-        if let error = optionalError {
-            Analytics.trackError("nil_test", error: error)
-        }
-        // Should not crash
+        await Analytics.trackIssue(
+            "test_issue_with_metadata",
+            message: "Issue with context",
+            metadata: ["state": "unusual"]
+        )
     }
 
     @Test("Handle zero duration")
-    func zeroDuration() {
-        Analytics.trackPerformance("instant", duration: 0)
+    func zeroDuration() async {
+        await Analytics.trackPerformance("instant", duration: 0)
         // Should not crash
     }
 
     @Test("Handle negative duration")
-    func negativeDuration() {
-        Analytics.trackPerformance("negative", duration: -1.0)
+    func negativeDuration() async {
+        await Analytics.trackPerformance("negative", duration: -1.0)
         // Should not crash (though unusual)
     }
 
     // MARK: - Metadata Format Tests
 
     @Test("Metadata converts integers correctly")
-    func integerMetadata() {
-        Analytics.trackEvent("int_test", metadata: [
+    func integerMetadata() async {
+        await Analytics.trackEvent("int_test", metadata: [
             "count": "42",
             "index": "0"
         ])
     }
 
     @Test("Metadata converts doubles correctly")
-    func doubleMetadata() {
-        Analytics.trackEvent("double_test", metadata: [
+    func doubleMetadata() async {
+        await Analytics.trackEvent("double_test", metadata: [
             "ratio": "0.75",
             "percentage": "99.9"
         ])
     }
 
     @Test("Metadata converts booleans correctly")
-    func booleanMetadata() {
-        Analytics.trackEvent("bool_test", metadata: [
+    func booleanMetadata() async {
+        await Analytics.trackEvent("bool_test", metadata: [
             "enabled": "true",
             "disabled": "false"
         ])
@@ -221,9 +219,9 @@ struct AnalyticsTests {
     // MARK: - Complex Scenarios
 
     @Test("Track multiple events in sequence")
-    func multipleEvents() {
+    func multipleEvents() async {
         for i in 0..<10 {
-            Analytics.trackEvent("event_\(i)", metadata: [
+            await Analytics.trackEvent("event_\(i)", metadata: [
                 "index": "\(i)",
                 "doubled": "\(i * 2)"
             ])

@@ -57,9 +57,8 @@ struct LexiconFlowApp: App {
         do {
             return try ModelContainer(for: schema, configurations: [persistentConfig])
         } catch {
-            // Log critical failure with Analytics
+            // Log critical failure
             logger.critical("Failed to create persistent ModelContainer: \(error.localizedDescription)")
-            Analytics.trackError("model_container_persistent_failed", error: error)
         }
 
         // Attempt 2: Fallback to in-memory storage (data loss on app quit)
@@ -67,24 +66,15 @@ struct LexiconFlowApp: App {
         do {
             let container = try ModelContainer(for: schema, configurations: [inMemoryConfig])
             logger.warning("Using in-memory storage due to persistent storage failure")
-            Analytics.trackIssue(
-                "model_container_fallback_to_memory",
-                message: "Persistent storage failed, using in-memory fallback"
-            )
             return container
         } catch {
-            // Log critical failure with Analytics
+            // Log critical failure
             logger.critical("Failed to create in-memory ModelContainer: \(error.localizedDescription)")
-            Analytics.trackError("model_container_in_memory_failed", error: error)
         }
 
         // Attempt 3: Last resort - create minimal container (allows error UI to show)
         // This will allow the app to launch but models will be unavailable
         logger.critical("All ModelContainer creation attempts failed. Creating minimal fallback container.")
-        Analytics.trackIssue(
-            "model_container_minimal_fallback",
-            message: "All storage attempts failed, using minimal container"
-        )
 
         // Create container with empty schema as absolute last resort
         // This prevents crash but allows error UI to be shown to the user
@@ -92,19 +82,17 @@ struct LexiconFlowApp: App {
         do {
             let minimalContainer = try ModelContainer(for: EmptyModel.self)
             logger.critical("Minimal container created successfully. App will run with no data persistence.")
-            Analytics.trackIssue(
-                "model_container_complete_failure",
-                message: "All storage attempts failed, using minimal container"
-            )
             return minimalContainer
         } catch {
             // Last resort: return pre-initialized empty container
             // User will see error UI but app won't crash
             logger.critical("All ModelContainer creation attempts failed: \(error.localizedDescription)")
-            Analytics.trackIssue(
-                "model_container_utter_failure",
-                message: "Even minimal container failed, using pre-initialized empty container"
-            )
+            Task {
+                await Analytics.trackIssue(
+                    "model_container_utter_failure",
+                    message: "Even minimal container failed, using pre-initialized empty container"
+                )
+            }
             // Return pre-initialized empty container - app will show error UI to user
             return emptyFallbackContainer
         }
@@ -140,7 +128,7 @@ struct LexiconFlowApp: App {
             try? context.save()
             Logger(subsystem: "com.lexiconflow.app", category: "LexiconFlowApp")
                 .info("Created default deck: My Vocabulary")
-            Analytics.trackEvent("default_deck_created")
+            await Analytics.trackEvent("default_deck_created")
         }
     }
 
@@ -194,7 +182,7 @@ struct LexiconFlowApp: App {
             }
         } catch {
             logger.error("Background aggregation failed: \(error.localizedDescription)")
-            Analytics.trackError("background_aggregate_daily_stats", error: error)
+            Task { await Analytics.trackError("background_aggregate_daily_stats", error: error) }
         }
     }
 }

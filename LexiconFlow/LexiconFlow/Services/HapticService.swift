@@ -93,7 +93,7 @@ class HapticService {
             logger.info("CoreHaptics engine started successfully")
         } catch {
             logger.error("Failed to create haptic engine: \(error)")
-            Analytics.trackError("haptic_engine_failed", error: error)
+            Task { await Analytics.trackError("haptic_engine_failed", error: error) }
             hapticEngine = nil
         }
     }
@@ -324,7 +324,7 @@ class HapticService {
             try player.start(atTime: 0)
         } catch {
             logger.error("Failed to play CoreHaptics swipe: \(error)")
-            Analytics.trackError("haptic_swipe_failed", error: error)
+            Task { await Analytics.trackError("haptic_swipe_failed", error: error) }
             // Fallback to UIKit on failure
             triggerUIKitSwipe(direction: direction, progress: progress)
         }
@@ -358,7 +358,7 @@ class HapticService {
                 try player.start(atTime: 0)
             } catch {
                 logger.error("Failed to play CoreHaptics success: \(error)")
-                Analytics.trackError("haptic_success_failed", error: error)
+                Task { await Analytics.trackError("haptic_success_failed", error: error) }
                 triggerUIKitSuccess()
             }
         } else {
@@ -379,7 +379,7 @@ class HapticService {
                 try player.start(atTime: 0)
             } catch {
                 logger.error("Failed to play CoreHaptics warning: \(error)")
-                Analytics.trackError("haptic_warning_failed", error: error)
+                Task { await Analytics.trackError("haptic_warning_failed", error: error) }
                 triggerUIKitWarning()
             }
         } else {
@@ -400,7 +400,7 @@ class HapticService {
                 try player.start(atTime: 0)
             } catch {
                 logger.error("Failed to play CoreHaptics error: \(error)")
-                Analytics.trackError("haptic_error_failed", error: error)
+                Task { await Analytics.trackError("haptic_error_failed", error: error) }
                 triggerUIKitError()
             }
         } else {
@@ -423,12 +423,25 @@ class HapticService {
                 logger.info("Streak chime played for streak: \(streakCount)")
             } catch {
                 logger.error("Failed to play CoreHaptics streak chime: \(error)")
-                Analytics.trackError("streak_chime_failed", error: error)
+                Task { await Analytics.trackError("streak_chime_failed", error: error) }
                 triggerUIKitStreakChime(streakCount: streakCount)
             }
         } else {
             triggerUIKitStreakChime(streakCount: streakCount)
         }
+    }
+
+    /// Triggers light haptic for subtle interactions.
+    ///
+    /// Uses light impact generator for gentle feedback on UI changes
+    /// like filter switches or toggle states.
+    func triggerLight() {
+        guard AppSettings.hapticEnabled else { return }
+
+        // Use UIKit light impact (simple and efficient)
+        let generator = getGenerator(style: .light)
+        generator.prepare()
+        generator.impactOccurred()
     }
 
     // MARK: - UIKit Fallback Methods

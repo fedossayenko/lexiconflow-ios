@@ -22,7 +22,7 @@ struct DeckStudyDetailView: View {
     var body: some View {
         Group {
             if isSessionActive, let mode = selectedMode {
-                StudySessionView(mode: mode, deck: deck, onComplete: sessionComplete)
+                StudySessionView(mode: mode, decks: [deck], onComplete: sessionComplete)
             } else {
                 studyOptionsView
             }

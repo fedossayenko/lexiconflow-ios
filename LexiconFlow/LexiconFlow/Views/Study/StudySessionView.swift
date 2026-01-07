@@ -134,23 +134,6 @@ struct StudySessionView: View {
     }
 }
 
-// MARK: - Backward Compatibility
-
-extension StudySessionView {
-    /// Convenience initializer for single-deck sessions (backward compatibility)
-    /// - Parameters:
-    ///   - mode: Study mode (scheduled or learning)
-    ///   - deck: Single deck to study from (nil = no cards)
-    ///   - onComplete: Callback when session completes
-    init(mode: StudyMode, deck: Deck?, onComplete: @escaping () -> Void) {
-        if let deck = deck {
-            self.init(mode: mode, decks: [deck], onComplete: onComplete)
-        } else {
-            self.init(mode: mode, decks: [], onComplete: onComplete)
-        }
-    }
-}
-
 #Preview("Study Session") {
     StudySessionView(mode: .scheduled) {}
         .modelContainer(for: [Flashcard.self], inMemory: true)

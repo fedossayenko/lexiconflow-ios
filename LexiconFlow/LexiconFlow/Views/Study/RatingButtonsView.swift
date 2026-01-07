@@ -59,9 +59,7 @@ extension CardRating {
         Text("How well did you know this?")
             .font(.headline)
 
-        RatingButtonsView { rating in
-            print("Rated: \(rating.label)")
-        }
+        RatingButtonsView { _ in }
     }
     .padding()
 }

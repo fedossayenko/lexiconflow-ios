@@ -13,7 +13,6 @@ struct DeckDetailView: View {
     @Bindable var deck: Deck
     @Environment(\.modelContext) private var modelContext
     @State private var showingAddCard = false
-    @State private var expandedCardID: Flashcard.ID?
 
     // MARK: - Batch Translation State
     @State private var showingTranslateConfirmation = false
@@ -79,15 +78,7 @@ struct DeckDetailView: View {
 
                 Section {
                     ForEach(deck.cards) { card in
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                if expandedCardID == card.id {
-                                    expandedCardID = nil
-                                } else {
-                                    expandedCardID = card.id
-                                }
-                            }
-                        } label: {
+                        NavigationLink(destination: FlashcardDetailView(flashcard: card)) {
                             VStack(alignment: .leading, spacing: 4) {
                                 // Word
                                 Text(card.word)
@@ -100,23 +91,16 @@ struct DeckDetailView: View {
                                     .foregroundStyle(.secondary)
                                     .lineLimit(2)
 
-                                // Expandable Translation
-                                if let translation = card.translation {
+                                // Translation indicator (if available)
+                                if card.translation != nil {
                                     HStack(spacing: 4) {
-                                        Image(systemName: expandedCardID == card.id ? "chevron.down" : "chevron.right")
+                                        Image(systemName: "chevron.right")
                                             .font(.caption2)
                                             .foregroundStyle(.tertiary)
 
-                                        if expandedCardID == card.id {
-                                            Text(translation)
-                                                .font(.subheadline)
-                                                .foregroundStyle(.primary)
-                                                .transition(.opacity.combined(with: .move(edge: .top)))
-                                        } else {
-                                            Text("Translation")
-                                                .font(.caption)
-                                                .foregroundStyle(.tertiary)
-                                        }
+                                        Text("Translation available")
+                                            .font(.caption)
+                                            .foregroundStyle(.tertiary)
                                     }
                                 }
                             }
@@ -125,8 +109,7 @@ struct DeckDetailView: View {
                         .buttonStyle(.plain)
                         .accessibilityElement(children: .combine)
                         .accessibilityLabel("Card: \(card.word)")
-                        .accessibilityHint(card.translation != nil ? "Double tap to reveal translation" : "")
-                        .accessibilityValue(expandedCardID == card.id ? "Translation shown" : "Translation hidden")
+                        .accessibilityHint("Double tap to view card details and review history")
                     }
                     .onDelete(perform: deleteCards)
                 } header: {
@@ -286,7 +269,7 @@ struct DeckDetailView: View {
                 failedWords: cards.map { $0.word }
             )
 
-            Analytics.trackError("on_device_translation_save_failed", error: error)
+            Task { await Analytics.trackError("translation_save_failed", error: error) }
         }
 
         // Clear state

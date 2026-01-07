@@ -135,13 +135,13 @@ final class StatisticsViewModel: ObservableObject {
         } catch let timeoutError as TimeoutError {
             errorMessage = "Loading timed out. Please check your connection and try again."
             isLoading = false
-            Analytics.trackError("statistics_refresh_timeout", error: timeoutError)
+            Task { await Analytics.trackError("statistics_refresh_timeout", error: timeoutError) }
             logger.error("Statistics refresh timed out after 10 seconds")
         } catch {
             // Handle errors (shouldn't happen with current implementation, but future-proof)
             errorMessage = error.localizedDescription
             isLoading = false
-            Analytics.trackError("statistics_refresh_failed", error: error)
+            Task { await Analytics.trackError("statistics_refresh_failed", error: error) }
             logger.error("Failed to refresh statistics: \(error.localizedDescription)")
         }
     }

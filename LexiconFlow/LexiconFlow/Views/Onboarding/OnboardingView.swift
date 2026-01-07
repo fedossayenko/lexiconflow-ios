@@ -122,7 +122,7 @@ struct OnboardingView: View {
                 try modelContext.save()
                 hasCompletedOnboarding = true
             } catch {
-                Analytics.trackError("onboarding_save", error: error)
+                Task { await Analytics.trackError("onboarding_save", error: error) }
                 errorMessage = "Failed to create sample deck: \(error.localizedDescription)"
                 isCreatingSampleDeck = false
             }

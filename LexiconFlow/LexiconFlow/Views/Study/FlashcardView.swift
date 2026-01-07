@@ -18,6 +18,10 @@ struct FlashcardView: View {
     @State private var isDragging = false
     @State private var lastHapticTime = Date()
 
+    // MARK: - Sheet State
+
+    @State private var showingDetail = false
+
     // MARK: - Constants
 
     /// Animation-related constants
@@ -69,6 +73,29 @@ struct FlashcardView: View {
                 CardFrontView(card: card)
                     .glassEffectTransition(.scaleFade)
                     .zIndex(0)
+            }
+
+            // Info button (top-right corner)
+            VStack {
+                HStack {
+                    Spacer()
+
+                    Button {
+                        showingDetail = true
+                    } label: {
+                        Image(systemName: "info.circle.fill")
+                            .font(.title3)
+                            .foregroundStyle(.secondary)
+                            .padding(12)
+                            .background(.ultraThinMaterial, in: Circle())
+                    }
+                    .accessibilityLabel("View card details")
+                    .accessibilityHint("Shows review history and card information")
+                    .padding(.trailing, 16)
+                    .padding(.top, 16)
+                }
+
+                Spacer()
             }
         }
         .frame(maxWidth: .infinity)
@@ -152,6 +179,9 @@ struct FlashcardView: View {
                 isFlipped.toggle()
             }
         }
+        .sheet(isPresented: $showingDetail) {
+            FlashcardDetailView(flashcard: card)
+        }
         .id("flashcard-base")
     }
 }
@@ -164,9 +194,7 @@ struct FlashcardView: View {
             phonetic: "/əˈfem(ə)rəl/"
         ),
         isFlipped: .constant(false),
-        onSwipe: { rating in
-            print("Rated: \(rating)")
-        }
+        onSwipe: { _ in }
     )
     .padding()
 }
