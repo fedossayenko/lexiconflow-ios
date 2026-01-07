@@ -15,7 +15,8 @@ enum FlashcardSchemaVersion: Int {
     /// v1.0 - Initial schema (word, definition, phonetic, imageData)
     case v1_0 = 1
 
-    /// v1.1 - Added translation fields (translation, sourceLanguage, targetLanguage, cefrLevel, contextSentence)
+    /// v1.1 - Added translation field (translation only)
+    /// Note: CEFR levels and context sentences provided separately by GeneratedSentence model
     case v1_1 = 2
 
     /// Current schema version
@@ -33,13 +34,12 @@ enum FlashcardSchemaVersion: Int {
 
  **New Fields Added (Optional)**:
  - `translation: String?` - Translated word
- - `translationSourceLanguage: String?` - Source language code
- - `translationTargetLanguage: String?` - Target language code
- - `cefrLevel: String?` - CEFR level (A1-C2)
- - `contextSentence: String?` - Context example sentence
+
+ **Note**: CEFR levels and context sentences are provided separately by the GeneratedSentence model,
+ not as fields on Flashcard.
 
  **Migration Type**: Lightweight (automatic)
- - All new fields are optional with nil defaults
+ - New field is optional with nil default
  - SwiftData handles schema migration automatically
  - No data loss or transformation required
 

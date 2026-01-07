@@ -347,19 +347,11 @@ struct TranslationServiceTests {
 
         let translation = TranslationService.SuccessfulTranslation(
             card: card,
-            translation: "привет",
-            cefrLevel: "A1",
-            contextSentence: "Used as greeting",
-            sourceLanguage: "en",
-            targetLanguage: "ru"
+            translation: "привет"
         )
 
         #expect(translation.card.word == "hello")
         #expect(translation.translation == "привет")
-        #expect(translation.cefrLevel == "A1")
-        #expect(translation.contextSentence == "Used as greeting")
-        #expect(translation.sourceLanguage == "en")
-        #expect(translation.targetLanguage == "ru")
     }
 
     // MARK: - Cancellation Tests

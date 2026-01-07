@@ -596,15 +596,11 @@ struct EdgeCaseTests {
 
         // Add optional fields
         flashcard.translation = "translation"
-        flashcard.cefrLevel = "C1"
-        flashcard.contextSentence = "context example"
         flashcard.imageData = Data([0xFF, 0xD8, 0xFF, 0xE0]) // JPEG header
 
         try context.save()
 
         #expect(flashcard.translation != nil, "Translation should be set")
-        #expect(flashcard.cefrLevel != nil, "CEFR level should be set")
-        #expect(flashcard.contextSentence != nil, "Context sentence should be set")
         #expect(flashcard.imageData != nil, "Image data should be set")
     }
 

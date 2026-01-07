@@ -54,37 +54,29 @@ struct FlashcardMigrationTests {
 
     // MARK: - Flashcard Field Tests (v1.1)
 
-    @Test("Flashcard has all v1.1 translation fields")
-    func flashcardHasV1_1Fields() throws {
+    @Test("Flashcard has translation field")
+    func flashcardHasTranslationField() throws {
         let container = createTestContainer()
         let context = container.mainContext
 
         let flashcard = Flashcard(
             word: "hello",
             definition: "a greeting",
-            translation: "привет",
-            translationSourceLanguage: "en",
-            translationTargetLanguage: "ru",
-            cefrLevel: "A1",
-            contextSentence: "Hello, how are you?"
+            translation: "привет"
         )
         context.insert(flashcard)
         try context.save()
 
-        // Verify all translation fields exist
+        // Verify translation field exists
         #expect(flashcard.translation == "привет", "Translation field should exist")
-        #expect(flashcard.translationSourceLanguage == "en", "Source language should exist")
-        #expect(flashcard.translationTargetLanguage == "ru", "Target language should exist")
-        #expect(flashcard.cefrLevel == "A1", "CEFR level should exist")
-        #expect(flashcard.contextSentence == "Hello, how are you?", "Context sentence should exist")
     }
 
-    @Test("Flashcard v1.1 fields are optional")
-    func flashcardV1_1FieldsAreOptional() throws {
+    @Test("Flashcard translation field is optional")
+    func flashcardTranslationFieldIsOptional() throws {
         let container = createTestContainer()
         let context = container.mainContext
 
-        // Create flashcard without any translation fields
+        // Create flashcard without translation
         let flashcard = Flashcard(
             word: "test",
             definition: "test definition"
@@ -92,36 +84,25 @@ struct FlashcardMigrationTests {
         context.insert(flashcard)
         try context.save()
 
-        // Verify all translation fields are nil
+        // Verify translation field is nil
         #expect(flashcard.translation == nil, "Translation should be nil")
-        #expect(flashcard.translationSourceLanguage == nil, "Source language should be nil")
-        #expect(flashcard.translationTargetLanguage == nil, "Target language should be nil")
-        #expect(flashcard.cefrLevel == nil, "CEFR level should be nil")
-        #expect(flashcard.contextSentence == nil, "Context sentence should be nil")
     }
 
-    @Test("Flashcard can be created with partial translation fields")
-    func flashcardPartialTranslationFields() throws {
+    @Test("Flashcard can be created with translation")
+    func flashcardWithTranslation() throws {
         let container = createTestContainer()
         let context = container.mainContext
 
-        // Create flashcard with only some translation fields
+        // Create flashcard with translation
         let flashcard = Flashcard(
             word: "café",
             definition: "coffee shop",
-            translation: "кофе",
-            translationSourceLanguage: "fr",
-            translationTargetLanguage: "ru"
-            // cefrLevel and contextSentence omitted
+            translation: "кофе"
         )
         context.insert(flashcard)
         try context.save()
 
         #expect(flashcard.translation == "кофе", "Translation should be set")
-        #expect(flashcard.translationSourceLanguage == "fr", "Source language should be set")
-        #expect(flashcard.translationTargetLanguage == "ru", "Target language should be set")
-        #expect(flashcard.cefrLevel == nil, "CEFR level should be nil")
-        #expect(flashcard.contextSentence == nil, "Context sentence should be nil")
     }
 
     // MARK: - SwiftData Compatibility Tests
@@ -167,11 +148,7 @@ struct FlashcardMigrationTests {
         let card3 = Flashcard(
             word: "card3",
             definition: "def3",
-            translation: "translation3",
-            translationSourceLanguage: "en",
-            translationTargetLanguage: "ru",
-            cefrLevel: "B1",
-            contextSentence: "context"
+            translation: "translation3"
         )
         context.insert(card3)
 
@@ -184,8 +161,8 @@ struct FlashcardMigrationTests {
 
         let sorted = fetched.sorted { $0.word < $1.word }
         #expect(sorted[0].translation == nil, "Card1 should have no translation")
-        #expect(sorted[1].translation == "translation2", "Card2 should have partial translation")
-        #expect(sorted[2].translation == "translation3", "Card3 should have full translation")
+        #expect(sorted[1].translation == "translation2", "Card2 should have translation")
+        #expect(sorted[2].translation == "translation3", "Card3 should have translation")
     }
 
     // MARK: - Edge Cases
@@ -216,54 +193,20 @@ struct FlashcardMigrationTests {
         #expect(card1.translation != card2.translation, "Empty string and nil should be different")
     }
 
-    @Test("Translation fields support Unicode")
-    func translationFieldsSupportUnicode() throws {
+    @Test("Translation field supports Unicode")
+    func translationFieldSupportsUnicode() throws {
         let container = createTestContainer()
         let context = container.mainContext
 
         let flashcard = Flashcard(
             word: "日本語",
             definition: "Japanese language",
-            translation: "Японский язык",
-            translationSourceLanguage: "ja",
-            translationTargetLanguage: "ru",
-            cefrLevel: "C1",
-            contextSentence: "日本語を勉強しています。"
+            translation: "Японский язык"
         )
         context.insert(flashcard)
         try context.save()
 
         #expect(flashcard.translation == "Японский язык", "Cyrillic translation should be preserved")
-        #expect(flashcard.contextSentence == "日本語を勉強しています。", "Japanese context should be preserved")
-    }
-
-    @Test("CEFR level accepts valid values")
-    func cefrLevelValidValues() throws {
-        let container = createTestContainer()
-        let context = container.mainContext
-
-        let validLevels = ["A1", "A2", "B1", "B2", "C1", "C2"]
-
-        for level in validLevels {
-            let flashcard = Flashcard(
-                word: "word_\(level)",
-                definition: "definition",
-                cefrLevel: level
-            )
-            context.insert(flashcard)
-        }
-
-        try context.save()
-
-        let fetchDescriptor = FetchDescriptor<Flashcard>()
-        let fetched = try context.fetch(fetchDescriptor)
-
-        #expect(fetched.count == validLevels.count, "All CEFR levels should be stored")
-
-        for flashcard in fetched {
-            #expect(validLevels.contains(flashcard.cefrLevel ?? ""),
-                   "CEFR level should be valid")
-        }
     }
 
     // MARK: - Future Migration Pattern Tests
@@ -315,13 +258,9 @@ struct FlashcardMigrationTests {
 
         // Verify all v1.1 optional fields are nil
         #expect(flashcard.translation == nil, "Translation should default to nil")
-        #expect(flashcard.translationSourceLanguage == nil, "Source language should default to nil")
-        #expect(flashcard.translationTargetLanguage == nil, "Target language should default to nil")
-        #expect(flashcard.cefrLevel == nil, "CEFR level should default to nil")
-        #expect(flashcard.contextSentence == nil, "Context sentence should default to nil")
     }
 
-    @Test("v1.0 data can be enhanced with v1.1 fields post-migration")
+    @Test("v1.0 data can be enhanced with translation post-migration")
     func v1_0DataEnhancement() throws {
         let container = createTestContainer()
         let context = container.mainContext
@@ -334,40 +273,30 @@ struct FlashcardMigrationTests {
         context.insert(flashcard)
         try context.save()
 
-        // Post-migration: add v1.1 fields
+        // Post-migration: add translation
         flashcard.translation = "кофе"
-        flashcard.translationSourceLanguage = "fr"
-        flashcard.translationTargetLanguage = "ru"
-        flashcard.cefrLevel = "A2"
-        flashcard.contextSentence = "J'aime aller au café."
         try context.save()
 
-        // Verify fields are persisted
+        // Verify field is persisted
         #expect(flashcard.translation == "кофе")
-        #expect(flashcard.cefrLevel == "A2")
     }
 
-    @Test("v1.1 fields support empty strings for pre-existing data")
-    func v1_1EmptyStringsSupported() throws {
+    @Test("Translation field supports empty strings")
+    func emptyStringTranslationSupported() throws {
         let container = createTestContainer()
         let context = container.mainContext
 
-        // Simulate v1.0 data migrated with empty strings (not nil)
+        // Create card with empty string translation
         let flashcard = Flashcard(
             word: "test",
             definition: "definition",
-            translation: "",  // Empty string, not nil
-            translationSourceLanguage: "",
-            translationTargetLanguage: "",
-            cefrLevel: "",
-            contextSentence: ""
+            translation: ""  // Empty string, not nil
         )
         context.insert(flashcard)
         try context.save()
 
-        // Verify empty strings are preserved (not converted to nil)
+        // Verify empty string is preserved (not converted to nil)
         #expect(flashcard.translation == "")
-        #expect(flashcard.cefrLevel == "")
     }
 
     @Test("Automatic migration preserves existing data integrity")
@@ -375,14 +304,14 @@ struct FlashcardMigrationTests {
         let container = createTestContainer()
         let context = container.mainContext
 
-        // Create cards with different v1.0 states
+        // Create cards with different states
         let card1 = Flashcard(word: "card1", definition: "def1")
         let card2 = Flashcard(word: "card2", definition: "def2")
         let card3 = Flashcard(word: "card3", definition: "def3")
 
-        // Add some v1.1 fields to simulate partial migration
+        // Add translations to simulate partial data
         card2.translation = "translation2"
-        card3.cefrLevel = "B1"
+        card3.translation = "translation3"
 
         context.insert(card1)
         context.insert(card2)
@@ -398,6 +327,6 @@ struct FlashcardMigrationTests {
         let sorted = fetched.sorted { $0.word < $1.word }
         #expect(sorted[0].translation == nil, "card1 should have nil translation")
         #expect(sorted[1].translation == "translation2", "card2 should have translation")
-        #expect(sorted[2].cefrLevel == "B1", "card3 should have CEFR level")
+        #expect(sorted[2].translation == "translation3", "card3 should have translation")
     }
 }

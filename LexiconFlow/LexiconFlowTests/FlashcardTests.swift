@@ -33,10 +33,6 @@ struct FlashcardTests {
             word: "ephemeral",
             definition: "lasting for a very short time",
             translation: "efímero",
-            translationSourceLanguage: "en",
-            translationTargetLanguage: "es",
-            cefrLevel: "C2",
-            contextSentence: "The ephemeral beauty of cherry blossoms",
             phonetic: "ɪˈfem(ə)rəl",
             imageData: imageData
         )
@@ -48,10 +44,6 @@ struct FlashcardTests {
         #expect(flashcard.definition == "lasting for a very short time")
         #expect(flashcard.phonetic == "ɪˈfem(ə)rəl")
         #expect(flashcard.translation == "efímero")
-        #expect(flashcard.translationSourceLanguage == "en")
-        #expect(flashcard.translationTargetLanguage == "es")
-        #expect(flashcard.cefrLevel == "C2")
-        #expect(flashcard.contextSentence == "The ephemeral beauty of cherry blossoms")
         #expect(flashcard.imageData == imageData)
     }
 
@@ -72,10 +64,6 @@ struct FlashcardTests {
         #expect(flashcard.definition == "test definition")
         #expect(flashcard.phonetic == nil)
         #expect(flashcard.translation == nil)
-        #expect(flashcard.translationSourceLanguage == nil)
-        #expect(flashcard.translationTargetLanguage == nil)
-        #expect(flashcard.cefrLevel == nil)
-        #expect(flashcard.contextSentence == nil)
         #expect(flashcard.imageData == nil)
     }
 
@@ -164,10 +152,7 @@ struct FlashcardTests {
         let flashcard = Flashcard(
             word: "hello",
             definition: "greeting",
-            translation: "hola",
-            translationSourceLanguage: "en",
-            translationTargetLanguage: "es",
-            cefrLevel: "A1"
+            translation: "hola"
         )
 
         context.insert(flashcard)
@@ -178,26 +163,6 @@ struct FlashcardTests {
         let fetched = fetchedCards.first
 
         #expect(fetched?.translation == "hola")
-        #expect(fetched?.translationSourceLanguage == "en")
-        #expect(fetched?.translationTargetLanguage == "es")
-        #expect(fetched?.cefrLevel == "A1")
-    }
-
-    @Test("Flashcard with context sentence")
-    func flashcardContextSentence() throws {
-        let context = freshContext()
-        try context.clearAll()
-
-        let flashcard = Flashcard(
-            word: "run",
-            definition: "move at a speed faster than walking",
-            contextSentence: "She runs every morning for exercise."
-        )
-
-        context.insert(flashcard)
-        try context.save()
-
-        #expect(flashcard.contextSentence?.contains("runs") == true)
     }
 
     // MARK: - Flashcard-Deck Relationship Tests

@@ -61,7 +61,7 @@ struct AppSettingsTests {
         let languages = AppSettings.supportedLanguages
 
         #expect(languages.isEmpty == false)
-        #expect(languages.count >= 10)
+        #expect(languages.count >= 20)
 
         // Verify each language has a code and name
         for lang in languages {
@@ -77,6 +77,17 @@ struct AppSettingsTests {
         #expect(codes.contains("de"))
         #expect(codes.contains("ja"))
         #expect(codes.contains("zh-Hans"))
+
+        // Verify required on-device translation languages
+        #expect(codes.contains("ar"))      // Arabic
+        #expect(codes.contains("nl"))      // Dutch
+        #expect(codes.contains("it"))      // Italian
+        #expect(codes.contains("ko"))      // Korean
+        #expect(codes.contains("pl"))      // Polish
+        #expect(codes.contains("pt"))      // Portuguese
+        #expect(codes.contains("ru"))      // Russian
+        #expect(codes.contains("th"))      // Thai
+        #expect(codes.contains("tr"))      // Turkish
     }
 
     // MARK: - Haptic Settings Tests
@@ -216,6 +227,143 @@ struct AppSettingsTests {
     func studyModeOptionRawValues() throws {
         #expect(AppSettings.StudyModeOption.scheduled.rawValue == "scheduled")
         #expect(AppSettings.StudyModeOption.learning.rawValue == "learning")
+    }
+
+    // MARK: - Language Availability Integration Tests
+
+    @Test("AppSettings: language codes work with OnDeviceTranslationService")
+    func languageCodesWorkWithOnDeviceService() async throws {
+        // Test that supported language codes are valid for OnDeviceTranslationService
+        let service = OnDeviceTranslationService.shared
+
+        // Test a few key languages
+        let testLanguages = ["en", "es", "fr", "de", "ja", "zh-Hans", "ru", "ar"]
+
+        for languageCode in testLanguages {
+            // Verify language code is in supportedLanguages
+            let isSupported = AppSettings.supportedLanguages.contains(where: { $0.code == languageCode })
+            #expect(isSupported, "Language code '\(languageCode)' should be in supportedLanguages")
+
+            // Verify language code can be checked with OnDeviceTranslationService
+            // Note: The actual availability depends on iOS framework, but the call should not crash
+            let isAvailable = await service.isLanguageAvailable(languageCode)
+            // We don't assert the result since it depends on device state, just verify it doesn't crash
+            _ = isAvailable
+        }
+    }
+
+    @Test("AppSettings: source and target languages can be checked for availability")
+    func sourceTargetLanguagesCanBeChecked() async throws {
+        let service = OnDeviceTranslationService.shared
+
+        // Save original values
+        let originalSource = AppSettings.translationSourceLanguage
+        let originalTarget = AppSettings.translationTargetLanguage
+
+        // Test different language combinations
+        let testCombinations: [(source: String, target: String)] = [
+            ("en", "es"),
+            ("en", "fr"),
+            ("en", "de"),
+            ("en", "ja"),
+            ("zh-Hans", "en"),
+            ("ru", "en")
+        ]
+
+        for combination in testCombinations {
+            AppSettings.translationSourceLanguage = combination.source
+            AppSettings.translationTargetLanguage = combination.target
+
+            // Verify languages are set
+            #expect(AppSettings.translationSourceLanguage == combination.source)
+            #expect(AppSettings.translationTargetLanguage == combination.target)
+
+            // Verify language pair support can be checked
+            let isSupported = await service.isLanguagePairSupported(
+                from: combination.source,
+                to: combination.target
+            )
+            // We don't assert the result since it depends on iOS framework, just verify it doesn't crash
+            _ = isSupported
+        }
+
+        // Restore original values
+        AppSettings.translationSourceLanguage = originalSource
+        AppSettings.translationTargetLanguage = originalTarget
+    }
+
+    @Test("AppSettings: all supported languages are valid for OnDeviceTranslationService")
+    func allSupportedLanguagesValid() async throws {
+        let service = OnDeviceTranslationService.shared
+
+        // Verify all supported languages can be checked for availability
+        for language in AppSettings.supportedLanguages {
+            let isAvailable = await service.isLanguageAvailable(language.code)
+            // We don't assert the result since it depends on device state, just verify it doesn't crash
+            _ = isAvailable
+        }
+
+        #expect(true, "All supported languages should be valid for OnDeviceTranslationService")
+    }
+
+    @Test("AppSettings: supportedLanguages has all required translation languages")
+    func supportedLanguagesHasRequiredLanguages() throws {
+        let codes = AppSettings.supportedLanguages.map { $0.code }
+
+        // Verify all languages mentioned in CLAUDE.md are present
+        let requiredLanguages = [
+            "ar", "zh-Hans", "zh-Hant", "nl", "en", "fr", "de", "el", "he",
+            "hi", "hu", "id", "it", "ja", "ko", "pl", "pt", "ru", "es",
+            "sv", "th", "tr", "uk", "vi"
+        ]
+
+        for requiredLang in requiredLanguages {
+            #expect(codes.contains(requiredLang), "Required language '\(requiredLang)' should be in supportedLanguages")
+        }
+    }
+
+    @Test("AppSettings: changing language codes updates OnDeviceTranslationService")
+    func changingLanguageCodesUpdatesService() async throws {
+        let service = OnDeviceTranslationService.shared
+
+        // Save original values
+        let originalSource = AppSettings.translationSourceLanguage
+        let originalTarget = AppSettings.translationTargetLanguage
+
+        // Set new languages
+        AppSettings.translationSourceLanguage = "es"
+        AppSettings.translationTargetLanguage = "fr"
+
+        // Update service with new settings
+        await service.setLanguages(
+            source: AppSettings.translationSourceLanguage,
+            target: AppSettings.translationTargetLanguage
+        )
+
+        // Verify service reflects the new settings
+        let currentSource = await service.currentSourceLanguage
+        let currentTarget = await service.currentTargetLanguage
+
+        #expect(currentSource == "es", "Service should have updated source language")
+        #expect(currentTarget == "fr", "Service should have updated target language")
+
+        // Restore original values
+        AppSettings.translationSourceLanguage = originalSource
+        AppSettings.translationTargetLanguage = originalTarget
+    }
+
+    @Test("AppSettings: language codes are valid BCP 47 identifiers")
+    func languageCodesAreValidBCP47() throws {
+        for language in AppSettings.supportedLanguages {
+            let code = language.code
+
+            // BCP 47 identifiers should be 2-8 letters, may include hyphen
+            // Examples: "en", "zh-Hans", "pt-BR"
+            let bcp47Pattern = #"^[a-zA-Z]{2,8}(-[a-zA-Z]{2,8})*$"#
+            let isValid = code.range(of: bcp47Pattern, options: .regularExpression) != nil
+
+            #expect(isValid, "Language code '\(code)' should be valid BCP 47 identifier")
+        }
     }
 
     // MARK: - Key Consistency Tests

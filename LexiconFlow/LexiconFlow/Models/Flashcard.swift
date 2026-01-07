@@ -33,20 +33,9 @@ final class Flashcard {
 
     // MARK: - Translation Fields
 
-    /// Translation of the word into target language (from Z.ai API)
+    /// Translation of the word into target language
+    /// Used by both on-device (iOS 26 Translation) and cloud (Z.ai) services
     var translation: String?
-
-    /// Source language code (e.g., "en" for English)
-    var translationSourceLanguage: String?
-
-    /// Target language code (e.g., "ru" for Russian)
-    var translationTargetLanguage: String?
-
-    /// CEFR level estimate (A1, A2, B1, B2, C1, C2)
-    var cefrLevel: String?
-
-    /// Original context sentence if provided during translation
-    var contextSentence: String?
 
     // MARK: - Optional Fields
 
@@ -95,10 +84,6 @@ final class Flashcard {
     ///   - word: The vocabulary word
     ///   - definition: Definition or meaning
     ///   - translation: Translation into target language (optional)
-    ///   - translationSourceLanguage: Source language code (optional)
-    ///   - translationTargetLanguage: Target language code (optional)
-    ///   - cefrLevel: CEFR level estimate (optional)
-    ///   - contextSentence: Original context sentence (optional)
     ///   - phonetic: IPA pronunciation (optional)
     ///   - imageData: Image data for visual learning (optional)
     ///   - createdAt: Creation timestamp (defaults to now)
@@ -106,10 +91,6 @@ final class Flashcard {
          word: String,
          definition: String,
          translation: String? = nil,
-         translationSourceLanguage: String? = nil,
-         translationTargetLanguage: String? = nil,
-         cefrLevel: String? = nil,
-         contextSentence: String? = nil,
          phonetic: String? = nil,
          imageData: Data? = nil,
          createdAt: Date = Date()) {
@@ -118,10 +99,6 @@ final class Flashcard {
         self.word = word
         self.definition = definition
         self.translation = translation
-        self.translationSourceLanguage = translationSourceLanguage
-        self.translationTargetLanguage = translationTargetLanguage
-        self.cefrLevel = cefrLevel
-        self.contextSentence = contextSentence
         self.phonetic = phonetic
         self.imageData = imageData
         self.createdAt = createdAt
