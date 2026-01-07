@@ -8,6 +8,7 @@
 import Foundation
 import SwiftData
 import Combine
+import OSLog
 
 // MARK: - StudySessionError
 
@@ -49,6 +50,8 @@ enum StudySessionError: LocalizedError, Sendable {
 final class StudySessionViewModel: ObservableObject {
     private let scheduler: Scheduler
     private let mode: StudyMode
+    private let decks: [Deck]
+    private let logger = Logger(subsystem: "com.lexiconflow.session", category: "StudySessionViewModel")
 
     @Published private(set) var cards: [Flashcard] = []
     @Published private(set) var currentIndex = 0
@@ -72,14 +75,20 @@ final class StudySessionViewModel: ObservableObject {
         currentIndex < cards.count
     }
 
-    init(modelContext: ModelContext, mode: StudyMode) {
+    /// Initialize with multiple decks for study session
+    /// - Parameters:
+    ///   - modelContext: SwiftData model context
+    ///   - decks: Array of decks to study from (empty array = no cards)
+    ///   - mode: Study mode (scheduled or learning)
+    init(modelContext: ModelContext, decks: [Deck] = [], mode: StudyMode) {
         self.mode = mode
+        self.decks = decks
         self.scheduler = Scheduler(modelContext: modelContext)
     }
 
     /// Load cards for the study session
     func loadCards() {
-        cards = scheduler.fetchCards(mode: mode, limit: 20)
+        cards = scheduler.fetchCards(for: decks, mode: mode, limit: AppSettings.studyLimit)
         currentIndex = 0
         isComplete = cards.isEmpty
     }

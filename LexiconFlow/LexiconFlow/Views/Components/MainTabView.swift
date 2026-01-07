@@ -12,7 +12,8 @@ struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var selectedTab = 0
     @State private var dueCardCount = 0
-    @State private var scheduler: Scheduler?
+
+    @Query(sort: \Deck.order) private var decks: [Deck]
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -40,9 +41,6 @@ struct MainTabView: View {
                 .accessibilityIdentifier("settings_tab")
         }
         .onAppear {
-            if scheduler == nil {
-                scheduler = Scheduler(modelContext: modelContext)
-            }
             refreshDueCount()
         }
         .onChange(of: selectedTab) { _, _ in
@@ -50,11 +48,19 @@ struct MainTabView: View {
                 refreshDueCount()
             }
         }
+        .onChange(of: AppSettings.selectedDeckIDs) { _, _ in
+            refreshDueCount()
+        }
+    }
+
+    private var selectedDecks: [Deck] {
+        let selectedIDs = AppSettings.selectedDeckIDs
+        return decks.filter { selectedIDs.contains($0.id) }
     }
 
     private func refreshDueCount() {
-        guard let scheduler = scheduler else { return }
-        dueCardCount = scheduler.dueCardCount()
+        let scheduler = Scheduler(modelContext: modelContext)
+        dueCardCount = scheduler.dueCardCount(for: selectedDecks)
     }
 }
 

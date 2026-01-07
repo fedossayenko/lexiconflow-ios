@@ -186,14 +186,15 @@ struct GeneratedSentenceTests {
 
     @Test("isExpired with TTL zero")
     func testIsExpiredTTLOne() throws {
-        let sentence = try GeneratedSentence(
-            sentenceText: "Test",
-            cefrLevel: "A1",
-            generatedAt: Date().addingTimeInterval(-2),
-            ttlDays: 0
-        )
-
-        #expect(sentence.isExpired)
+        // ttlDays: 0 throws invalidTTL error, test expects this
+        #expect(throws: GeneratedSentenceError.invalidTTL) {
+            try GeneratedSentence(
+                sentenceText: "Test",
+                cefrLevel: "A1",
+                generatedAt: Date().addingTimeInterval(-2),
+                ttlDays: 0
+            )
+        }
     }
 
     // MARK: - Relationship Tests

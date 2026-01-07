@@ -31,6 +31,18 @@ struct SettingsView: View {
             List {
                 // MARK: - Study Section
                 Section("Study") {
+                    NavigationLink(destination: DeckSelectionView()) {
+                        HStack {
+                            Label("Deck Selection", systemImage: "square.stack.3d.up.fill")
+                            Spacer()
+                            Text("\(AppSettings.selectedDeckCount)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .labelStyle(.titleAndIcon)
+                    }
+                    .accessibilityLabel("Deck Selection")
+
                     NavigationLink(destination: StudySettingsView()) {
                         Label("Study Settings", systemImage: "brain.head.profile")
                     }
