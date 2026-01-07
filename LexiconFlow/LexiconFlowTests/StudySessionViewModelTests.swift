@@ -99,7 +99,7 @@ struct StudySessionViewModelTests {
     func loadCardsWithEmptyDeckSetsComplete() async throws {
         let context = freshContext()
         try context.clearAll()
-        let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
+        let viewModel = StudySessionViewModel(modelContext: context, decks: [], mode: .scheduled)
 
         viewModel.loadCards()
 
@@ -514,7 +514,7 @@ struct StudySessionViewModelTests {
     func loadCardsCreatesStudySession() async throws {
         let context = freshContext()
         try context.clearAll()
-        let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
+        let viewModel = StudySessionViewModel(modelContext: context, decks: [], mode: .scheduled)
 
         // Create a due card
         _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
@@ -536,7 +536,7 @@ struct StudySessionViewModelTests {
     func loadCardsEmptyDeckNoSession() async throws {
         let context = freshContext()
         try context.clearAll()
-        let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
+        let viewModel = StudySessionViewModel(modelContext: context, decks: [], mode: .scheduled)
 
         viewModel.loadCards()
 
@@ -551,7 +551,7 @@ struct StudySessionViewModelTests {
     func completeSessionFinalizesStudySession() async throws {
         let context = freshContext()
         try context.clearAll()
-        let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
+        let viewModel = StudySessionViewModel(modelContext: context, decks: [], mode: .scheduled)
 
         // Create one card
         _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
@@ -586,7 +586,7 @@ struct StudySessionViewModelTests {
     func reviewsLinkedToStudySession() async throws {
         let context = freshContext()
         try context.clearAll()
-        let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
+        let viewModel = StudySessionViewModel(modelContext: context, decks: [], mode: .scheduled)
 
         // Create two cards
         let card1 = createTestFlashcard(context: context, word: "card1", stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
@@ -618,7 +618,7 @@ struct StudySessionViewModelTests {
     func resetSessionFinalizesPrevious() async throws {
         let context = freshContext()
         try context.clearAll()
-        let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
+        let viewModel = StudySessionViewModel(modelContext: context, decks: [], mode: .scheduled)
 
         // Create cards
         _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
@@ -650,7 +650,7 @@ struct StudySessionViewModelTests {
     func cleanupFinalizesActiveSession() async throws {
         let context = freshContext()
         try context.clearAll()
-        let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
+        let viewModel = StudySessionViewModel(modelContext: context, decks: [], mode: .scheduled)
 
         // Create a card
         _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
@@ -673,7 +673,7 @@ struct StudySessionViewModelTests {
     func cramModeCreatesCramSession() async throws {
         let context = freshContext()
         try context.clearAll()
-        let viewModel = StudySessionViewModel(modelContext: context, mode: .cram)
+        let viewModel = StudySessionViewModel(modelContext: context, decks: [], mode: .cram)
 
         // Create a new card (cram mode includes new cards)
         _ = createTestFlashcard(context: context, stateEnum: FlashcardState.new.rawValue)
@@ -693,7 +693,7 @@ struct StudySessionViewModelTests {
     func learningModeCreatesLearningSession() async throws {
         let context = freshContext()
         try context.clearAll()
-        let viewModel = StudySessionViewModel(modelContext: context, mode: .learning)
+        let viewModel = StudySessionViewModel(modelContext: context, decks: [], mode: .learning)
 
         // Create a new card
         _ = createTestFlashcard(context: context, stateEnum: FlashcardState.new.rawValue)
@@ -720,7 +720,7 @@ struct StudySessionViewModelTests {
         // Save context to force error on next insert
         try context.save()
 
-        let viewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
+        let viewModel = StudySessionViewModel(modelContext: context, decks: [], mode: .scheduled)
 
         // This should not crash even if session creation fails
         viewModel.loadCards()

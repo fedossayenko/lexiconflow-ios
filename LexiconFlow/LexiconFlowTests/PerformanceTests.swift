@@ -108,10 +108,10 @@ struct PerformanceTests {
                 stability: stability,
                 difficulty: difficulty,
                 retrievability: retrievability,
-                lastReviewDate: nil, // Will be set during review creation
                 dueDate: today.addingTimeInterval(Double.random(in: -86400...86400 * 30)),
                 stateEnum: ["new", "learning", "review"].randomElement() ?? "review"
             )
+            // lastReviewDate will be set during review creation
             state.card = card
             context.insert(state)
 
@@ -126,11 +126,19 @@ struct PerformanceTests {
 
             // Skip some days to create realistic streak patterns
             if Double.random(in: 0...1) > 0.7 { // 30% chance of studying
+                let modeEnum = [StudyMode.scheduled, .learning, .cram].randomElement() ?? .scheduled
+                let modeString: String
+                switch modeEnum {
+                case .scheduled: modeString = "scheduled"
+                case .learning: modeString = "learning"
+                case .cram: modeString = "cram"
+                }
+
                 let session = StudySession(
                     startTime: dayDate.addingTimeInterval(Double.random(in: 0...3600)),
                     endTime: dayDate.addingTimeInterval(Double.random(in: 300...1800)),
                     cardsReviewed: Int.random(in: 10...50),
-                    mode: StudySession.StudyMode.allCases.randomElement() ?? .scheduled
+                    modeEnum: modeString
                 )
                 session.deck = deck
                 context.insert(session)
@@ -145,9 +153,10 @@ struct PerformanceTests {
                     let review = FlashcardReview(
                         rating: rating,
                         reviewDate: dayDate.addingTimeInterval(Double.random(in: 0...3600)),
-                        stateEnum: "review"
+                        scheduledDays: 0,
+                        elapsedDays: 0
                     )
-                    review.flashcard = card
+                    review.card = card
                     review.studySession = session
 
                     // Update FSRS state
@@ -394,7 +403,7 @@ struct PerformanceTests {
 
         // Measure aggregation time
         let aggregationTime = try await measureTime {
-            _ = await StatisticsService.shared.aggregateDailyStats(context: context)
+            _ = try await StatisticsService.shared.aggregateDailyStats(context: context)
         }
 
         #expect(
@@ -538,13 +547,13 @@ struct PerformanceTests {
         )
 
         // Verify calendar heatmap exists
-        #expect(data.calendarHeatmap.count > 0, "Should have calendar heatmap data")
+        #expect(data.calendarData.count > 0, "Should have calendar heatmap data")
 
-        logger.info("Calendar heatmap has \(data.calendarHeatmap.count) days")
+        logger.info("Calendar heatmap has \(data.calendarData.count) days")
 
         // Measure time to access all heatmap data (simulating calendar rendering)
         let accessTime = try await measureTime {
-            for _ in data.calendarHeatmap {
+            for _ in data.calendarData {
                 // Access heatmap entry (simulate calendar iteration)
             }
         }

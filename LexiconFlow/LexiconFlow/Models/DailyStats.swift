@@ -66,9 +66,9 @@ final class DailyStats {
 
     /// All study sessions that contributed to these statistics
     /// - Deleting DailyStats cascades to disassociate sessions (kept for analytics)
-    /// - Inverse defined on StudySession.dailyStats to avoid circular reference
+    /// - Inverse defined on StudySession.dailyStats
     /// - SwiftData auto-initializes this property
-    @Relationship(deleteRule: .nullify) var studySessions: [StudySession] = []
+    @Relationship(deleteRule: .nullify, inverse: \StudySession.dailyStats) var studySessions: [StudySession] = []
 
     // MARK: - Computed Properties
 

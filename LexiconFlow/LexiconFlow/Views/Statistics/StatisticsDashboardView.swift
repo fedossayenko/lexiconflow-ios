@@ -11,11 +11,16 @@ import SwiftData
 struct StatisticsDashboardView: View {
     // MARK: - State
 
-    /// ViewModel initialized lazily to avoid ModelContainer crashes
-    @State private var viewModel: StatisticsViewModel?
+    /// ViewModel holder with proper SwiftUI observation
+    /// Using ViewModelHolder allows lazy initialization while maintaining
+    /// proper observation of @Published properties via @StateObject
+    @StateObject private var viewModelHolder = ViewModelHolder<StatisticsViewModel>()
 
     /// Whether to show error alert
     @State private var showError = false
+
+    /// Accessibility announcement for screen reader users
+    @State private var accessibilityAnnouncement = ""
 
     /// Model context for ViewModel initialization
     @Environment(\.modelContext) private var modelContext
@@ -24,7 +29,7 @@ struct StatisticsDashboardView: View {
 
     var body: some View {
         @ViewBuilder var content: some View {
-            if let viewModel = viewModel {
+            if let viewModel = viewModelHolder.value {
                 dashboardContent(viewModel: viewModel)
             } else {
                 ProgressView("Loading statistics...")
@@ -37,17 +42,18 @@ struct StatisticsDashboardView: View {
             }
             .alert("Error", isPresented: $showError) {
                 Button("OK", role: .cancel) {
-                    viewModel?.clearError()
+                    viewModelHolder.value?.clearError()
                 }
                 .accessibilityLabel("Dismiss error")
             } message: {
-                Text(viewModel?.errorMessage ?? "An unknown error occurred")
+                Text(viewModelHolder.value?.errorMessage ?? "An unknown error occurred")
             }
-            .onChange(of: viewModel?.errorMessage != nil) { _, hasError in
+            .onChange(of: viewModelHolder.value?.errorMessage != nil) { _, hasError in
                 if hasError {
                     showError = true
                 }
             }
+            .accessibilityHint(accessibilityAnnouncement)
     }
 
     // MARK: - Dashboard Content
@@ -64,9 +70,14 @@ struct StatisticsDashboardView: View {
                     dashboardHeader(viewModel: viewModel)
                 }
 
+                // MARK: - Error State (highest priority check)
+
+                if viewModel.errorMessage != nil {
+                    errorView
+                }
                 // MARK: - Loading State
 
-                if viewModel.isLoading {
+                else if viewModel.isLoading {
                     loadingView
                 }
                 // MARK: - Empty State
@@ -78,6 +89,11 @@ struct StatisticsDashboardView: View {
 
                 else if viewModel.hasData {
                     metricsContent(viewModel: viewModel)
+                }
+                // MARK: - Fallback (should never reach)
+
+                else {
+                    loadingView
                 }
             }
             .padding()
@@ -237,6 +253,38 @@ struct StatisticsDashboardView: View {
         .accessibilityAddTraits(.isButton)
     }
 
+    // MARK: - Error View
+
+    private var errorView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 48))
+                .foregroundStyle(.orange)
+
+            Text("Failed to load statistics")
+                .font(.headline)
+
+            if let errorMessage = viewModelHolder.value?.errorMessage {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+
+            Button("Retry") {
+                Task {
+                    await viewModelHolder.value?.refresh()
+                }
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .frame(maxWidth: .infinity, minHeight: 200)
+        .padding()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Error loading statistics")
+        .accessibilityHint("Double tap Retry to attempt loading again")
+    }
+
     // MARK: - Initialization
 
     /// Initialize ViewModel with safe pattern
@@ -244,53 +292,48 @@ struct StatisticsDashboardView: View {
     /// **Why lazy initialization?**: Prevents app crashes if ModelContainer fails.
     /// Follows iOS 26 best practices for view initialization.
     private func initializeViewModel() async {
-        guard viewModel == nil else { return }
+        guard viewModelHolder.value == nil else { return }
 
         // Initialize on MainActor (ViewModel is @MainActor)
         await MainActor.run {
-            viewModel = StatisticsViewModel(modelContext: modelContext)
+            viewModelHolder.value = StatisticsViewModel(modelContext: modelContext)
         }
 
         // Initial data refresh
-        await viewModel?.refresh()
+        await viewModelHolder.value?.refresh()
     }
 }
 
 // MARK: - Preview
 
-#Preview("Statistics Dashboard - Empty State") {
-    let container = try! ModelContainer(
+@ViewBuilder
+private func makePreviewContainer() -> some View {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try? ModelContainer(
         for: Flashcard.self, StudySession.self, DailyStats.self, Deck.self, FSRSState.self, FlashcardReview.self,
-        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        configurations: config
     )
 
-    NavigationStack {
-        StatisticsDashboardView()
+    if let container = container {
+        NavigationStack {
+            StatisticsDashboardView()
+        }
+        .modelContainer(container)
+    } else {
+        Text("Preview unavailable: ModelContainer creation failed")
+            .foregroundStyle(.red)
     }
-    .modelContainer(container)
+}
+
+#Preview("Statistics Dashboard - Empty State") {
+    makePreviewContainer()
 }
 
 #Preview("Statistics Dashboard - Dark Mode") {
-    let container = try! ModelContainer(
-        for: Flashcard.self, StudySession.self, DailyStats.self, Deck.self, FSRSState.self, FlashcardReview.self,
-        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-    )
-
-    NavigationStack {
-        StatisticsDashboardView()
-    }
-    .modelContainer(container)
-    .preferredColorScheme(.dark)
+    makePreviewContainer()
+        .preferredColorScheme(.dark)
 }
 
 #Preview("Statistics Dashboard - New User") {
-    let container = try! ModelContainer(
-        for: Flashcard.self, StudySession.self, DailyStats.self, Deck.self, FSRSState.self, FlashcardReview.self,
-        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-    )
-
-    NavigationStack {
-        StatisticsDashboardView()
-    }
-    .modelContainer(container)
+    makePreviewContainer()
 }

@@ -2,7 +2,7 @@
 //  StatisticsService.swift
 //  LexiconFlow
 //
-//  Actor-isolated service for calculating study statistics
+//  @MainActor service for calculating study statistics
 //  Provides concurrency-safe methods for retention, streaks, and FSRS metrics
 //
 
@@ -134,18 +134,19 @@ enum StatisticsTimeRange: String, Sendable, CaseIterable {
 
 // MARK: - Statistics Service
 
-/// Actor-isolated service for calculating study statistics
+/// @MainActor service for calculating study statistics
 ///
-/// **Why Actor?**: Statistics calculations involve aggregating data from
-/// multiple SwiftData models. Actor isolation ensures thread-safe access
-/// to computed values and prevents data races during concurrent queries.
+/// **Why @MainActor?**: Statistics calculations involve aggregating data from
+/// multiple SwiftData models. @MainActor ensures safe access to ModelContext
+/// (which is non-Sendable) and prevents data races during concurrent queries.
 ///
 /// **Architecture**:
-/// - All methods are async and thread-safe
+/// - All methods run on @MainActor for safe SwiftData ModelContext access
 /// - Returns DTOs instead of SwiftData models
 /// - Uses ModelContext for database queries
 /// - Timezone-aware calculations via DateMath
-actor StatisticsService {
+@MainActor
+final class StatisticsService {
     // MARK: - Configuration
 
     /// Buckets for stability distribution histogram
@@ -316,20 +317,24 @@ actor StatisticsService {
 
         logger.debug("Calculating study streak from \(startDate)")
 
-        // Fetch all completed study sessions within time range
+        // Fetch all study sessions within time range
+        // NOTE: endTime filter applied in-memory (SwiftData predicates don't support optional comparisons)
         let sessionsDescriptor = FetchDescriptor<StudySession>(
             predicate: #Predicate<StudySession> { session in
-                session.startTime >= startDate && session.endTime != nil
+                session.startTime >= startDate
             }
         )
 
         do {
             let sessions = try context.fetch(sessionsDescriptor)
 
+            // Filter to completed sessions only (endTime != nil)
+            let completedSessions = sessions.filter { $0.endTime != nil }
+
             // Group sessions by calendar day
             var dailyStudyTime: [Date: TimeInterval] = [:]
 
-            for session in sessions {
+            for session in completedSessions {
                 let day = DateMath.startOfDay(for: session.startTime)
                 let duration = session.durationSeconds
                 dailyStudyTime[day, default: 0.0] += duration
@@ -391,18 +396,20 @@ actor StatisticsService {
         guard !activeDays.isEmpty else { return 0 }
 
         let today = DateMath.startOfDay(for: Date())
+        // Convert to Set for O(1) lookup instead of O(n) iteration
+        let activeDaysSet = Set(activeDays.map { DateMath.startOfDay(for: $0) })
+
         var currentStreak = 0
         var checkDate = today
 
-        // Check backwards from today
-        for day in activeDays.reversed() {
-            if DateMath.isSameDay(day, checkDate) {
-                currentStreak += 1
-                checkDate = DateMath.addingDays(-1, to: checkDate)
-            } else if day < checkDate {
-                // Gap found - streak broken
-                break
-            }
+        // Count consecutive days backwards from today
+        // O(1) per iteration with Set lookup
+        while activeDaysSet.contains(checkDate) {
+            currentStreak += 1
+            checkDate = DateMath.addingDays(-1, to: checkDate)
+
+            // Safety: prevent infinite loop with max iteration limit (100 years)
+            if currentStreak > 36500 { break }
         }
 
         return currentStreak
@@ -621,33 +628,36 @@ actor StatisticsService {
     /// - Parameter context: SwiftData ModelContext for queries
     ///
     /// - Returns: Number of DailyStats records created/updated
-    func aggregateDailyStats(context: ModelContext) async -> Int {
+    ///
+    /// - Throws: SwiftData fetch/save errors
+    func aggregateDailyStats(context: ModelContext) async throws -> Int {
         logger.info("Starting daily stats aggregation")
 
-        // Fetch all completed sessions without daily stats
-        let sessionsDescriptor = FetchDescriptor<StudySession>(
-            predicate: #Predicate<StudySession> { session in
-                session.endTime != nil && session.dailyStats == nil
-            }
-        )
+        // Fetch all sessions (endTime and dailyStats filters applied in-memory)
+        // NOTE: SwiftData predicates don't support optional comparisons
+        let sessionsDescriptor = FetchDescriptor<StudySession>()
 
         do {
             let sessions = try context.fetch(sessionsDescriptor)
 
-            guard !sessions.isEmpty else {
+            // Filter to completed sessions without daily stats
+            let sessionsToAggregate = sessions.filter { $0.endTime != nil && $0.dailyStats == nil }
+
+            guard !sessionsToAggregate.isEmpty else {
                 logger.info("No new sessions to aggregate")
                 return 0
             }
 
             // Group sessions by calendar day
             var sessionsByDay: [Date: [StudySession]] = [:]
-            for session in sessions {
+            for session in sessionsToAggregate {
                 let day = DateMath.startOfDay(for: session.startTime)
                 sessionsByDay[day, default: []].append(session)
             }
 
             // Create or update DailyStats for each day
             var aggregatedCount = 0
+            var createdDailyStats: [DailyStats] = []
 
             for (day, daySessions) in sessionsByDay {
                 // Check if DailyStats already exists for this day
@@ -657,7 +667,8 @@ actor StatisticsService {
                     }
                 )
 
-                let existingStats = try? context.fetch(existingStatsDescriptor).first
+                let existingStatsResults = try context.fetch(existingStatsDescriptor)
+                let existingStats = existingStatsResults.first
 
                 let totalStudyTime = daySessions.reduce(0.0) { $0 + $1.durationSeconds }
                 let totalReviews = daySessions.reduce(0) { $0 + $1.cardsReviewed }
@@ -701,6 +712,7 @@ actor StatisticsService {
                     )
 
                     context.insert(dailyStats)
+                    createdDailyStats.append(dailyStats)
 
                     // Link sessions to this DailyStats record
                     for session in daySessions {
@@ -713,13 +725,15 @@ actor StatisticsService {
                 aggregatedCount += 1
             }
 
+            // Atomic save - all or nothing
             try context.save()
 
             logger.info("Daily stats aggregation complete: \(aggregatedCount) days updated")
             return aggregatedCount
         } catch {
             logger.error("Failed to aggregate daily stats: \(error.localizedDescription)")
-            return 0
+            Analytics.trackError("aggregate_daily_stats", error: error)
+            throw error
         }
     }
 }

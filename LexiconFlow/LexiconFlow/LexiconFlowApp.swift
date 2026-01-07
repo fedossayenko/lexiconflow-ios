@@ -83,9 +83,10 @@ struct LexiconFlowApp: App {
             )
             return minimalContainer
         } catch {
-            // If even the minimal container fails, we have no choice but to crash
-            // This should never happen with a simple empty model
+            // Absolute last resort - if even empty model fails, crash is unavoidable
             logger.critical("Minimal container creation failed: \(error.localizedDescription)")
+            Analytics.trackError("model_container_minimal_failed", error: error)
+            // At this point, there's no way to recover - crash with clear message
             fatalError("Could not create minimal ModelContainer: \(error)")
         }
     }()
@@ -159,16 +160,22 @@ struct LexiconFlowApp: App {
 
         logger.debug("Starting background DailyStats aggregation")
 
-        // Get ModelContext from shared container
-        let context = sharedModelContainer.mainContext
+        // Create a new background context for this operation
+        // IMPORTANT: Create new context for background operations, not mainContext
+        let context = ModelContext(sharedModelContainer)
 
         // Call StatisticsService to aggregate sessions
-        let aggregatedCount = await StatisticsService.shared.aggregateDailyStats(context: context)
+        do {
+            let aggregatedCount = try await StatisticsService.shared.aggregateDailyStats(context: context)
 
-        if aggregatedCount > 0 {
-            logger.info("Background aggregation complete: \(aggregatedCount) days updated")
-        } else {
-            logger.debug("Background aggregation complete: No new sessions to aggregate")
+            if aggregatedCount > 0 {
+                logger.info("Background aggregation complete: \(aggregatedCount) days updated")
+            } else {
+                logger.debug("Background aggregation complete: No new sessions to aggregate")
+            }
+        } catch {
+            logger.error("Background aggregation failed: \(error.localizedDescription)")
+            Analytics.trackError("background_aggregate_daily_stats", error: error)
         }
     }
 }

@@ -86,6 +86,7 @@ final class StatisticsViewModel: ObservableObject {
     /// 2. Calls StatisticsService for all metrics
     /// 3. Updates published properties with DTOs
     /// 4. Handles errors with Analytics tracking
+    /// 5. Times out after 10 seconds to prevent infinite hangs
     ///
     /// **Usage**: Call on view appear and after time range changes
     func refresh() async {
@@ -94,39 +95,48 @@ final class StatisticsViewModel: ObservableObject {
 
         logger.debug("Refreshing statistics for time range: \(self.selectedTimeRange.displayName)")
 
-        // Fetch all metrics concurrently
-        async let retention = statisticsService.calculateRetentionRate(
-            context: modelContext,
-            timeRange: self.selectedTimeRange
-        )
-
-        async let streak = statisticsService.calculateStudyStreak(
-            context: modelContext,
-            timeRange: self.selectedTimeRange
-        )
-
-        async let fsrs = statisticsService.calculateFSRSMetrics(
-            context: modelContext,
-            timeRange: self.selectedTimeRange
-        )
-
+        // Wrap with timeout to prevent infinite hangs
         do {
-            // Await all results
-            let (retentionResult, streakResult, fsrsResult) = await (retention, streak, fsrs)
+            try await withTimeout(seconds: 10) { [weak self] in
+                guard let self = self else { return }
 
-            // Update published properties
-            retentionData = retentionResult
-            streakData = streakResult
-            fsrsMetrics = fsrsResult
+                // Fetch all metrics concurrently
+                async let retention = self.statisticsService.calculateRetentionRate(
+                    context: self.modelContext,
+                    timeRange: self.selectedTimeRange
+                )
 
-            logger.info("""
-                Statistics refreshed:
-                - Retention: \(retentionResult.formattedPercentage)
-                - Streak: \(streakResult.currentStreak) days
-                - FSRS: \(fsrsResult.formattedStability) avg stability
-                """)
+                async let streak = self.statisticsService.calculateStudyStreak(
+                    context: self.modelContext,
+                    timeRange: self.selectedTimeRange
+                )
 
+                async let fsrs = self.statisticsService.calculateFSRSMetrics(
+                    context: self.modelContext,
+                    timeRange: self.selectedTimeRange
+                )
+
+                // Await all results
+                let (retentionResult, streakResult, fsrsResult) = await (retention, streak, fsrs)
+
+                // Update published properties
+                self.retentionData = retentionResult
+                self.streakData = streakResult
+                self.fsrsMetrics = fsrsResult
+
+                self.logger.info("""
+                    Statistics refreshed:
+                    - Retention: \(retentionResult.formattedPercentage)
+                    - Streak: \(streakResult.currentStreak) days
+                    - FSRS: \(fsrsResult.formattedStability) avg stability
+                    """)
+            }
             isLoading = false
+        } catch let timeoutError as TimeoutError {
+            errorMessage = "Loading timed out. Please check your connection and try again."
+            isLoading = false
+            Analytics.trackError("statistics_refresh_timeout", error: timeoutError)
+            logger.error("Statistics refresh timed out after 10 seconds")
         } catch {
             // Handle errors (shouldn't happen with current implementation, but future-proof)
             errorMessage = error.localizedDescription

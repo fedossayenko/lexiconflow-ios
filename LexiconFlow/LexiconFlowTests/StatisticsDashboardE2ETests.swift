@@ -47,19 +47,18 @@ struct StatisticsDashboardE2ETests {
         let flashcard = Flashcard(
             word: word,
             definition: "Test definition for \(word)",
-            phonetic: "/test/",
-            partOfSpeech: "noun"
+            phonetic: "/test/"
         )
 
         let fsrsState = FSRSState(
             stability: stability,
             difficulty: difficulty,
             retrievability: 0.9,
-            lastReviewDate: lastReviewDate,
             dueDate: Date(),
             stateEnum: stateEnum
         )
         fsrsState.card = flashcard
+        fsrsState.lastReviewDate = lastReviewDate
 
         context.insert(flashcard)
         context.insert(fsrsState)
@@ -72,13 +71,13 @@ struct StatisticsDashboardE2ETests {
         startTime: Date,
         endTime: Date? = nil,
         cardsReviewed: Int = 10,
-        mode: StudySession.StudyMode = .scheduled
+        modeEnum: String = "scheduled"
     ) -> StudySession {
         let session = StudySession(
             startTime: startTime,
             endTime: endTime ?? startTime.addingTimeInterval(300),
             cardsReviewed: cardsReviewed,
-            mode: mode
+            modeEnum: modeEnum
         )
         context.insert(session)
         return session
@@ -89,16 +88,17 @@ struct StatisticsDashboardE2ETests {
         flashcard: Flashcard,
         rating: Int,
         reviewDate: Date,
-        timeTaken: TimeInterval = 5.0,
+        scheduledDays: Double = 0.0,
+        elapsedDays: Double = 0.0,
         studySession: StudySession? = nil
     ) -> FlashcardReview {
         let review = FlashcardReview(
             rating: rating,
             reviewDate: reviewDate,
-            timeTaken: timeTaken,
-            stateEnum: "review"
+            scheduledDays: scheduledDays,
+            elapsedDays: elapsedDays
         )
-        review.flashcard = flashcard
+        review.card = flashcard
         review.studySession = studySession
         context.insert(review)
         return review
@@ -123,14 +123,18 @@ struct StatisticsDashboardE2ETests {
         try context.save()
 
         // Step 2: Simulate study session with StudySessionViewModel
-        let studyViewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
+        let studyViewModel = StudySessionViewModel(modelContext: context, decks: [], mode: .scheduled)
         studyViewModel.loadCards()
 
         #expect(studyViewModel.cards.count == 5, "Should load all 5 cards")
-        #expect(studyViewModel.currentStudySession != nil, "Should create a study session")
 
-        guard let session = studyViewModel.currentStudySession else {
-            throw TestError("Study session not created")
+        // Fetch the created study session from context
+        let descriptor = FetchDescriptor<StudySession>()
+        let sessions = try context.fetch(descriptor)
+        #expect(!sessions.isEmpty, "Should create a study session")
+
+        guard let session = sessions.first else {
+            throw TestError(message: "Study session not created")
         }
 
         // Step 3: Submit ratings for all cards
@@ -146,7 +150,7 @@ struct StatisticsDashboardE2ETests {
         try context.save()
 
         // Step 4: Run DailyStats aggregation (simulating app background)
-        let aggregatedDays = await StatisticsService.shared.aggregateDailyStats(context: context)
+        let aggregatedDays = try await StatisticsService.shared.aggregateDailyStats(context: context)
         #expect(aggregatedDays == 1, "Should aggregate 1 day of statistics")
 
         // Step 5: Create StatisticsViewModel and refresh
@@ -162,7 +166,7 @@ struct StatisticsDashboardE2ETests {
         // Verify retention rate calculation
         let retentionData = statsViewModel.retentionData!
         #expect(retentionData.totalCount == 5, "Should have 5 total reviews")
-        #expect(retentionData.successCount > 0, "Should have at least 1 successful review")
+        #expect(retentionData.successfulCount > 0, "Should have at least 1 successful review")
 
         // Verify study streak
         let streakData = statsViewModel.streakData!
@@ -195,7 +199,7 @@ struct StatisticsDashboardE2ETests {
                 startTime: dayStart.addingTimeInterval(3600), // 1:00 AM
                 endTime: dayStart.addingTimeInterval(4200), // 1:10 AM
                 cardsReviewed: 10,
-                mode: .scheduled
+                modeEnum: "scheduled"
             )
 
             // Create flashcards and reviews for this session
@@ -214,7 +218,8 @@ struct StatisticsDashboardE2ETests {
                     flashcard: card,
                     rating: Int.random(in: 1...4),
                     reviewDate: dayStart.addingTimeInterval(3600 + Double(i * 60)),
-                    timeTaken: Double.random(in: 3...15),
+                    scheduledDays: 0,
+                    elapsedDays: 0,
                     studySession: session
                 )
                 allReviews.append(review)
@@ -224,7 +229,7 @@ struct StatisticsDashboardE2ETests {
         try context.save()
 
         // Aggregate daily stats
-        let aggregatedDays = await StatisticsService.shared.aggregateDailyStats(context: context)
+        let aggregatedDays = try await StatisticsService.shared.aggregateDailyStats(context: context)
         #expect(aggregatedDays == 3, "Should aggregate 3 days of statistics")
 
         // Refresh dashboard with 7-day time range
@@ -284,7 +289,7 @@ struct StatisticsDashboardE2ETests {
         let expectedRate = Double(expectedSuccessCount) / Double(ratings.count)
 
         #expect(retentionData.totalCount == 20, "Should have 20 total reviews")
-        #expect(retentionData.successCount == expectedSuccessCount, "Should have \(expectedSuccessCount) successful reviews")
+        #expect(retentionData.successfulCount == expectedSuccessCount, "Should have \(expectedSuccessCount) successful reviews")
         #expect(retentionData.failedCount == expectedFailedCount, "Should have \(expectedFailedCount) failed reviews")
         #expect(abs(retentionData.rate - expectedRate) < 0.01, "Retention rate should be \(expectedRate)")
 
@@ -310,7 +315,7 @@ struct StatisticsDashboardE2ETests {
                 context: context,
                 startTime: dayStart.addingTimeInterval(3600),
                 cardsReviewed: 5,
-                mode: .scheduled
+                modeEnum: "scheduled"
             )
 
             for i in 0..<5 {
@@ -373,7 +378,7 @@ struct StatisticsDashboardE2ETests {
             context: context,
             startTime: Date().addingTimeInterval(-86400), // Yesterday
             cardsReviewed: 10,
-            mode: .scheduled
+            modeEnum: "scheduled"
         )
 
         for i in 0..<10 {
@@ -397,7 +402,7 @@ struct StatisticsDashboardE2ETests {
             context: context,
             startTime: Date().addingTimeInterval(-43200), // 12 hours ago
             cardsReviewed: 5,
-            mode: .learning
+            modeEnum: "learning"
         )
 
         for i in 0..<5 {
@@ -421,7 +426,7 @@ struct StatisticsDashboardE2ETests {
             context: context,
             startTime: Date(),
             cardsReviewed: 8,
-            mode: .cram
+            modeEnum: "cram"
         )
 
         for i in 0..<8 {
@@ -442,7 +447,7 @@ struct StatisticsDashboardE2ETests {
         try context.save()
 
         // Aggregate and refresh
-        let aggregatedDays = await StatisticsService.shared.aggregateDailyStats(context: context)
+        let aggregatedDays = try await StatisticsService.shared.aggregateDailyStats(context: context)
         #expect(aggregatedDays == 2, "Should aggregate 2 days")
 
         let statsViewModel = StatisticsViewModel(modelContext: context, timeRange: .sevenDays)
@@ -501,11 +506,14 @@ struct StatisticsDashboardE2ETests {
         try context.save()
 
         // Start study session
-        let studyViewModel = StudySessionViewModel(modelContext: context, mode: .scheduled)
+        let studyViewModel = StudySessionViewModel(modelContext: context, decks: [], mode: .scheduled)
         studyViewModel.loadCards()
 
-        guard let session = studyViewModel.currentStudySession else {
-            throw TestError("Study session not created")
+        // Fetch the created study session from context
+        let descriptor = FetchDescriptor<StudySession>()
+        let sessions = try context.fetch(descriptor)
+        guard let session = sessions.first else {
+            throw TestError(message: "Study session not created")
         }
 
         // Submit only 3 ratings out of 20
@@ -627,7 +635,7 @@ struct StatisticsDashboardE2ETests {
                     startTime: dayStart.addingTimeInterval(3600 + Double(day * 3600)),
                     endTime: dayStart.addingTimeInterval(3600 + Double(day * 3600) + Double(cardsToday * 20)),
                     cardsReviewed: cardsToday,
-                    mode: .scheduled
+                    modeEnum: "scheduled"
                 )
 
                 for i in 0..<cardsToday {
@@ -649,7 +657,8 @@ struct StatisticsDashboardE2ETests {
                         flashcard: card,
                         rating: rating,
                         reviewDate: dayStart.addingTimeInterval(Double(i * 20)),
-                        timeTaken: Double.random(in: 3...12),
+                        scheduledDays: 0,
+                        elapsedDays: 0,
                         studySession: session
                     )
                     totalCards += 1
@@ -661,7 +670,7 @@ struct StatisticsDashboardE2ETests {
         try context.save()
 
         // Aggregate statistics
-        let aggregatedDays = await StatisticsService.shared.aggregateDailyStats(context: context)
+        let aggregatedDays = try await StatisticsService.shared.aggregateDailyStats(context: context)
         #expect(aggregatedDays == 20, "Should aggregate 20 days of study")
 
         // Refresh dashboard
@@ -704,7 +713,7 @@ struct StatisticsDashboardE2ETests {
                 context: context,
                 startTime: dayStart.addingTimeInterval(3600),
                 cardsReviewed: cardsToday,
-                mode: .scheduled
+                modeEnum: "scheduled"
             )
 
             for i in 0..<cardsToday {

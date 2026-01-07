@@ -43,11 +43,11 @@ struct StatisticsServiceTests {
             stability: stability,
             difficulty: difficulty,
             retrievability: 0.9,
-            lastReviewDate: lastReviewDate,
             dueDate: Date(),
             stateEnum: "review"
         )
         state.card = flashcard
+        state.lastReviewDate = lastReviewDate
         context.insert(state)
 
         return flashcard
@@ -59,13 +59,13 @@ struct StatisticsServiceTests {
         startTime: Date,
         endTime: Date? = nil,
         cardsReviewed: Int = 0,
-        mode: StudySession.StudyMode = .scheduled
+        modeEnum: String = "scheduled"
     ) -> StudySession {
         let session = StudySession(
             startTime: startTime,
             endTime: endTime,
             cardsReviewed: cardsReviewed,
-            mode: mode
+            modeEnum: modeEnum
         )
         context.insert(session)
         return session
@@ -81,9 +81,10 @@ struct StatisticsServiceTests {
         let review = FlashcardReview(
             rating: rating,
             reviewDate: reviewDate,
-            stateEnum: "review"
+            scheduledDays: 0,
+            elapsedDays: 0
         )
-        review.flashcard = flashcard
+        review.card = flashcard
         context.insert(review)
         return review
     }
@@ -750,7 +751,7 @@ struct StatisticsServiceTests {
         let context = freshContext()
         try context.clearAll()
 
-        let count = await StatisticsService.shared.aggregateDailyStats(context: context)
+        let count = try await StatisticsService.shared.aggregateDailyStats(context: context)
 
         #expect(count == 0)
     }
@@ -776,7 +777,7 @@ struct StatisticsServiceTests {
         }
         session.reviewsLog = (try? context.fetch(FetchDescriptor<FlashcardReview>())) ?? []
 
-        let count = await StatisticsService.shared.aggregateDailyStats(context: context)
+        let count = try await StatisticsService.shared.aggregateDailyStats(context: context)
 
         #expect(count == 1)
 
@@ -811,7 +812,7 @@ struct StatisticsServiceTests {
             }
         }
 
-        let count = await StatisticsService.shared.aggregateDailyStats(context: context)
+        let count = try await StatisticsService.shared.aggregateDailyStats(context: context)
 
         #expect(count == 1) // Only 1 DailyStats record for all sessions
 
@@ -843,7 +844,7 @@ struct StatisticsServiceTests {
             cardsReviewed: 10
         )
 
-        let count = await StatisticsService.shared.aggregateDailyStats(context: context)
+        let count = try await StatisticsService.shared.aggregateDailyStats(context: context)
 
         #expect(count == 2) // 2 DailyStats records
 
@@ -879,7 +880,7 @@ struct StatisticsServiceTests {
             cardsReviewed: 10
         )
 
-        let count = await StatisticsService.shared.aggregateDailyStats(context: context)
+        let count = try await StatisticsService.shared.aggregateDailyStats(context: context)
 
         #expect(count == 1)
 
@@ -910,7 +911,7 @@ struct StatisticsServiceTests {
         _ = createReview(context: context, flashcard: flashcard, rating: 0, reviewDate: today)
         _ = createReview(context: context, flashcard: flashcard, rating: 4, reviewDate: today)
 
-        let count = await StatisticsService.shared.aggregateDailyStats(context: context)
+        let count = try await StatisticsService.shared.aggregateDailyStats(context: context)
 
         #expect(count == 1)
 
@@ -933,7 +934,7 @@ struct StatisticsServiceTests {
             endTime: today.addingTimeInterval(300),
             cardsReviewed: 5
         )
-        let count1 = await StatisticsService.shared.aggregateDailyStats(context: context)
+        let count1 = try await StatisticsService.shared.aggregateDailyStats(context: context)
         #expect(count1 == 1)
 
         // Create second session
@@ -945,7 +946,7 @@ struct StatisticsServiceTests {
         )
 
         // Aggregate again - should only process new session
-        let count2 = await StatisticsService.shared.aggregateDailyStats(context: context)
+        let count2 = try await StatisticsService.shared.aggregateDailyStats(context: context)
         #expect(count2 == 1) // Only session2 processed
 
         // Verify we still have only 1 DailyStats record (aggregated)
@@ -1019,7 +1020,12 @@ struct StatisticsServiceTests {
         await withTaskGroup(of: Int.self) { group in
             for _ in 0..<3 {
                 group.addTask {
-                    await StatisticsService.shared.aggregateDailyStats(context: context)
+                    do {
+                        return try await StatisticsService.shared.aggregateDailyStats(context: context)
+                    } catch {
+                        // Return 0 on error (aggregation failed)
+                        return 0
+                    }
                 }
             }
 

@@ -55,7 +55,7 @@ final class StudySession {
 
     /// The aggregated daily stats record for this session (optional)
     /// - Deleting DailyStats sets this to nil (session history preserved)
-    /// - Inverse defined on DailyStats.studySessions to avoid circular reference
+    /// - Inverse defined on DailyStats.studySessions
     /// - SwiftData auto-initializes this property
     /// - Populated by StatisticsService during aggregation
     @Relationship(deleteRule: .nullify) var dailyStats: DailyStats?
