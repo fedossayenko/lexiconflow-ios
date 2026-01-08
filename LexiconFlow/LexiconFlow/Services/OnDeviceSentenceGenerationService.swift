@@ -20,11 +20,16 @@ import SwiftData
 /// - CEFR level appropriateness filtering
 /// - Static fallback sentences for pre-Apple Intelligence devices
 /// - Device capability detection
+///
+/// NOTE: Foundation Models framework is currently unavailable in SDK.
+/// This service uses static fallback sentences until the framework is available.
 actor OnDeviceSentenceGenerationService {
     // MARK: - Configuration Constants
 
     /// Configuration constants for sentence generation operations
-    private enum Config {
+    ///
+    /// **Note**: Marked `nonisolated` to allow safe access from any context
+    private nonisolated enum Config {
         /// Default number of sentences to generate per flashcard
         static let defaultSentencesPerCard = 3
 
@@ -61,12 +66,13 @@ actor OnDeviceSentenceGenerationService {
     private var sourceLanguage = "en"
     private var targetLanguage = "ru"
 
-    /// Foundation Models session (lazy initialization)
-    private var session: LanguageModelSession?
+    // NOTE: LanguageModelSession is unavailable until Foundation Models framework is added to SDK
+    // private var session: LanguageModelSession?
 
     private init() {}
 
     /// Fetch API key from Keychain (for compatibility with existing service)
+    @MainActor
     private func getAPIKey() -> String {
         (try? KeychainManager.getAPIKey()) ?? ""
     }
@@ -81,21 +87,24 @@ actor OnDeviceSentenceGenerationService {
     // MARK: - Device Capability Detection
 
     /// Check if the device supports Foundation Models (Apple Intelligence)
+    ///
+    /// NOTE: Always returns false until Foundation Models framework is available in SDK
     func isFoundationModelsAvailable() -> Bool {
-        // Check if device is iPhone 15 Pro or later
-        if #available(iOS 26.0, *) {
-            // Attempt to create a session to verify availability
-            do {
-                _ = try LanguageModelSession()
-                return true
-            } catch {
-                logger.warning("Foundation Models not available on this device: \(error.localizedDescription)")
-                return false
-            }
-        } else {
-            logger.warning("Foundation Models requires iOS 26.0+")
-            return false
-        }
+        // Foundation Models framework is not yet available in iOS SDK
+        logger.debug("Foundation Models framework not yet available in SDK")
+        return false
+
+        // TODO: Enable when Foundation Models framework is available:
+        // if #available(iOS 26.0, *) {
+        //     do {
+        //         _ = try LanguageModelSession()
+        //         return true
+        //     } catch {
+        //         logger.warning("Foundation Models not available: \(error.localizedDescription)")
+        //         return false
+        //     }
+        // }
+        // return false
     }
 
     // MARK: - Sentence Generation Types
@@ -113,7 +122,7 @@ actor OnDeviceSentenceGenerationService {
     struct SentenceGenerationResult: Sendable {
         let cardId: UUID
         let cardWord: String
-        let result: Result<SentenceGenerationResponse, SentenceGenerationError>
+        let result: Result<SentenceGenerationResponse, OnDeviceSentenceGenerationError>
         let duration: TimeInterval
     }
 
@@ -136,7 +145,7 @@ actor OnDeviceSentenceGenerationService {
         let successCount: Int
         let failedCount: Int
         let totalDuration: TimeInterval
-        let errors: [SentenceGenerationError]
+        let errors: [OnDeviceSentenceGenerationError]
         let successfulGenerations: [SuccessfulGeneration]
 
         var isSuccess: Bool {
@@ -193,7 +202,7 @@ actor OnDeviceSentenceGenerationService {
     ///   - count: Number of sentences to generate (default: 3)
     ///
     /// - Returns: SentenceGenerationResponse with generated sentences
-    /// - Throws: SentenceGenerationError if the request fails
+    /// - Throws: OnDeviceSentenceGenerationError if the request fails
     func generateSentences(
         cardWord: String,
         cardDefinition: String,
@@ -203,116 +212,103 @@ actor OnDeviceSentenceGenerationService {
     ) async throws -> SentenceGenerationResponse {
         // Check device capability
         guard isFoundationModelsAvailable() else {
-            logger.warning("Foundation Models not available, using static fallback")
+            logger.debug("Foundation Models not available, using static fallback")
             return SentenceGenerationResponse(
                 items: getStaticFallbackSentences(for: cardWord)
             )
         }
 
-        // Initialize session if needed
-        if session == nil {
-            do {
-                session = try LanguageModelSession()
-            } catch {
-                logger.error("Failed to create LanguageModelSession: \(error.localizedDescription)")
-                throw SentenceGenerationError.invalidConfiguration
-            }
-        }
+        // TODO: Implement Foundation Models integration when framework is available
+        // let systemPrompt = ...
+        // let response = try await session.generate(...)
+        // return try parseSentenceResponse(from: response, word: cardWord)
 
-        let systemPrompt = """
-        Generate \(count) unique English context sentences for vocabulary learning.
-
-        Requirements:
-        - Each sentence must clearly demonstrate the word's meaning
-        - Use diverse contexts (formal, informal, academic, daily life)
-        - Vary sentence complexity (simple to compound/complex)
-        - Ensure natural, authentic English usage
-        - Keep sentences concise and clear for language learners
-
-        Return ONLY a JSON array with this exact format:
-        [
-          {"sentence": "example sentence using the word", "cefr_level": "A1"},
-          {"sentence": "another example sentence", "cefr_level": "B1"}
-        ]
-
-        CEFR Guidelines:
-        - A1: Simple sentences, common vocabulary (max 8 words)
-        - A2: Basic sentences, everyday topics (max 15 words)
-        - B1: Standard sentences, familiar topics (max 25 words)
-        - B2: Complex sentences, technical vocabulary (max 35 words)
-        - C1: Advanced sentences, abstract concepts (36+ words)
-        """
-
-        let userPrompt = """
-        Word: \(cardWord)
-        Definition: \(cardDefinition)
-        \(cardTranslation.map { "Translation: \($0)" } ?? "")
-        \(cardCEFR.map { "Target CEFR: \($0)" } ?? "")
-
-        Generate \(count) unique sentences.
-        Return ONLY a JSON array.
-        """
-
-        logger.debug("Sending on-device sentence generation request for '\(cardWord)'")
-
-        do {
-            guard let session = session else {
-                throw SentenceGenerationError.invalidConfiguration
-            }
-
-            let response = try await session.generate(
-                "\(systemPrompt)\n\n\(userPrompt)",
-                maxTokens: Config.maxTokens,
-                temperature: Config.temperature
-            )
-
-            logger.info("Successfully generated on-device sentences for '\(cardWord)'")
-
-            // Parse the response as JSON
-            return try parseSentenceResponse(from: response, word: cardWord)
-
-        } catch let error as SentenceGenerationError {
-            throw error
-        } catch {
-            logger.error("On-device generation failed: \(error.localizedDescription)")
-            // Fall back to static sentences on error
-            return SentenceGenerationResponse(
-                items: getStaticFallbackSentences(for: cardWord)
-            )
-        }
+        logger.debug("Foundation Models integration not yet implemented")
+        return SentenceGenerationResponse(
+            items: getStaticFallbackSentences(for: cardWord)
+        )
     }
 
     /// Parse the Foundation Models response into SentenceGenerationResponse
+    ///
+    /// NOTE: Currently unused until Foundation Models framework is available
     private func parseSentenceResponse(
         from response: String,
         word: String
     ) throws -> SentenceGenerationResponse {
-        // Extract JSON from response (handle markdown code blocks)
-        let jsonContent = JSONExtractor.extract(from: response, logger: logger)
+        // Extract JSON synchronously without Logger to avoid @MainActor isolation
+        let jsonContent = extractJSONSynchronously(from: response)
 
         guard let data = jsonContent.data(using: .utf8) else {
             logger.error("Failed to decode JSON content as UTF-8")
-            throw SentenceGenerationError.invalidResponse(reason: "Content is not valid UTF-8")
+            throw OnDeviceSentenceGenerationError.generationFailed("Content is not valid UTF-8")
         }
 
         do {
             let items = try JSONDecoder().decode([SentenceItem].self, from: data)
             logger.info("Parsed \(items.count) sentences for '\(word)'")
-            return SentenceGenerationResponse(items: items)
+            // Convert SentenceItem to GeneratedSentenceItem
+            let generatedItems = items.map { item in
+                SentenceGenerationResponse.GeneratedSentenceItem(
+                    sentence: item.sentence,
+                    cefrLevel: item.cefrLevel
+                )
+            }
+            return SentenceGenerationResponse(items: generatedItems)
         } catch {
             logger.error("JSON decode error: \(error.localizedDescription)")
             logger.error("Content that failed to decode: \(String(jsonContent.prefix(500)))")
-            throw SentenceGenerationError.invalidResponse(reason: error.localizedDescription)
+            throw OnDeviceSentenceGenerationError.generationFailed(error.localizedDescription)
         }
     }
 
+    /// Extract JSON from text without Logger dependency (nonisolated)
+    ///
+    /// This helper method inlines JSON extraction logic to avoid @MainActor isolation
+    /// issues that occur when passing Logger to JSONExtractor.extract(from:logger:).
+    private nonisolated func extractJSONSynchronously(from text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Try ```json code blocks (preferred format)
+        if let jsonStart = trimmed.range(of: "```json", options: .caseInsensitive) {
+            let afterStart = jsonStart.upperBound
+            if let jsonEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
+                let json = String(trimmed[afterStart..<jsonEnd.lowerBound])
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                return json
+            }
+        }
+
+        // Try ``` code blocks (without json specifier)
+        if let codeStart = trimmed.range(of: "```", options: .caseInsensitive) {
+            let afterStart = codeStart.upperBound
+            if let codeEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
+                let json = String(trimmed[afterStart..<codeEnd.lowerBound])
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                return json
+            }
+        }
+
+        // Try { to } brace delimiters (fallback for unstructured text)
+        if let firstBrace = trimmed.firstIndex(of: "{"),
+           let lastBrace = trimmed.lastIndex(of: "}") {
+            let json = String(trimmed[firstBrace...lastBrace])
+            return json
+        }
+
+        // Return original if no JSON patterns matched
+        return trimmed
+    }
+
     /// Helper struct for JSON decoding
+    ///
+    /// NOTE: Used only when Foundation Models framework is available
     private struct SentenceItem: Codable {
         let sentence: String
         let cefrLevel: String
 
         enum CodingKeys: String, CodingKey {
-            case sentence = "sentence"
+            case sentence
             case cefrLevel = "cefr_level"
         }
     }
@@ -349,7 +345,7 @@ actor OnDeviceSentenceGenerationService {
         let existingTask = await taskStorage.get()
         if existingTask != nil && !Task.isCancelled {
             logger.warning("Batch generation already in progress")
-            throw SentenceGenerationError.invalidConfiguration
+            throw OnDeviceSentenceGenerationError.invalidConfiguration
         }
 
         logger.info("Starting on-device batch generation: \(cards.count) cards, \(sentencesPerCard) sentences/card")
@@ -398,7 +394,7 @@ actor OnDeviceSentenceGenerationService {
                     if let result = try await group.next() {
                         results.append(result)
                         completedCount += 1
-                        await reportProgress(
+                        reportProgress(
                             handler: progressHandler,
                             current: completedCount,
                             total: cards.count,
@@ -422,7 +418,7 @@ actor OnDeviceSentenceGenerationService {
             for try await result in group {
                 results.append(result)
                 completedCount += 1
-                await reportProgress(
+                reportProgress(
                     handler: progressHandler,
                     current: completedCount,
                     total: cards.count,
@@ -443,10 +439,10 @@ actor OnDeviceSentenceGenerationService {
         current: Int,
         total: Int,
         word: String
-    ) async {
+    ) {
         guard let handler = handler else { return }
         let progress = BatchGenerationProgress(current: current, total: total, currentWord: word)
-        await MainActor.run { handler(progress) }
+        Task { @MainActor in handler(progress) }
     }
 
     /// Aggregate generation results
@@ -456,7 +452,7 @@ actor OnDeviceSentenceGenerationService {
     ) -> SentenceBatchResult {
         let successes = results.filter { if case .success = $0.result { true } else { false } }
         let failures = results.filter { if case .failure = $0.result { true } else { false } }
-        let errors = failures.compactMap { (result) -> SentenceGenerationError? in
+        let errors = failures.compactMap { (result) -> OnDeviceSentenceGenerationError? in
             guard case .failure(let error) = result.result else { return nil }
             return error
         }
@@ -522,7 +518,7 @@ actor OnDeviceSentenceGenerationService {
                     count: count
                 )
             },
-            isRetryable: { (error: SentenceGenerationError) in
+            isRetryable: { (error: OnDeviceSentenceGenerationError) in
                 error.isRetryable
             },
             logContext: "On-device sentence generation for '\(cardWord)'",
@@ -612,11 +608,12 @@ actor OnDeviceSentenceGenerationService {
 
 // MARK: - Errors
 
-enum OnDeviceSentenceGenerationError: LocalizedError {
+enum OnDeviceSentenceGenerationError: LocalizedError, Sendable {
     case deviceNotSupported
     case sessionNotInitialized
     case generationFailed(String)
     case invalidConfiguration
+    case cancelled
 
     var errorDescription: String? {
         switch self {
@@ -628,6 +625,8 @@ enum OnDeviceSentenceGenerationError: LocalizedError {
             return "Sentence generation failed: \(reason)"
         case .invalidConfiguration:
             return "Invalid service configuration"
+        case .cancelled:
+            return "Generation was cancelled"
         }
     }
 
@@ -641,12 +640,14 @@ enum OnDeviceSentenceGenerationError: LocalizedError {
             return "Try again or use static fallback sentences"
         case .invalidConfiguration:
             return "Check your iOS version and device compatibility"
+        case .cancelled:
+            return nil
         }
     }
 
     var isRetryable: Bool {
         switch self {
-        case .deviceNotSupported, .invalidConfiguration:
+        case .deviceNotSupported, .invalidConfiguration, .cancelled:
             return false
         case .sessionNotInitialized, .generationFailed:
             return true

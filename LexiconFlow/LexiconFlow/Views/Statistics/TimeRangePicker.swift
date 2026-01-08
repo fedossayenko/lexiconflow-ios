@@ -34,19 +34,16 @@ struct TimeRangePicker: View {
 #Preview("TimeRangePicker - 7 Days") {
     TimeRangePicker(selection: .constant(.sevenDays))
         .padding()
-        .previewLayout(.sizeThatFits)
 }
 
 #Preview("TimeRangePicker - 30 Days") {
     TimeRangePicker(selection: .constant(.thirtyDays))
         .padding()
-        .previewLayout(.sizeThatFits)
 }
 
 #Preview("TimeRangePicker - All Time") {
     TimeRangePicker(selection: .constant(.allTime))
         .padding()
-        .previewLayout(.sizeThatFits)
 }
 
 #Preview("TimeRangePicker - Dark Mode") {
@@ -57,7 +54,6 @@ struct TimeRangePicker: View {
     }
     .padding()
     .preferredColorScheme(.dark)
-    .previewLayout(.sizeThatFits)
 }
 
 #Preview("TimeRangePicker - Interactive") {
@@ -77,5 +73,4 @@ struct TimeRangePicker: View {
     }
 
     return InteractivePreview()
-        .previewLayout(.sizeThatFits)
 }

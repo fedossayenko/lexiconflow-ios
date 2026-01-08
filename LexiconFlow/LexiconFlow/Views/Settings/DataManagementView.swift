@@ -268,7 +268,8 @@ struct DataManagementView: View {
                 let result = await importer.importCards(cardsData, batchSize: 500)
 
                 // Associate cards with decks and apply FSRS state if included
-                if let deckID = importData.cards.first?.deckId {
+                // TODO: Implement proper deck matching logic
+                if importData.cards.first?.deckId != nil {
                     // Simple association for first deck (would need proper matching in production)
                 }
 

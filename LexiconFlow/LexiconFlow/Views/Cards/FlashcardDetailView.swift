@@ -123,12 +123,10 @@ struct FlashcardDetailView: View {
         }
         .onChange(of: currentFilter) { _, newFilter in
             // Track filter changes for analytics
-            Task {
-                await Analytics.trackEvent("review_history_filter_changed", metadata: [
-                    "filter": newFilter.rawValue,
-                    "flashcard_word": flashcard.word
-                ])
-            }
+            Analytics.trackEvent("review_history_filter_changed", metadata: [
+                "filter": newFilter.rawValue,
+                "flashcard_word": flashcard.word
+            ])
         }
     }
 
@@ -136,7 +134,7 @@ struct FlashcardDetailView: View {
     @ViewBuilder
     private func exportToolbarItem(viewModel: FlashcardDetailViewModel) -> some View {
         if let csvString = viewModel.exportCSVString,
-           let filename = viewModel.exportFilename {
+           let _ = viewModel.exportFilename {
             ShareLink(
                 item: csvString,
                 preview: SharePreview("Review History", image: Image(systemName: "square.and.arrow.up"))
@@ -153,7 +151,7 @@ struct FlashcardDetailView: View {
     /// Card information header showing word, definition, translation, phonetic, and CEFR
     @ViewBuilder
     private var cardInfoSection: some View {
-        if let viewModel = viewModel {
+        if viewModel != nil {
             VStack(alignment: .leading, spacing: 20) {
                 // Word and CEFR badge row
                 HStack(alignment: .top, spacing: 12) {

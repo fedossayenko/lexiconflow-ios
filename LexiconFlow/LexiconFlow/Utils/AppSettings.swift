@@ -107,13 +107,12 @@ enum AppSettings {
     ///
     /// **Thread Safety**: Explicitly @MainActor isolated to prevent data races
     /// when accessing @AppStorage properties from multiple contexts.
-    @MainActor
     static var selectedDeckIDs: Set<UUID> {
         get {
             guard let data = selectedDeckIDsData.data(using: .utf8) else {
                 logger.error("Failed to convert selectedDeckIDsData to UTF-8")
                 // Fire-and-forget acceptable for error recovery (no lifecycle to manage)
-                Task { await Analytics.trackIssue("deck_selection_utf8_failed", message: "Selected deck IDs data is not valid UTF-8") }
+                Analytics.trackIssue("deck_selection_utf8_failed", message: "Selected deck IDs data is not valid UTF-8")
                 return []
             }
             do {
@@ -128,13 +127,11 @@ enum AppSettings {
                 if validUUIDs.count < ids.count {
                     let droppedCount = ids.count - validUUIDs.count
                     logger.warning("Dropped \(droppedCount) invalid UUIDs from selection")
-                    Task {
-                        await Analytics.trackIssue(
-                            "deck_selection_partial_loss",
-                            message: "Dropped \(droppedCount) invalid UUIDs out of \(ids.count) total",
-                            metadata: ["dropped_count": "\(droppedCount)", "total_count": "\(ids.count)"]
-                        )
-                    }
+                    Analytics.trackIssue(
+                        "deck_selection_partial_loss",
+                        message: "Dropped \(droppedCount) invalid UUIDs out of \(ids.count) total",
+                        metadata: ["dropped_count": "\(droppedCount)", "total_count": "\(ids.count)"]
+                    )
                 }
                 return Set(validUUIDs)
             } catch {
@@ -144,13 +141,11 @@ enum AppSettings {
                 selectedDeckIDsData = "[]"
 
                 // Track the error for monitoring
-                Task {
-                    await Analytics.trackError(
-                        "deck_selection_decode_failed",
-                        error: error,
-                        metadata: ["data_length": "\(data.count)"]
-                    )
-                }
+                Analytics.trackError(
+                    "deck_selection_decode_failed",
+                    error: error,
+                    metadata: ["data_length": "\(data.count)"]
+                )
 
                 return []
             }
@@ -161,13 +156,13 @@ enum AppSettings {
                 let data = try JSONEncoder().encode(ids)
                 guard let string = String(data: data, encoding: .utf8) else {
                     logger.error("Failed to convert encoded data to UTF-8")
-                    Task { await Analytics.trackError("deck_selection_utf8_encode_failed", error: AppSettings.EncodingError.utf8ConversionFailed) }
+                    Analytics.trackError("deck_selection_utf8_encode_failed", error: AppSettings.EncodingError.utf8ConversionFailed)
                     return
                 }
                 selectedDeckIDsData = string
             } catch {
                 logger.error("Failed to encode selectedDeckIDs: \(error)")
-                Task { await Analytics.trackError("deck_selection_encode_failed", error: error) }
+                Analytics.trackError("deck_selection_encode_failed", error: error)
             }
         }
     }

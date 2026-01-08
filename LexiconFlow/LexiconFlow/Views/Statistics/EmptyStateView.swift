@@ -142,7 +142,6 @@ extension EmptyStateView {
             print("Start studying tapped")
         }
     }
-    .previewLayout(.sizeThatFits)
 }
 
 #Preview("EmptyStateView - No Flashcards") {
@@ -151,7 +150,6 @@ extension EmptyStateView {
             print("Add flashcards tapped")
         }
     }
-    .previewLayout(.sizeThatFits)
 }
 
 #Preview("EmptyStateView - No Decks") {
@@ -160,7 +158,6 @@ extension EmptyStateView {
             print("Create deck tapped")
         }
     }
-    .previewLayout(.sizeThatFits)
 }
 
 #Preview("EmptyStateView - Dark Mode") {
@@ -198,5 +195,4 @@ extension EmptyStateView {
             print("Custom action tapped")
         }
     )
-    .previewLayout(.sizeThatFits)
 }

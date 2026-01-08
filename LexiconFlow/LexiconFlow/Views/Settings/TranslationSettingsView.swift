@@ -113,19 +113,14 @@ struct TranslationSettingsView: View {
         isCheckingAvailability = true
         downloadError = nil
 
-        do {
-            sourceLanguageDownloaded = await onDeviceService.isLanguageAvailable(AppSettings.translationSourceLanguage)
-            targetLanguageDownloaded = await onDeviceService.isLanguageAvailable(AppSettings.translationTargetLanguage)
+        sourceLanguageDownloaded = await onDeviceService.isLanguageAvailable(AppSettings.translationSourceLanguage)
+        targetLanguageDownloaded = await onDeviceService.isLanguageAvailable(AppSettings.translationTargetLanguage)
 
-            logger.debug("""
-                Language availability check:
-                - Source (\(AppSettings.translationSourceLanguage)): \(sourceLanguageDownloaded ? "Downloaded" : "Not downloaded")
-                - Target (\(AppSettings.translationTargetLanguage)): \(targetLanguageDownloaded ? "Downloaded" : "Not downloaded")
-                """)
-        } catch {
-            logger.error("Failed to check language availability: \(error.localizedDescription)")
-            downloadError = error.localizedDescription
-        }
+        logger.debug("""
+            Language availability check:
+            - Source (\(AppSettings.translationSourceLanguage)): \(sourceLanguageDownloaded ? "Downloaded" : "Not downloaded")
+            - Target (\(AppSettings.translationTargetLanguage)): \(targetLanguageDownloaded ? "Downloaded" : "Not downloaded")
+            """)
 
         isCheckingAvailability = false
     }
@@ -150,7 +145,7 @@ struct TranslationSettingsView: View {
         } catch {
             logger.error("Failed to download language pack: \(error.localizedDescription)")
             downloadError = error.localizedDescription
-            Task { await Analytics.trackError("language_pack_download", error: error) }
+            Analytics.trackError("language_pack_download", error: error)
         }
 
         isDownloadingLanguage = false

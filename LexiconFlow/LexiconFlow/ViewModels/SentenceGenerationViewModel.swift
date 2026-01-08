@@ -198,7 +198,7 @@ final class SentenceGenerationViewModel: ObservableObject {
             sentence.isFavorite = oldValue
             errorMessage = "Failed to save: \(error.localizedDescription)"
             logger.error("Failed to save sentence favorite: \(error.localizedDescription)")
-            Task { await Analytics.trackError("toggle_favorite_failed", error: error) }
+            Analytics.trackError("toggle_favorite_failed", error: error)
         }
     }
 
@@ -218,7 +218,7 @@ final class SentenceGenerationViewModel: ObservableObject {
             // Can't rollback delete, but should log and notify user
             logger.error("Failed to delete sentence \(sentenceID): \(error.localizedDescription)")
             errorMessage = "Failed to delete: \(error.localizedDescription)"
-            Task { await Analytics.trackError("delete_sentence_failed", error: error) }
+            Analytics.trackError("delete_sentence_failed", error: error)
         }
     }
 

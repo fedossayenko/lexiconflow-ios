@@ -17,7 +17,9 @@ final class TranslationService {
     // MARK: - Configuration Constants
 
     /// Configuration constants for translation operations
-    private enum Config {
+    ///
+    /// **Note**: Marked `nonisolated` to allow safe access from any context
+    private nonisolated enum Config {
         /// Maximum concurrent API requests (prevents rate limiting)
         /// Z.ai API typically handles 5-10 concurrent requests efficiently
         static let defaultMaxConcurrency = 5
@@ -47,16 +49,24 @@ final class TranslationService {
     private var targetLanguage = "ru"
 
     private init() {
-        // API key is now loaded from Keychain on-demand via computed property
+        // API key is loaded from Keychain on-demand via async method
     }
 
-    /// Current API key from Keychain (computed property to ensure fresh reads)
-    private var apiKey: String {
+    /// Fetch API key from Keychain (async to avoid @MainActor isolation violations)
+    ///
+    /// **Why async method instead of computed property**: @MainActor property cannot be
+    /// accessed from non-isolated async contexts. This method allows safe concurrent access.
+    @MainActor
+    private func getAPIKey() throws -> String {
         do {
-            return (try KeychainManager.getAPIKey()) ?? ""
+            guard let key = try KeychainManager.getAPIKey() else {
+                logger.error("API key not found in Keychain")
+                throw TranslationError.missingAPIKey
+            }
+            return key
         } catch {
             logger.error("Failed to read API key from Keychain: \(error.localizedDescription)")
-            return ""
+            throw TranslationError.missingAPIKey
         }
     }
 
@@ -367,7 +377,7 @@ final class TranslationService {
                     if let result = try await group.next() {
                         results.append(result)
                         completedCount += 1
-                        await reportProgress(
+                        reportProgress(
                             handler: progressHandler,
                             current: completedCount,
                             total: cards.count,
@@ -385,7 +395,7 @@ final class TranslationService {
             for try await result in group {
                 results.append(result)
                 completedCount += 1
-                await reportProgress(
+                reportProgress(
                     handler: progressHandler,
                     current: completedCount,
                     total: cards.count,
@@ -407,10 +417,10 @@ final class TranslationService {
         current: Int,
         total: Int,
         word: String
-    ) async {
+    ) {
         guard let handler = handler else { return }
         let progress = BatchTranslationProgress(current: current, total: total, currentWord: word)
-        await MainActor.run { handler(progress) }
+        Task { @MainActor in handler(progress) }
     }
 
     /// Aggregate translation results into final batch result
@@ -519,7 +529,9 @@ final class TranslationService {
     /// - Returns: TranslationResponse with translation and metadata
     /// - Throws: TranslationError if the request fails
     func translate(word: String, definition: String, context: String? = nil) async throws -> TranslationResponse {
-        guard !apiKey.isEmpty else {
+        let key = try await getAPIKey()
+
+        guard !key.isEmpty else {
             logger.error("Translation failed: API key not configured")
             throw TranslationError.missingAPIKey
         }
@@ -566,7 +578,7 @@ final class TranslationService {
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        urlRequest.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         urlRequest.httpBody = try JSONEncoder().encode(request)
 
         logger.debug("Sending translation request for '\(word)' (URL: \(url.absoluteString), model: glm-4.7)")
