@@ -133,6 +133,9 @@ jobs:
       - name: List Available Simulators
         run: xcrun simctl list devices available
 
+      - name: Create CI marker file
+        run: touch /tmp/lexiconflow-ci-running
+
       - name: Test with Coverage
         working-directory: ./LexiconFlow
         run: |

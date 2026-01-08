@@ -747,10 +747,21 @@ struct FlashcardReviewDTOTests {
             id: UUID(),
             rating: 2,
             reviewDate: Date(),
-            scheduledDays: 1.3, // 1.3 days
+            scheduledDays: 1.3, // 1.3 days (< 2 days = "tomorrow")
             elapsedDays: 1.0
         )
 
-        #expect(dto.scheduledIntervalDescription == "in 1d")
+        #expect(dto.scheduledIntervalDescription == "tomorrow")
+
+        // Test 2.3 days (should be "in 2d")
+        let dto2 = FlashcardReviewDTO(
+            id: UUID(),
+            rating: 2,
+            reviewDate: Date(),
+            scheduledDays: 2.3, // 2.3 days (>= 2 days = "in 2d")
+            elapsedDays: 1.0
+        )
+
+        #expect(dto2.scheduledIntervalDescription == "in 2d")
     }
 }
