@@ -39,9 +39,17 @@ struct ConcurrencyStressTests {
 
     @MainActor
     private func freshContext() -> ModelContext {
-        let schema = Schema([FSRSState.self, Flashcard.self, Deck.self, FlashcardReview.self])
+        let schema = Schema([
+            FSRSState.self,
+            Flashcard.self,
+            Deck.self,
+            FlashcardReview.self,
+            StudySession.self,
+            DailyStats.self,
+            GeneratedSentence.self
+        ])
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
-        let container = try! ModelContainer(for: schema, configurations: [configuration])
+        let container = try! ModelContainer(for: schema, configurations: configuration)
         return ModelContext(container)
     }
 
@@ -53,12 +61,20 @@ struct ConcurrencyStressTests {
         let flashcard = Flashcard(
             word: "concurrent",
             phonetic: "/kənˈkɜːrənt/",
-            definition: "existing or happening at the same time",
-            partOfSpeech: "adjective",
-            cefrLevel: "C1",
-            deck: deck
+            definition: "existing or happening at the same time"
         )
-        flashcard.fsrsState = FSRSState(card: flashcard)
+        flashcard.deck = deck
+
+        let state = FSRSState(
+            stability: 0.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.new.rawValue
+        )
+        flashcard.fsrsState = state
+        state.card = flashcard
+
         context.insert(flashcard)
         try! context.save()
         return flashcard
@@ -88,15 +104,17 @@ struct ConcurrencyStressTests {
 
             // Collect all results
             for await result in group {
-                results.append(result)
+                await results.append(result)
             }
         }
 
         // Verify all operations completed successfully
-        #expect(results.count == concurrencyCount, "All concurrent operations should complete")
+        let count = await results.count
+        #expect(count == concurrencyCount, "All concurrent operations should complete")
 
         // Verify consistency: all results should have valid state
-        for result in results.array {
+        let array = await results.array
+        for result in array {
             #expect(result.stability > 0, "Stability should be positive")
             #expect(result.difficulty > 0, "Difficulty should be positive")
             #expect(result.dueDate > Date(), "Due date should be in the future")
@@ -126,13 +144,14 @@ struct ConcurrencyStressTests {
 
             for await result in group {
                 if let result = result {
-                    results.append(result)
+                    await results.append(result)
                 }
             }
         }
 
         // Verify no data races occurred
-        #expect(results.array.count > 0, "At least some reviews should succeed")
+        let array = await results.array
+        #expect(array.count > 0, "At least some reviews should succeed")
 
         // Verify flashcard state is consistent
         #expect(
@@ -189,13 +208,14 @@ struct ConcurrencyStressTests {
 
             for await result in group {
                 if let translation = result {
-                    results.append(translation)
+                    await results.append(translation)
                 }
             }
         }
 
         // Verify all operations completed successfully
-        #expect(results.array.count > 0, "Translations should complete")
+        let array = await results.array
+        #expect(array.count > 0, "Translations should complete")
     }
 
     // MARK: - Data Race Detection Tests
@@ -243,4 +263,5 @@ private actor LockedArray<Element> {
     }
 
     var array: [Element] { storage }
+    var count: Int { storage.count }
 }
