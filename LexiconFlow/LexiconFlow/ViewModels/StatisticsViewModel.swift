@@ -74,7 +74,8 @@ final class StatisticsViewModel: ObservableObject {
             selectedTimeRange = StatisticsTimeRange(rawValue: savedRange) ?? .sevenDays
         }
 
-        logger.info("StatisticsViewModel initialized with time range: \(selectedTimeRange.displayName)")
+        // swiftformat:disable:next redundantSelf
+        logger.info("StatisticsViewModel initialized with time range: \(self.selectedTimeRange.displayName)")
     }
 
     // MARK: - Public Methods
@@ -93,7 +94,8 @@ final class StatisticsViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        logger.debug("Refreshing statistics for time range: \(selectedTimeRange.displayName)")
+        // swiftformat:disable:next redundantSelf
+        logger.debug("Refreshing statistics for time range: \(self.selectedTimeRange.displayName)")
 
         // Fetch metrics sequentially to avoid capturing non-Sendable ModelContext in Sendable closure
         // Swift 6 strict concurrency requires this approach
@@ -135,7 +137,8 @@ final class StatisticsViewModel: ObservableObject {
     func changeTimeRange(_ timeRange: StatisticsTimeRange) async {
         guard selectedTimeRange != timeRange else { return }
 
-        logger.info("Changing time range from \(selectedTimeRange.displayName) to \(timeRange.displayName)")
+        // swiftformat:disable:next redundantSelf
+        logger.info("Changing time range from \(self.selectedTimeRange.displayName) to \(timeRange.displayName)")
 
         selectedTimeRange = timeRange
 

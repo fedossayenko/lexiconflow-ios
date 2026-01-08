@@ -130,7 +130,8 @@ final class StudySessionViewModel: ObservableObject {
 
         do {
             try modelContext.save()
-            logger.info("Finalized study session: \(session.id) with \(currentIndex) cards")
+            // swiftformat:disable:next redundantSelf
+            logger.info("Finalized study session: \(session.id) with \(self.currentIndex) cards")
         } catch {
             Analytics.trackError("finalize_study_session", error: error)
             logger.error("Failed to finalize study session: \(error)")

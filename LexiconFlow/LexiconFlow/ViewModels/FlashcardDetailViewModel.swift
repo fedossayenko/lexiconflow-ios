@@ -373,7 +373,8 @@ final class FlashcardDetailViewModel: ObservableObject {
     /// 4. Track successful export with analytics
     /// 5. Handle errors with user-facing alert
     func exportCSV() async {
-        Self.logger.info("Starting CSV export for '\(flashcard.word)'")
+        // swiftformat:disable:next redundantSelf
+        Self.logger.info("Starting CSV export for '\(self.flashcard.word)'")
 
         do {
             // Export filtered reviews as DTOs
