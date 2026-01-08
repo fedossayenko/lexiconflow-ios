@@ -195,7 +195,7 @@ struct ConcurrencyStressTests {
         }
 
         // Skip if language pack not downloaded (CI environment)
-        let needsDownload = service.needsLanguageDownload("es")
+        let needsDownload = await service.needsLanguageDownload("es")
         guard !needsDownload else {
             print("Skipping: Language pack not downloaded (CI environment)")
             return
