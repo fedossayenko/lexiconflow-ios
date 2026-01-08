@@ -194,6 +194,13 @@ struct ConcurrencyStressTests {
             return
         }
 
+        // Skip if language pack not downloaded (CI environment)
+        let needsDownload = service.needsLanguageDownload("es")
+        guard !needsDownload else {
+            print("Skipping: Language pack not downloaded (CI environment)")
+            return
+        }
+
         let words = Array(repeating: "Hello", count: 20)
         let results = LockedArray<String>()
 
