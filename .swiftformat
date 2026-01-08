@@ -1,32 +1,15 @@
---swiftformat v0.55
+# SwiftFormat Configuration for LexiconFlow
+
+# Basic formatting
 --indent 4
---width auto
---wrap arguments
---wrap collections
---disable trailingWhitespace,unusedImports
+--wrap-arguments before-first
+--wrap-collections before-first
 
--- Swift 6 concurrency formatting
---patternMatching default
---tupl eFormatting default
---extensionAccessControl onOneLine
+# Empty braces
+--empty-braces no-space
 
--- Privacy-first architecture
---privacy explicit
+# Import organization
+--import-grouping testable-last
 
--- Import organization
---importGrouping testable
-
--- Empty braces
---emptyBraces inline
-
--- Whitespace around operators
---spacing aroundOperators
-
--- Number formatting
---decimalGrouping none
-
--- Comments
---stripUnusedArgs false
-
--- Organize declarations
---sortDeclarations true
+# Decimal grouping
+--decimal-grouping none

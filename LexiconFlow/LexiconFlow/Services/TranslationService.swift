@@ -82,7 +82,7 @@ final class TranslationService {
     /// Check if API key is configured
     var isConfigured: Bool {
         do {
-            return (try KeychainManager.getAPIKey())?.isEmpty == false
+            return try (KeychainManager.getAPIKey())?.isEmpty == false
         } catch {
             logger.error("Failed to check API key: \(error.localizedDescription)")
             return false
@@ -95,8 +95,8 @@ final class TranslationService {
     ///   - source: Source language code (e.g., "en")
     ///   - target: Target language code (e.g., "ru")
     func setLanguages(source: String, target: String) {
-        self.sourceLanguage = source
-        self.targetLanguage = target
+        sourceLanguage = source
+        targetLanguage = target
         logger.info("Languages set: \(source) -> \(target)")
     }
 
@@ -144,12 +144,12 @@ final class TranslationService {
             temperature: 0.1,
             messages: [
                 .init(role: "system", content: systemPrompt),
-                .init(role: "user", content: userPrompt)
+                .init(role: "user", content: userPrompt),
             ]
         )
 
-        guard let url = URL(string: self.baseURL) else {
-            logger.error("Invalid base URL: \(self.baseURL)")
+        guard let url = URL(string: baseURL) else {
+            logger.error("Invalid base URL: \(baseURL)")
             throw TranslationError.invalidConfiguration
         }
 
@@ -186,12 +186,12 @@ final class TranslationService {
             logger.warning("API key validation hit rate limit (429)")
             throw TranslationError.rateLimit
 
-        case 400...499:
+        case 400 ... 499:
             let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
             logger.error("API key validation client error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
             throw TranslationError.clientError(statusCode: httpResponse.statusCode, message: errorBody)
 
-        case 500...599:
+        case 500 ... 599:
             let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
             logger.error("API key validation server error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
             throw TranslationError.serverError(statusCode: httpResponse.statusCode, message: errorBody)
@@ -260,14 +260,14 @@ final class TranslationService {
         struct TranslationItem: Codable, Sendable {
             let targetWord: String
             let contextSentence: String
-            let targetTranslation: String  // Generic field for any language
+            let targetTranslation: String // Generic field for any language
             let cefrLevel: String
             let definitionEn: String
 
             enum CodingKeys: String, CodingKey {
                 case targetWord = "target_word"
                 case contextSentence = "context_sentence"
-                case targetTranslation = "translation"  // Generic translation key for any target language
+                case targetTranslation = "translation" // Generic translation key for any target language
                 case cefrLevel = "cefr_level"
                 case definitionEn = "definition_en"
             }
@@ -430,14 +430,15 @@ final class TranslationService {
     ) -> TranslationBatchResult {
         let successes = results.filter { if case .success = $0.result { true } else { false } }
         let failures = results.filter { if case .failure = $0.result { true } else { false } }
-        let errors = failures.compactMap { (result) -> TranslationError? in
-            guard case .failure(let error) = result.result else { return nil }
+        let errors = failures.compactMap { result -> TranslationError? in
+            guard case let .failure(error) = result.result else { return nil }
             return error
         }
 
         let successfulTranslations: [SuccessfulTranslation] = successes.compactMap { result in
-            guard case .success(let response) = result.result,
-                  let item = response.items.first else {
+            guard case let .success(response) = result.result,
+                  let item = response.items.first
+            else {
                 return nil
             }
             // Note: Only translation text is stored; CEFR/context sentences are not stored on card
@@ -459,11 +460,11 @@ final class TranslationService {
     /// Log batch translation completion summary
     private func logBatchCompletion(_ result: TranslationBatchResult) {
         logger.info("""
-            Batch translation complete:
-            - Success: \(result.successCount)
-            - Failed: \(result.failedCount)
-            - Duration: \(String(format: "%.2f", result.totalDuration))s
-            """)
+        Batch translation complete:
+        - Success: \(result.successCount)
+        - Failed: \(result.failedCount)
+        - Duration: \(String(format: "%.2f", result.totalDuration))s
+        """)
     }
 
     /// Performs translation with exponential backoff retry on rate limit errors
@@ -500,14 +501,14 @@ final class TranslationService {
         let duration = Date().timeIntervalSince(startTime)
 
         switch result {
-        case .success(let translation):
+        case let .success(translation):
             logger.debug("Translation succeeded: \(cardWord)")
             return TranslationTaskResult(
                 card: card,
                 result: .success(translation),
                 duration: duration
             )
-        case .failure(let error):
+        case let .failure(error):
             logger.error("Translation failed: \(cardWord) - \(error.localizedDescription)")
             return TranslationTaskResult(
                 card: card,
@@ -567,12 +568,12 @@ final class TranslationService {
             temperature: 0.1,
             messages: [
                 .init(role: "system", content: systemPrompt),
-                .init(role: "user", content: userPrompt)
+                .init(role: "user", content: userPrompt),
             ]
         )
 
-        guard let url = URL(string: self.baseURL) else {
-            logger.error("Invalid base URL: \(self.baseURL)")
+        guard let url = URL(string: baseURL) else {
+            logger.error("Invalid base URL: \(baseURL)")
             throw TranslationError.invalidConfiguration
         }
         var urlRequest = URLRequest(url: url)
@@ -599,11 +600,11 @@ final class TranslationService {
                 logger.warning("Rate limit hit for '\(word.replacingOccurrences(of: "'", with: "\\'"))'")
                 throw TranslationError.rateLimit
 
-            case 400...499:
+            case 400 ... 499:
                 logger.error("Client error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
                 throw TranslationError.clientError(statusCode: httpResponse.statusCode, message: errorBody)
 
-            case 500...599:
+            case 500 ... 599:
                 logger.error("Server error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
                 throw TranslationError.serverError(statusCode: httpResponse.statusCode, message: errorBody)
 
@@ -684,16 +685,16 @@ final class TranslationService {
                 return "Invalid service configuration"
             case .rateLimit:
                 return "API rate limit exceeded. Please wait a moment and try again."
-            case .clientError(let code, let message):
+            case let .clientError(code, message):
                 if let msg = message {
                     return "Request failed (HTTP \(code)): \(msg)"
                 }
                 return "Request failed (HTTP \(code))"
-            case .serverError(let code, _):
+            case let .serverError(code, _):
                 return "Server is experiencing issues (HTTP \(code)). Please try again later."
             case .apiFailed:
                 return "Translation API request failed"
-            case .invalidResponse(let reason):
+            case let .invalidResponse(reason):
                 if let r = reason {
                     return "Invalid response from translation API: \(r)"
                 }

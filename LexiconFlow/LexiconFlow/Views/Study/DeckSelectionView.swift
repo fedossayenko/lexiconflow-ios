@@ -5,9 +5,9 @@
 //  Multi-deck selection screen for study sessions
 //
 
-import SwiftUI
-import SwiftData
 import OSLog
+import SwiftData
+import SwiftUI
 
 /// View for selecting multiple decks to study from
 struct DeckSelectionView: View {

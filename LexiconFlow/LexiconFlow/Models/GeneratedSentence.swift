@@ -5,8 +5,8 @@
 //  AI-generated sentence examples for vocabulary learning
 //
 
-import SwiftData
 import Foundation
+import SwiftData
 
 /// An AI-generated context sentence for a flashcard
 ///
@@ -103,7 +103,7 @@ final class GeneratedSentence {
         self.sentenceText = sentenceText
         self.cefrLevel = normalizedLevel
         self.generatedAt = generatedAt
-        self.expiresAt = Calendar.autoupdatingCurrent.date(
+        expiresAt = Calendar.autoupdatingCurrent.date(
             byAdding: .day,
             value: ttlDays,
             to: generatedAt
@@ -140,7 +140,7 @@ enum GeneratedSentenceError: LocalizedError, Equatable {
         switch self {
         case .emptyText:
             return "Sentence text cannot be empty"
-        case .invalidCEFRLevel(let level):
+        case let .invalidCEFRLevel(level):
             return "Invalid CEFR level: \(level). Must be one of: A1, A2, B1, B2, C1, C2"
         case .invalidTTL:
             return "TTL must be positive (greater than 0)"

@@ -5,8 +5,8 @@
 //  Tests for time-based filter enum date calculations
 //
 
-import Testing
 import Foundation
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for ReviewHistoryFilter enum
@@ -18,7 +18,6 @@ import Foundation
 /// - Display properties
 @MainActor
 struct ReviewHistoryFilterTests {
-
     // MARK: - All Time Filter Tests
 
     @Test("AllTime filter returns nil startDate")

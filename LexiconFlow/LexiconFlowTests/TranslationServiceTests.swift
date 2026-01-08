@@ -13,19 +13,18 @@
 //  These tests cover testable logic without network mocking
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for TranslationService
 @MainActor
 struct TranslationServiceTests {
-
     // MARK: - Singleton Tests
 
     @Test("TranslationService singleton is consistent")
-    func testSingletonConsistency() {
+    func singletonConsistency() {
         let service1 = TranslationService.shared
         let service2 = TranslationService.shared
         #expect(service1 === service2)
@@ -34,7 +33,7 @@ struct TranslationServiceTests {
     // MARK: - Configuration Tests
 
     @Test("isConfigured returns false when no API key")
-    func testIsConfiguredNoKey() throws {
+    func isConfiguredNoKey() throws {
         // Clear any existing API key
         try KeychainManager.deleteAPIKey()
 
@@ -43,7 +42,7 @@ struct TranslationServiceTests {
     }
 
     @Test("isConfigured returns true when API key is set")
-    func testIsConfiguredWithKey() throws {
+    func isConfiguredWithKey() throws {
         // Set a test API key
         try KeychainManager.setAPIKey("test-api-key-12345")
 
@@ -80,7 +79,7 @@ struct TranslationServiceTests {
     // MARK: - JSON Extraction Tests
 
     @Test("extractJSON from markdown code block with json specifier")
-    func testExtractJSONMarkdownWithSpecifier() {
+    func extractJSONMarkdownWithSpecifier() {
         // We can't test the private method directly, but we can verify the pattern
         let input = """
         Some text before
@@ -105,8 +104,8 @@ struct TranslationServiceTests {
 
         if let jsonStart = trimmed.range(of: "```json", options: .caseInsensitive) {
             let afterStart = jsonStart.upperBound
-            if let jsonEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
-                let json = String(trimmed[afterStart..<jsonEnd.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+            if let jsonEnd = trimmed.range(of: "```", range: afterStart ..< trimmed.endIndex) {
+                let json = String(trimmed[afterStart ..< jsonEnd.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
                 #expect(json.contains("items"))
                 #expect(json.contains("target_word"))
             } else {
@@ -118,7 +117,7 @@ struct TranslationServiceTests {
     }
 
     @Test("extractJSON from generic code block")
-    func testExtractJSONGenericCodeBlock() {
+    func extractJSONGenericCodeBlock() {
         let input = """
         Here's the response:
 
@@ -139,8 +138,8 @@ struct TranslationServiceTests {
         // Try generic code block extraction
         if let codeStart = trimmed.range(of: "```", options: .caseInsensitive) {
             let afterStart = codeStart.upperBound
-            if let codeEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
-                let json = String(trimmed[afterStart..<codeEnd.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+            if let codeEnd = trimmed.range(of: "```", range: afterStart ..< trimmed.endIndex) {
+                let json = String(trimmed[afterStart ..< codeEnd.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
                 #expect(json.contains("items"))
             } else {
                 Issue.record("Code end marker not found")
@@ -151,7 +150,7 @@ struct TranslationServiceTests {
     }
 
     @Test("extractJSON from plain text using braces")
-    func testExtractJSONPlainBraces() {
+    func extractJSONPlainBraces() {
         let input = """
         The result is: {"items": [{"target_word": "word", "translation": "слово"}]} and that's it.
         """
@@ -159,8 +158,9 @@ struct TranslationServiceTests {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if let firstBrace = trimmed.firstIndex(of: "{"),
-           let lastBrace = trimmed.lastIndex(of: "}") {
-            let json = String(trimmed[firstBrace...lastBrace])
+           let lastBrace = trimmed.lastIndex(of: "}")
+        {
+            let json = String(trimmed[firstBrace ... lastBrace])
             #expect(json.contains("items"))
             #expect(json.starts(with: "{"))
             #expect(json.hasSuffix("}"))
@@ -170,7 +170,7 @@ struct TranslationServiceTests {
     }
 
     @Test("extractJSON handles plain JSON without formatting")
-    func testExtractJSONPlain() {
+    func extractJSONPlain() {
         let input = """
         {"items": [{"target_word": "тест","translation": "test"}]}
         """
@@ -182,7 +182,7 @@ struct TranslationServiceTests {
     }
 
     @Test("extractJSON handles empty input")
-    func testExtractJSONEmpty() {
+    func extractJSONEmpty() {
         let input = ""
 
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -190,7 +190,7 @@ struct TranslationServiceTests {
     }
 
     @Test("extractJSON handles malformed JSON structure")
-    func testExtractJSONMalformed() {
+    func extractJSONMalformed() {
         let input = "{ this is not valid json }"
 
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -201,7 +201,7 @@ struct TranslationServiceTests {
     // MARK: - Error Type Tests
 
     @Test("TranslationError missingAPIKey properties")
-    func testErrorMissingAPIKey() {
+    func errorMissingAPIKey() {
         let error = TranslationService.TranslationError.missingAPIKey
 
         #expect(error.errorDescription == "API key not configured")
@@ -210,7 +210,7 @@ struct TranslationServiceTests {
     }
 
     @Test("TranslationError invalidConfiguration properties")
-    func testErrorInvalidConfiguration() {
+    func errorInvalidConfiguration() {
         let error = TranslationService.TranslationError.invalidConfiguration
 
         #expect(error.errorDescription == "Invalid service configuration")
@@ -219,7 +219,7 @@ struct TranslationServiceTests {
     }
 
     @Test("TranslationError rateLimit properties")
-    func testErrorRateLimit() {
+    func errorRateLimit() {
         let error = TranslationService.TranslationError.rateLimit
 
         #expect(error.errorDescription?.contains("rate limit") == true)
@@ -228,7 +228,7 @@ struct TranslationServiceTests {
     }
 
     @Test("TranslationError clientError properties")
-    func testErrorClientError() {
+    func errorClientError() {
         let error = TranslationService.TranslationError.clientError(statusCode: 401, message: "Unauthorized")
 
         #expect(error.errorDescription?.contains("401") == true)
@@ -245,7 +245,7 @@ struct TranslationServiceTests {
     }
 
     @Test("TranslationError apiFailed properties")
-    func testErrorAPIFailed() {
+    func errorAPIFailed() {
         let error = TranslationService.TranslationError.apiFailed
 
         #expect(error.errorDescription == "Translation API request failed")
@@ -254,7 +254,7 @@ struct TranslationServiceTests {
     }
 
     @Test("TranslationError invalidResponse properties")
-    func testErrorInvalidResponse() {
+    func errorInvalidResponse() {
         let reason = "Expected JSON but got HTML"
         let error = TranslationService.TranslationError.invalidResponse(reason: reason)
 
@@ -263,7 +263,7 @@ struct TranslationServiceTests {
     }
 
     @Test("TranslationError cancelled properties")
-    func testErrorCancelled() {
+    func errorCancelled() {
         let error = TranslationService.TranslationError.cancelled
 
         #expect(error.errorDescription == "Translation was cancelled")
@@ -271,18 +271,18 @@ struct TranslationServiceTests {
     }
 
     @Test("TranslationError offline properties")
-    func testErrorOffline() {
+    func errorOffline() {
         let error = TranslationService.TranslationError.offline
 
         #expect(error.errorDescription?.contains("internet") == true)
         #expect(error.recoverySuggestion?.contains("connection") == true)
-        #expect(error.isRetryable)  // Offline errors are retryable
+        #expect(error.isRetryable) // Offline errors are retryable
     }
 
     // MARK: - Batch Translation Tests
 
     @Test("Batch translation with empty array returns empty result")
-    func testBatchTranslationEmptyArray() async throws {
+    func batchTranslationEmptyArray() async throws {
         let service = TranslationService.shared
         let emptyCards: [Flashcard] = []
 
@@ -296,7 +296,7 @@ struct TranslationServiceTests {
     }
 
     @Test("Batch translation with maxConcurrency 1")
-    func testBatchTranslationMaxConcurrencyOne() async throws {
+    func batchTranslationMaxConcurrencyOne() async throws {
         // Set up a test API key to avoid missing key error
         try KeychainManager.setAPIKey("test-key")
 
@@ -324,7 +324,7 @@ struct TranslationServiceTests {
     // MARK: - Progress Handler Tests
 
     @Test("Progress handler receives correct structure")
-    func testProgressHandlerStructure() {
+    func progressHandlerStructure() {
         // Test the BatchTranslationProgress struct
         let progress = TranslationService.BatchTranslationProgress(
             current: 5,
@@ -338,7 +338,7 @@ struct TranslationServiceTests {
     }
 
     @Test("SuccessfulTranslation struct properties")
-    func testSuccessfulTranslation() {
+    func successfulTranslation() {
         let context = TestContainers.freshContext()
         try? context.clearAll()
 
@@ -368,7 +368,7 @@ struct TranslationServiceTests {
     // MARK: - Keychain Integration Tests
 
     @Test("KeychainManager set and get API key")
-    func testKeychainSetGet() throws {
+    func keychainSetGet() throws {
         let testKey = "test-api-key-\(UUID().uuidString)"
 
         // Set
@@ -383,7 +383,7 @@ struct TranslationServiceTests {
     }
 
     @Test("KeychainManager delete API key")
-    func testKeychainDelete() throws {
+    func keychainDelete() throws {
         let testKey = "test-api-key-\(UUID().uuidString)"
 
         // Set
@@ -398,7 +398,7 @@ struct TranslationServiceTests {
     }
 
     @Test("KeychainManager hasAPIKey")
-    func testKeychainHasAPIKey() throws {
+    func keychainHasAPIKey() throws {
         // First, ensure no key exists
         try? KeychainManager.deleteAPIKey()
         #expect(!KeychainManager.hasAPIKey())
@@ -412,7 +412,7 @@ struct TranslationServiceTests {
     }
 
     @Test("KeychainManager set empty key throws error")
-    func testKeychainEmptyKey() {
+    func keychainEmptyKey() {
         #expect(throws: KeychainManager.KeychainError.self) {
             try KeychainManager.setAPIKey("")
         }
@@ -421,7 +421,7 @@ struct TranslationServiceTests {
     // MARK: - TranslationRequest Encoding Tests
 
     @Test("TranslationRequest encodes correctly")
-    func testTranslationRequestEncoding() throws {
+    func translationRequestEncoding() throws {
         // Test the private struct through public API
         let context = TestContainers.freshContext()
         try? context.clearAll()
@@ -438,7 +438,7 @@ struct TranslationServiceTests {
     // MARK: - TranslationResponse Decoding Tests
 
     @Test("TranslationResponse decodes valid JSON")
-    func testTranslationResponseDecoding() throws {
+    func translationResponseDecoding() throws {
         let json = """
         {
           "items": [{
@@ -463,7 +463,7 @@ struct TranslationServiceTests {
     }
 
     @Test("TranslationResponse handles empty items array")
-    func testTranslationResponseEmptyItems() throws {
+    func translationResponseEmptyItems() throws {
         let json = """
         {
           "items": []
@@ -477,7 +477,7 @@ struct TranslationServiceTests {
     }
 
     @Test("TranslationResponse handles missing optional fields")
-    func testTranslationResponseMissingOptionals() throws {
+    func translationResponseMissingOptionals() throws {
         // All fields are required in the struct, but we test proper JSON structure
         let json = """
         {
@@ -501,7 +501,7 @@ struct TranslationServiceTests {
     // MARK: - Edge Case Tests
 
     @Test("TranslationRequest handles special characters in prompt")
-    func testSpecialCharactersInPrompt() {
+    func specialCharactersInPrompt() {
         let context = TestContainers.freshContext()
         try? context.clearAll()
 
@@ -509,7 +509,7 @@ struct TranslationServiceTests {
         let cards = [
             Flashcard(word: "café", definition: "a coffee shop"),
             Flashcard(word: "naïve", definition: "innocent"),
-            Flashcard(word: "résumé", definition: "a document")
+            Flashcard(word: "résumé", definition: "a document"),
         ]
 
         for card in cards {
@@ -521,7 +521,7 @@ struct TranslationServiceTests {
     }
 
     @Test("TranslationRequest handles long words")
-    func testLongWords() {
+    func longWords() {
         let context = TestContainers.freshContext()
         try? context.clearAll()
 
@@ -535,9 +535,9 @@ struct TranslationServiceTests {
     // MARK: - Concurrency Tests
 
     @Test("Multiple translation service instances share singleton")
-    func testConcurrentSingletonAccess() async {
+    func concurrentSingletonAccess() async {
         await withTaskGroup(of: Void.self) { group in
-            for _ in 0..<10 {
+            for _ in 0 ..< 10 {
                 group.addTask {
                     let service = TranslationService.shared
                     // Access singleton from multiple tasks
@@ -561,7 +561,7 @@ struct TranslationServiceTests {
         let cards = [
             Flashcard(word: "test1", definition: "definition 1"),
             Flashcard(word: "test2", definition: "definition 2"),
-            Flashcard(word: "test3", definition: "definition 3")
+            Flashcard(word: "test3", definition: "definition 3"),
         ]
 
         for card in cards {
@@ -609,7 +609,7 @@ struct TranslationServiceTests {
         try? context.clearAll()
 
         // Create multiple test cards
-        let cards = (1..<20).map { i in
+        let cards = (1 ..< 20).map { i in
             Flashcard(word: "word\(i)", definition: "definition \(i)")
         }
 
@@ -626,7 +626,7 @@ struct TranslationServiceTests {
         }
 
         // Cancel immediately
-        try await Task.sleep(nanoseconds: 10_000_000) // 0.01 seconds
+        try await Task.sleep(nanoseconds: 10000000) // 0.01 seconds
         service.cancelBatchTranslation()
         translationTask.cancel()
 
@@ -654,9 +654,9 @@ struct TranslationServiceTests {
         // Create cards where some will fail (invalid data)
         let cards = [
             Flashcard(word: "valid", definition: "a valid word"),
-            Flashcard(word: "", definition: "empty word"),  // Invalid
+            Flashcard(word: "", definition: "empty word"), // Invalid
             Flashcard(word: "another", definition: "another valid word"),
-            Flashcard(word: "", definition: "another empty")  // Invalid
+            Flashcard(word: "", definition: "another empty"), // Invalid
         ]
 
         for card in cards {
@@ -693,9 +693,9 @@ struct TranslationServiceTests {
         try? context.clearAll()
 
         // Create 3 separate batches of cards
-        let batch1 = (1...5).map { Flashcard(word: "batch1_word\($0)", definition: "definition \($0)") }
-        let batch2 = (1...5).map { Flashcard(word: "batch2_word\($0)", definition: "definition \($0)") }
-        let batch3 = (1...5).map { Flashcard(word: "batch3_word\($0)", definition: "definition \($0)") }
+        let batch1 = (1 ... 5).map { Flashcard(word: "batch1_word\($0)", definition: "definition \($0)") }
+        let batch2 = (1 ... 5).map { Flashcard(word: "batch2_word\($0)", definition: "definition \($0)") }
+        let batch3 = (1 ... 5).map { Flashcard(word: "batch3_word\($0)", definition: "definition \($0)") }
 
         // Insert all cards
         for card in batch1 + batch2 + batch3 {
@@ -732,7 +732,7 @@ struct TranslationServiceTests {
         try? context.clearAll()
 
         // Create 20 cards (more than maxConcurrency)
-        let cards = (1..<20).map { Flashcard(word: "word\($0)", definition: "definition \($0)") }
+        let cards = (1 ..< 20).map { Flashcard(word: "word\($0)", definition: "definition \($0)") }
 
         for card in cards {
             context.insert(card)
@@ -764,8 +764,8 @@ struct TranslationServiceTests {
         let service = TranslationService.shared
 
         // Run 5 sequential batches
-        for batchIndex in 1...5 {
-            let cards = (1...3).map { i in
+        for batchIndex in 1 ... 5 {
+            let cards = (1 ... 3).map { i in
                 Flashcard(word: "batch\(batchIndex)_word\(i)", definition: "definition")
             }
 

@@ -5,10 +5,10 @@
 //  Form for creating a new flashcard
 //
 
-import SwiftUI
-import SwiftData
-import PhotosUI
 import OSLog
+import PhotosUI
+import SwiftData
+import SwiftUI
 
 struct AddFlashcardView: View {
     @Environment(\.modelContext) private var modelContext
@@ -46,7 +46,7 @@ struct AddFlashcardView: View {
 
                 Section("Definition") {
                     TextField("Definition", text: $definition, axis: .vertical)
-                        .lineLimit(3...6)
+                        .lineLimit(3 ... 6)
                         .accessibilityLabel("Definition")
                         .accessibilityHint("Enter the word definition")
                 }
@@ -92,8 +92,10 @@ struct AddFlashcardView: View {
                     }
 
                     PhotosPicker(selection: $selectedImage, matching: .images) {
-                        Label(imageData == nil ? "Add Image" : "Change Image",
-                              systemImage: imageData == nil ? "photo" : "arrow.triangle.2.circlepath")
+                        Label(
+                            imageData == nil ? "Add Image" : "Change Image",
+                            systemImage: imageData == nil ? "photo" : "arrow.triangle.2.circlepath"
+                        )
                     }
                     .accessibilityLabel(imageData == nil ? "Add Image" : "Change Image")
                     .accessibilityHint("Open photo picker to select an image")
@@ -213,9 +215,10 @@ struct AddFlashcardView: View {
         // 2b. Automatic sentence generation (if translation and sentence generation enabled)
         // Note: Sentence generation uses cloud TranslationService separately
         // This is an optional premium feature that requires both translation AND sentence generation to be enabled
-        if AppSettings.isTranslationEnabled &&
-           AppSettings.isSentenceGenerationEnabled &&
-           TranslationService.shared.isConfigured {
+        if AppSettings.isTranslationEnabled,
+           AppSettings.isSentenceGenerationEnabled,
+           TranslationService.shared.isConfigured
+        {
             isGeneratingSentences = true
 
             let sentenceVM = SentenceGenerationViewModel(modelContext: modelContext)
@@ -322,7 +325,7 @@ struct AddFlashcardView: View {
             }
 
             // Auto-dismiss after 3 seconds
-            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            try? await Task.sleep(nanoseconds: 3000000000)
             if errorMessage?.contains("Translation failed") == true || errorMessage?.contains("Language pack") == true {
                 errorMessage = nil
             }
@@ -347,7 +350,7 @@ struct AddFlashcardView: View {
 
             // Show success message
             errorMessage = "Language pack downloaded. You can now save the card."
-            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            try? await Task.sleep(nanoseconds: 2000000000)
             errorMessage = nil
 
         } catch {
@@ -356,7 +359,7 @@ struct AddFlashcardView: View {
             errorMessage = "Failed to download language pack: \(error.localizedDescription)"
 
             // Auto-dismiss after 3 seconds
-            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            try? await Task.sleep(nanoseconds: 3000000000)
             errorMessage = nil
         }
 

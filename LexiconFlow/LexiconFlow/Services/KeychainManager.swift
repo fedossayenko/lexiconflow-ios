@@ -7,8 +7,8 @@
 //
 
 import Foundation
-import Security
 import OSLog
+import Security
 
 /// Secure storage manager using iOS Keychain Services
 ///
@@ -41,7 +41,7 @@ enum KeychainManager {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: "zai_api_key",
-            kSecValueData as String: data
+            kSecValueData as String: data,
         ]
 
         // Delete existing key first (update operation)
@@ -69,14 +69,15 @@ enum KeychainManager {
             kSecAttrService as String: service,
             kSecAttrAccount as String: "zai_api_key",
             kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
+            kSecMatchLimit as String: kSecMatchLimitOne,
         ]
 
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
 
         guard status == errSecSuccess,
-              let data = result as? Data else {
+              let data = result as? Data
+        else {
             if status == errSecItemNotFound {
                 logger.debug("No API key found in Keychain")
                 return nil
@@ -102,7 +103,7 @@ enum KeychainManager {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: "zai_api_key"
+            kSecAttrAccount as String: "zai_api_key",
         ]
 
         let status = SecItemDelete(query as CFDictionary)
@@ -154,7 +155,7 @@ enum KeychainManager {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
-            kSecValueData as String: data
+            kSecValueData as String: data,
         ]
 
         SecItemDelete(query as CFDictionary)
@@ -178,7 +179,7 @@ enum KeychainManager {
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
             kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
+            kSecMatchLimit as String: kSecMatchLimitOne,
         ]
 
         var result: AnyObject?
@@ -186,7 +187,8 @@ enum KeychainManager {
 
         guard status == errSecSuccess,
               let data = result as? Data,
-              let value = String(data: data, encoding: .utf8) else {
+              let value = String(data: data, encoding: .utf8)
+        else {
             if status == errSecItemNotFound {
                 return nil
             }
@@ -205,7 +207,7 @@ enum KeychainManager {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: account
+            kSecAttrAccount as String: account,
         ]
 
         let status = SecItemDelete(query as CFDictionary)
@@ -229,7 +231,7 @@ enum KeychainManager {
                 return "Cannot store empty key"
             case .invalidData:
                 return "Invalid data format in Keychain"
-            case .unhandledError(let status):
+            case let .unhandledError(status):
                 return "Keychain operation failed with OSStatus: \(status)"
             }
         }

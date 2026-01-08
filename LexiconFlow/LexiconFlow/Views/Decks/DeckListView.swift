@@ -5,8 +5,8 @@
 //  Lists all decks with card counts and due counts
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct DeckListView: View {
     @Environment(\.modelContext) private var modelContext
@@ -23,7 +23,8 @@ struct DeckListView: View {
             guard let card = state.card,
                   let deck = card.deck,
                   state.dueDate <= now,
-                  state.stateEnum != FlashcardState.new.rawValue else {
+                  state.stateEnum != FlashcardState.new.rawValue
+            else {
                 continue
             }
             counts[deck.id, default: 0] += 1
@@ -69,7 +70,7 @@ struct DeckListView: View {
 
     private func deleteDecks(at offsets: IndexSet) {
         for index in offsets {
-            guard index >= 0 && index < decks.count else { continue }
+            guard index >= 0, index < decks.count else { continue }
             modelContext.delete(decks[index])
         }
     }

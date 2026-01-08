@@ -6,8 +6,8 @@
 //  Routes between Onboarding and MainTabView based on first launch
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext

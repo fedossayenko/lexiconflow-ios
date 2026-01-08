@@ -5,9 +5,9 @@
 //  Tests for batch data import functionality
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Thread-safe collector for progress updates in Swift 6
@@ -46,7 +46,6 @@ actor BatchCounter {
 /// - Relationship integrity (deck associations, FSRS state)
 @MainActor
 struct DataImporterTests {
-
     private func freshContext() -> ModelContext {
         return TestContainers.freshContext()
     }
@@ -173,7 +172,7 @@ struct DataImporterTests {
 
         // Create 10 cards to ensure multiple batches
         var cards: [FlashcardData] = []
-        for i in 0..<10 {
+        for i in 0 ..< 10 {
             cards.append(FlashcardData(word: "word\(i)", definition: "def\(i)"))
         }
 
@@ -187,7 +186,7 @@ struct DataImporterTests {
         )
 
         // Small delay to ensure all tasks complete
-        try await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+        try await Task.sleep(nanoseconds: 100000000) // 0.1s
 
         let progressUpdates = await progressCollector.allUpdates
 
@@ -207,7 +206,7 @@ struct DataImporterTests {
         let importer = DataImporter(modelContext: context)
 
         var cards: [FlashcardData] = []
-        for i in 0..<10 {
+        for i in 0 ..< 10 {
             cards.append(FlashcardData(word: "word\(i)", definition: "def\(i)"))
         }
 
@@ -221,7 +220,7 @@ struct DataImporterTests {
         )
 
         // Small delay to ensure all tasks complete
-        try await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+        try await Task.sleep(nanoseconds: 100000000) // 0.1s
 
         let progressUpdates = await progressCollector.allUpdates
 
@@ -268,7 +267,7 @@ struct DataImporterTests {
         let importer = DataImporter(modelContext: context)
 
         let cards = [
-            FlashcardData(word: "test", definition: "def")
+            FlashcardData(word: "test", definition: "def"),
         ]
 
         let result = await importer.importCards(cards)
@@ -298,7 +297,7 @@ struct DataImporterTests {
                 definition: "def",
                 phonetic: "/tɛst/",
                 imageData: imageData
-            )
+            ),
         ]
 
         let result = await importer.importCards(cards)
@@ -321,7 +320,7 @@ struct DataImporterTests {
         let importer = DataImporter(modelContext: context)
 
         var cards: [FlashcardData] = []
-        for i in 0..<15 {
+        for i in 0 ..< 15 {
             cards.append(FlashcardData(word: "word\(i)", definition: "def\(i)"))
         }
 
@@ -337,7 +336,7 @@ struct DataImporterTests {
         )
 
         // Small delay to ensure all tasks complete
-        try await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+        try await Task.sleep(nanoseconds: 100000000) // 0.1s
 
         // 15 cards / batch size 7 = 3 batches (7, 7, 1)
         let batchCount = await batchCollector.count
@@ -351,7 +350,7 @@ struct DataImporterTests {
         let importer = DataImporter(modelContext: context)
 
         var cards: [FlashcardData] = []
-        for i in 0..<50 {
+        for i in 0 ..< 50 {
             cards.append(FlashcardData(word: "word\(i)", definition: "def\(i)"))
         }
 
@@ -365,7 +364,7 @@ struct DataImporterTests {
         )
 
         // Small delay to ensure all tasks complete
-        try await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+        try await Task.sleep(nanoseconds: 100000000) // 0.1s
 
         let batchCount = await batchCollector.count
         #expect(batchCount == 1, "Should have 1 batch with large batch size")
@@ -380,7 +379,7 @@ struct DataImporterTests {
         let importer = DataImporter(modelContext: context)
 
         var cards: [FlashcardData] = []
-        for i in 0..<20 {
+        for i in 0 ..< 20 {
             cards.append(FlashcardData(word: "word\(i)", definition: "def\(i)"))
         }
 
@@ -398,7 +397,7 @@ struct DataImporterTests {
 
         // Import 20 cards first
         var initialCards: [FlashcardData] = []
-        for i in 0..<20 {
+        for i in 0 ..< 20 {
             initialCards.append(FlashcardData(word: "word\(i)", definition: "def\(i)"))
         }
         _ = await importer.importCards(initialCards)

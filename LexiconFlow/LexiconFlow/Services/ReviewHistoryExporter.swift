@@ -92,7 +92,7 @@ final class ReviewHistoryExporter {
             "Review Date",
             "Scheduled Days",
             "Elapsed Days",
-            "State Change"
+            "State Change",
         ])
 
         // Add data rows
@@ -117,7 +117,7 @@ final class ReviewHistoryExporter {
         await Analytics.trackEvent("review_history_exported", metadata: [
             "flashcard_word": flashcard.word,
             "review_count": "\(reviews.count)",
-            "csv_size_bytes": "\(csv.utf8.count)"
+            "csv_size_bytes": "\(csv.utf8.count)",
         ])
 
         return csv
@@ -156,7 +156,7 @@ final class ReviewHistoryExporter {
             "Review Date",
             "Scheduled Days",
             "Elapsed Days",
-            "State Change"
+            "State Change",
         ])
 
         // Add data rows from DTOs
@@ -180,7 +180,7 @@ final class ReviewHistoryExporter {
             "flashcard_word": flashcard.word,
             "filter_type": filter.rawValue,
             "review_count": "\(reviews.count)",
-            "csv_size_bytes": "\(csv.utf8.count)"
+            "csv_size_bytes": "\(csv.utf8.count)",
         ])
 
         return csv
@@ -217,7 +217,7 @@ final class ReviewHistoryExporter {
             dateString,
             scheduledDays,
             elapsedDays,
-            "" // State change not available in FlashcardReview model
+            "", // State change not available in FlashcardReview model
         ]
     }
 
@@ -251,7 +251,7 @@ final class ReviewHistoryExporter {
             dateString,
             scheduledDays,
             elapsedDays,
-            stateChange
+            stateChange,
         ]
     }
 
@@ -330,7 +330,7 @@ enum ExportError: LocalizedError {
             return "No reviews to export"
         case .emptyResult:
             return "Failed to generate CSV data"
-        case .encodingError(let details):
+        case let .encodingError(details):
             return "Encoding error: \(details)"
         }
     }

@@ -5,8 +5,8 @@
 //  Root navigation container with 4 tabs: Decks, Study, Statistics, Settings
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext

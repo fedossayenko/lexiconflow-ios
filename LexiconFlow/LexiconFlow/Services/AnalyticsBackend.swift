@@ -148,7 +148,7 @@ final class MockAnalyticsBackend: AnalyticsBackend, @unchecked Sendable {
     /// Check if a specific event was recorded
     func didTrackEvent(_ name: String) -> Bool {
         events.contains { event in
-            if case .event(let eventName, _) = event {
+            if case let .event(eventName, _) = event {
                 return eventName == name
             }
             return false
@@ -158,7 +158,7 @@ final class MockAnalyticsBackend: AnalyticsBackend, @unchecked Sendable {
     /// Check if a specific error was recorded
     func didTrackError(_ name: String) -> Bool {
         events.contains { event in
-            if case .error(let errorName, _) = event {
+            if case let .error(errorName, _) = event {
                 return errorName == name
             }
             return false
@@ -168,7 +168,7 @@ final class MockAnalyticsBackend: AnalyticsBackend, @unchecked Sendable {
     /// Get count of recorded events
     func eventCount(for name: String) -> Int {
         events.filter { event in
-            if case .event(let eventName, _) = event {
+            if case let .event(eventName, _) = event {
                 return eventName == name
             }
             return false
@@ -188,15 +188,15 @@ enum AnalyticsEvent: Equatable, Sendable {
     /// Custom equality for setUserProperties with [String: Any]
     static func == (lhs: AnalyticsEvent, rhs: AnalyticsEvent) -> Bool {
         switch (lhs, rhs) {
-        case (.event(let lName, let lMeta), .event(let rName, let rMeta)):
+        case let (.event(lName, lMeta), .event(rName, rMeta)):
             return lName == rName && lMeta == rMeta
-        case (.error(let lName, let lMeta), .error(let rName, let rMeta)):
+        case let (.error(lName, lMeta), .error(rName, rMeta)):
             return lName == rName && lMeta == rMeta
-        case (.issue(let lName, let lMeta), .issue(let rName, let rMeta)):
+        case let (.issue(lName, lMeta), .issue(rName, rMeta)):
             return lName == rName && lMeta == rMeta
-        case (.setUserId(let lId), .setUserId(let rId)):
+        case let (.setUserId(lId), .setUserId(rId)):
             return lId == rId
-        case (.performance(let lName, let lDur, let lMeta), .performance(let rName, let rDur, let rMeta)):
+        case let (.performance(lName, lDur, lMeta), .performance(rName, rDur, rMeta)):
             return lName == rName && lDur == rDur && lMeta == rMeta
         case (.setUserProperties, .setUserProperties):
             // For properties, just check that both are the same type

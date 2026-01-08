@@ -5,8 +5,8 @@
 //  Study session settings screen
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct StudySettingsView: View {
     @AppStorage("studyLimit") private var studyLimit = 20

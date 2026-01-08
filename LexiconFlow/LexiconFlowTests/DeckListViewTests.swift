@@ -9,14 +9,13 @@
 //  Full UI behavior testing requires UI tests or snapshot tests.
 //
 
-import Testing
-import SwiftUI
 import SwiftData
+import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 @MainActor
 struct DeckListViewTests {
-
     // MARK: - Test Fixtures
 
     private func createTestContainer() -> ModelContainer {
@@ -138,7 +137,8 @@ struct DeckListViewTests {
                   let cardDeck = card.deck,
                   cardDeck.id == deck.id,
                   state.dueDate <= now,
-                  state.stateEnum != FlashcardState.new.rawValue else {
+                  state.stateEnum != FlashcardState.new.rawValue
+            else {
                 continue
             }
             dueCount += 1
@@ -170,7 +170,8 @@ struct DeckListViewTests {
                   let cardDeck = card.deck,
                   cardDeck.id == deck.id,
                   state.dueDate <= now,
-                  state.stateEnum != FlashcardState.new.rawValue else {
+                  state.stateEnum != FlashcardState.new.rawValue
+            else {
                 continue
             }
             dueCount += 1
@@ -203,7 +204,8 @@ struct DeckListViewTests {
                   let cardDeck = card.deck,
                   cardDeck.id == deck.id,
                   state.dueDate <= now,
-                  state.stateEnum != FlashcardState.new.rawValue else {
+                  state.stateEnum != FlashcardState.new.rawValue
+            else {
                 continue
             }
             dueCount += 1
@@ -221,7 +223,7 @@ struct DeckListViewTests {
 
         // Create multiple cards
         let now = Date()
-        for i in 0..<10 {
+        for i in 0 ..< 10 {
             let state: FlashcardState = i % 2 == 0 ? .review : .new
             let dueDate: Date? = state == .review ? now : Date().addingTimeInterval(86400)
             createTestCard(in: context, word: "Card\(i)", deck: deck, dueDate: dueDate, state: state)
@@ -238,7 +240,8 @@ struct DeckListViewTests {
             guard let card = state.card,
                   let cardDeck = card.deck,
                   state.dueDate <= now,
-                  state.stateEnum != FlashcardState.new.rawValue else {
+                  state.stateEnum != FlashcardState.new.rawValue
+            else {
                 continue
             }
             counts[cardDeck.id, default: 0] += 1
@@ -365,7 +368,7 @@ struct DeckListViewTests {
         let context = container.mainContext
 
         // Create 100 decks
-        for i in 0..<100 {
+        for i in 0 ..< 100 {
             createTestDeck(in: context, name: "Deck\(i)", order: i)
         }
 

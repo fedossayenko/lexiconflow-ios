@@ -22,7 +22,6 @@ import OSLog
 ///
 /// **Testing**: Supports dependency injection via `setBackend()` for unit tests.
 enum Analytics {
-
     /// Logger for analytics output
     private static let logger = Logger(subsystem: "com.lexiconflow.analytics", category: "Analytics")
 
@@ -39,7 +38,7 @@ enum Analytics {
 
     /// Reset to the production backend (for test cleanup)
     static func resetToProductionBackend() {
-        Self.backend = ProductionAnalyticsBackend()
+        backend = ProductionAnalyticsBackend()
     }
 
     // MARK: - Event Tracking

@@ -6,10 +6,10 @@
 //  Manages state for retention rate, study streak, and FSRS metrics
 //
 
-import Foundation
-import SwiftData
 import Combine
+import Foundation
 import OSLog
+import SwiftData
 
 /// ViewModel for the study statistics dashboard
 ///
@@ -63,18 +63,18 @@ final class StatisticsViewModel: ObservableObject {
     ///   - timeRange: Initial time range selection (defaults to AppSettings)
     init(modelContext: ModelContext, timeRange: StatisticsTimeRange? = nil) {
         self.modelContext = modelContext
-        self.statisticsService = StatisticsService.shared
+        statisticsService = StatisticsService.shared
 
         // Use provided time range or load from AppSettings
         if let timeRange = timeRange {
-            self.selectedTimeRange = timeRange
+            selectedTimeRange = timeRange
         } else {
             // Load from AppSettings (convert string to enum)
             let savedRange = AppSettings.statisticsTimeRange
-            self.selectedTimeRange = StatisticsTimeRange(rawValue: savedRange) ?? .sevenDays
+            selectedTimeRange = StatisticsTimeRange(rawValue: savedRange) ?? .sevenDays
         }
 
-        logger.info("StatisticsViewModel initialized with time range: \(self.selectedTimeRange.displayName)")
+        logger.info("StatisticsViewModel initialized with time range: \(selectedTimeRange.displayName)")
     }
 
     // MARK: - Public Methods
@@ -93,7 +93,7 @@ final class StatisticsViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        logger.debug("Refreshing statistics for time range: \(self.selectedTimeRange.displayName)")
+        logger.debug("Refreshing statistics for time range: \(selectedTimeRange.displayName)")
 
         // Fetch metrics sequentially to avoid capturing non-Sendable ModelContext in Sendable closure
         // Swift 6 strict concurrency requires this approach
@@ -113,16 +113,16 @@ final class StatisticsViewModel: ObservableObject {
         )
 
         // Update published properties on main actor
-        self.retentionData = retentionResult
-        self.streakData = streakResult
-        self.fsrsMetrics = fsrsResult
+        retentionData = retentionResult
+        streakData = streakResult
+        fsrsMetrics = fsrsResult
 
-        self.logger.info("""
-            Statistics refreshed:
-            - Retention: \(retentionResult.formattedPercentage)
-            - Streak: \(streakResult.currentStreak) days
-            - FSRS: \(fsrsResult.formattedStability) avg stability
-            """)
+        logger.info("""
+        Statistics refreshed:
+        - Retention: \(retentionResult.formattedPercentage)
+        - Streak: \(streakResult.currentStreak) days
+        - FSRS: \(fsrsResult.formattedStability) avg stability
+        """)
 
         isLoading = false
     }
@@ -133,9 +133,9 @@ final class StatisticsViewModel: ObservableObject {
     ///
     /// **Side Effect**: Updates AppSettings.statisticsTimeRange for persistence
     func changeTimeRange(_ timeRange: StatisticsTimeRange) async {
-        guard self.selectedTimeRange != timeRange else { return }
+        guard selectedTimeRange != timeRange else { return }
 
-        logger.info("Changing time range from \(self.selectedTimeRange.displayName) to \(timeRange.displayName)")
+        logger.info("Changing time range from \(selectedTimeRange.displayName) to \(timeRange.displayName)")
 
         selectedTimeRange = timeRange
 
@@ -168,7 +168,7 @@ extension StatisticsViewModel {
 
         // Check if all metrics are empty/zero
         return retentionData.totalCount == 0 &&
-               streakData.activeDays == 0 &&
-               fsrsMetrics.totalCards == 0
+            streakData.activeDays == 0 &&
+            fsrsMetrics.totalCards == 0
     }
 }

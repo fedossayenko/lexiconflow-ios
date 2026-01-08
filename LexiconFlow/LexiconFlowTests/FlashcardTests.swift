@@ -6,15 +6,14 @@
 //  Covers: Flashcard creation, relationships, external storage, cascade delete
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for Flashcard model
 @MainActor
 struct FlashcardTests {
-
     /// Get a fresh isolated context for testing
     private func freshContext() -> ModelContext {
         return TestContainers.freshContext()
@@ -239,7 +238,6 @@ struct FlashcardTests {
 
     // MARK: - Flashcard-ReviewLogs Relationship Tests
 
-
     @Test("Flashcard with no review logs")
     func flashcardNoReviewLogs() throws {
         let context = freshContext()
@@ -352,10 +350,10 @@ struct FlashcardTests {
         let reviews = try context.fetch(FetchDescriptor<FlashcardReview>())
         let decks = try context.fetch(FetchDescriptor<Deck>())
 
-        #expect(cards.count == 0)  // Flashcard deleted
-        #expect(states.count == 0)  // FSRSState deleted (cascade)
+        #expect(cards.count == 0) // Flashcard deleted
+        #expect(states.count == 0) // FSRSState deleted (cascade)
         #expect(reviews.count == 0) // Reviews deleted (cascade)
-        #expect(decks.count == 1)   // Deck preserved (nullify)
+        #expect(decks.count == 1) // Deck preserved (nullify)
         #expect(decks.first?.cards.isEmpty == true) // Card removed from deck
     }
 

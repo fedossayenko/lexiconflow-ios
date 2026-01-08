@@ -15,14 +15,13 @@
 //  Tests clean up after themselves to avoid interference.
 //
 
-import Testing
 import Foundation
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for KeychainManager persistence and edge cases
 @MainActor
 struct KeychainManagerPersistenceTests {
-
     // MARK: - Test Cleanup
 
     /// Clean up any existing API key before running tests
@@ -53,7 +52,7 @@ struct KeychainManagerPersistenceTests {
         #expect(secondRead == testKey, "Second read should return same key")
 
         // Third read after delay
-        try await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
+        try await Task.sleep(nanoseconds: 100000000) // 0.1 second
         let thirdRead = try KeychainManager.getAPIKey()
         #expect(thirdRead == testKey, "Third read should still return same key")
 
@@ -246,7 +245,7 @@ struct KeychainManagerPersistenceTests {
     func multipleSequentialUpdates() throws {
         cleanupAPIKey()
 
-        let keys = (1...10).map { "sk-key-\($0)" }
+        let keys = (1 ... 10).map { "sk-key-\($0)" }
 
         for key in keys {
             try KeychainManager.setAPIKey(key)
@@ -293,8 +292,10 @@ struct KeychainManagerPersistenceTests {
         do {
             _ = try KeychainManager.setAPIKey("")
         } catch let error as KeychainManager.KeychainError {
-            #expect(error.localizedDescription == "Cannot store empty key",
-                   "Empty key error should have description")
+            #expect(
+                error.localizedDescription == "Cannot store empty key",
+                "Empty key error should have description"
+            )
         } catch {
             #expect(Bool(false), "Should throw KeychainError.emptyKey")
         }
@@ -470,16 +471,22 @@ struct KeychainManagerPersistenceTests {
     @Test("KeychainError has localized descriptions")
     func keychainErrorDescriptions() {
         let emptyError = KeychainManager.KeychainError.emptyKey
-        #expect(emptyError.localizedDescription == "Cannot store empty key",
-               "emptyKey should have description")
+        #expect(
+            emptyError.localizedDescription == "Cannot store empty key",
+            "emptyKey should have description"
+        )
 
         let invalidError = KeychainManager.KeychainError.invalidData
-        #expect(invalidError.localizedDescription == "Invalid data format in Keychain",
-               "invalidData should have description")
+        #expect(
+            invalidError.localizedDescription == "Invalid data format in Keychain",
+            "invalidData should have description"
+        )
 
         let unhandledError = KeychainManager.KeychainError.unhandledError(-34018)
-        #expect(unhandledError.localizedDescription.contains("OSStatus"),
-               "unhandledError should mention OSStatus")
+        #expect(
+            unhandledError.localizedDescription.contains("OSStatus"),
+            "unhandledError should mention OSStatus"
+        )
     }
 
     @Test("getAPIKey throws on invalid UTF-8 data in Keychain")
@@ -553,7 +560,7 @@ struct KeychainManagerPersistenceTests {
         cleanupAPIKey()
 
         // Perform rapid set/delete cycles
-        for i in 0..<20 {
+        for i in 0 ..< 20 {
             let key = "sk-rapid-\(i)"
             try KeychainManager.setAPIKey(key)
 

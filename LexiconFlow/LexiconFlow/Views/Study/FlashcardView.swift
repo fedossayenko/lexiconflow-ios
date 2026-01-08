@@ -5,8 +5,8 @@
 //  Displays card with tap-to-flip animation and swipe gestures.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct FlashcardView: View {
     @Bindable var card: Flashcard

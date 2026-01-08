@@ -6,10 +6,10 @@
 //  Tests version-to-version migrations and data integrity
 //
 
-import Testing
 import Foundation
-import SwiftData
 import OSLog
+import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Schema migration test suite for SwiftData
@@ -26,7 +26,6 @@ import OSLog
 /// - New relationships added
 @Suite(.serialized)
 struct SchemaMigrationTests {
-
     // MARK: - Test Configuration
 
     /// Logger for migration diagnostics
@@ -158,7 +157,7 @@ struct SchemaMigrationTests {
         context.insert(deck)
 
         // Create multiple flashcards in same deck
-        for i in 1...5 {
+        for i in 1 ... 5 {
             let flashcard = Flashcard(
                 word: "word\(i)",
                 phonetic: "/wɜːrd\(i)/",

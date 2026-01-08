@@ -14,7 +14,6 @@ import OSLog
 /// AI responses often wrap JSON in markdown code blocks or include extra text.
 /// This utility extracts clean JSON from various response formats.
 enum JSONExtractor {
-
     /// Extract JSON from text, handling markdown code blocks and brace delimiters
     ///
     /// - Parameters:
@@ -47,8 +46,8 @@ enum JSONExtractor {
         // Try ```json code blocks (preferred format)
         if let jsonStart = trimmed.range(of: "```json", options: .caseInsensitive) {
             let afterStart = jsonStart.upperBound
-            if let jsonEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
-                let json = String(trimmed[afterStart..<jsonEnd.lowerBound])
+            if let jsonEnd = trimmed.range(of: "```", range: afterStart ..< trimmed.endIndex) {
+                let json = String(trimmed[afterStart ..< jsonEnd.lowerBound])
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 logger.debug("Extracted JSON from markdown code block (```json)")
                 return json
@@ -58,8 +57,8 @@ enum JSONExtractor {
         // Try ``` code blocks (without json specifier)
         if let codeStart = trimmed.range(of: "```", options: .caseInsensitive) {
             let afterStart = codeStart.upperBound
-            if let codeEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
-                let json = String(trimmed[afterStart..<codeEnd.lowerBound])
+            if let codeEnd = trimmed.range(of: "```", range: afterStart ..< trimmed.endIndex) {
+                let json = String(trimmed[afterStart ..< codeEnd.lowerBound])
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 logger.debug("Extracted JSON from generic code block (```)")
                 return json
@@ -68,8 +67,9 @@ enum JSONExtractor {
 
         // Try { to } brace delimiters (fallback for unstructured text)
         if let firstBrace = trimmed.firstIndex(of: "{"),
-           let lastBrace = trimmed.lastIndex(of: "}") {
-            let json = String(trimmed[firstBrace...lastBrace])
+           let lastBrace = trimmed.lastIndex(of: "}")
+        {
+            let json = String(trimmed[firstBrace ... lastBrace])
             logger.debug("Extracted JSON from brace delimiters ({...})")
             return json
         }

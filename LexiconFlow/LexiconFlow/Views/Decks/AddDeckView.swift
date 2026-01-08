@@ -5,8 +5,8 @@
 //  Form for creating a new deck
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct AddDeckView: View {
     @Environment(\.modelContext) private var modelContext
@@ -21,7 +21,7 @@ struct AddDeckView: View {
         "folder.fill", "star.fill", "heart.fill", "book.fill",
         "graduationcap.fill", "lightbulb.fill", "brain.fill",
         "globe", "terminal.fill", "hammer.fill", "paintbrush.fill",
-        "music.note", "camera.fill", "gamecontroller.fill"
+        "music.note", "camera.fill", "gamecontroller.fill",
     ]
 
     var body: some View {

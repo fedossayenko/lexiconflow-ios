@@ -6,9 +6,9 @@
 //  Tests verify complete workflow from study session to statistics display
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for Statistics Dashboard end-to-end integration
@@ -23,7 +23,6 @@ import SwiftData
 /// - Realistic user scenarios with realistic data
 @MainActor
 struct StatisticsDashboardE2ETests {
-
     // MARK: - Test Fixtures
 
     private func freshContext() -> ModelContext {
@@ -106,7 +105,6 @@ struct StatisticsDashboardE2ETests {
 
     // MARK: - Complete Workflow Tests
 
-
     @Test("E2E: Multiple study sessions over consecutive days")
     func multipleStudySessionsOverConsecutiveDays() async throws {
         let context = freshContext()
@@ -118,7 +116,7 @@ struct StatisticsDashboardE2ETests {
         // Create cards for 3 days of study sessions
         var allReviews: [FlashcardReview] = []
 
-        for dayOffset in 0..<3 {
+        for dayOffset in 0 ..< 3 {
             let dayStart = calendar.startOfDay(for: Date().addingTimeInterval(-Double(dayOffset * 86400)))
 
             // Create study session for this day
@@ -131,20 +129,20 @@ struct StatisticsDashboardE2ETests {
             )
 
             // Create flashcards and reviews for this session
-            for i in 0..<10 {
+            for i in 0 ..< 10 {
                 let card = createFlashcard(
                     context: context,
                     word: "word\(dayOffset)_\(i)",
                     stateEnum: FlashcardState.review.rawValue,
                     stability: Double(dayOffset + 1) * 2.0,
-                    difficulty: Double.random(in: 3...7),
+                    difficulty: Double.random(in: 3 ... 7),
                     lastReviewDate: dayStart.addingTimeInterval(3600 + Double(i * 60))
                 )
 
                 let review = createReview(
                     context: context,
                     flashcard: card,
-                    rating: Int.random(in: 1...4),
+                    rating: Int.random(in: 1 ... 4),
                     reviewDate: dayStart.addingTimeInterval(3600 + Double(i * 60)),
                     scheduledDays: 0,
                     elapsedDays: 0,
@@ -235,7 +233,7 @@ struct StatisticsDashboardE2ETests {
         let calendar = Calendar.autoupdatingCurrent
 
         // Create data across 45 days
-        for dayOffset in 0..<45 {
+        for dayOffset in 0 ..< 45 {
             guard dayOffset % 3 == 0 else { continue } // Every 3 days to keep test fast
 
             let dayStart = calendar.startOfDay(for: Date().addingTimeInterval(-Double(dayOffset * 86400)))
@@ -246,7 +244,7 @@ struct StatisticsDashboardE2ETests {
                 modeEnum: "scheduled"
             )
 
-            for i in 0..<5 {
+            for i in 0 ..< 5 {
                 let card = createFlashcard(
                     context: context,
                     word: "word_\(dayOffset)_\(i)",
@@ -259,7 +257,7 @@ struct StatisticsDashboardE2ETests {
                 createReview(
                     context: context,
                     flashcard: card,
-                    rating: Int.random(in: 2...4),
+                    rating: Int.random(in: 2 ... 4),
                     reviewDate: dayStart,
                     studySession: session
                 )
@@ -309,7 +307,7 @@ struct StatisticsDashboardE2ETests {
             modeEnum: "scheduled"
         )
 
-        for i in 0..<10 {
+        for i in 0 ..< 10 {
             let card = createFlashcard(
                 context: context,
                 word: "scheduled_\(i)",
@@ -319,7 +317,7 @@ struct StatisticsDashboardE2ETests {
             createReview(
                 context: context,
                 flashcard: card,
-                rating: Int.random(in: 2...4),
+                rating: Int.random(in: 2 ... 4),
                 reviewDate: Date().addingTimeInterval(-86400),
                 studySession: scheduledSession
             )
@@ -333,7 +331,7 @@ struct StatisticsDashboardE2ETests {
             modeEnum: "learning"
         )
 
-        for i in 0..<5 {
+        for i in 0 ..< 5 {
             let card = createFlashcard(
                 context: context,
                 word: "learning_\(i)",
@@ -343,7 +341,7 @@ struct StatisticsDashboardE2ETests {
             createReview(
                 context: context,
                 flashcard: card,
-                rating: Int.random(in: 1...3),
+                rating: Int.random(in: 1 ... 3),
                 reviewDate: Date().addingTimeInterval(-43200),
                 studySession: learningSession
             )
@@ -357,7 +355,7 @@ struct StatisticsDashboardE2ETests {
             modeEnum: "cram"
         )
 
-        for i in 0..<8 {
+        for i in 0 ..< 8 {
             let card = createFlashcard(
                 context: context,
                 word: "cram_\(i)",
@@ -366,7 +364,7 @@ struct StatisticsDashboardE2ETests {
             createReview(
                 context: context,
                 flashcard: card,
-                rating: Int.random(in: 1...4),
+                rating: Int.random(in: 1 ... 4),
                 reviewDate: Date(),
                 studySession: cramSession
             )
@@ -416,7 +414,6 @@ struct StatisticsDashboardE2ETests {
         // New user empty state verified
     }
 
-
     @Test("E2E: Dashboard refresh with changing data")
     func dashboardRefreshWithChangingData() async throws {
         let context = freshContext()
@@ -431,7 +428,7 @@ struct StatisticsDashboardE2ETests {
 
         // Add study session
         let session = createStudySession(context: context, startTime: Date(), cardsReviewed: 5)
-        for i in 0..<5 {
+        for i in 0 ..< 5 {
             let card = createFlashcard(
                 context: context,
                 word: "word_\(i)",
@@ -459,7 +456,7 @@ struct StatisticsDashboardE2ETests {
             startTime: Date().addingTimeInterval(3600),
             cardsReviewed: 3
         )
-        for i in 0..<3 {
+        for i in 0 ..< 3 {
             let card = createFlashcard(
                 context: context,
                 word: "word2_\(i)",
@@ -497,13 +494,13 @@ struct StatisticsDashboardE2ETests {
         var totalCards = 0
         var totalReviews = 0
 
-        for week in 0..<4 {
-            for day in 0..<5 { // Monday to Friday
+        for week in 0 ..< 4 {
+            for day in 0 ..< 5 { // Monday to Friday
                 let dayOffset = week * 7 + day
                 let dayStart = calendar.startOfDay(for: Date().addingTimeInterval(-Double(dayOffset * 86400)))
 
                 // Study session: 15-25 cards per day
-                let cardsToday = Int.random(in: 15...25)
+                let cardsToday = Int.random(in: 15 ... 25)
                 let session = createStudySession(
                     context: context,
                     startTime: dayStart.addingTimeInterval(3600 + Double(day * 3600)),
@@ -512,13 +509,13 @@ struct StatisticsDashboardE2ETests {
                     modeEnum: "scheduled"
                 )
 
-                for i in 0..<cardsToday {
+                for i in 0 ..< cardsToday {
                     let card = createFlashcard(
                         context: context,
                         word: "word_\(dayOffset)_\(i)",
                         stateEnum: FlashcardState.review.rawValue,
-                        stability: Double(week * 7 + day) * 0.5 + Double.random(in: 0...2),
-                        difficulty: Double.random(in: 3...8),
+                        stability: Double(week * 7 + day) * 0.5 + Double.random(in: 0 ... 2),
+                        difficulty: Double.random(in: 3 ... 8),
                         lastReviewDate: dayStart
                     )
 
@@ -590,7 +587,7 @@ struct StatisticsDashboardE2ETests {
                 modeEnum: "scheduled"
             )
 
-            for i in 0..<cardsToday {
+            for i in 0 ..< cardsToday {
                 let card = createFlashcard(
                     context: context,
                     word: "irregular_\(dayOffset)_\(i)",
@@ -603,7 +600,7 @@ struct StatisticsDashboardE2ETests {
                 createReview(
                     context: context,
                     flashcard: card,
-                    rating: Int.random(in: 1...4),
+                    rating: Int.random(in: 1 ... 4),
                     reviewDate: dayStart.addingTimeInterval(Double(i * 30)),
                     studySession: session
                 )
@@ -637,7 +634,7 @@ struct StatisticsDashboardE2ETests {
 
         // Create initial data
         let session1 = createStudySession(context: context, startTime: Date(), cardsReviewed: 10)
-        for i in 0..<10 {
+        for i in 0 ..< 10 {
             let card = createFlashcard(
                 context: context,
                 word: "persistent_\(i)",
@@ -670,7 +667,7 @@ struct StatisticsDashboardE2ETests {
             startTime: Date().addingTimeInterval(3600),
             cardsReviewed: 5
         )
-        for i in 0..<5 {
+        for i in 0 ..< 5 {
             let card = createFlashcard(
                 context: context,
                 word: "new_\(i)",
@@ -713,7 +710,7 @@ struct StatisticsDashboardE2ETests {
             cardsReviewed: 5
         )
 
-        for i in 0..<5 {
+        for i in 0 ..< 5 {
             let card = createFlashcard(
                 context: context,
                 word: "valid_\(i)",

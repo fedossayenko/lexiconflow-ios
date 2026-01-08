@@ -6,9 +6,9 @@
 //  Covers: Initialization, state changes, time range switching, error handling
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for StatisticsViewModel
@@ -22,7 +22,6 @@ import SwiftData
 /// - Concurrent access safety
 @MainActor
 struct StatisticsViewModelTests {
-
     // MARK: - Test Fixtures
 
     private func freshContext() -> ModelContext {
@@ -250,9 +249,6 @@ struct StatisticsViewModelTests {
         #expect(viewModel.selectedTimeRange == .thirtyDays)
     }
 
-
-
-
     @Test("Change time range cycles through all options")
     func changeTimeRangeCyclesThroughAllOptions() async throws {
         let context = freshContext()
@@ -417,7 +413,6 @@ struct StatisticsViewModelTests {
         #expect(viewModel.retentionData?.rate == 0.75) // 75%
     }
 
-
     @Test("FSRS metrics DTO contains expected data")
     func fsrsMetricsDTOContainsExpectedData() async throws {
         let context = freshContext()
@@ -563,7 +558,7 @@ struct StatisticsViewModelTests {
 
         // Trigger multiple concurrent refreshes
         await withTaskGroup(of: Void.self) { group in
-            for _ in 0..<5 {
+            for _ in 0 ..< 5 {
                 group.addTask {
                     await viewModel.refresh()
                 }
@@ -637,7 +632,7 @@ struct StatisticsViewModelTests {
                 await viewModel.refresh()
             }
 
-            for _ in 0..<3 {
+            for _ in 0 ..< 3 {
                 group.addTask {
                     _ = await viewModel.isLoading
                     _ = await viewModel.hasData
@@ -698,12 +693,12 @@ struct StatisticsViewModelTests {
     }
 
     @Test("ViewModel handles large datasets")
-    func testHandlesLargeDatasets() async throws {
+    func handlesLargeDatasets() async throws {
         let context = freshContext()
         try context.clearAll()
 
         // Create large dataset (100 cards with reviews)
-        for i in 0..<100 {
+        for i in 0 ..< 100 {
             let card = createFlashcard(
                 context: context,
                 word: "card\(i)",
@@ -718,7 +713,7 @@ struct StatisticsViewModelTests {
         }
 
         // Create 30 study sessions
-        for i in 0..<30 {
+        for i in 0 ..< 30 {
             _ = createStudySession(
                 context: context,
                 startTime: Date().addingTimeInterval(-Double(i * 3600)),

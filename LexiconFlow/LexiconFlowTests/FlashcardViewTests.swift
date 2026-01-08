@@ -9,14 +9,13 @@
 //  Full UI behavior testing requires UI tests or snapshot tests.
 //
 
-import Testing
-import SwiftUI
 import SwiftData
+import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 @MainActor
 struct FlashcardViewTests {
-
     // MARK: - Test Fixtures
 
     private func createTestFlashcard(

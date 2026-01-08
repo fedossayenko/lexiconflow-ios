@@ -5,8 +5,8 @@
 //  Back of flashcard showing definition, translation, and AI-generated sentences
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct CardBackView: View {
     @Bindable var card: Flashcard
@@ -53,7 +53,8 @@ struct CardBackView: View {
 
                 // Image (if available)
                 if let imageData = card.imageData,
-                   let uiImage = UIImage(data: imageData) {
+                   let uiImage = UIImage(data: imageData)
+                {
                     Image(uiImage: uiImage)
                         .resizable()
                         .scaledToFit()

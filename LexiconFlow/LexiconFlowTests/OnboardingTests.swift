@@ -5,9 +5,9 @@
 //  Tests for onboarding flow
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for Onboarding Flow
@@ -21,7 +21,6 @@ import SwiftData
 /// - Retry after error (Issue 5 fix)
 @MainActor
 struct OnboardingTests {
-
     // MARK: - Test Fixtures
 
     private func freshContext() -> ModelContext {
@@ -61,7 +60,7 @@ struct OnboardingTests {
             (word: "Serendipity", definition: "Finding something good without looking for it", phonetic: "/ˌserənˈdipədē/"),
             (word: "Eloquent", definition: "Fluent or persuasive in speaking or writing", phonetic: "/ˈeləkwənt/"),
             (word: "Meticulous", definition: "Showing great attention to detail", phonetic: "/məˈtikyələs/"),
-            (word: "Pragmatic", definition: "Dealing with things sensibly and realistically", phonetic: "/praɡˈmadik/")
+            (word: "Pragmatic", definition: "Dealing with things sensibly and realistically", phonetic: "/praɡˈmadik/"),
         ]
 
         for cardData in sampleCards {

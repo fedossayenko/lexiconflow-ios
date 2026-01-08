@@ -5,9 +5,9 @@
 //  Shows deck details and lists all cards in the deck
 //
 
-import SwiftUI
-import SwiftData
 import OSLog
+import SwiftData
+import SwiftUI
 
 struct DeckDetailView: View {
     @Bindable var deck: Deck
@@ -15,6 +15,7 @@ struct DeckDetailView: View {
     @State private var showingAddCard = false
 
     // MARK: - Batch Translation State
+
     @State private var showingTranslateConfirmation = false
     @State private var isTranslating = false
     @State private var translationProgress: TranslationProgress?
@@ -147,7 +148,7 @@ struct DeckDetailView: View {
             }
             .disabled(count == 0)
 
-            Button("Cancel", role: .cancel) { }
+            Button("Cancel", role: .cancel) {}
         } message: {
             let count = untranslatedCards.count
             if count > 0 {
@@ -157,7 +158,7 @@ struct DeckDetailView: View {
             }
         }
         .alert("Translation Complete", isPresented: $showingTranslationResult) {
-            Button("OK") { }
+            Button("OK") {}
         } message: {
             if let result = translationResult {
                 Text(result.summary)
@@ -179,7 +180,7 @@ struct DeckDetailView: View {
         isTranslating = true
         translationResult = nil
 
-        let cardsToTranslate = untranslatedCards  // Use computed property
+        let cardsToTranslate = untranslatedCards // Use computed property
         let total = cardsToTranslate.count
 
         logger.info("Starting batch translation of \(total) cards")
@@ -224,7 +225,7 @@ struct DeckDetailView: View {
     private func applyOnDeviceTranslationResults(
         _ result: OnDeviceTranslationService.BatchTranslationResult,
         cards: [Flashcard],
-        startTime: Date
+        startTime _: Date
     ) {
         // Apply each successful translation to its card
         // Note: On-device translation only provides translation text (no CEFR/context sentences)
@@ -247,13 +248,13 @@ struct DeckDetailView: View {
                 failedCount: result.failedCount,
                 failedWords: result.errors.map { error in
                     switch error {
-                    case .unsupportedLanguagePair(let source, _):
+                    case let .unsupportedLanguagePair(source, _):
                         return source
-                    case .languagePackNotAvailable(let source, _):
+                    case let .languagePackNotAvailable(source, _):
                         return source
-                    case .languagePackDownloadFailed(let language):
+                    case let .languagePackDownloadFailed(language):
                         return language
-                    case .translationFailed(let reason):
+                    case let .translationFailed(reason):
                         return reason
                     case .emptyInput:
                         return "empty input"
@@ -325,7 +326,7 @@ struct DeckDetailView: View {
 
     private func deleteCards(at offsets: IndexSet) {
         for index in offsets {
-            guard index >= 0 && index < deck.cards.count else { continue }
+            guard index >= 0, index < deck.cards.count else { continue }
             modelContext.delete(deck.cards[index])
         }
     }

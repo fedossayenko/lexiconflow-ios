@@ -5,8 +5,8 @@
 //  Study session tracking for analytics and progress monitoring
 //
 
-import SwiftData
 import Foundation
+import SwiftData
 
 /// A record of a complete study session
 ///
@@ -118,12 +118,13 @@ final class StudySession {
     ///   - endTime: When session ended (nil for active sessions)
     ///   - cardsReviewed: Number of cards reviewed
     ///   - modeEnum: Study mode as string ("scheduled", "learning", or "cram")
-    init(id: UUID = UUID(),
-         startTime: Date = Date(),
-         endTime: Date? = nil,
-         cardsReviewed: Int = 0,
-         modeEnum: String = "scheduled") {
-
+    init(
+        id: UUID = UUID(),
+        startTime: Date = Date(),
+        endTime: Date? = nil,
+        cardsReviewed: Int = 0,
+        modeEnum: String = "scheduled"
+    ) {
         self.id = id
         self.startTime = startTime
         self.endTime = endTime
@@ -132,8 +133,10 @@ final class StudySession {
     }
 
     /// Initialize with StudyMode enum
-    convenience init(startTime: Date = Date(),
-                     mode: StudyMode = .scheduled) {
+    convenience init(
+        startTime: Date = Date(),
+        mode: StudyMode = .scheduled
+    ) {
         let modeString: String
         switch mode {
         case .scheduled: modeString = "scheduled"
@@ -141,10 +144,12 @@ final class StudySession {
         case .cram: modeString = "cram"
         }
 
-        self.init(id: UUID(),
-                  startTime: startTime,
-                  endTime: nil,
-                  cardsReviewed: 0,
-                  modeEnum: modeString)
+        self.init(
+            id: UUID(),
+            startTime: startTime,
+            endTime: nil,
+            cardsReviewed: 0,
+            modeEnum: modeString
+        )
     }
 }

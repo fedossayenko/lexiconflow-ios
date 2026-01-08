@@ -5,8 +5,8 @@
 //  Shows study options for a specific deck
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct DeckStudyDetailView: View {
     @Environment(\.modelContext) private var modelContext

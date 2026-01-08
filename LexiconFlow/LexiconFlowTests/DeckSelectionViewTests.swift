@@ -5,15 +5,14 @@
 //  Tests for DeckSelectionView covering selection persistence, async stats loading, quick actions
 //
 
-import Testing
-import SwiftUI
 import SwiftData
+import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 @MainActor
 @Suite("DeckSelectionView Tests")
 struct DeckSelectionViewTests {
-
     // MARK: - Test Container Setup
 
     private func makeTestContainer() -> ModelContainer {
@@ -155,7 +154,7 @@ struct DeckSelectionViewTests {
             .modelContainer(container)
 
         // Stats should load after a brief delay
-        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        try? await Task.sleep(nanoseconds: 100000000) // 0.1 seconds
 
         // Verify stats were loaded (in real test, you'd check the @State property)
         let descriptor = FetchDescriptor<Deck>()
@@ -341,7 +340,7 @@ struct DeckSelectionViewTests {
         let context = ModelContext(container)
 
         // Insert 100 decks
-        for i in 0..<100 {
+        for i in 0 ..< 100 {
             let deck = Deck(name: "Deck \(i)", icon: "folder.fill", order: i)
             context.insert(deck)
         }

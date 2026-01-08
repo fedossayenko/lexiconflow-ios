@@ -5,8 +5,8 @@
 //  First-launch welcome screen with app introduction and sample deck creation
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct OnboardingView: View {
     @Environment(\.modelContext) private var modelContext
@@ -30,12 +30,12 @@ struct OnboardingView: View {
             icon: "checkmark.circle.fill",
             title: "Ready to Start",
             description: "Let's create your first deck and add some sample cards to get you started."
-        )
+        ),
     ]
 
     var body: some View {
         TabView(selection: $currentPage) {
-            ForEach(0..<pages.count, id: \.self) { index in
+            ForEach(0 ..< pages.count, id: \.self) { index in
                 OnboardingPageView(page: pages[index])
                     .tag(index)
             }
@@ -92,7 +92,7 @@ struct OnboardingView: View {
                 (word: "Serendipity", definition: "Finding something good without looking for it", phonetic: "/ˌserənˈdipədē/"),
                 (word: "Eloquent", definition: "Fluent or persuasive in speaking or writing", phonetic: "/ˈeləkwənt/"),
                 (word: "Meticulous", definition: "Showing great attention to detail", phonetic: "/məˈtikyələs/"),
-                (word: "Pragmatic", definition: "Dealing with things sensibly and realistically", phonetic: "/praɡˈmadik/")
+                (word: "Pragmatic", definition: "Dealing with things sensibly and realistically", phonetic: "/praɡˈmadik/"),
             ]
 
             for cardData in sampleCards {

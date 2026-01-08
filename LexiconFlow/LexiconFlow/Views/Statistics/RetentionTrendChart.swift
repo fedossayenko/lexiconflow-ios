@@ -5,8 +5,8 @@
 //  Line chart showing retention rate over time using Swift Charts
 //
 
-import SwiftUI
 import Charts
+import SwiftUI
 
 struct RetentionTrendChart: View {
     // MARK: - Properties
@@ -72,7 +72,7 @@ struct RetentionTrendChart: View {
                     LinearGradient(
                         colors: [
                             Color.blue.opacity(0.3),
-                            Color.blue.opacity(0.05)
+                            Color.blue.opacity(0.05),
                         ],
                         startPoint: .top,
                         endPoint: .bottom
@@ -134,7 +134,7 @@ struct RetentionTrendChart: View {
                 AxisGridLine(stroke: StrokeStyle(lineWidth: 0))
             }
         }
-        .chartYScale(domain: 0...100)
+        .chartYScale(domain: 0 ... 100)
     }
 
     // MARK: - Empty View
@@ -191,11 +191,18 @@ struct RetentionTrendChart: View {
             return "No retention trend data available"
         }
 
-        let firstRate = Int(sorted.first!.rate * 100)
-        let lastRate = Int(sorted.last!.rate * 100)
-        let trend = lastRate >= firstRate ? "improving" : "declining"
+        // Safe to force unwrap after isEmpty check
+        guard let firstRate = sorted.first?.rate,
+              let lastRate = sorted.last?.rate
+        else {
+            return "No retention trend data available"
+        }
 
-        return "Retention rate is \(trend), from \(firstRate)% to \(lastRate)% over \(sorted.count) days"
+        let firstPercent = Int(firstRate * 100)
+        let lastPercent = Int(lastRate * 100)
+        let trend = lastPercent >= firstPercent ? "improving" : "declining"
+
+        return "Retention rate is \(trend), from \(firstPercent)% to \(lastPercent)% over \(sorted.count) days"
     }
 
     // MARK: - Helper Methods
@@ -267,7 +274,7 @@ struct RetentionTrendChart: View {
         (date: now.addingTimeInterval(-3 * 24 * 3600), rate: 0.80),
         (date: now.addingTimeInterval(-2 * 24 * 3600), rate: 0.85),
         (date: now.addingTimeInterval(-1 * 24 * 3600), rate: 0.88),
-        (date: now, rate: 0.90)
+        (date: now, rate: 0.90),
     ]
 
     let data = RetentionRateData(
@@ -289,11 +296,11 @@ struct RetentionTrendChart: View {
     let now = Date()
 
     var trendData: [(date: Date, rate: Double)] = []
-    for i in 0..<30 {
+    for i in 0 ..< 30 {
         let date = now.addingTimeInterval(-Double(29 - i) * 24 * 3600)
         // Simulate gradual improvement with some fluctuation
         let baseRate = 0.70 + (Double(i) / 30.0) * 0.20
-        let fluctuation = Double.random(in: -0.05...0.05)
+        let fluctuation = Double.random(in: -0.05 ... 0.05)
         let rate = min(max(baseRate + fluctuation, 0.0), 1.0)
         trendData.append((date: date, rate: rate))
     }
@@ -338,7 +345,7 @@ struct RetentionTrendChart: View {
         (date: now.addingTimeInterval(-3 * 24 * 3600), rate: 0.80),
         (date: now.addingTimeInterval(-2 * 24 * 3600), rate: 0.85),
         (date: now.addingTimeInterval(-1 * 24 * 3600), rate: 0.88),
-        (date: now, rate: 0.90)
+        (date: now, rate: 0.90),
     ]
 
     let data = RetentionRateData(
@@ -361,11 +368,11 @@ struct RetentionTrendChart: View {
     let now = Date()
 
     var trendData: [(date: Date, rate: Double)] = []
-    for i in 0..<45 {
+    for i in 0 ..< 45 {
         let date = now.addingTimeInterval(-Double(44 - i) * 24 * 3600)
         // Simulate gradual improvement with some fluctuation
         let baseRate = 0.65 + (Double(i) / 45.0) * 0.25
-        let fluctuation = Double.random(in: -0.08...0.08)
+        let fluctuation = Double.random(in: -0.08 ... 0.08)
         let rate = min(max(baseRate + fluctuation, 0.0), 1.0)
         trendData.append((date: date, rate: rate))
     }

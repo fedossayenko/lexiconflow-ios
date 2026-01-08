@@ -160,7 +160,7 @@ final class StatisticsService {
             ("1-3 months", 90.0),
             ("3-6 months", 180.0),
             ("6-12 months", 365.0),
-            ("1+ years", Double.infinity)
+            ("1+ years", Double.infinity),
         ]
     }
 
@@ -171,7 +171,7 @@ final class StatisticsService {
             ("2-4 (Easy)", 4.0),
             ("4-6 (Medium)", 6.0),
             ("6-8 (Hard)", 8.0),
-            ("8-10 (Very Hard)", 10.0)
+            ("8-10 (Very Hard)", 10.0),
         ]
     }
 
@@ -241,12 +241,12 @@ final class StatisticsService {
             let trendData = generateRetentionTrend(reviews: reviews, startDate: filterStartDate)
 
             logger.info("""
-                Retention rate calculated:
-                - Rate: \(Int(rate * 100))%
-                - Successful: \(successfulReviews.count)
-                - Failed: \(failedReviews.count)
-                - Trend points: \(trendData.count)
-                """)
+            Retention rate calculated:
+            - Rate: \(Int(rate * 100))%
+            - Successful: \(successfulReviews.count)
+            - Failed: \(failedReviews.count)
+            - Trend points: \(trendData.count)
+            """)
 
             return RetentionRateData(
                 rate: rate,
@@ -274,7 +274,7 @@ final class StatisticsService {
     /// - Returns: Array of (date, rate) tuples sorted by date
     private func generateRetentionTrend(
         reviews: [FlashcardReview],
-        startDate: Date
+        startDate _: Date
     ) -> [(date: Date, rate: Double)] {
         // Group reviews by calendar day
         var dailyReviews: [Date: [FlashcardReview]] = [:]
@@ -287,7 +287,7 @@ final class StatisticsService {
         // Calculate retention rate for each day
         let trendData = dailyReviews
             .sorted { $0.key < $1.key }
-            .map { (day, reviews) -> (Date, Double) in
+            .map { day, reviews -> (Date, Double) in
                 let successful = reviews.filter { $0.rating >= 1 }.count
                 let rate = Double(successful) / Double(reviews.count)
                 return (day, rate)
@@ -361,12 +361,12 @@ final class StatisticsService {
             let hasStudiedToday = dailyStudyTime[today] ?? 0 > 0
 
             logger.info("""
-                Study streak calculated:
-                - Current: \(currentStreak) days
-                - Longest: \(longestStreak) days
-                - Active days: \(dailyStudyTime.count)
-                - Studied today: \(hasStudiedToday)
-                """)
+            Study streak calculated:
+            - Current: \(currentStreak) days
+            - Longest: \(longestStreak) days
+            - Active days: \(dailyStudyTime.count)
+            - Studied today: \(hasStudiedToday)
+            """)
 
             return StudyStreakData(
                 currentStreak: currentStreak,
@@ -426,7 +426,7 @@ final class StatisticsService {
         var longestStreak = 1
         var currentStreak = 1
 
-        for i in 1..<activeDays.count {
+        for i in 1 ..< activeDays.count {
             let prevDay = activeDays[i - 1]
             let currDay = activeDays[i]
 
@@ -464,7 +464,7 @@ final class StatisticsService {
 
         // Fetch all FSRS states with reviews since start date
         let statesDescriptor = FetchDescriptor<FSRSState>(
-            predicate: #Predicate<FSRSState> { state in
+            predicate: #Predicate<FSRSState> { _ in
                 // We'll filter in-memory since predicates don't support optional comparisons well
                 true
             }
@@ -501,12 +501,12 @@ final class StatisticsService {
             let difficultyDistribution = generateDifficultyDistribution(reviewedStates)
 
             logger.info("""
-                FSRS metrics calculated:
-                - Avg stability: \(String(format: "%.2f", averageStability)) days
-                - Avg difficulty: \(String(format: "%.2f", averageDifficulty)) / 10
-                - Total cards: \(allStates.count)
-                - Reviewed cards: \(reviewedStates.count)
-                """)
+            FSRS metrics calculated:
+            - Avg stability: \(String(format: "%.2f", averageStability)) days
+            - Avg difficulty: \(String(format: "%.2f", averageDifficulty)) / 10
+            - Total cards: \(allStates.count)
+            - Reviewed cards: \(reviewedStates.count)
+            """)
 
             return FSRSMetricsData(
                 averageStability: averageStability,

@@ -16,7 +16,7 @@ enum TimeoutError: Error, Sendable {
 extension TimeoutError: LocalizedError {
     var errorDescription: String? {
         switch self {
-        case .timedOut(let seconds):
+        case let .timedOut(seconds):
             return "Operation timed out after \(seconds) seconds"
         }
     }
@@ -50,12 +50,15 @@ func withTimeout<T>(
 
         // Add the timeout task
         group.addTask { [seconds] in
-            try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            try await Task.sleep(nanoseconds: UInt64(seconds * 1000000000))
             throw TimeoutError.timedOut(seconds)
         }
 
         // Return the first result (either operation success or timeout)
-        let result = try await group.next()!
+        // Safe to unwrap because we know at least one task will complete
+        guard let result = try await group.next() else {
+            throw TimeoutError.timedOut(seconds)
+        }
 
         // Cancel the other task
         group.cancelAll()

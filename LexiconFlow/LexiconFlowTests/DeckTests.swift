@@ -6,15 +6,14 @@
 //  Covers: Deck creation, relationships, cascade delete behavior
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for Deck model
 @MainActor
 struct DeckTests {
-
     /// Get a fresh isolated context for testing
     private func freshContext() -> ModelContext {
         return TestContainers.freshContext()
@@ -166,7 +165,7 @@ struct DeckTests {
         let deck = Deck(name: "Test Deck", icon: "📚")
         context.insert(deck)
 
-        for i in 1...5 {
+        for i in 1 ... 5 {
             let card = Flashcard(word: "word\(i)", definition: "definition\(i)")
             card.deck = deck
             context.insert(card)

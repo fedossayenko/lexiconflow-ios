@@ -79,8 +79,8 @@ actor OnDeviceSentenceGenerationService {
 
     /// Set source and target languages
     func setLanguages(source: String, target: String) {
-        self.sourceLanguage = source
-        self.targetLanguage = target
+        sourceLanguage = source
+        targetLanguage = target
         logger.info("Languages set: \(source) -> \(target)")
     }
 
@@ -205,10 +205,10 @@ actor OnDeviceSentenceGenerationService {
     /// - Throws: OnDeviceSentenceGenerationError if the request fails
     func generateSentences(
         cardWord: String,
-        cardDefinition: String,
-        cardTranslation: String? = nil,
-        cardCEFR: String? = nil,
-        count: Int = Config.defaultSentencesPerCard
+        cardDefinition _: String,
+        cardTranslation _: String? = nil,
+        cardCEFR _: String? = nil,
+        count _: Int = Config.defaultSentencesPerCard
     ) async throws -> SentenceGenerationResponse {
         // Check device capability
         guard isFoundationModelsAvailable() else {
@@ -272,8 +272,8 @@ actor OnDeviceSentenceGenerationService {
         // Try ```json code blocks (preferred format)
         if let jsonStart = trimmed.range(of: "```json", options: .caseInsensitive) {
             let afterStart = jsonStart.upperBound
-            if let jsonEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
-                let json = String(trimmed[afterStart..<jsonEnd.lowerBound])
+            if let jsonEnd = trimmed.range(of: "```", range: afterStart ..< trimmed.endIndex) {
+                let json = String(trimmed[afterStart ..< jsonEnd.lowerBound])
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 return json
             }
@@ -282,8 +282,8 @@ actor OnDeviceSentenceGenerationService {
         // Try ``` code blocks (without json specifier)
         if let codeStart = trimmed.range(of: "```", options: .caseInsensitive) {
             let afterStart = codeStart.upperBound
-            if let codeEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
-                let json = String(trimmed[afterStart..<codeEnd.lowerBound])
+            if let codeEnd = trimmed.range(of: "```", range: afterStart ..< trimmed.endIndex) {
+                let json = String(trimmed[afterStart ..< codeEnd.lowerBound])
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 return json
             }
@@ -291,8 +291,9 @@ actor OnDeviceSentenceGenerationService {
 
         // Try { to } brace delimiters (fallback for unstructured text)
         if let firstBrace = trimmed.firstIndex(of: "{"),
-           let lastBrace = trimmed.lastIndex(of: "}") {
-            let json = String(trimmed[firstBrace...lastBrace])
+           let lastBrace = trimmed.lastIndex(of: "}")
+        {
+            let json = String(trimmed[firstBrace ... lastBrace])
             return json
         }
 
@@ -452,13 +453,13 @@ actor OnDeviceSentenceGenerationService {
     ) -> SentenceBatchResult {
         let successes = results.filter { if case .success = $0.result { true } else { false } }
         let failures = results.filter { if case .failure = $0.result { true } else { false } }
-        let errors = failures.compactMap { (result) -> OnDeviceSentenceGenerationError? in
-            guard case .failure(let error) = result.result else { return nil }
+        let errors = failures.compactMap { result -> OnDeviceSentenceGenerationError? in
+            guard case let .failure(error) = result.result else { return nil }
             return error
         }
 
         let successfulGenerations: [SuccessfulGeneration] = successes.compactMap { result in
-            guard case .success(let response) = result.result else { return nil }
+            guard case let .success(response) = result.result else { return nil }
             return SuccessfulGeneration(
                 cardId: result.cardId,
                 cardWord: result.cardWord,
@@ -485,11 +486,11 @@ actor OnDeviceSentenceGenerationService {
     /// Log batch completion
     private func logBatchCompletion(_ result: SentenceBatchResult) {
         logger.info("""
-            On-device batch generation complete:
-            - Success: \(result.successCount)
-            - Failed: \(result.failedCount)
-            - Duration: \(String(format: "%.2f", result.totalDuration))s
-            """)
+        On-device batch generation complete:
+        - Success: \(result.successCount)
+        - Failed: \(result.failedCount)
+        - Duration: \(String(format: "%.2f", result.totalDuration))s
+        """)
     }
 
     /// Perform generation with retry
@@ -528,7 +529,7 @@ actor OnDeviceSentenceGenerationService {
         let duration = Date().timeIntervalSince(startTime)
 
         switch result {
-        case .success(let response):
+        case let .success(response):
             logger.debug("Generation succeeded: \(cardWord)")
             return SentenceGenerationResult(
                 cardId: cardId,
@@ -536,7 +537,7 @@ actor OnDeviceSentenceGenerationService {
                 result: .success(response),
                 duration: duration
             )
-        case .failure(let error):
+        case let .failure(error):
             logger.error("Generation failed: \(cardWord) - \(error.localizedDescription)")
             return SentenceGenerationResult(
                 cardId: cardId,
@@ -566,10 +567,10 @@ actor OnDeviceSentenceGenerationService {
         let wordCount = sentence.split(separator: " ").count
 
         switch wordCount {
-        case 0...CEFRThresholds.a1Max: return "A1"
-        case (CEFRThresholds.a1Max + 1)...CEFRThresholds.a2Max: return "A2"
-        case (CEFRThresholds.a2Max + 1)...CEFRThresholds.b1Max: return "B1"
-        case (CEFRThresholds.b1Max + 1)...CEFRThresholds.b2Max: return "B2"
+        case 0 ... CEFRThresholds.a1Max: return "A1"
+        case (CEFRThresholds.a1Max + 1) ... CEFRThresholds.a2Max: return "A2"
+        case (CEFRThresholds.a2Max + 1) ... CEFRThresholds.b1Max: return "B1"
+        case (CEFRThresholds.b1Max + 1) ... CEFRThresholds.b2Max: return "B2"
         default: return "C1"
         }
     }
@@ -579,30 +580,30 @@ actor OnDeviceSentenceGenerationService {
         "the": [
             "The book is on the table.",
             "I saw the movie yesterday.",
-            "The cat is sleeping on the couch."
+            "The cat is sleeping on the couch.",
         ],
         "be": [
             "I want to be a doctor.",
             "She will be here soon.",
-            "They are very happy."
+            "They are very happy.",
         ],
         "to": [
             "I need to go to the store.",
             "She wants to learn English.",
-            "We went to the park."
+            "We went to the park.",
         ],
         "of": [
             "A cup of coffee.",
             "The king of France.",
-            "One of the best."
-        ]
+            "One of the best.",
+        ],
     ]
 
     /// Default fallback sentences when word not in library
     private let defaultFallbackSentences = [
         "This is an example sentence.",
         "The word demonstrates its meaning here.",
-        "Practice makes perfect."
+        "Practice makes perfect.",
     ]
 }
 
@@ -621,7 +622,7 @@ enum OnDeviceSentenceGenerationError: LocalizedError, Sendable {
             return "On-device AI requires Apple Intelligence (iPhone 15 Pro or later)"
         case .sessionNotInitialized:
             return "AI session not initialized. Please try again."
-        case .generationFailed(let reason):
+        case let .generationFailed(reason):
             return "Sentence generation failed: \(reason)"
         case .invalidConfiguration:
             return "Invalid service configuration"

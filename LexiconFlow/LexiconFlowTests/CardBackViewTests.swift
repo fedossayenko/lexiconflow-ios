@@ -15,28 +15,26 @@
 //  These tests verify smoke test behavior and state management
 //
 
-import Testing
 import Foundation
 import SwiftData
 import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for CardBackView
 @MainActor
 struct CardBackViewTests {
-
     // MARK: - Initialization Tests
 
     @Test("CardBackView initializes with flashcard from context")
-    func testInitialization() throws {
+    func initialization() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
         let card = Flashcard(
             word: "test",
             definition: "A test",
-            translation: "тест",
-            
+            translation: "тест"
         )
         context.insert(card)
         try context.save()
@@ -47,8 +45,9 @@ struct CardBackViewTests {
     }
 
     // MARK: - Translation Tests
+
     @Test("CEFR badge has correct color for invalid level")
-    func testCEFRBadgeColorInvalid() {
+    func cEFRBadgeColorInvalid() {
         let color = Theme.cefrColor(for: "X5")
         // Invalid levels should default to gray
         #expect(color == .gray)
@@ -57,7 +56,7 @@ struct CardBackViewTests {
     // MARK: - Translation Display Tests
 
     @Test("Translation displays when translation exists")
-    func testTranslationDisplays() throws {
+    func translationDisplays() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -72,7 +71,7 @@ struct CardBackViewTests {
     }
 
     @Test("Translation hides when translation is nil")
-    func testTranslationHides() throws {
+    func translationHides() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -87,7 +86,7 @@ struct CardBackViewTests {
     }
 
     @Test("Translation handles empty string")
-    func testTranslationEmpty() throws {
+    func translationEmpty() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -105,7 +104,7 @@ struct CardBackViewTests {
     // MARK: - Sentence Section Tests
 
     @Test("Sentence section initializes ViewModel")
-    func testSentenceSectionInit() throws {
+    func sentenceSectionInit() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -118,7 +117,7 @@ struct CardBackViewTests {
     }
 
     @Test("Sentence section loads sentences on appear")
-    func testLoadSentencesOnAppear() throws {
+    func loadSentencesOnAppear() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -127,8 +126,7 @@ struct CardBackViewTests {
 
         let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
-            cefrLevel: "A1",
-            
+            cefrLevel: "A1"
         )
         sentence.flashcard = card
         context.insert(sentence)
@@ -139,7 +137,7 @@ struct CardBackViewTests {
     }
 
     @Test("Sentence section shows empty state")
-    func testSentenceEmptyState() throws {
+    func sentenceEmptyState() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -151,18 +149,17 @@ struct CardBackViewTests {
     }
 
     @Test("Sentence section shows sentences")
-    func testSentenceShowsSentences() throws {
+    func sentenceShowsSentences() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
         let card = Flashcard(word: "test", definition: "A test")
         context.insert(card)
 
-        for i in 1...3 {
+        for i in 1 ... 3 {
             let sentence = try GeneratedSentence(
                 sentenceText: "Sentence \(i)",
-            cefrLevel: "A1",
-                
+                cefrLevel: "A1"
             )
             sentence.flashcard = card
             context.insert(sentence)
@@ -175,14 +172,13 @@ struct CardBackViewTests {
     // MARK: - SentenceRow Component Tests
 
     @Test("SentenceRow displays sentence text")
-    func testSentenceRowText() throws {
+    func sentenceRowText() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
         let sentence = try GeneratedSentence(
             sentenceText: "This is a test sentence.",
-            cefrLevel: "A1",
-            
+            cefrLevel: "A1"
         )
         context.insert(sentence)
 
@@ -190,14 +186,13 @@ struct CardBackViewTests {
     }
 
     @Test("SentenceRow displays CEFR badge")
-    func testSentenceRowCEFR() throws {
+    func sentenceRowCEFR() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
         let sentence = try GeneratedSentence(
             sentenceText: "Test",
-            cefrLevel: "A1",
-            
+            cefrLevel: "A1"
         )
         context.insert(sentence)
 
@@ -205,7 +200,7 @@ struct CardBackViewTests {
     }
 
     @Test("SentenceRow shows expiration warning")
-    func testSentenceRowExpirationWarning() throws {
+    func sentenceRowExpirationWarning() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -213,7 +208,7 @@ struct CardBackViewTests {
         let expiredSentence = try GeneratedSentence(
             sentenceText: "Expired",
             cefrLevel: "A1",
-            
+
             generatedAt: Date().addingTimeInterval(-10 * 24 * 60 * 60),
             ttlDays: 7
         )
@@ -224,14 +219,14 @@ struct CardBackViewTests {
     }
 
     @Test("SentenceRow favorite button works")
-    func testSentenceRowFavorite() throws {
+    func sentenceRowFavorite() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
         let sentence = try GeneratedSentence(
             sentenceText: "Test",
             cefrLevel: "A1",
-            
+
             isFavorite: false
         )
         context.insert(sentence)
@@ -246,7 +241,7 @@ struct CardBackViewTests {
     }
 
     @Test("SentenceRow delete button works")
-    func testSentenceRowDelete() throws {
+    func sentenceRowDelete() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -255,8 +250,7 @@ struct CardBackViewTests {
 
         let sentence = try GeneratedSentence(
             sentenceText: "Test",
-            cefrLevel: "A1",
-            
+            cefrLevel: "A1"
         )
         sentence.flashcard = card
         context.insert(sentence)
@@ -280,7 +274,7 @@ struct CardBackViewTests {
     // MARK: - Helper Function Tests
 
     @Test("cefrColor returns correct colors for all levels")
-    func testCEFRColorAllLevels() {
+    func cEFRColorAllLevels() {
         let colorMap: [(String, Color)] = [
             ("A1", .green),
             ("A2", .green),
@@ -289,7 +283,7 @@ struct CardBackViewTests {
             ("C1", .purple),
             ("C2", .purple),
             ("X5", .gray),
-            ("", .gray)
+            ("", .gray),
         ]
 
         for (level, expectedColor) in colorMap {
@@ -301,7 +295,7 @@ struct CardBackViewTests {
     // MARK: - State Management Tests
 
     @Test("View state initializes correctly")
-    func testViewStateInit() throws {
+    func viewStateInit() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -316,7 +310,7 @@ struct CardBackViewTests {
     }
 
     @Test("View handles loading state")
-    func testViewLoadingState() throws {
+    func viewLoadingState() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -332,7 +326,7 @@ struct CardBackViewTests {
     }
 
     @Test("View handles error state")
-    func testViewErrorState() throws {
+    func viewErrorState() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -352,7 +346,7 @@ struct CardBackViewTests {
     // MARK: - View Lifecycle Tests
 
     @Test("View cleanup on disappear")
-    func testViewCleanup() throws {
+    func viewCleanup() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 

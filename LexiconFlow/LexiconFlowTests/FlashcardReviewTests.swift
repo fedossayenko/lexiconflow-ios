@@ -6,15 +6,14 @@
 //  Covers: FlashcardReview creation, relationships, timestamp accuracy
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for FlashcardReview model
 @MainActor
 struct FlashcardReviewTests {
-
     /// Get a fresh isolated context for testing
     private func freshContext() -> ModelContext {
         return TestContainers.freshContext()
@@ -200,7 +199,7 @@ struct FlashcardReviewTests {
         context.insert(review1)
 
         // Small delay to ensure different timestamps
-        try await Task.sleep(nanoseconds: 10_000_000) // 0.01 seconds
+        try await Task.sleep(nanoseconds: 10000000) // 0.01 seconds
 
         let review2 = FlashcardReview(
             rating: 3,
@@ -322,7 +321,7 @@ struct FlashcardReviewTests {
         review1.card = flashcard
         context.insert(review1)
 
-        try await Task.sleep(nanoseconds: 100_000_000) // 100ms to ensure different timestamps
+        try await Task.sleep(nanoseconds: 100000000) // 100ms to ensure different timestamps
 
         let review2 = FlashcardReview(
             rating: 3,
@@ -332,7 +331,7 @@ struct FlashcardReviewTests {
         review2.card = flashcard
         context.insert(review2)
 
-        try await Task.sleep(nanoseconds: 100_000_000) // 100ms to ensure different timestamps
+        try await Task.sleep(nanoseconds: 100000000) // 100ms to ensure different timestamps
 
         let review3 = FlashcardReview(
             rating: 3,
@@ -394,7 +393,7 @@ struct FlashcardReviewTests {
         let flashcard = Flashcard(word: "test", definition: "test")
         context.insert(flashcard)
 
-        for i in 1...5 {
+        for i in 1 ... 5 {
             let review = FlashcardReview(
                 rating: i % 4,
                 scheduledDays: 1.0,
@@ -501,7 +500,7 @@ struct FlashcardReviewTests {
         context.insert(flashcard)
 
         // Create multiple reviews
-        for i in 1...3 {
+        for i in 1 ... 3 {
             let review = FlashcardReview(
                 rating: 2,
                 scheduledDays: 1.0,
@@ -511,7 +510,7 @@ struct FlashcardReviewTests {
             context.insert(review)
 
             // Small delay to ensure different timestamps
-            try await Task.sleep(nanoseconds: 10_000_000)
+            try await Task.sleep(nanoseconds: 10000000)
         }
 
         try context.save()

@@ -5,9 +5,9 @@
 //  Data import/export and progress management
 //
 
-import SwiftUI
-import SwiftData
 import OSLog
+import SwiftData
+import SwiftUI
 import UniformTypeIdentifiers
 
 struct DataManagementView: View {
@@ -115,7 +115,7 @@ struct DataManagementView: View {
         }
         .navigationTitle("Data Management")
         .confirmationDialog("Reset All Progress", isPresented: $showingClearAlert, titleVisibility: .visible) {
-            Button("Cancel", role: .cancel) { }
+            Button("Cancel", role: .cancel) {}
             Button("Reset Progress", role: .destructive) {
                 resetProgress()
             }
@@ -123,7 +123,7 @@ struct DataManagementView: View {
             Text("This will reset all card progress to \"new\" state but keep your cards. This action cannot be undone.")
         }
         .alert("Import Complete", isPresented: $showingImportResult) {
-            Button("OK") { }
+            Button("OK") {}
         } message: {
             if let result = importResult {
                 Text(importSummary(result))
@@ -344,7 +344,7 @@ struct DataManagementView: View {
         // Rough estimate based on card count
         let cards = cardCount
         let estimatedBytes = cards * 500 // Approximate 500 bytes per card
-        let mb = Double(estimatedBytes) / 1_000_000
+        let mb = Double(estimatedBytes) / 1000000
         return String(format: "%.2f", mb)
     }
 }
@@ -358,8 +358,8 @@ struct ExportData: Codable {
     let cards: [ExportCard]
 
     init(decks: [ExportDeck], cards: [ExportCard]) {
-        self.version = "1.0"
-        self.exportDate = ISO8601DateFormatter().string(from: Date())
+        version = "1.0"
+        exportDate = ISO8601DateFormatter().string(from: Date())
         self.decks = decks
         self.cards = cards
     }
@@ -393,11 +393,11 @@ struct ExportFSRSState: Codable {
 struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
 
-    func makeUIViewController(context: Context) -> UIActivityViewController {
+    func makeUIViewController(context _: Context) -> UIActivityViewController {
         UIActivityViewController(activityItems: items, applicationActivities: nil)
     }
 
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+    func updateUIViewController(_: UIActivityViewController, context _: Context) {}
 }
 
 #Preview {

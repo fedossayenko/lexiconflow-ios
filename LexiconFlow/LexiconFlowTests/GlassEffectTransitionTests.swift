@@ -5,40 +5,39 @@
 //  Tests for glass morphism transition effects.
 //
 
-import Testing
 import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 @Suite("GlassEffectTransition Tests")
 struct GlassEffectTransitionTests {
-
     @Test("GlassTransitionStyle has three cases")
-    func testTransitionStyleCases() {
+    func transitionStyleCases() {
         let styles: [GlassTransitionStyle] = [.scaleFade, .dissolve, .liquid]
         #expect(styles.count == 3)
     }
 
     @Test("ScaleFade style exists")
-    func testScaleFadeStyle() {
+    func scaleFadeStyle() {
         let style = GlassTransitionStyle.scaleFade
         // Verify style can be created
         #expect(style == GlassTransitionStyle.scaleFade)
     }
 
     @Test("Dissolve style exists")
-    func testDissolveStyle() {
+    func dissolveStyle() {
         let style = GlassTransitionStyle.dissolve
         #expect(style == GlassTransitionStyle.dissolve)
     }
 
     @Test("Liquid style exists")
-    func testLiquidStyle() {
+    func liquidStyle() {
         let style = GlassTransitionStyle.liquid
         #expect(style == GlassTransitionStyle.liquid)
     }
 
     @Test("All transition styles are distinct")
-    func testTransitionStyleDistinctness() {
+    func transitionStyleDistinctness() {
         let scaleFade = GlassTransitionStyle.scaleFade
         let dissolve = GlassTransitionStyle.dissolve
         let liquid = GlassTransitionStyle.liquid

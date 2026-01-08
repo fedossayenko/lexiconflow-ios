@@ -5,8 +5,8 @@
 //  Displays current card and handles rating input
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct StudySessionView: View {
     @State private var viewModel: StudySessionViewModel?
@@ -51,8 +51,8 @@ struct StudySessionView: View {
                             }
                         }
                         .frame(maxHeight: .infinity)
-                        .id(currentCard.persistentModelID)  // View identity tied to card
-                        .opacity(viewModel.isComplete ? 0 : 1)  // Hide when complete
+                        .id(currentCard.persistentModelID) // View identity tied to card
+                        .opacity(viewModel.isComplete ? 0 : 1) // Hide when complete
 
                         // Rating buttons (show after flip)
                         if isFlipped {

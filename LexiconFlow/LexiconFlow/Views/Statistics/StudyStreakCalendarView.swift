@@ -133,7 +133,7 @@ struct StudyStreakCalendarView: View {
             // Weeks grid
             ForEach(weekIndices, id: \.self) { weekIndex in
                 VStack(spacing: cellSpacing) {
-                    ForEach(0..<7) { dayIndex in
+                    ForEach(0 ..< 7) { dayIndex in
                         let date = dateFor(week: weekIndex, day: dayIndex)
                         let studyTime = data.calendarData[date]
 
@@ -162,7 +162,7 @@ struct StudyStreakCalendarView: View {
 
         // Calculate week offset
         let weeks = Int(DateMath.elapsedDays(from: endDate, to: startOfWeek) / 7.0)
-        return Array(0..<weeks)
+        return Array(0 ..< weeks)
     }
 
     /// Month labels for vertical axis
@@ -253,7 +253,7 @@ struct StudyStreakCalendarView: View {
         let calendar = Calendar.autoupdatingCurrent
         let today = Date()
 
-        for dayOffset in 0..<data.currentStreak {
+        for dayOffset in 0 ..< data.currentStreak {
             let streakDate = calendar.date(byAdding: .day, value: -dayOffset, to: today) ?? today
             if DateMath.isSameDay(date, streakDate) {
                 return true
@@ -332,8 +332,9 @@ private struct DayCell: View {
     let isInStreak: Bool
 
     var body: some View {
-        let hasActivity = studyTime != nil && studyTime! > 0
-        let level = hasActivity ? activityLevel(for: studyTime!) : 0
+        // Use optional binding instead of force unwrap
+        let hasActivity = (studyTime ?? 0) > 0
+        let level = hasActivity ? activityLevel(for: studyTime ?? 0) : 0
 
         RoundedRectangle(cornerRadius: 2)
             .fill(colorForLevel(level))
@@ -412,7 +413,7 @@ private struct DayCell: View {
 
     // Generate 30 days of activity with varying intensity
     var calendarData: [Date: TimeInterval] = [:]
-    for i in 0..<30 {
+    for i in 0 ..< 30 {
         let date = calendar.date(byAdding: .day, value: -i, to: now) ?? now
         let day = DateMath.startOfDay(for: date)
 
@@ -422,7 +423,7 @@ private struct DayCell: View {
         }
 
         // Varying study time (5min to 45min)
-        let minutes = Double.random(in: 5...45)
+        let minutes = Double.random(in: 5 ... 45)
         calendarData[day] = minutes * 60
     }
 
@@ -463,13 +464,13 @@ private struct DayCell: View {
 
     // Generate 45 days of activity
     var calendarData: [Date: TimeInterval] = [:]
-    for i in 0..<45 {
+    for i in 0 ..< 45 {
         let date = calendar.date(byAdding: .day, value: -i, to: now) ?? now
         let day = DateMath.startOfDay(for: date)
 
         // Consecutive days for long streak
         if i <= 30 {
-            let minutes = Double.random(in: 10...60)
+            let minutes = Double.random(in: 10 ... 60)
             calendarData[day] = minutes * 60
         }
     }
@@ -496,12 +497,12 @@ private struct DayCell: View {
 
     // Generate light activity (5-10min sessions)
     var calendarData: [Date: TimeInterval] = [:]
-    for i in 0..<20 {
+    for i in 0 ..< 20 {
         let date = calendar.date(byAdding: .day, value: -i, to: now) ?? now
         let day = DateMath.startOfDay(for: date)
 
         if i % 2 == 0 { // Every other day
-            let minutes = Double.random(in: 5...10)
+            let minutes = Double.random(in: 5 ... 10)
             calendarData[day] = minutes * 60
         }
     }

@@ -17,7 +17,6 @@ import Foundation
 /// **Concurrency**: This is a pure enum with computed properties using DateMath.
 /// No actor isolation needed since DateMath uses thread-safe Calendar.autoupdatingCurrent.
 enum ReviewHistoryFilter: String, CaseIterable, Sendable {
-
     case allTime
     case lastWeek
     case lastMonth

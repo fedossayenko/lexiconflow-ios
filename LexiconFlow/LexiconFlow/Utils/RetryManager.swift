@@ -23,7 +23,7 @@ public struct RetryManagerError: Error {
     }
 
     init(_ error: any Error) {
-        self.underlyingError = error
+        underlyingError = error
     }
 
     /// Create a type mismatch error with expected and actual type information
@@ -42,7 +42,7 @@ public struct RetryManagerError: Error {
             userInfo: [
                 NSLocalizedDescriptionKey: "Type mismatch: expected \(expected), got \(actual). Check operation signature.",
                 "expectedType": expected,
-                "actualType": actual
+                "actualType": actual,
             ]
         )
         return RetryManagerError(error)
@@ -77,7 +77,6 @@ public struct RetryManagerError: Error {
 /// )
 /// ```
 enum RetryManager {
-
     /// Execute an operation with retry and exponential backoff
     ///
     /// - Parameters:
@@ -129,7 +128,7 @@ enum RetryManager {
                 attempt += 1
                 if attempt < maxRetries {
                     logger.info("\(logContext): Retrying in \(delay)s (attempt \(attempt + 1)/\(maxRetries))")
-                    try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                    try? await Task.sleep(nanoseconds: UInt64(delay * 1000000000))
                     delay *= 2
                 } else {
                     logger.error("\(logContext): Failed after \(maxRetries) retries")
@@ -144,7 +143,7 @@ enum RetryManager {
                 attempt += 1
                 if attempt < maxRetries {
                     logger.info("\(logContext): Retrying in \(delay)s (attempt \(attempt + 1)/\(maxRetries))")
-                    try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                    try? await Task.sleep(nanoseconds: UInt64(delay * 1000000000))
                     delay *= 2
                 }
             }

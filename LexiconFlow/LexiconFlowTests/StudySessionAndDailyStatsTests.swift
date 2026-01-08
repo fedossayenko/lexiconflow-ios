@@ -6,16 +6,15 @@
 //  Covers: Creation, relationships, computed properties, validation
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for StudySession and DailyStats models
 /// Uses shared container for performance - each test clears context before use
 @MainActor
 struct StudySessionAndDailyStatsTests {
-
     /// Get a fresh isolated context for testing
     /// Caller should call clearAll() before use to ensure test isolation
     private func freshContext() -> ModelContext {
@@ -825,7 +824,7 @@ struct StudySessionAndDailyStatsTests {
         context.insert(flashcard)
 
         // Create reviews
-        for i in 0..<10 {
+        for i in 0 ..< 10 {
             let review = FlashcardReview(
                 rating: i % 4,
                 scheduledDays: Double(i),
@@ -862,7 +861,7 @@ struct StudySessionAndDailyStatsTests {
         context.insert(dailyStats)
 
         // Create multiple sessions for the same day
-        for i in 1...3 {
+        for i in 1 ... 3 {
             let session = StudySession(
                 id: UUID(),
                 startTime: Date().addingTimeInterval(-Double(i * 300)),

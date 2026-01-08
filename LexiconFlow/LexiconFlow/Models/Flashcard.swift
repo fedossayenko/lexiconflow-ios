@@ -5,8 +5,8 @@
 //  Core flashcard model representing a vocabulary item
 //
 
-import SwiftData
 import Foundation
+import SwiftData
 
 /// A flashcard containing vocabulary information and FSRS scheduling state
 ///
@@ -87,14 +87,15 @@ final class Flashcard {
     ///   - phonetic: IPA pronunciation (optional)
     ///   - imageData: Image data for visual learning (optional)
     ///   - createdAt: Creation timestamp (defaults to now)
-    init(id: UUID = UUID(),
-         word: String,
-         definition: String,
-         translation: String? = nil,
-         phonetic: String? = nil,
-         imageData: Data? = nil,
-         createdAt: Date = Date()) {
-
+    init(
+        id: UUID = UUID(),
+        word: String,
+        definition: String,
+        translation: String? = nil,
+        phonetic: String? = nil,
+        imageData: Data? = nil,
+        createdAt: Date = Date()
+    ) {
         self.id = id
         self.word = word
         self.definition = definition

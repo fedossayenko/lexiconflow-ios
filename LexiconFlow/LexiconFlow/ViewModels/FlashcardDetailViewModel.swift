@@ -6,10 +6,10 @@
 //  Manages review history display, filtering, and export functionality
 //
 
-import Foundation
-import SwiftData
-import OSLog
 import Combine
+import Foundation
+import OSLog
+import SwiftData
 
 // MARK: - FlashcardDetailError
 
@@ -29,7 +29,7 @@ enum FlashcardDetailError: LocalizedError, Sendable {
 
     var failureReason: String? {
         switch self {
-        case .exportFailed(let message):
+        case let .exportFailed(message):
             return "Underlying error: \(message)"
         case .invalidFlashcard:
             return "Flashcard object is nil or incomplete"
@@ -373,18 +373,18 @@ final class FlashcardDetailViewModel: ObservableObject {
     /// 4. Track successful export with analytics
     /// 5. Handle errors with user-facing alert
     func exportCSV() async {
-        Self.logger.info("Starting CSV export for '\(self.flashcard.word)'")
+        Self.logger.info("Starting CSV export for '\(flashcard.word)'")
 
         do {
             // Export filtered reviews as DTOs
             let csv = try await exporter.exportFilteredCSV(
                 filteredReviews,
-                for: self.flashcard,
-                filter: self.selectedFilter
+                for: flashcard,
+                filter: selectedFilter
             )
 
             // Generate filename
-            let filename = exporter.generateFilename(for: self.flashcard)
+            let filename = exporter.generateFilename(for: flashcard)
 
             // Update published properties for ShareLink
             exportCSVString = csv
@@ -420,7 +420,7 @@ final class FlashcardDetailViewModel: ObservableObject {
             "flashcard_word": flashcard.word,
             "review_count": "\(totalReviewCount)",
             "current_state": currentFSRSState?.rawValue ?? "none",
-            "stability": currentStability.map { String(format: "%.2f", $0) } ?? "0.0"
+            "stability": currentStability.map { String(format: "%.2f", $0) } ?? "0.0",
         ])
     }
 
@@ -430,7 +430,7 @@ final class FlashcardDetailViewModel: ObservableObject {
     func trackFilterChange(_ filter: ReviewHistoryFilter) async {
         await Analytics.trackEvent("review_history_filter_changed", metadata: [
             "filter": filter.rawValue,
-            "flashcard_word": flashcard.word
+            "flashcard_word": flashcard.word,
         ])
     }
 
@@ -450,7 +450,7 @@ final class FlashcardDetailViewModel: ObservableObject {
             "flashcard_word": flashcard.word,
             "review_count": "\(filteredReviews.count)",
             "filter_type": selectedFilter.rawValue,
-            "file_size_bytes": "\(csvByteCount)"
+            "file_size_bytes": "\(csvByteCount)",
         ])
     }
 }
@@ -469,6 +469,6 @@ extension FlashcardDetailViewModel {
         selectedFilter = filter
         // Cache is automatically invalidated by didSet
         // Trigger recalculation immediately for UI responsiveness
-        let _ = filteredReviews
+        _ = filteredReviews
     }
 }

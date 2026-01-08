@@ -5,15 +5,14 @@
 //  Tests for DeckStudyListView covering deck list, stats refresh, and navigation
 //
 
-import Testing
-import SwiftUI
 import SwiftData
+import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 @MainActor
 @Suite("DeckStudyListView Tests")
 struct DeckStudyListViewTests {
-
     private func makeTestContainer() -> ModelContainer {
         let schema = Schema([Deck.self, Flashcard.self, FSRSState.self, FlashcardReview.self])
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)

@@ -6,10 +6,10 @@
 //  Tests actor isolation, data race prevention, and concurrent access patterns
 //
 
-import Testing
 import Foundation
-import SwiftData
 import OSLog
+import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Concurrency stress test suite for Swift 6 strict compliance
@@ -27,7 +27,6 @@ import OSLog
 /// - Async/await vs DispatchQueue patterns
 @Suite(.serialized)
 struct ConcurrencyStressTests {
-
     // MARK: - Test Configuration
 
     /// Logger for concurrency diagnostics
@@ -77,12 +76,12 @@ struct ConcurrencyStressTests {
 
         // Process 100 concurrent reviews using TaskGroup
         await withTaskGroup(of: FSRSReviewResult.self) { group in
-            for _ in 0..<concurrencyCount {
+            for _ in 0 ..< concurrencyCount {
                 group.addTask {
                     // Call actor-isolated FSRSWrapper
-                    return try! FSRSWrapper.shared.processReview(
+                    try! FSRSWrapper.shared.processReview(
                         flashcard: flashcard,
-                        rating: Int.random(in: 1...5)
+                        rating: Int.random(in: 1 ... 5)
                     )
                 }
             }
@@ -115,12 +114,12 @@ struct ConcurrencyStressTests {
 
         // Process 50 concurrent reviews
         await withTaskGroup(of: FlashcardReview?.self) { group in
-            for _ in 0..<50 {
+            for _ in 0 ..< 50 {
                 group.addTask {
                     // Call @MainActor ViewModel from concurrent tasks
-                    return try? await viewModel.processReview(
+                    try? await viewModel.processReview(
                         flashcard: flashcard,
-                        rating: Int.random(in: 1...5)
+                        rating: Int.random(in: 1 ... 5)
                     )
                 }
             }
@@ -184,7 +183,7 @@ struct ConcurrencyStressTests {
         await withTaskGroup(of: String?.self) { group in
             for word in words {
                 group.addTask {
-                    return try? await service.translate(text: word)
+                    try? await service.translate(text: word)
                 }
             }
 
@@ -220,7 +219,7 @@ struct ConcurrencyStressTests {
 
         // Increment from 100 concurrent tasks
         await withTaskGroup(of: Void.self) { group in
-            for _ in 0..<100 {
+            for _ in 0 ..< 100 {
                 group.addTask {
                     await counter.increment()
                 }
@@ -243,7 +242,5 @@ private actor LockedArray<Element> {
         array.append(element)
     }
 
-    var array: [Element] {
-        get { array }
-    }
+    var array: [Element] { array }
 }

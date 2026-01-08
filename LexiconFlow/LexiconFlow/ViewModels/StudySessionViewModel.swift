@@ -5,10 +5,10 @@
 //  Manages study session state and coordinates with Scheduler
 //
 
-import Foundation
-import SwiftData
 import Combine
+import Foundation
 import OSLog
+import SwiftData
 
 // MARK: - StudySessionError
 
@@ -21,14 +21,14 @@ enum StudySessionError: LocalizedError, Sendable {
         switch self {
         case .reviewSaveFailed:
             return "Failed to save review. Please try again."
-        case .invalidRating(let rating):
+        case let .invalidRating(rating):
             return "Invalid rating: \(rating). Must be between 0 and 3."
         }
     }
 
     var failureReason: String? {
         switch self {
-        case .reviewSaveFailed(let message):
+        case let .reviewSaveFailed(message):
             return "Underlying error: \(message)"
         case .invalidRating:
             return "Rating value out of valid range (0-3)"
@@ -88,7 +88,7 @@ final class StudySessionViewModel: ObservableObject {
         self.mode = mode
         self.modelContext = modelContext
         self.decks = decks
-        self.scheduler = Scheduler(modelContext: modelContext)
+        scheduler = Scheduler(modelContext: modelContext)
     }
 
     /// Load cards for the study session
@@ -130,7 +130,7 @@ final class StudySessionViewModel: ObservableObject {
 
         do {
             try modelContext.save()
-            logger.info("Finalized study session: \(session.id) with \(self.currentIndex) cards")
+            logger.info("Finalized study session: \(session.id) with \(currentIndex) cards")
         } catch {
             Analytics.trackError("finalize_study_session", error: error)
             logger.error("Failed to finalize study session: \(error)")
@@ -146,7 +146,7 @@ final class StudySessionViewModel: ObservableObject {
         }
 
         // Validate rating is within FSRS range (0-3)
-        guard (0...3).contains(rating) else {
+        guard (0 ... 3).contains(rating) else {
             lastError = StudySessionError.invalidRating(rating)
             return
         }

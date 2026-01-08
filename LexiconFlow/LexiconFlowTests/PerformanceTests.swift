@@ -9,10 +9,10 @@
 //  Run on simulator or device for accurate results (CI may vary)
 //
 
-import Testing
 import Foundation
-import SwiftData
 import OSLog
+import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Performance test suite for statistics dashboard
@@ -30,7 +30,6 @@ import OSLog
 /// - DailyStats aggregation: <1s for 1000 sessions
 @MainActor
 struct PerformanceTests {
-
     // MARK: - Test Configuration
 
     /// Performance threshold for ViewModel refresh (milliseconds)
@@ -75,9 +74,8 @@ struct PerformanceTests {
         context: ModelContext,
         cardCount: Int = 1000,
         daysOfHistory: Int = 90,
-        reviewsPerCard: Int = 3
+        reviewsPerCard _: Int = 3
     ) async throws -> (cards: [Flashcard], sessions: [StudySession], reviews: [FlashcardReview]) {
-
         let deck = Deck(name: "Performance Test Deck")
         context.insert(deck)
 
@@ -89,7 +87,7 @@ struct PerformanceTests {
         let today = Date()
 
         // Create flashcards with varied FSRS states
-        for i in 0..<cardCount {
+        for i in 0 ..< cardCount {
             let card = Flashcard(
                 word: "word\(i)",
                 definition: "definition \(i)",
@@ -100,15 +98,15 @@ struct PerformanceTests {
             context.insert(card)
 
             // Varied FSRS states to simulate real data
-            let stability = Double.random(in: 1.0...180.0) // 1 day to 6 months
-            let difficulty = Double.random(in: 1.0...9.0) // 1-9 scale
-            let retrievability = Double.random(in: 0.5...0.99) // 50-99%
+            let stability = Double.random(in: 1.0 ... 180.0) // 1 day to 6 months
+            let difficulty = Double.random(in: 1.0 ... 9.0) // 1-9 scale
+            let retrievability = Double.random(in: 0.5 ... 0.99) // 50-99%
 
             let state = FSRSState(
                 stability: stability,
                 difficulty: difficulty,
                 retrievability: retrievability,
-                dueDate: today.addingTimeInterval(Double.random(in: -86400...86400 * 30)),
+                dueDate: today.addingTimeInterval(Double.random(in: -86400 ... 86400 * 30)),
                 stateEnum: ["new", "learning", "review"].randomElement() ?? "review"
             )
             // lastReviewDate will be set during review creation
@@ -119,13 +117,13 @@ struct PerformanceTests {
         }
 
         // Create study sessions over history period
-        for dayOffset in 0..<daysOfHistory {
+        for dayOffset in 0 ..< daysOfHistory {
             guard let dayDate = calendar.date(byAdding: .day, value: -dayOffset, to: today) else {
                 continue
             }
 
             // Skip some days to create realistic streak patterns
-            if Double.random(in: 0...1) > 0.7 { // 30% chance of studying
+            if Double.random(in: 0 ... 1) > 0.7 { // 30% chance of studying
                 let modeEnum = [StudyMode.scheduled, .learning, .cram].randomElement() ?? .scheduled
                 let modeString: String
                 switch modeEnum {
@@ -135,9 +133,9 @@ struct PerformanceTests {
                 }
 
                 let session = StudySession(
-                    startTime: dayDate.addingTimeInterval(Double.random(in: 0...3600)),
-                    endTime: dayDate.addingTimeInterval(Double.random(in: 300...1800)),
-                    cardsReviewed: Int.random(in: 10...50),
+                    startTime: dayDate.addingTimeInterval(Double.random(in: 0 ... 3600)),
+                    endTime: dayDate.addingTimeInterval(Double.random(in: 300 ... 1800)),
+                    cardsReviewed: Int.random(in: 10 ... 50),
                     modeEnum: modeString
                 )
                 session.deck = deck
@@ -145,14 +143,14 @@ struct PerformanceTests {
                 sessions.append(session)
 
                 // Create reviews for this session
-                let cardsInSession = Int.random(in: 5...min(30, cardCount / 10))
-                for _ in 0..<cardsInSession {
+                let cardsInSession = Int.random(in: 5 ... min(30, cardCount / 10))
+                for _ in 0 ..< cardsInSession {
                     let card = cards.randomElement()!
-                    let rating = Int.random(in: 1...4) // 1=Again, 4=Easy
+                    let rating = Int.random(in: 1 ... 4) // 1=Again, 4=Easy
 
                     let review = FlashcardReview(
                         rating: rating,
-                        reviewDate: dayDate.addingTimeInterval(Double.random(in: 0...3600)),
+                        reviewDate: dayDate.addingTimeInterval(Double.random(in: 0 ... 3600)),
                         scheduledDays: 0,
                         elapsedDays: 0
                     )
@@ -173,20 +171,22 @@ struct PerformanceTests {
         try context.save()
 
         logger.info("""
-            Created large dataset:
-            - \(cards.count) flashcards
-            - \(sessions.count) study sessions
-            - \(reviews.count) reviews
-            - \(daysOfHistory) days of history
-            """)
+        Created large dataset:
+        - \(cards.count) flashcards
+        - \(sessions.count) study sessions
+        - \(reviews.count) reviews
+        - \(daysOfHistory) days of history
+        """)
 
         return (cards, sessions, reviews)
     }
 
     // MARK: - ViewModel Performance Tests
 
-    @Test("ViewModel refresh with 1000 cards loads in under 500ms",
-           .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil))
+    @Test(
+        "ViewModel refresh with 1000 cards loads in under 500ms",
+        .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil)
+    )
     func viewModelRefreshPerformance() async throws {
         let context = freshContext()
         try context.clearAll()
@@ -220,8 +220,10 @@ struct PerformanceTests {
         #expect(!viewModel.isLoading, "ViewModel should not be loading after refresh")
     }
 
-    @Test("ViewModel refresh with 5000 cards completes within threshold",
-           .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil))
+    @Test(
+        "ViewModel refresh with 5000 cards completes within threshold",
+        .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil)
+    )
     func viewModelRefreshVeryLargeDataset() async throws {
         let context = freshContext()
         try context.clearAll()
@@ -254,8 +256,10 @@ struct PerformanceTests {
 
     // MARK: - StatisticsService Performance Tests
 
-    @Test("calculateRetentionRate with 1000 reviews completes in under 100ms",
-           .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil))
+    @Test(
+        "calculateRetentionRate with 1000 reviews completes in under 100ms",
+        .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil)
+    )
     func retentionRatePerformance() async throws {
         let context = freshContext()
         try context.clearAll()
@@ -286,8 +290,10 @@ struct PerformanceTests {
         logger.info("calculateRetentionRate completed in \(calculationTime)ms")
     }
 
-    @Test("calculateStudyStreak with 90 days of history completes in under 100ms",
-           .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil))
+    @Test(
+        "calculateStudyStreak with 90 days of history completes in under 100ms",
+        .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil)
+    )
     func studyStreakPerformance() async throws {
         let context = freshContext()
         try context.clearAll()
@@ -315,8 +321,10 @@ struct PerformanceTests {
         logger.info("calculateStudyStreak completed in \(calculationTime)ms")
     }
 
-    @Test("calculateFSRSMetrics with 1000 cards completes in under 100ms",
-           .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil))
+    @Test(
+        "calculateFSRSMetrics with 1000 cards completes in under 100ms",
+        .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil)
+    )
     func fsrsMetricsPerformance() async throws {
         let context = freshContext()
         try context.clearAll()
@@ -346,8 +354,10 @@ struct PerformanceTests {
 
     // MARK: - Time Range Filtering Performance
 
-    @Test("Time range filtering does not significantly impact performance",
-           .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil))
+    @Test(
+        "Time range filtering does not significantly impact performance",
+        .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil)
+    )
     func timeRangeFilteringPerformance() async throws {
         let context = freshContext()
         try context.clearAll()
@@ -386,8 +396,10 @@ struct PerformanceTests {
 
     // MARK: - Aggregation Performance Tests
 
-    @Test("aggregateDailyStats with 1000 sessions completes in under 1s",
-           .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil))
+    @Test(
+        "aggregateDailyStats with 1000 sessions completes in under 1s",
+        .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil)
+    )
     func aggregationPerformance() async throws {
         let context = freshContext()
         try context.clearAll()
@@ -416,8 +428,10 @@ struct PerformanceTests {
 
     // MARK: - Concurrent Access Performance
 
-    @Test("Concurrent refresh calls complete efficiently",
-           .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil))
+    @Test(
+        "Concurrent refresh calls complete efficiently",
+        .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil)
+    )
     func concurrentRefreshPerformance() async throws {
         let context = freshContext()
         try context.clearAll()
@@ -435,7 +449,7 @@ struct PerformanceTests {
         let startTime = Date()
 
         await withTaskGroup(of: Void.self) { group in
-            for _ in 0..<5 {
+            for _ in 0 ..< 5 {
                 group.addTask {
                     await viewModel.refresh()
                 }
@@ -459,8 +473,10 @@ struct PerformanceTests {
 
     // MARK: - Memory Pressure Tests
 
-    @Test("ViewModel does not leak memory with repeated refreshes",
-           .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil))
+    @Test(
+        "ViewModel does not leak memory with repeated refreshes",
+        .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil)
+    )
     func memoryLeakTest() async throws {
         let context = freshContext()
         try context.clearAll()
@@ -475,12 +491,12 @@ struct PerformanceTests {
         let viewModel = StatisticsViewModel(modelContext: context)
 
         // Perform many refreshes
-        for i in 0..<10 {
+        for i in 0 ..< 10 {
             await viewModel.refresh()
 
             // Verify data is still valid
-            #expect(viewModel.hasData, "ViewModel should have data on refresh \(i+1)")
-            #expect(!viewModel.isLoading, "ViewModel should not be loading after refresh \(i+1)")
+            #expect(viewModel.hasData, "ViewModel should have data on refresh \(i + 1)")
+            #expect(!viewModel.isLoading, "ViewModel should not be loading after refresh \(i + 1)")
         }
 
         logger.info("Memory leak test: 10 refreshes completed successfully")
@@ -488,8 +504,10 @@ struct PerformanceTests {
 
     // MARK: - Chart Data Performance
 
-    @Test("Trend chart data with 90 data points is generated efficiently",
-           .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil))
+    @Test(
+        "Trend chart data with 90 data points is generated efficiently",
+        .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil)
+    )
     func trendChartDataPerformance() async throws {
         let context = freshContext()
         try context.clearAll()
@@ -527,8 +545,10 @@ struct PerformanceTests {
         logger.info("Trend chart data access completed in \(accessTime)ms")
     }
 
-    @Test("Calendar heatmap with 90 days is generated efficiently",
-           .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil))
+    @Test(
+        "Calendar heatmap with 90 days is generated efficiently",
+        .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil)
+    )
     func calendarHeatmapPerformance() async throws {
         let context = freshContext()
         try context.clearAll()
@@ -568,8 +588,10 @@ struct PerformanceTests {
 
     // MARK: - Integration Performance Test
 
-    @Test("Full dashboard workflow with large dataset completes efficiently",
-           .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil))
+    @Test(
+        "Full dashboard workflow with large dataset completes efficiently",
+        .enabled(if: ProcessInfo.processInfo.environment["CI"] == nil)
+    )
     func fullDashboardWorkflowPerformance() async throws {
         let context = freshContext()
         try context.clearAll()

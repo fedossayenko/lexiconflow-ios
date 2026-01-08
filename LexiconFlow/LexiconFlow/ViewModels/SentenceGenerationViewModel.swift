@@ -5,10 +5,10 @@
 //  Manages AI sentence generation state and operations
 //
 
-import SwiftUI
-import SwiftData
-import OSLog
 import Combine
+import OSLog
+import SwiftData
+import SwiftUI
 
 /// ViewModel for managing AI sentence generation for flashcards
 @MainActor
@@ -81,7 +81,7 @@ final class SentenceGenerationViewModel: ObservableObject {
                 for: card.word,
                 definition: card.definition,
                 translation: card.translation,
-                cefrLevel: nil,  // Generator will infer CEFR level
+                cefrLevel: nil, // Generator will infer CEFR level
                 count: sentencesPerCard
             )
 
@@ -248,7 +248,7 @@ final class SentenceGenerationViewModel: ObservableObject {
             .sorted { $0.generatedAt > $1.generatedAt }
 
         // If all expired, clean them up
-        if valid.isEmpty && !card.generatedSentences.isEmpty {
+        if valid.isEmpty, !card.generatedSentences.isEmpty {
             cleanupExpiredSentences(for: card)
         }
 

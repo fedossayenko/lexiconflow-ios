@@ -6,15 +6,14 @@
 //  Tests: encoding/decoding, invalid UUIDs, malformed JSON, concurrency
 //
 
-import Testing
 import Foundation
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for AppSettings deck selection JSON parsing
 @MainActor
 @Suite("AppSettings Deck Selection Tests")
 struct AppSettingsDeckSelectionTests {
-
     /// Helper to reset deck selection before each test
     private func resetDeckSelection() {
         AppSettings.selectedDeckIDs = []
@@ -31,7 +30,7 @@ struct AppSettingsDeckSelectionTests {
             UUID(),
             UUID(),
             UUID(),
-            UUID()
+            UUID(),
         ]
 
         // Set the IDs
@@ -159,7 +158,7 @@ struct AppSettingsDeckSelectionTests {
         resetDeckSelection()
 
         // Create 100 deck IDs
-        let manyIDs = Set((0..<100).map { _ in UUID() })
+        let manyIDs = Set((0 ..< 100).map { _ in UUID() })
         AppSettings.selectedDeckIDs = manyIDs
 
         let retrieved = AppSettings.selectedDeckIDs
@@ -245,7 +244,7 @@ struct AppSettingsDeckSelectionTests {
         AppSettings.selectedDeckIDs = [
             UUID(),
             UUID(),
-            UUID()
+            UUID(),
         ]
 
         #expect(AppSettings.selectedDeckCount == 3, "Count should be 3")
@@ -257,12 +256,12 @@ struct AppSettingsDeckSelectionTests {
     func concurrentReads() async throws {
         resetDeckSelection()
 
-        let ids = Set((0..<10).map { _ in UUID() })
+        let ids = Set((0 ..< 10).map { _ in UUID() })
         AppSettings.selectedDeckIDs = ids
 
         // Perform concurrent reads from MainActor
         await withTaskGroup(of: Set<UUID>.self) { group in
-            for _ in 0..<10 {
+            for _ in 0 ..< 10 {
                 group.addTask { @MainActor in
                     return AppSettings.selectedDeckIDs
                 }
@@ -286,7 +285,7 @@ struct AppSettingsDeckSelectionTests {
 
         // Perform concurrent writes to MainActor-isolated property
         await withTaskGroup(of: Void.self) { group in
-            for _ in 0..<10 {
+            for _ in 0 ..< 10 {
                 group.addTask { @MainActor in
                     let id = UUID()
                     AppSettings.selectedDeckIDs = [id]

@@ -5,8 +5,8 @@
 //  Tests for FlashcardReviewDTO computed properties and formatting
 //
 
-import Testing
 import Foundation
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for FlashcardReviewDTO
@@ -20,7 +20,6 @@ import Foundation
 /// - Factory method state detection
 @MainActor
 struct FlashcardReviewDTOTests {
-
     // MARK: - Rating Label Tests
 
     @Test("Rating label for Again (0)")
@@ -585,7 +584,7 @@ struct FlashcardReviewDTOTests {
         let rating = 2 // Good (passing)
 
         let stateChange: ReviewStateChange
-        if previousState == .learning && currentState == .review && rating > 0 {
+        if previousState == .learning, currentState == .review, rating > 0 {
             stateChange = .graduated
         } else {
             stateChange = .none
@@ -601,7 +600,7 @@ struct FlashcardReviewDTOTests {
         let rating = 0 // Again (failed)
 
         let stateChange: ReviewStateChange
-        if rating == 0 && currentState == .relearning {
+        if rating == 0, currentState == .relearning {
             stateChange = .relearning
         } else {
             stateChange = .none
@@ -618,9 +617,9 @@ struct FlashcardReviewDTOTests {
         let rating = 2 // Good
 
         let stateChange: ReviewStateChange
-        if previousState == .learning && currentState == .review {
+        if previousState == .learning, currentState == .review {
             stateChange = .graduated
-        } else if rating == 0 && currentState == .relearning {
+        } else if rating == 0, currentState == .relearning {
             stateChange = .relearning
         } else {
             stateChange = .none
@@ -638,9 +637,9 @@ struct FlashcardReviewDTOTests {
 
         let stateChange: ReviewStateChange
         if let previous = previousState {
-            if previous == .learning && currentState == .review {
+            if previous == .learning, currentState == .review {
                 stateChange = .graduated
-            } else if rating == 0 && currentState == .relearning {
+            } else if rating == 0, currentState == .relearning {
                 stateChange = .relearning
             } else {
                 stateChange = .none
@@ -660,9 +659,9 @@ struct FlashcardReviewDTOTests {
         let rating = 2 // Good
 
         let stateChange: ReviewStateChange
-        if previousState == .learning && currentState == .review {
+        if previousState == .learning, currentState == .review {
             stateChange = .graduated
-        } else if rating == 0 && currentState == .relearning {
+        } else if rating == 0, currentState == .relearning {
             stateChange = .relearning
         } else {
             stateChange = .none

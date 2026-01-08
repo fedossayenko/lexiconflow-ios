@@ -18,7 +18,6 @@ import Foundation
 /// **Concurrency**: All methods are pure functions using `Calendar.autoupdatingCurrent`,
 /// which is thread-safe. No actor isolation needed.
 enum DateMath {
-
     /// The user's current calendar with locale settings
     private static var currentCalendar: Calendar {
         var calendar = Calendar.current
@@ -55,10 +54,11 @@ enum DateMath {
         // Add fractional time if less than a full day
         if let hour = components.hour,
            let minute = components.minute,
-           let second = components.second {
+           let second = components.second
+        {
             let fractionalDay = Double(hour) / 24.0 +
-                               Double(minute) / 1440.0 +
-                               Double(second) / 86400.0
+                Double(minute) / 1440.0 +
+                Double(second) / 86400.0
             totalDays += fractionalDay
         }
 
@@ -110,7 +110,7 @@ enum DateMath {
     /// - Parameter date: Date to check
     /// - Returns: True if date is within current calendar day
     static func isToday(_ date: Date) -> Bool {
-        Self.currentCalendar.isDateInToday(date)
+        currentCalendar.isDateInToday(date)
     }
 
     /// Check if a date is in the past (before today in user's timezone)
@@ -219,7 +219,7 @@ enum DateMath {
     /// - Parameter date: Date to get start of day for
     /// - Returns: Midnight of the given date
     static func startOfDay(for date: Date) -> Date {
-        Self.currentCalendar.startOfDay(for: date)
+        currentCalendar.startOfDay(for: date)
     }
 
     /// Get the end of day for a date in user's timezone
@@ -238,7 +238,7 @@ enum DateMath {
     ///   - date2: Second date
     /// - Returns: True if dates are in same day/month/year
     static func isSameDay(_ date1: Date, _ date2: Date) -> Bool {
-        Self.currentCalendar.isDate(date1, inSameDayAs: date2)
+        currentCalendar.isDate(date1, inSameDayAs: date2)
     }
 }
 

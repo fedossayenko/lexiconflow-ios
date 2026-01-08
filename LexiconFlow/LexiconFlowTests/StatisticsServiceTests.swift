@@ -6,16 +6,15 @@
 //  Covers: Retention rate, study streaks, FSRS metrics, time ranges, aggregation, edge cases
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for StatisticsService
 /// Uses shared container for performance - each test clears context before use
 @MainActor
 struct StatisticsServiceTests {
-
     /// Get a fresh isolated context for testing
     /// Caller should call clearAll() before use to ensure test isolation
     private func freshContext() -> ModelContext {
@@ -178,7 +177,6 @@ struct StatisticsServiceTests {
         #expect(result.formattedPercentage == "75%")
     }
 
-
     @Test("Retention rate with time range filtering")
     func retentionRateTimeRangeFiltering() async throws {
         let context = freshContext()
@@ -192,7 +190,7 @@ struct StatisticsServiceTests {
         _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: tenDaysAgo)
 
         // Recent reviews (within 7-day range)
-        for _ in 0..<5 {
+        for _ in 0 ..< 5 {
             _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: today)
         }
 
@@ -227,7 +225,7 @@ struct StatisticsServiceTests {
         _ = createReview(context: context, flashcard: flashcard, rating: 0, reviewDate: tenDaysAgo)
 
         // Recent reviews
-        for _ in 0..<3 {
+        for _ in 0 ..< 3 {
             _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: fiveDaysAgo)
         }
 
@@ -372,13 +370,13 @@ struct StatisticsServiceTests {
         let today = Date()
 
         // Create two separate streaks: 5 days, then 3 days
-        for i in 0..<5 {
+        for i in 0 ..< 5 {
             let date = DateMath.addingDays(-Double(i), to: today)
             _ = createStudySession(context: context, startTime: date, endTime: date.addingTimeInterval(300), cardsReviewed: 5)
         }
 
         // Gap of 2 days
-        for i in 7..<10 {
+        for i in 7 ..< 10 {
             let date = DateMath.addingDays(-Double(i), to: today)
             _ = createStudySession(context: context, startTime: date, endTime: date.addingTimeInterval(300), cardsReviewed: 5)
         }
@@ -733,7 +731,7 @@ struct StatisticsServiceTests {
         )
 
         // Add reviews to session
-        for _ in 0..<5 {
+        for _ in 0 ..< 5 {
             _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: today)
             session.cardsReviewed += 1
         }
@@ -759,7 +757,7 @@ struct StatisticsServiceTests {
         let flashcard = createFlashcard(context: context, lastReviewDate: today)
 
         // Create multiple sessions on same day
-        for i in 0..<3 {
+        for i in 0 ..< 3 {
             let startTime = today.addingTimeInterval(TimeInterval(i * 1000))
             let session = createStudySession(
                 context: context,
@@ -769,7 +767,7 @@ struct StatisticsServiceTests {
             )
 
             // Add reviews
-            for _ in 0..<2 {
+            for _ in 0 ..< 2 {
                 _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: startTime)
             }
         }
@@ -853,7 +851,6 @@ struct StatisticsServiceTests {
         #expect(stats[0].cardsLearned == 5) // Unchanged
     }
 
-
     @Test("Daily stats aggregation only processes unaggregated sessions")
     func dailyStatsAggregationIncremental() async throws {
         let context = freshContext()
@@ -900,7 +897,7 @@ struct StatisticsServiceTests {
         let flashcard = createFlashcard(context: context, lastReviewDate: today)
 
         // Create test data
-        for i in 0..<10 {
+        for i in 0 ..< 10 {
             let date = DateMath.addingDays(-Double(i), to: today)
             _ = createStudySession(
                 context: context,
@@ -913,7 +910,7 @@ struct StatisticsServiceTests {
 
         // Test concurrent access to all methods
         await withTaskGroup(of: Void.self) { group in
-            for _ in 0..<5 {
+            for _ in 0 ..< 5 {
                 group.addTask {
                     _ = await StatisticsService.shared.calculateRetentionRate(context: context)
                 }
@@ -940,7 +937,7 @@ struct StatisticsServiceTests {
         let today = Date()
 
         // Create sessions for concurrent aggregation
-        for i in 0..<10 {
+        for i in 0 ..< 10 {
             let date = DateMath.addingDays(-Double(i), to: today)
             _ = createStudySession(
                 context: context,
@@ -952,7 +949,7 @@ struct StatisticsServiceTests {
 
         // Run concurrent aggregations
         await withTaskGroup(of: Int.self) { group in
-            for _ in 0..<3 {
+            for _ in 0 ..< 3 {
                 group.addTask {
                     do {
                         return try await StatisticsService.shared.aggregateDailyStats(context: context)

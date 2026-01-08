@@ -5,9 +5,9 @@
 //  Tests for error handling in views
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for Error Handling
@@ -19,7 +19,6 @@ import SwiftData
 /// - DeckRowView dueCount updates reactively (Issue 8 fix)
 @MainActor
 struct ErrorHandlingTests {
-
     // MARK: - Test Fixtures
 
     private func freshContext() -> ModelContext {
@@ -144,7 +143,8 @@ struct ErrorHandlingTests {
         let states = try context.fetch(FetchDescriptor<FSRSState>())
         let initialDueCount = states.filter { state in
             guard let card = state.card,
-                  card.deck?.id == deck.id else {
+                  card.deck?.id == deck.id
+            else {
                 return false
             }
             return state.dueDate <= Date() && state.stateEnum != FlashcardState.new.rawValue
@@ -173,7 +173,8 @@ struct ErrorHandlingTests {
         let updatedStates = try context.fetch(FetchDescriptor<FSRSState>())
         let newDueCount = updatedStates.filter { state in
             guard let cardState = state.card,
-                  cardState.deck?.id == deck.id else {
+                  cardState.deck?.id == deck.id
+            else {
                 return false
             }
             return state.dueDate <= Date() && state.stateEnum != FlashcardState.new.rawValue
@@ -214,7 +215,8 @@ struct ErrorHandlingTests {
         let states = try context.fetch(FetchDescriptor<FSRSState>())
         let dueCount = states.filter { state in
             guard let cardState = state.card,
-                  cardState.deck?.id == deck.id else {
+                  cardState.deck?.id == deck.id
+            else {
                 return false
             }
             return state.dueDate <= Date() && state.stateEnum != FlashcardState.new.rawValue

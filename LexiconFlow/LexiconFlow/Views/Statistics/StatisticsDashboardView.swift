@@ -5,8 +5,8 @@
 //  Main statistics dashboard showing retention rate, study streak, and FSRS metrics
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct StatisticsDashboardView: View {
     // MARK: - State
@@ -75,21 +75,25 @@ struct StatisticsDashboardView: View {
                 if viewModel.errorMessage != nil {
                     errorView
                 }
+
                 // MARK: - Loading State
 
                 else if viewModel.isLoading {
                     loadingView
                 }
+
                 // MARK: - Empty State
 
                 else if viewModel.isEmpty {
                     emptyStateView
                 }
+
                 // MARK: - Metrics Display
 
                 else if viewModel.hasData {
                     metricsContent(viewModel: viewModel)
                 }
+
                 // MARK: - Fallback (should never reach)
 
                 else {
@@ -160,7 +164,7 @@ struct StatisticsDashboardView: View {
         // Grid Layout for Secondary Metrics
         LazyVGrid(columns: [
             GridItem(.flexible(), spacing: 16),
-            GridItem(.flexible(), spacing: 16)
+            GridItem(.flexible(), spacing: 16),
         ], spacing: 16) {
             // Total Study Time
             if let streakData = viewModel.streakData {

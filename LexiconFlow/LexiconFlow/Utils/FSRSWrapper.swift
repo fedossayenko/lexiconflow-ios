@@ -55,7 +55,7 @@ final class FSRSWrapper {
     private init() {
         // Create FSRS instance with default parameters
         let params = FSRSParameters()
-        self.fsrs = FSRS(parameters: params)
+        fsrs = FSRS(parameters: params)
     }
 
     // MARK: - Type Conversions
@@ -204,7 +204,7 @@ final class FSRSWrapper {
             0: preview[.again]?.card.due ?? Date(),
             1: preview[.hard]?.card.due ?? Date(),
             2: preview[.good]?.card.due ?? Date(),
-            3: preview[.easy]?.card.due ?? Date()
+            3: preview[.easy]?.card.due ?? Date(),
         ]
     }
 

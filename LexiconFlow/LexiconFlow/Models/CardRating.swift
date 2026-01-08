@@ -69,28 +69,28 @@ enum CardRating: Int, CaseIterable {
     /// - 4 = Easy
     var toFSRS: Rating {
         switch self {
-        case .again: return Rating.again    // FSRS value: 1
-        case .hard:  return Rating.hard     // FSRS value: 2
-        case .good:  return Rating.good     // FSRS value: 3
-        case .easy:  return Rating.easy     // FSRS value: 4
+        case .again: return Rating.again // FSRS value: 1
+        case .hard: return Rating.hard // FSRS value: 2
+        case .good: return Rating.good // FSRS value: 3
+        case .easy: return Rating.easy // FSRS value: 4
         }
     }
 
     /// Create from FSRS Rating
     static func from(fsrs rating: Rating) -> CardRating {
         switch rating {
-        case .manual: return .again  // Should not happen, default to again
-        case .again:  return .again
-        case .hard:   return .hard
-        case .good:   return .good
-        case .easy:   return .easy
+        case .manual: return .again // Should not happen, default to again
+        case .again: return .again
+        case .hard: return .hard
+        case .good: return .good
+        case .easy: return .easy
         }
     }
 
     /// Validate integer rating is in valid range
     static func validate(_ rating: Int) -> CardRating {
         guard let valid = CardRating(rawValue: rating) else {
-            return .good  // Default to good for invalid input
+            return .good // Default to good for invalid input
         }
         return valid
     }

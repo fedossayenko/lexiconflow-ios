@@ -5,8 +5,8 @@
 //  Settings view for configuring on-device translation
 //
 
-import SwiftUI
 import OSLog
+import SwiftUI
 
 /// Settings view for on-device translation configuration
 ///
@@ -17,6 +17,7 @@ import OSLog
 @MainActor
 struct TranslationSettingsView: View {
     // MARK: - On-Device Translation State
+
     @State private var sourceLanguageDownloaded = false
     @State private var targetLanguageDownloaded = false
     @State private var isCheckingAvailability = false
@@ -117,10 +118,10 @@ struct TranslationSettingsView: View {
         targetLanguageDownloaded = await onDeviceService.isLanguageAvailable(AppSettings.translationTargetLanguage)
 
         logger.debug("""
-            Language availability check:
-            - Source (\(AppSettings.translationSourceLanguage)): \(sourceLanguageDownloaded ? "Downloaded" : "Not downloaded")
-            - Target (\(AppSettings.translationTargetLanguage)): \(targetLanguageDownloaded ? "Downloaded" : "Not downloaded")
-            """)
+        Language availability check:
+        - Source (\(AppSettings.translationSourceLanguage)): \(sourceLanguageDownloaded ? "Downloaded" : "Not downloaded")
+        - Target (\(AppSettings.translationTargetLanguage)): \(targetLanguageDownloaded ? "Downloaded" : "Not downloaded")
+        """)
 
         isCheckingAvailability = false
     }

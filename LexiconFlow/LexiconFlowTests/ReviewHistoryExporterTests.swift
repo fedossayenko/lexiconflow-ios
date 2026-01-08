@@ -6,15 +6,14 @@
 //  Covers: CSV format validation, special character escaping, error handling
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for ReviewHistoryExporter
 @MainActor
 struct ReviewHistoryExporterTests {
-
     /// Get a fresh isolated context for testing
     private func freshContext() -> ModelContext {
         return TestContainers.freshContext()
@@ -82,7 +81,7 @@ struct ReviewHistoryExporterTests {
             reviews.append(review)
 
             // Small delay to ensure different timestamps
-            try await Task.sleep(nanoseconds: 10_000_000)
+            try await Task.sleep(nanoseconds: 10000000)
         }
 
         try context.save()
@@ -535,7 +534,7 @@ struct ReviewHistoryExporterTests {
             context.insert(review)
             reviews.append(review)
 
-            try await Task.sleep(nanoseconds: 10_000_000)
+            try await Task.sleep(nanoseconds: 10000000)
         }
 
         try context.save()
@@ -562,7 +561,7 @@ struct ReviewHistoryExporterTests {
         var reviews: [FlashcardReview] = []
 
         // Create 100 reviews
-        for _ in 0..<100 {
+        for _ in 0 ..< 100 {
             let review = FlashcardReview(
                 rating: 2,
                 scheduledDays: 1.0,

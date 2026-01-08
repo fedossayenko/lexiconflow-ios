@@ -5,9 +5,9 @@
 //  Created by Fedir Saienko on 4.01.26.
 //
 
-import SwiftUI
-import SwiftData
 import OSLog
+import SwiftData
+import SwiftUI
 
 /// Empty model for minimal fallback container when all storage attempts fail
 @Model
@@ -55,7 +55,7 @@ struct LexiconFlowApp: App {
             FlashcardReview.self,
             StudySession.self,
             DailyStats.self,
-            GeneratedSentence.self
+            GeneratedSentence.self,
         ])
 
         // Attempt 1: Try persistent SQLite storage (primary)

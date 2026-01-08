@@ -7,8 +7,8 @@
 //
 
 import Foundation
-import SwiftData
 import OSLog
+import SwiftData
 
 /// Batch data import service with progress tracking
 ///
@@ -101,7 +101,7 @@ final class DataImporter {
                     duration: Date().timeIntervalSince(startTime),
                     metadata: [
                         "batch_size": "\(batch.count)",
-                        "total_processed": "\(result.importedCount)"
+                        "total_processed": "\(result.importedCount)",
                     ]
                 )
 
@@ -120,7 +120,7 @@ final class DataImporter {
                     error: error,
                     metadata: [
                         "batch_number": "\(batchNumber)",
-                        "batch_size": "\(batch.count)"
+                        "batch_size": "\(batch.count)",
                     ]
                 )
             }
@@ -130,18 +130,18 @@ final class DataImporter {
         result.duration = duration
 
         Self.logger.info("""
-            Import complete:
-            - Imported: \(result.importedCount)
-            - Skipped: \(result.skippedCount)
-            - Errors: \(result.errors.count)
-            - Duration: \(String(format: "%.2f", duration))s
-            """)
+        Import complete:
+        - Imported: \(result.importedCount)
+        - Skipped: \(result.skippedCount)
+        - Errors: \(result.errors.count)
+        - Duration: \(String(format: "%.2f", duration))s
+        """)
 
         await Analytics.trackEvent("data_import_complete", metadata: [
             "imported_count": "\(result.importedCount)",
             "skipped_count": "\(result.skippedCount)",
             "error_count": "\(result.errors.count)",
-            "duration_seconds": String(format: "%.2f", duration)
+            "duration_seconds": String(format: "%.2f", duration),
         ])
 
         return result
@@ -206,7 +206,6 @@ final class DataImporter {
 
         return stats
     }
-
 }
 
 // MARK: - Supporting Types

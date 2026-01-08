@@ -6,15 +6,14 @@
 //  Covers: Default values, persistence, key consistency
 //
 
-import Testing
 import Foundation
 import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for AppSettings
 @MainActor
 struct AppSettingsTests {
-
     // MARK: - Translation Settings Tests
 
     @Test("AppSettings: translationEnabled default is true")
@@ -79,15 +78,15 @@ struct AppSettingsTests {
         #expect(codes.contains("zh-Hans"))
 
         // Verify required on-device translation languages
-        #expect(codes.contains("ar"))      // Arabic
-        #expect(codes.contains("nl"))      // Dutch
-        #expect(codes.contains("it"))      // Italian
-        #expect(codes.contains("ko"))      // Korean
-        #expect(codes.contains("pl"))      // Polish
-        #expect(codes.contains("pt"))      // Portuguese
-        #expect(codes.contains("ru"))      // Russian
-        #expect(codes.contains("th"))      // Thai
-        #expect(codes.contains("tr"))      // Turkish
+        #expect(codes.contains("ar")) // Arabic
+        #expect(codes.contains("nl")) // Dutch
+        #expect(codes.contains("it")) // Italian
+        #expect(codes.contains("ko")) // Korean
+        #expect(codes.contains("pl")) // Polish
+        #expect(codes.contains("pt")) // Portuguese
+        #expect(codes.contains("ru")) // Russian
+        #expect(codes.contains("th")) // Thai
+        #expect(codes.contains("tr")) // Turkish
     }
 
     // MARK: - Haptic Settings Tests
@@ -267,7 +266,7 @@ struct AppSettingsTests {
             ("en", "de"),
             ("en", "ja"),
             ("zh-Hans", "en"),
-            ("ru", "en")
+            ("ru", "en"),
         ]
 
         for combination in testCombinations {
@@ -314,7 +313,7 @@ struct AppSettingsTests {
         let requiredLanguages = [
             "ar", "zh-Hans", "zh-Hant", "nl", "en", "fr", "de", "el", "he",
             "hi", "hu", "id", "it", "ja", "ko", "pl", "pt", "ru", "es",
-            "sv", "th", "tr", "uk", "vi"
+            "sv", "th", "tr", "uk", "vi",
         ]
 
         for requiredLang in requiredLanguages {
@@ -519,7 +518,7 @@ struct AppSettingsTests {
         let testUUIDs: Set<UUID> = [
             UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
             UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
-            UUID(uuidString: "00000000-0000-0000-0000-000000000003")!
+            UUID(uuidString: "00000000-0000-0000-0000-000000000003")!,
         ]
 
         AppSettings.selectedDeckIDs = testUUIDs

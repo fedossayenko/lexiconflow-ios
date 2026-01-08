@@ -115,10 +115,10 @@ struct ReviewHistoryHeaderView: View {
         guard let rating = averageRating else { return "–" }
 
         switch rating {
-        case 0..<0.5: return "😵"
-        case 0.5..<1.5: return "😔"
-        case 1.5..<2.5: return "🙂"
-        case 2.5..<3.5: return "😊"
+        case 0 ..< 0.5: return "😵"
+        case 0.5 ..< 1.5: return "😔"
+        case 1.5 ..< 2.5: return "🙂"
+        case 2.5 ..< 3.5: return "😊"
         default: return "🌟"
         }
     }

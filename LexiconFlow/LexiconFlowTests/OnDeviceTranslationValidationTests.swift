@@ -12,16 +12,16 @@
 //  Tests are designed to pass gracefully when framework or language packs are unavailable.
 //
 
-import Testing
 import Foundation
-import Translation
 import Network
+import Testing
+import Translation
 @testable import LexiconFlow
 
 /// Detect if running in CI environment
 /// Checks for existence of .ci-running marker file (created by CI scripts)
 /// or checks environment variables (works when tests run directly)
-fileprivate var isCIEnvironment: Bool {
+private var isCIEnvironment: Bool {
     // File-based detection (more reliable in xcodebuild)
     if FileManager.default.fileExists(atPath: "/tmp/lexiconflow-ci-running") {
         return true
@@ -29,9 +29,9 @@ fileprivate var isCIEnvironment: Bool {
 
     // Environment variable detection (fallback for direct test execution)
     return ProcessInfo.processInfo.environment["CI"] != nil ||
-           ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] != nil ||
-           ProcessInfo.processInfo.environment["GITLAB_CI"] != nil ||
-           ProcessInfo.processInfo.environment["JENKINS_HOME"] != nil
+        ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] != nil ||
+        ProcessInfo.processInfo.environment["GITLAB_CI"] != nil ||
+        ProcessInfo.processInfo.environment["JENKINS_HOME"] != nil
 }
 
 /// Test data structure for reference translations
@@ -85,7 +85,6 @@ struct TranslationTestItem: Sendable {
 /// Run these tests locally on a device with language packs downloaded to verify translation quality.
 @MainActor
 struct OnDeviceTranslationValidationTests {
-
     // MARK: - Debug Tests
 
     @Test("Debug: Check CI environment detection")
@@ -391,7 +390,7 @@ struct OnDeviceTranslationValidationTests {
     // MARK: - English to Target Language Tests
 
     @Test("English to Russian translation quality validation", .enabled(if: !isCIEnvironment))
-    func testEnglishToRussianTranslationQuality() async {
+    func englishToRussianTranslationQuality() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "ru")
 
@@ -431,7 +430,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("English to Spanish translation quality validation", .enabled(if: !isCIEnvironment))
-    func testEnglishToSpanishTranslationQuality() async {
+    func englishToSpanishTranslationQuality() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
@@ -468,7 +467,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("English to French translation quality validation", .enabled(if: !isCIEnvironment))
-    func testEnglishToFrenchTranslationQuality() async {
+    func englishToFrenchTranslationQuality() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "fr")
 
@@ -505,7 +504,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("English to German translation quality validation", .enabled(if: !isCIEnvironment))
-    func testEnglishToGermanTranslationQuality() async {
+    func englishToGermanTranslationQuality() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "de")
 
@@ -542,7 +541,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("English to Japanese translation quality validation", .enabled(if: !isCIEnvironment))
-    func testEnglishToJapaneseTranslationQuality() async {
+    func englishToJapaneseTranslationQuality() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "ja")
 
@@ -581,7 +580,7 @@ struct OnDeviceTranslationValidationTests {
     // MARK: - Bidirectional Translation Tests
 
     @Test("Russian to English bidirectional translation quality", .enabled(if: !isCIEnvironment))
-    func testRussianToEnglishTranslationQuality() async {
+    func russianToEnglishTranslationQuality() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "ru", target: "en")
 
@@ -589,7 +588,7 @@ struct OnDeviceTranslationValidationTests {
             ("привет", "hello"),
             ("спасибо", "thank you"),
             ("вода", "water"),
-            ("книга", "book")
+            ("книга", "book"),
         ]
 
         var passCount = 0
@@ -617,7 +616,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("Spanish to English bidirectional translation quality", .enabled(if: !isCIEnvironment))
-    func testSpanishToEnglishTranslationQuality() async {
+    func spanishToEnglishTranslationQuality() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "es", target: "en")
 
@@ -625,7 +624,7 @@ struct OnDeviceTranslationValidationTests {
             ("hola", "hello"),
             ("gracias", "thank you"),
             ("agua", "water"),
-            ("libro", "book")
+            ("libro", "book"),
         ]
 
         var passCount = 0
@@ -653,7 +652,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("French to English bidirectional translation quality", .enabled(if: !isCIEnvironment))
-    func testFrenchToEnglishTranslationQuality() async {
+    func frenchToEnglishTranslationQuality() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "fr", target: "en")
 
@@ -661,7 +660,7 @@ struct OnDeviceTranslationValidationTests {
             ("bonjour", "hello"),
             ("merci", "thank you"),
             ("eau", "water"),
-            ("livre", "book")
+            ("livre", "book"),
         ]
 
         var passCount = 0
@@ -689,7 +688,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("German to English bidirectional translation quality", .enabled(if: !isCIEnvironment))
-    func testGermanToEnglishTranslationQuality() async {
+    func germanToEnglishTranslationQuality() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "de", target: "en")
 
@@ -697,7 +696,7 @@ struct OnDeviceTranslationValidationTests {
             ("hallo", "hello"),
             ("danke", "thank you"),
             ("wasser", "water"),
-            ("buch", "book")
+            ("buch", "book"),
         ]
 
         var passCount = 0
@@ -725,7 +724,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("Japanese to English bidirectional translation quality", .enabled(if: !isCIEnvironment))
-    func testJapaneseToEnglishTranslationQuality() async {
+    func japaneseToEnglishTranslationQuality() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "ja", target: "en")
 
@@ -733,7 +732,7 @@ struct OnDeviceTranslationValidationTests {
             ("こんにちは", "hello"),
             ("ありがとう", "thank you"),
             ("水", "water"),
-            ("本", "book")
+            ("本", "book"),
         ]
 
         var passCount = 0
@@ -763,26 +762,26 @@ struct OnDeviceTranslationValidationTests {
     // MARK: - Overall Validation Tests
 
     @Test("Validate total translation test count meets minimum requirement", .enabled(if: !isCIEnvironment))
-    func testTotalTranslationTestCount() {
+    func totalTranslationTestCount() {
         // Count all test items across all language pairs
         let totalTests = englishToRussianTests.count +
-                         englishToSpanishTests.count +
-                         englishToFrenchTests.count +
-                         englishToGermanTests.count +
-                         englishToJapaneseTests.count
+            englishToSpanishTests.count +
+            englishToFrenchTests.count +
+            englishToGermanTests.count +
+            englishToJapaneseTests.count
 
         #expect(totalTests >= 20, "Expected at least 20 total translation tests, got \(totalTests)")
         print("✓ Total translation quality tests: \(totalTests)")
     }
 
     @Test("Validate all required language pairs are tested", .enabled(if: !isCIEnvironment))
-    func testRequiredLanguagePairsCovered() {
+    func requiredLanguagePairsCovered() {
         let testedLanguagePairs = Set([
             "en-ru", "ru-en",
             "en-es", "es-en",
             "en-fr", "fr-en",
             "en-de", "de-en",
-            "en-ja", "ja-en"
+            "en-ja", "ja-en",
         ])
 
         let requiredPairs = Set([
@@ -790,7 +789,7 @@ struct OnDeviceTranslationValidationTests {
             "en-es", "es-en",
             "en-fr", "fr-en",
             "en-de", "de-en",
-            "en-ja", "ja-en"
+            "en-ja", "ja-en",
         ])
 
         #expect(testedLanguagePairs == requiredPairs, "All required language pairs should be tested")
@@ -800,7 +799,7 @@ struct OnDeviceTranslationValidationTests {
     // MARK: - Offline Capability Tests
 
     @Test("Translation works offline when language packs are available", .enabled(if: !isCIEnvironment))
-    func testOfflineTranslationWithDownloadedPacks() async {
+    func offlineTranslationWithDownloadedPacks() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
@@ -810,7 +809,7 @@ struct OnDeviceTranslationValidationTests {
         let testWords = [
             ("hello", "hola"),
             ("thank you", "gracias"),
-            ("water", "agua")
+            ("water", "agua"),
         ]
 
         var successCount = 0
@@ -850,7 +849,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("LanguageAvailability correctly detects downloaded language packs", .enabled(if: !isCIEnvironment))
-    func testLanguageAvailabilityDetection() async {
+    func languageAvailabilityDetection() async {
         let service = OnDeviceTranslationService.shared
 
         // Get list of available languages from the iOS Translation framework
@@ -869,7 +868,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("Service properly detects missing language packs", .enabled(if: !isCIEnvironment))
-    func testMissingLanguagePackDetection() async {
+    func missingLanguagePackDetection() async {
         let service = OnDeviceTranslationService.shared
 
         // Try to use an unlikely language code that's probably not downloaded
@@ -905,7 +904,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("Batch translation works offline with downloaded language packs", .enabled(if: !isCIEnvironment))
-    func testOfflineBatchTranslation() async {
+    func offlineBatchTranslation() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
@@ -916,7 +915,7 @@ struct OnDeviceTranslationValidationTests {
             "water",
             "book",
             "yes",
-            "no"
+            "no",
         ]
 
         var progressUpdates: [OnDeviceTranslationService.BatchTranslationProgress] = []
@@ -950,7 +949,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("Translation gracefully degrades when language pack is missing", .enabled(if: !isCIEnvironment))
-    func testGracefulDegradationForMissingPack() async {
+    func gracefulDegradationForMissingPack() async {
         let service = OnDeviceTranslationService.shared
 
         // Find a language that's likely not downloaded
@@ -990,7 +989,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("LanguageAvailability is sufficient for offline translation guarantee", .enabled(if: !isCIEnvironment))
-    func testLanguageAvailabilityOfflineGuarantee() async {
+    func languageAvailabilityOfflineGuarantee() async {
         let service = OnDeviceTranslationService.shared
 
         // Get available languages
@@ -1006,7 +1005,7 @@ struct OnDeviceTranslationValidationTests {
         if availableLanguages.count >= 2 {
             // In iOS 26, availableLanguages returns Locale.Language directly
             // Use string representation for service methods
-            let lang1Code = "en"  // Use known language codes
+            let lang1Code = "en" // Use known language codes
             let lang2Code = "es"
 
             // Both languages should be available
@@ -1036,7 +1035,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("Airplane mode simulation - translation works offline", .enabled(if: !isCIEnvironment))
-    func testAirplaneModeSimulation() async {
+    func airplaneModeSimulation() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
@@ -1070,7 +1069,7 @@ struct OnDeviceTranslationValidationTests {
         let testWords = [
             ("hello", "hola"),
             ("water", "agua"),
-            ("book", "libro")
+            ("book", "libro"),
         ]
 
         var successCount = 0
@@ -1115,7 +1114,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("Verify no network calls during on-device translation", .enabled(if: !isCIEnvironment))
-    func testNoNetworkCallsDuringTranslation() async {
+    func noNetworkCallsDuringTranslation() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
@@ -1138,7 +1137,7 @@ struct OnDeviceTranslationValidationTests {
             "goodbye",
             "thank you",
             "water",
-            "book"
+            "book",
         ]
 
         var translations: [(String, String, TimeInterval)] = []
@@ -1156,7 +1155,7 @@ struct OnDeviceTranslationValidationTests {
         }
 
         // Wait to ensure any potential network activity would be captured
-        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+        try? await Task.sleep(nanoseconds: 500000000) // 0.5 seconds
         pathMonitor.cancel()
 
         // Verify translations completed
@@ -1175,8 +1174,10 @@ struct OnDeviceTranslationValidationTests {
         // Network-based translation would be slower and more variable
         let maxAcceptableDuration = 5.0 // 5 seconds max per translation (generous)
         for (text, _, duration) in translations {
-            #expect(duration < maxAcceptableDuration,
-                   "Translation of '\(text)' should complete in \(maxAcceptableDuration)s (on-device)")
+            #expect(
+                duration < maxAcceptableDuration,
+                "Translation of '\(text)' should complete in \(maxAcceptableDuration)s (on-device)"
+            )
         }
 
         print("✅ No network calls verification complete")
@@ -1186,7 +1187,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("Network status independence - translation works regardless", .enabled(if: !isCIEnvironment))
-    func testNetworkStatusIndependence() async {
+    func networkStatusIndependence() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
@@ -1221,7 +1222,7 @@ struct OnDeviceTranslationValidationTests {
         let testTexts = [
             "hello world",
             "thank you very much",
-            "how are you today"
+            "how are you today",
         ]
 
         var successCount = 0
@@ -1268,7 +1269,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("Airplane mode - batch translation works completely offline", .enabled(if: !isCIEnvironment))
-    func testAirplaneModeBatchTranslation() async {
+    func airplaneModeBatchTranslation() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
@@ -1349,7 +1350,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("Language download requirement is the only dependency", .enabled(if: !isCIEnvironment))
-    func testLanguageDownloadIsOnlyDependency() async {
+    func languageDownloadIsOnlyDependency() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
@@ -1362,7 +1363,7 @@ struct OnDeviceTranslationValidationTests {
         print("   English language pack downloaded: \(englishIsDownloaded)")
         print("   Spanish language pack downloaded: \(spanishIsDownloaded)")
 
-        guard spanishIsDownloaded && englishIsDownloaded else {
+        guard spanishIsDownloaded, englishIsDownloaded else {
             print("   ⚠️ Language packs not downloaded - skipping translation test")
             return
         }
@@ -1399,7 +1400,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("Airplane mode user scenario - complete offline workflow", .enabled(if: !isCIEnvironment))
-    func testAirplaneModeUserScenario() async {
+    func airplaneModeUserScenario() async {
         let service = OnDeviceTranslationService.shared
 
         print("📱 Simulating complete airplane mode user scenario")
@@ -1431,7 +1432,7 @@ struct OnDeviceTranslationValidationTests {
             "translation",
             "language",
             "learning",
-            "practice"
+            "practice",
         ]
 
         var translatedWords: [(String, String)] = []
@@ -1468,7 +1469,7 @@ struct OnDeviceTranslationValidationTests {
     // MARK: - Performance Tests
 
     @Test("Performance benchmark for 100 cards batch translation", .enabled(if: !isCIEnvironment))
-    func testPerformanceBenchmark100Cards() async {
+    func performanceBenchmark100Cards() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
@@ -1525,10 +1526,14 @@ struct OnDeviceTranslationValidationTests {
 
             // Verify all progress updates are sequential and valid
             for (index, progress) in progressUpdates.enumerated() {
-                #expect(progress.current >= 1 && progress.current <= testWords.count,
-                       "Progress current should be within bounds at index \(index)")
-                #expect(progress.total == testWords.count,
-                       "Progress total should match batch size at index \(index)")
+                #expect(
+                    progress.current >= 1 && progress.current <= testWords.count,
+                    "Progress current should be within bounds at index \(index)"
+                )
+                #expect(
+                    progress.total == testWords.count,
+                    "Progress total should match batch size at index \(index)"
+                )
             }
 
             // Verify no deadlocks occurred (test would hang if deadlock)
@@ -1541,7 +1546,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("Performance benchmark with varying concurrency levels", .enabled(if: !isCIEnvironment))
-    func testPerformanceBenchmarkVaryingConcurrency() async {
+    func performanceBenchmarkVaryingConcurrency() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
@@ -1576,8 +1581,10 @@ struct OnDeviceTranslationValidationTests {
         }
 
         // Verify we got results for all concurrency levels
-        #expect(results.count == concurrencyLevels.count,
-               "Should have results for all concurrency levels")
+        #expect(
+            results.count == concurrencyLevels.count,
+            "Should have results for all concurrency levels"
+        )
 
         // Higher concurrency should generally improve throughput (but may plateau)
         // We just verify all levels work without crashing
@@ -1592,7 +1599,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("Memory stability during large batch translation", .enabled(if: !isCIEnvironment))
-    func testMemoryStabilityLargeBatch() async {
+    func memoryStabilityLargeBatch() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
@@ -1616,8 +1623,10 @@ struct OnDeviceTranslationValidationTests {
                 #expect(result.successCount > 0, "Batch of \(batchSize) should succeed")
 
                 // Verify result structure is complete and valid
-                #expect(result.successCount + result.failedCount == batchSize,
-                       "Result counts should match batch size")
+                #expect(
+                    result.successCount + result.failedCount == batchSize,
+                    "Result counts should match batch size"
+                )
 
                 print("   ✅ Batch size \(batchSize): \(result.successCount) successful, \(result.failedCount) failed")
 
@@ -1632,7 +1641,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("UI responsiveness during batch translation with progress", .enabled(if: !isCIEnvironment))
-    func testUIResponsivenessWithProgress() async {
+    func uIResponsivenessWithProgress() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
@@ -1703,7 +1712,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("Concurrency safety - no race conditions or deadlocks", .enabled(if: !isCIEnvironment))
-    func testConcurrencySafety() async {
+    func concurrencySafety() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
@@ -1713,7 +1722,7 @@ struct OnDeviceTranslationValidationTests {
 
         // Test 1: Multiple rapid consecutive batches
         print("   Test 1: Multiple consecutive batches")
-        for i in 1...3 {
+        for i in 1 ... 3 {
             do {
                 let result = try await service.translateBatch(
                     testWords,
@@ -1731,7 +1740,7 @@ struct OnDeviceTranslationValidationTests {
         do {
             let result = try await service.translateBatch(
                 testWords,
-                maxConcurrency: 20  // Very high concurrency
+                maxConcurrency: 20 // Very high concurrency
             )
             print("   ✅ High concurrency batch completed: \(result.successCount) successful")
             #expect(result.successCount > 0, "High concurrency batch should succeed")
@@ -1756,7 +1765,7 @@ struct OnDeviceTranslationValidationTests {
         await service.cancelBatchTranslation()
 
         // Wait a bit to ensure cancellation processed
-        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        try? await Task.sleep(nanoseconds: 100000000) // 0.1 seconds
 
         // Start a new batch - should work without deadlock
         do {
@@ -1776,7 +1785,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("Performance regression baseline for 100+ cards", .enabled(if: !isCIEnvironment))
-    func testPerformanceRegressionBaseline() async {
+    func performanceRegressionBaseline() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
@@ -1826,11 +1835,11 @@ struct OnDeviceTranslationValidationTests {
             "language", "translation", "vocabulary", "learning", "study", "practice", "write",
             "read", "speak", "listen", "understand", "remember", "forget", "think", "know",
             "morning", "evening", "night", "day", "week", "month", "year", "time", "hour",
-            "minute", "second", "happy", "sad", "angry", "tired", "hungry", "thirsty", "full"
+            "minute", "second", "happy", "sad", "angry", "tired", "hungry", "thirsty", "full",
         ]
 
         var words: [String] = []
-        for i in 0..<count {
+        for i in 0 ..< count {
             let baseWord = baseWords[i % baseWords.count]
             // Add unique suffix to create variations
             words.append("\(baseWord) \(i)")
@@ -1848,7 +1857,7 @@ struct OnDeviceTranslationValidationTests {
         var successCount = 0
         var totalCount = 0
 
-        for _ in 0..<iterations {
+        for _ in 0 ..< iterations {
             let startTime = Date()
 
             do {
@@ -1898,14 +1907,14 @@ struct OnDeviceTranslationValidationTests {
         let minDuration: TimeInterval
         let maxDuration: TimeInterval
         let standardDeviation: TimeInterval
-        let averageThroughput: Double  // cards per second
-        let successRate: Double  // 0.0 to 1.0
+        let averageThroughput: Double // cards per second
+        let successRate: Double // 0.0 to 1.0
     }
 
     // MARK: - Edge Case Tests
 
     @Test("Empty string handling with user-friendly error", .enabled(if: !isCIEnvironment))
-    func testEmptyStringHandling() async {
+    func emptyStringHandling() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
@@ -1961,7 +1970,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("Very long text (1000+ characters) translation", .enabled(if: !isCIEnvironment))
-    func testVeryLongTextTranslation() async {
+    func veryLongTextTranslation() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
@@ -1998,7 +2007,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("Special characters and emoji translation", .enabled(if: !isCIEnvironment))
-    func testSpecialCharactersAndEmoji() async {
+    func specialCharactersAndEmoji() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
@@ -2014,7 +2023,7 @@ struct OnDeviceTranslationValidationTests {
             ("Temperature: 25°C", "degree symbol"),
             ("email@example.com", "email address"),
             ("File_name.txt", "underscore and dot"),
-            ("User's comment: \"Great!\"", "quotes and apostrophe")
+            ("User's comment: \"Great!\"", "quotes and apostrophe"),
         ]
 
         var successCount = 0
@@ -2043,7 +2052,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("CJK (Chinese, Japanese, Korean) characters translation", .enabled(if: !isCIEnvironment))
-    func testCJKCharactersTranslation() async {
+    func cJKCharactersTranslation() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "ja")
 
@@ -2095,7 +2104,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("RTL (Arabic, Hebrew) text translation", .enabled(if: !isCIEnvironment))
-    func testRTLTextTranslation() async {
+    func rTLTextTranslation() async {
         let service = OnDeviceTranslationService.shared
 
         print("🧪 Testing RTL (Arabic, Hebrew) text translation")
@@ -2110,8 +2119,8 @@ struct OnDeviceTranslationValidationTests {
 
             // Verify Arabic characters are present
             let hasArabic = translation.unicodeScalars.contains { scalar in
-                (0x0600...0x06FF).contains(scalar.value) || // Arabic block
-                (0x0750...0x077F).contains(scalar.value)    // Arabic Supplement
+                (0x0600 ... 0x06FF).contains(scalar.value) || // Arabic block
+                    (0x0750 ... 0x077F).contains(scalar.value) // Arabic Supplement
             }
             if hasArabic {
                 print("   ✅ Translation contains Arabic characters")
@@ -2152,7 +2161,7 @@ struct OnDeviceTranslationValidationTests {
 
             // Verify numbers are preserved
             let hasNumbers = translation.contains("5") || translation.contains("10") ||
-                             translation.contains("٥") || translation.contains("١٠") // Arabic numerals
+                translation.contains("٥") || translation.contains("١٠") // Arabic numerals
             if hasNumbers {
                 print("   ✅ Numbers preserved in translation")
             }
@@ -2164,7 +2173,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("Malformed input error handling with user-friendly messages", .enabled(if: !isCIEnvironment))
-    func testMalformedInputErrorHandling() async {
+    func malformedInputErrorHandling() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
@@ -2233,7 +2242,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("Extreme edge cases - Unicode and combining characters", .enabled(if: !isCIEnvironment))
-    func testExtremeUnicodeAndCombiningCharacters() async {
+    func extremeUnicodeAndCombiningCharacters() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
@@ -2246,7 +2255,7 @@ struct OnDeviceTranslationValidationTests {
             ("👨‍👩‍👧‍👦", "emoji sequence (family)"),
             ("🏳️‍🌈", "emoji with variation selector"),
             ("a\u{0301}\u{0327}", "multiple combining diacritics"),
-            ("𝔘𝔫𝔦𝔠𝔬𝔡𝔢", "mathematical bold letters")
+            ("𝔘𝔫𝔦𝔠𝔬𝔡𝔢", "mathematical bold letters"),
         ]
 
         var successCount = 0
@@ -2271,7 +2280,7 @@ struct OnDeviceTranslationValidationTests {
     }
 
     @Test("Line breaks and whitespace preservation", .enabled(if: !isCIEnvironment))
-    func testLineBreaksAndWhitespacePreservation() async {
+    func lineBreaksAndWhitespacePreservation() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
@@ -2296,10 +2305,10 @@ struct OnDeviceTranslationValidationTests {
 
         // Test 2: Multiple line breaks (multiline text)
         let multilineText = """
-            Line 1
-            Line 2
-            Line 3
-            """
+        Line 1
+        Line 2
+        Line 3
+        """
         do {
             let translation = try await service.translate(text: multilineText, from: "en", to: "es")
             print("✅ Multiline text translated: \(multilineText.count) chars -> \(translation.count) chars")
@@ -2309,7 +2318,7 @@ struct OnDeviceTranslationValidationTests {
         }
 
         // Test 3: Various whitespace characters
-        let whitespaceText = "Hello\u{2003}\u{2009}World"  // Em space, thin space
+        let whitespaceText = "Hello\u{2003}\u{2009}World" // Em space, thin space
         do {
             let translation = try await service.translate(text: whitespaceText, from: "en", to: "es")
             print("✅ Special whitespace translated: '\(whitespaceText)' -> '\(translation)'")

@@ -6,15 +6,14 @@
 //  Covers: FSRSState creation, state transitions, computed properties
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for FSRSState model
 @MainActor
 struct FSRSStateTests {
-
     /// Get a fresh isolated context for testing
     private func freshContext() -> ModelContext {
         return TestContainers.freshContext()

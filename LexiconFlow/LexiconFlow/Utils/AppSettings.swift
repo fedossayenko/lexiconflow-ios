@@ -5,8 +5,8 @@
 //  Centralized app settings using @AppStorage for consistent key management
 //
 
-import SwiftUI
 import OSLog
+import SwiftUI
 
 /// Centralized app settings to prevent scattered @AppStorage keys
 ///
@@ -15,6 +15,7 @@ import OSLog
 @MainActor
 enum AppSettings {
     private static let logger = Logger(subsystem: "com.lexiconflow.settings", category: "AppSettings")
+
     // MARK: - Translation Settings
 
     /// Whether automatic translation is enabled
@@ -60,7 +61,7 @@ enum AppSettings {
         ("th", "Thai"),
         ("tr", "Turkish"),
         ("uk", "Ukrainian"),
-        ("vi", "Vietnamese")
+        ("vi", "Vietnamese"),
     ]
 
     // Note: API key is now stored securely in Keychain, not UserDefaults
@@ -188,37 +189,37 @@ enum AppSettings {
     // MARK: - Test Support
 
     #if DEBUG
-    /// Reset all settings to defaults (for testing)
-    static func resetToDefaults() {
-        let defaults = [
-            "translationEnabled": true,
-            "translationSourceLanguage": "en",
-            "translationTargetLanguage": "ru",
-            "sentenceGenerationEnabled": false,
-            "hapticEnabled": true,
-            "audioEnabled": true,
-            "studyLimit": 20,
-            "defaultStudyMode": "scheduled",
-            "dailyGoal": 20,
-            "statisticsTimeRange": "7d",
-            "darkMode": "system",
-            "glassEffectsEnabled": true
-        ] as [String: Any]
+        /// Reset all settings to defaults (for testing)
+        static func resetToDefaults() {
+            let defaults = [
+                "translationEnabled": true,
+                "translationSourceLanguage": "en",
+                "translationTargetLanguage": "ru",
+                "sentenceGenerationEnabled": false,
+                "hapticEnabled": true,
+                "audioEnabled": true,
+                "studyLimit": 20,
+                "defaultStudyMode": "scheduled",
+                "dailyGoal": 20,
+                "statisticsTimeRange": "7d",
+                "darkMode": "system",
+                "glassEffectsEnabled": true,
+            ] as [String: Any]
 
-        for (key, value) in defaults {
-            UserDefaults.standard.set(value, forKey: key)
+            for (key, value) in defaults {
+                UserDefaults.standard.set(value, forKey: key)
+            }
+            UserDefaults.standard.synchronize()
         }
-        UserDefaults.standard.synchronize()
-    }
     #endif
 
     // MARK: - Types
 
     /// Dark mode preference options
     enum DarkModePreference: String, CaseIterable, Sendable {
-        case system = "system"
-        case light = "light"
-        case dark = "dark"
+        case system
+        case light
+        case dark
 
         var displayName: String {
             switch self {
@@ -239,8 +240,8 @@ enum AppSettings {
 
     /// Study mode options
     enum StudyModeOption: String, CaseIterable, Sendable {
-        case learning = "learning"
-        case scheduled = "scheduled"
+        case learning
+        case scheduled
 
         var displayName: String {
             switch self {

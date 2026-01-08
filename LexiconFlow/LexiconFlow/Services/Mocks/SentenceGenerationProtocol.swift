@@ -17,7 +17,6 @@ import SwiftData
 /// - Network mocking without external dependencies
 @MainActor
 protocol SentenceGenerationProtocol: Sendable {
-
     /// Generate sentences for a single flashcard
     ///
     /// - Parameters:
@@ -164,9 +163,9 @@ class MockSentenceGenerator: SentenceGenerationProtocol {
     func generateSentences(
         for word: String,
         definition: String,
-        translation: String? = nil,
+        translation _: String? = nil,
         cefrLevel: String? = nil,
-        count: Int = 3
+        count _: Int = 3
     ) async throws -> SentenceGenerationResponse {
         // Track request
         requestedWords.append(word)
@@ -192,7 +191,7 @@ class MockSentenceGenerator: SentenceGenerationProtocol {
                 SentenceGenerationResponse.GeneratedSentenceItem(
                     sentence: "Mock sentence for '\(word)': \(definition).",
                     cefrLevel: cefrLevel ?? "A2"
-                )
+                ),
             ]
         )
     }
@@ -200,7 +199,7 @@ class MockSentenceGenerator: SentenceGenerationProtocol {
     func generateBatch(
         _ cards: [SentenceGenerationService.CardData],
         sentencesPerCard: Int = 3,
-        maxConcurrency: Int = 3,
+        maxConcurrency _: Int = 3,
         progressHandler: (@Sendable (SentenceGenerationService.BatchGenerationProgress) -> Void)? = nil
     ) async throws -> SentenceGenerationService.SentenceBatchResult {
         batchCallCount += 1
@@ -303,18 +302,18 @@ extension MockSentenceGenerator {
             "ephemeral": SentenceGenerationResponse(items: [
                 SentenceGenerationResponse.GeneratedSentenceItem(sentence: "The ephemeral beauty of sunset colors fades quickly.", cefrLevel: "B2"),
                 SentenceGenerationResponse.GeneratedSentenceItem(sentence: "An ephemeral moment in time.", cefrLevel: "B1"),
-                SentenceGenerationResponse.GeneratedSentenceItem(sentence: "Ephemeral pleasures are short-lived.", cefrLevel: "A2")
+                SentenceGenerationResponse.GeneratedSentenceItem(sentence: "Ephemeral pleasures are short-lived.", cefrLevel: "A2"),
             ]),
             "test": SentenceGenerationResponse(items: [
                 SentenceGenerationResponse.GeneratedSentenceItem(sentence: "This is a test sentence.", cefrLevel: "A1"),
                 SentenceGenerationResponse.GeneratedSentenceItem(sentence: "Testing the system.", cefrLevel: "A1"),
-                SentenceGenerationResponse.GeneratedSentenceItem(sentence: "A test of emergency systems.", cefrLevel: "A2")
+                SentenceGenerationResponse.GeneratedSentenceItem(sentence: "A test of emergency systems.", cefrLevel: "A2"),
             ]),
             "hello": SentenceGenerationResponse(items: [
                 SentenceGenerationResponse.GeneratedSentenceItem(sentence: "Hello, how are you today?", cefrLevel: "A1"),
                 SentenceGenerationResponse.GeneratedSentenceItem(sentence: "She said hello to her neighbor.", cefrLevel: "A1"),
-                SentenceGenerationResponse.GeneratedSentenceItem(sentence: "A warm hello greeted everyone.", cefrLevel: "A2")
-            ])
+                SentenceGenerationResponse.GeneratedSentenceItem(sentence: "A warm hello greeted everyone.", cefrLevel: "A2"),
+            ]),
         ]
     }
 

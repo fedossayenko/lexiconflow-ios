@@ -5,8 +5,8 @@
 //  Single deck display in list
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct DeckRowView: View {
     @Bindable var deck: Deck

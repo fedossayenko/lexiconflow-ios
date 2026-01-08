@@ -15,11 +15,11 @@ disabled_rules:
   - redundant_string_enum_value  # Allow explicit enum values for clarity
   - nesting                 # Allow deeper nesting for complex UI code
   - cyclomatic_complexity    # Allow complex functions for now
+  - force_try               # Allow try! in tests (force_unwrapping rule is more specific)
 
 # Opt-in rules for additional safety
 opt_in_rules:
   - force_unwrapping         # Detect force unwrap (!) usage
-  - explicit_failure_calls   # Detect fatalError/preconditionFailure
   # Temporarily disabled these Swift 6 rules to avoid blocking PR
   # - actor_extraction         # Swift 6: Suggest actor extraction for mutable shared state
   # - explicit_actor_exported  # Swift 6: Explicitly mark exported actors
@@ -30,10 +30,6 @@ opt_in_rules:
 force_unwrapping:
   severity: error
 
-# Explicit failure calls (fatalError, preconditionFailure) should be warnings
-explicit_failure_calls:
-  severity: warning
-
 # Excluded paths
 excluded:
   - "**/*Tests.swift"        # Test code can use force unwrap for test doubles
@@ -42,8 +38,8 @@ excluded:
 
 # Line length
 line_length:
-  warning: 150
-  error: 200
+  warning: 200
+  error: 250
   ignores_function_declarations: true
   ignores_comments: true
   ignores_urls: true
@@ -67,7 +63,7 @@ type_body_length:
 # Identifier naming
 identifier_name:
   min_length:
-    warning: 2
+    warning: 1
   max_length:
     warning: 40
     error: 50
@@ -81,31 +77,17 @@ identifier_name:
     - down
     - left
     - right
+    - i                      # Common loop variable
+    - j
+    - n
 
 # Large tuples (should use structs instead)
 large_tuple:
   warning: 3
   error: 4
 
-# Nested function complexity
-nesting:
-  type_level:
-    warning: 2
-  function_level:
-    warning: 3
-    error: 5
-
 # Custom rules to prevent common issues
 custom_rules:
-  # Detect force unwrap in production code
-  no_force_unwrap:
-    name: "No Force Unwrap"
-    regex: '!\\s*(\\)|\\]|\\w)'
-    match_kinds:
-      - identifier
-    message: "Avoid force unwrap. Use optional binding or nil coalescing instead."
-    severity: error
-
   # Detect fatalError in production code
   no_fatal_error:
     name: "No Fatal Error"

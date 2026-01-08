@@ -6,9 +6,9 @@
 //  Integrates card info header, review history stats, and review timeline
 //
 
-import SwiftUI
-import SwiftData
 import OSLog
+import SwiftData
+import SwiftUI
 
 /// Flashcard detail view with card information and review history
 ///
@@ -125,7 +125,7 @@ struct FlashcardDetailView: View {
             // Track filter changes for analytics
             Analytics.trackEvent("review_history_filter_changed", metadata: [
                 "filter": newFilter.rawValue,
-                "flashcard_word": flashcard.word
+                "flashcard_word": flashcard.word,
             ])
         }
     }
@@ -134,7 +134,8 @@ struct FlashcardDetailView: View {
     @ViewBuilder
     private func exportToolbarItem(viewModel: FlashcardDetailViewModel) -> some View {
         if let csvString = viewModel.exportCSVString,
-           let _ = viewModel.exportFilename {
+           let _ = viewModel.exportFilename
+        {
             ShareLink(
                 item: csvString,
                 preview: SharePreview("Review History", image: Image(systemName: "square.and.arrow.up"))
@@ -201,7 +202,8 @@ struct FlashcardDetailView: View {
 
                 // FSRS State info (if available)
                 if let state = flashcard.fsrsState?.state,
-                   let stability = flashcard.fsrsState?.stability {
+                   let stability = flashcard.fsrsState?.stability
+                {
                     fsrsStateInfo(state: state, stability: stability)
                 }
             }

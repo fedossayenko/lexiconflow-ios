@@ -5,9 +5,9 @@
 //  Tests for StudySessionViewModel
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for StudySessionViewModel
@@ -24,7 +24,6 @@ import SwiftData
 /// - Concurrent submission prevention
 @MainActor
 struct StudySessionViewModelTests {
-
     // MARK: - Test Fixtures
 
     private func freshContext() -> ModelContext {
@@ -153,6 +152,7 @@ struct StudySessionViewModelTests {
         #expect(viewModel.lastError == nil, "No error should be set")
         #expect(!viewModel.isProcessing, "Should not be processing")
     }
+
     @Test("Submit rating clears error on success")
     func submitRatingClearsErrorOnSuccess() async throws {
         let context = freshContext()
@@ -190,7 +190,7 @@ struct StudySessionViewModelTests {
 
         // Create deck and 5 due cards
         let deck = createTestDeck(context: context)
-        for _ in 0..<5 {
+        for _ in 0 ..< 5 {
             _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
         }
         try context.save()
@@ -317,7 +317,7 @@ struct StudySessionViewModelTests {
 
         // Create deck and cards
         let deck = createTestDeck(context: context)
-        for i in 1...5 {
+        for i in 1 ... 5 {
             _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
         }
         try context.save()
@@ -332,7 +332,7 @@ struct StudySessionViewModelTests {
             for card in initialCards {
                 group.addTask {
                     let result = await viewModel.submitRating(2, card: card)
-                    return result != nil  // Track success
+                    return result != nil // Track success
                 }
             }
 
@@ -356,7 +356,7 @@ struct StudySessionViewModelTests {
 
         // Create deck and cards
         let deck = createTestDeck(context: context)
-        for i in 1...10 {
+        for i in 1 ... 10 {
             _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
         }
         try context.save()
@@ -406,7 +406,7 @@ struct StudySessionViewModelTests {
 
         // Create deck and cards
         let deck = createTestDeck(context: context)
-        for i in 1...5 {
+        for i in 1 ... 5 {
             _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
         }
         try context.save()
@@ -454,7 +454,7 @@ struct StudySessionViewModelTests {
 
         // Submit rating multiple times concurrently
         await withTaskGroup(of: Void.self) { group in
-            for _ in 1..<5 {
+            for _ in 1 ..< 5 {
                 group.addTask {
                     if let c = card {
                         _ = await viewModel.submitRating(2, card: c)
@@ -474,7 +474,7 @@ struct StudySessionViewModelTests {
 
         // Create deck and cards
         let deck = createTestDeck(context: context)
-        for i in 1...10 {
+        for i in 1 ... 10 {
             _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
         }
         try context.save()
@@ -510,7 +510,6 @@ struct StudySessionViewModelTests {
 
     // MARK: - Study Session Tracking Tests
 
-
     @Test("Load cards with empty deck does not create session")
     func loadCardsEmptyDeckNoSession() async throws {
         let context = freshContext()
@@ -525,13 +524,6 @@ struct StudySessionViewModelTests {
 
         #expect(sessions.isEmpty)
     }
-
-
-
-
-
-
-
 }
 
 // MARK: - Multi-Deck Tests
@@ -539,7 +531,6 @@ struct StudySessionViewModelTests {
 @Suite("StudySessionViewModel Multi-Deck Tests")
 @MainActor
 struct StudySessionViewModelMultiDeckTests {
-
     // Use the same helper functions from the main test suite
     private func freshContext() -> ModelContext {
         TestContainers.freshContext()
@@ -715,10 +706,10 @@ struct StudySessionViewModelMultiDeckTests {
         let deck2 = createTestDeck(context: context)
 
         // Add many cards to both decks (more than default limit)
-        for _ in 1...15 {
+        for _ in 1 ... 15 {
             _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck1)
         }
-        for _ in 1...15 {
+        for _ in 1 ... 15 {
             _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck2)
         }
 

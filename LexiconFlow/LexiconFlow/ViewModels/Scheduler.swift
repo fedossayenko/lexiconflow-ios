@@ -9,8 +9,8 @@
 //
 
 import Foundation
-import SwiftData
 import OSLog
+import SwiftData
 
 /// Study mode determines how cards are selected and processed
 enum StudyMode: Sendable {
@@ -639,7 +639,7 @@ final class Scheduler {
             } catch {
                 Analytics.trackError("save_cram_review", error: error, metadata: [
                     "rating": "\(rating)",
-                    "card": flashcard.word
+                    "card": flashcard.word,
                 ])
                 logger.error("Failed to save cram review: \(error)")
                 // In production: show user alert
@@ -677,14 +677,14 @@ final class Scheduler {
                 "rating": "\(rating)",
                 "state": result.stateEnum,
                 "stability": String(format: "%.2f", result.stability),
-                "difficulty": String(format: "%.2f", result.difficulty)
+                "difficulty": String(format: "%.2f", result.difficulty),
             ])
 
             return log
         } catch {
             Analytics.trackError("process_review", error: error, metadata: [
                 "rating": "\(rating)",
-                "card": flashcard.word
+                "card": flashcard.word,
             ])
             logger.error("Error processing review: \(error)")
             return nil
@@ -764,13 +764,13 @@ final class Scheduler {
             try modelContext.save()
 
             Analytics.trackEvent("card_reset", metadata: [
-                "card": flashcard.word
+                "card": flashcard.word,
             ])
 
             return true
         } catch {
             Analytics.trackError("reset_card", error: error, metadata: [
-                "card": flashcard.word
+                "card": flashcard.word,
             ])
             logger.error("Failed to save reset: \(error)")
             return false

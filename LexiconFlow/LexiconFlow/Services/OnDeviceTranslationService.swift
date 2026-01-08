@@ -501,11 +501,11 @@ final actor OnDeviceTranslationService {
     /// - `translatedText`: Translated text in target language
     /// - `sourceLanguage`: Source language code (e.g., "en")
     /// - `targetLanguage`: Target language code (e.g., "es")
-    public struct SuccessfulTranslation: Sendable {
-        public let sourceText: String
-        public let translatedText: String
-        public let sourceLanguage: String
-        public let targetLanguage: String
+    struct SuccessfulTranslation: Sendable {
+        let sourceText: String
+        let translatedText: String
+        let sourceLanguage: String
+        let targetLanguage: String
     }
 
     /// Overall result of a batch translation operation
@@ -537,12 +537,12 @@ final actor OnDeviceTranslationService {
     /// - `errors`: Array of errors from failed translations
     /// - `successfulTranslations`: Array of successful translation results
     /// - `isSuccess`: Computed property, `true` if no failures
-    public struct BatchTranslationResult: Sendable {
-        public let successCount: Int
-        public let failedCount: Int
-        public let totalDuration: TimeInterval
-        public let errors: [OnDeviceTranslationError]
-        public let successfulTranslations: [SuccessfulTranslation]
+    struct BatchTranslationResult: Sendable {
+        let successCount: Int
+        let failedCount: Int
+        let totalDuration: TimeInterval
+        let errors: [OnDeviceTranslationError]
+        let successfulTranslations: [SuccessfulTranslation]
 
         /// Returns `true` if all translations succeeded
         ///
@@ -550,7 +550,7 @@ final actor OnDeviceTranslationService {
         /// - Empty batch returns `false` (0 successes)
         /// - Any failure returns `false`
         /// - All successes returns `true`
-        public var isSuccess: Bool {
+        var isSuccess: Bool {
             failedCount == 0 && successCount > 0
         }
     }
@@ -578,10 +578,10 @@ final actor OnDeviceTranslationService {
     /// - `current`: Number of completed translations (1-indexed)
     /// - `total`: Total number of translations to perform
     /// - `currentWord`: The most recently translated text
-    public struct BatchTranslationProgress: Sendable {
-        public let current: Int
-        public let total: Int
-        public let currentWord: String
+    struct BatchTranslationProgress: Sendable {
+        let current: Int
+        let total: Int
+        let currentWord: String
     }
 
     // MARK: - Cancellation
@@ -1047,22 +1047,22 @@ final actor OnDeviceTranslationService {
     private func aggregateResults(
         _ results: [BatchTranslationTaskResult],
         duration: TimeInterval,
-        texts: [String]
+        texts _: [String]
     ) -> BatchTranslationResult {
         // Separate successes and failures using Result pattern matching
         let successes = results.filter { if case .success = $0.result { true } else { false } }
         let failures = results.filter { if case .failure = $0.result { true } else { false } }
 
         // Extract errors from failed results for user feedback
-        let errors = failures.compactMap { (result) -> OnDeviceTranslationError? in
-            guard case .failure(let error) = result.result else { return nil }
+        let errors = failures.compactMap { result -> OnDeviceTranslationError? in
+            guard case let .failure(error) = result.result else { return nil }
             return error
         }
 
         // Build successful translation objects with full context
         // These can be used to update UI with translation results
         let successfulTranslations: [SuccessfulTranslation] = successes.compactMap { result in
-            guard case .success(let translatedText) = result.result else {
+            guard case let .success(translatedText) = result.result else {
                 return nil
             }
             return SuccessfulTranslation(
@@ -1107,11 +1107,11 @@ final actor OnDeviceTranslationService {
     /// - Parameter result: The completed batch translation result
     private func logBatchCompletion(_ result: BatchTranslationResult) {
         logger.info("""
-            Batch translation complete:
-            - Success: \(result.successCount)
-            - Failed: \(result.failedCount)
-            - Duration: \(String(format: "%.2f", result.totalDuration))s
-            """)
+        Batch translation complete:
+        - Success: \(result.successCount)
+        - Failed: \(result.failedCount)
+        - Duration: \(String(format: "%.2f", result.totalDuration))s
+        """)
     }
 
     // MARK: - Single Translation
@@ -1211,7 +1211,7 @@ final actor OnDeviceTranslationService {
             // TranslationSession handles the on-device translation processing
             // iOS 26 API: TranslationSession takes installedSource and target directly
             let session = TranslationSession(installedSource: sourceLang, target: targetLang)
-            self.translationSession = session
+            translationSession = session
 
             // Perform translation using iOS Translation framework
             // The framework processes text entirely on-device (no network calls)
@@ -1337,16 +1337,16 @@ enum OnDeviceTranslationError: LocalizedError {
     /// ```
     var errorDescription: String? {
         switch self {
-        case .unsupportedLanguagePair(let source, let target):
+        case let .unsupportedLanguagePair(source, target):
             return "Translation from \(source) to \(target) is not supported on this device"
 
-        case .languagePackNotAvailable(let source, let target):
+        case let .languagePackNotAvailable(source, target):
             return "Language pack not available for \(source) → \(target) translation"
 
-        case .languagePackDownloadFailed(let language):
+        case let .languagePackDownloadFailed(language):
             return "Failed to download language pack for \(language)"
 
-        case .translationFailed(let reason):
+        case let .translationFailed(reason):
             return "Translation failed: \(reason)"
 
         case .emptyInput:
@@ -1370,7 +1370,7 @@ enum OnDeviceTranslationError: LocalizedError {
         case .unsupportedLanguagePair:
             return "Try a different language pair supported by iOS Translation"
 
-        case .languagePackNotAvailable(let source, let target):
+        case let .languagePackNotAvailable(source, target):
             return "Download language packs for \(source) or \(target) in Settings > General > Translation"
 
         case .languagePackDownloadFailed:

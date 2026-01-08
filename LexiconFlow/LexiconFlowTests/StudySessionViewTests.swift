@@ -9,14 +9,13 @@
 //  Full behavior testing requires UI tests or snapshot tests.
 //
 
-import Testing
-import SwiftUI
 import SwiftData
+import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 @MainActor
 struct StudySessionViewTests {
-
     // MARK: - Test Fixtures
 
     private func createTestContainer() -> ModelContainer {
@@ -137,7 +136,7 @@ struct StudySessionViewTests {
 
         // Create multiple cards
         var cards: [Flashcard] = []
-        for i in 0..<10 {
+        for i in 0 ..< 10 {
             let card = createTestFlashcard(
                 context: context,
                 word: "Card\(i)",

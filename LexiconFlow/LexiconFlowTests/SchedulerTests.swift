@@ -6,9 +6,9 @@
 //  Covers: due card fetching, review processing, queries
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for Scheduler class
@@ -19,7 +19,6 @@ import SwiftData
 /// - Study mode differences
 @MainActor
 struct SchedulerTests {
-
     // MARK: - Test Fixtures
 
     /// Get a fresh isolated context for testing
@@ -112,7 +111,7 @@ struct SchedulerTests {
         let scheduler = Scheduler(modelContext: context)
 
         // Create 5 due cards
-        for i in 1...5 {
+        for i in 1 ... 5 {
             _ = createTestFlashcard(
                 context: context,
                 word: "card\(i)",
@@ -157,12 +156,12 @@ struct SchedulerTests {
         let scheduler = Scheduler(modelContext: context)
 
         // Create 5 due review cards
-        for i in 1...5 {
+        for i in 1 ... 5 {
             _ = createTestFlashcard(context: context, word: "due\(i)", state: .review, dueOffset: -3600)
         }
 
         // Create 3 new cards (not counted as due)
-        for i in 1...3 {
+        for i in 1 ... 3 {
             _ = createTestFlashcard(context: context, word: "new\(i)", state: .new, dueOffset: 0)
         }
 
@@ -209,7 +208,7 @@ struct SchedulerTests {
         let card3 = createTestFlashcard(context: context, word: "card3", state: .new)
         try context.save()
 
-        try await Task.sleep(for: .milliseconds(10))  // Ensure different timestamps
+        try await Task.sleep(for: .milliseconds(10)) // Ensure different timestamps
 
         let card1 = createTestFlashcard(context: context, word: "card1", state: .new)
         try context.save()
@@ -220,9 +219,9 @@ struct SchedulerTests {
         try context.save()
 
         // Manually set creation dates to control order
-        card1.createdAt = Date().addingTimeInterval(-300)  // 5 minutes ago (oldest)
-        card2.createdAt = Date().addingTimeInterval(-60)   // 1 minute ago (middle)
-        card3.createdAt = Date()                           // now (newest)
+        card1.createdAt = Date().addingTimeInterval(-300) // 5 minutes ago (oldest)
+        card2.createdAt = Date().addingTimeInterval(-60) // 1 minute ago (middle)
+        card3.createdAt = Date() // now (newest)
         try context.save()
 
         let newCards = await scheduler.fetchCards(mode: .learning, limit: 20)
@@ -240,17 +239,17 @@ struct SchedulerTests {
         let scheduler = Scheduler(modelContext: context)
 
         // Create 5 new cards
-        for i in 1...5 {
+        for i in 1 ... 5 {
             _ = createTestFlashcard(context: context, word: "new\(i)", state: .new)
         }
 
         // Create 3 review cards
-        for i in 1...3 {
+        for i in 1 ... 3 {
             _ = createTestFlashcard(context: context, word: "review\(i)", state: .review, dueOffset: -3600)
         }
 
         // Create 2 learning cards
-        for i in 1...2 {
+        for i in 1 ... 2 {
             _ = createTestFlashcard(context: context, word: "learning\(i)", state: .learning, dueOffset: -600)
         }
 
@@ -277,7 +276,7 @@ struct SchedulerTests {
         // Process first review in learning mode
         let review = await scheduler.processReview(
             flashcard: newCard,
-            rating: 2,  // Good
+            rating: 2, // Good
             mode: .learning
         )
 
@@ -297,7 +296,7 @@ struct SchedulerTests {
         let scheduler = Scheduler(modelContext: context)
 
         // Create 25 new cards
-        for i in 1...25 {
+        for i in 1 ... 25 {
             _ = createTestFlashcard(context: context, word: "new\(i)", state: .new)
         }
         try context.save()
@@ -360,7 +359,7 @@ struct SchedulerTests {
         try context.clearAll()
         let scheduler = Scheduler(modelContext: context)
 
-        for rating in 0...3 {
+        for rating in 0 ... 3 {
             try context.clearAll()
             let flashcard = createTestFlashcard(context: context, state: .review)
             try context.save()
@@ -483,7 +482,7 @@ struct SchedulerTests {
 
         // Create 10 cards
         var cards: [Flashcard] = []
-        for i in 1...10 {
+        for i in 1 ... 10 {
             let card = createTestFlashcard(context: context, word: "card\(i)", state: .review)
             cards.append(card)
         }
@@ -516,7 +515,7 @@ struct SchedulerTests {
         let scheduler = Scheduler(modelContext: context)
 
         // Create 20 cards with various due dates
-        for i in 1...20 {
+        for i in 1 ... 20 {
             let offset = i % 2 == 0 ? -3600.0 : 3600.0
             _ = createTestFlashcard(context: context, word: "card\(i)", state: .review, dueOffset: offset)
         }
@@ -524,7 +523,7 @@ struct SchedulerTests {
 
         // Fetch from multiple tasks concurrently
         await withTaskGroup(of: Int.self) { group in
-            for _ in 1..<5 {
+            for _ in 1 ..< 5 {
                 group.addTask {
                     let cards = await scheduler.fetchCards(mode: .scheduled, limit: 20)
                     return cards.count
@@ -544,7 +543,7 @@ struct SchedulerTests {
         let scheduler = Scheduler(modelContext: context)
 
         // Create cards
-        for i in 1...5 {
+        for i in 1 ... 5 {
             _ = createTestFlashcard(context: context, word: "card\(i)", state: .review)
         }
         try context.save()
@@ -583,7 +582,7 @@ struct SchedulerTests {
 
         // Process same card multiple times concurrently
         await withTaskGroup(of: Void.self) { group in
-            for _ in 0..<10 {
+            for _ in 0 ..< 10 {
                 group.addTask {
                     _ = await scheduler.processReview(
                         flashcard: card,
@@ -635,7 +634,7 @@ struct SchedulerTests {
         let scheduler = Scheduler(modelContext: context)
 
         // Create cards and mark some as due during the test
-        for i in 1...10 {
+        for i in 1 ... 10 {
             let offset = i <= 5 ? -3600.0 : 3600.0
             _ = createTestFlashcard(context: context, word: "card\(i)", state: .review, dueOffset: offset)
         }
@@ -644,9 +643,9 @@ struct SchedulerTests {
         // Fetch due cards from multiple tasks
         var results: [Int] = []
         await withTaskGroup(of: Int.self) { group in
-            for _ in 1..<5 {
+            for _ in 1 ..< 5 {
                 group.addTask {
-                    return await scheduler.fetchCards(mode: .scheduled, limit: 20).count
+                    await scheduler.fetchCards(mode: .scheduled, limit: 20).count
                 }
             }
 
@@ -667,7 +666,7 @@ struct SchedulerTests {
 
         // Create 100 cards
         var cards: [Flashcard] = []
-        for i in 1...100 {
+        for i in 1 ... 100 {
             let card = createTestFlashcard(context: context, word: "card\(i)", state: .review)
             cards.append(card)
         }
@@ -726,7 +725,7 @@ struct SchedulerTests {
         _ = await scheduler.processReview(flashcard: card, rating: 2, mode: .scheduled)
         let review1Time = card.fsrsState!.lastReviewDate
 
-        await Task.sleep(1_000_000) // 1ms delay
+        await Task.sleep(1000000) // 1ms delay
 
         _ = await scheduler.processReview(flashcard: card, rating: 3, mode: .scheduled)
         let review2Time = card.fsrsState!.lastReviewDate
@@ -765,7 +764,7 @@ struct SchedulerTests {
 
         // Create 100 cards
         var cards: [Flashcard] = []
-        for i in 1...100 {
+        for i in 1 ... 100 {
             let card = createTestFlashcard(context: context, word: "card\(i)", state: .review)
             cards.append(card)
         }
@@ -861,12 +860,12 @@ struct SchedulerTests {
         try context.save()
 
         // Add due cards: 3 in deck1, 2 in deck2, 1 in deck3
-        for i in 1...3 {
+        for i in 1 ... 3 {
             let card = createTestFlashcard(context: context, word: "deck1_\(i)", state: .review, dueOffset: -3600)
             card.deck = deck1
         }
 
-        for i in 1...2 {
+        for i in 1 ... 2 {
             let card = createTestFlashcard(context: context, word: "deck2_\(i)", state: .review, dueOffset: -3600)
             card.deck = deck2
         }
@@ -894,17 +893,17 @@ struct SchedulerTests {
         try context.save()
 
         // Add new cards: 4 in deck1, 3 in deck2, 2 in deck3
-        for i in 1...4 {
+        for i in 1 ... 4 {
             let card = createTestFlashcard(context: context, word: "deck1_\(i)", state: .new)
             card.deck = deck1
         }
 
-        for i in 1...3 {
+        for i in 1 ... 3 {
             let card = createTestFlashcard(context: context, word: "deck2_\(i)", state: .new)
             card.deck = deck2
         }
 
-        for i in 1...2 {
+        for i in 1 ... 2 {
             let card = createTestFlashcard(context: context, word: "deck3_\(i)", state: .new)
             card.deck = deck3
         }
@@ -962,7 +961,7 @@ struct SchedulerTests {
         let deck2 = createTestDeck(context: context, name: "Deck2")
         let deck3 = createTestDeck(context: context, name: "Deck3")
 
-        for i in 1...10 {
+        for i in 1 ... 10 {
             let card1 = createTestFlashcard(context: context, word: "deck1_\(i)", state: .review, dueOffset: -3600)
             card1.deck = deck1
 
@@ -992,7 +991,7 @@ struct SchedulerTests {
         try context.save()
 
         // Add new cards to both decks
-        for i in 1...3 {
+        for i in 1 ... 3 {
             let card1 = createTestFlashcard(context: context, word: "deck1_\(i)", state: .new)
             card1.deck = deck1
 
@@ -1011,7 +1010,6 @@ struct SchedulerTests {
         #expect(cards.count == 6)
         #expect(cards.allSatisfy { $0.fsrsState?.stateEnum == FlashcardState.new.rawValue })
     }
-
 }
 
 // MARK: - SwiftData Rollback Tests
@@ -1019,7 +1017,6 @@ struct SchedulerTests {
 @Suite("SwiftData Rollback Tests")
 @MainActor
 struct SwiftDataRollbackTests {
-
     private func freshContext() -> ModelContext {
         TestContainers.freshContext()
     }

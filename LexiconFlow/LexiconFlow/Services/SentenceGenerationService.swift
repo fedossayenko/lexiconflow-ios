@@ -84,8 +84,8 @@ actor SentenceGenerationService {
 
     /// Set source and target languages
     func setLanguages(source: String, target: String) {
-        self.sourceLanguage = source
-        self.targetLanguage = target
+        sourceLanguage = source
+        targetLanguage = target
         logger.info("Languages set: \(source) -> \(target)")
     }
 
@@ -267,12 +267,12 @@ actor SentenceGenerationService {
             temperature: 0.8,
             messages: [
                 .init(role: "system", content: systemPrompt),
-                .init(role: "user", content: userPrompt)
+                .init(role: "user", content: userPrompt),
             ]
         )
 
-        guard let url = URL(string: self.baseURL) else {
-            logger.error("Invalid base URL: \(self.baseURL)")
+        guard let url = URL(string: baseURL) else {
+            logger.error("Invalid base URL: \(baseURL)")
             throw SentenceGenerationError.invalidConfiguration
         }
 
@@ -302,10 +302,10 @@ actor SentenceGenerationService {
             case 429:
                 logger.warning("Rate limit hit for '\(cardWord)'")
                 throw SentenceGenerationError.rateLimit
-            case 400...499:
+            case 400 ... 499:
                 logger.error("Client error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
                 throw SentenceGenerationError.clientError(statusCode: httpResponse.statusCode, message: errorBody)
-            case 500...599:
+            case 500 ... 599:
                 logger.error("Server error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
                 throw SentenceGenerationError.serverError(statusCode: httpResponse.statusCode, message: errorBody)
             default:
@@ -333,8 +333,8 @@ actor SentenceGenerationService {
         // Try ```json code blocks (preferred format)
         if let jsonStart = trimmed.range(of: "```json", options: .caseInsensitive) {
             let afterStart = jsonStart.upperBound
-            if let jsonEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
-                let json = String(trimmed[afterStart..<jsonEnd.lowerBound])
+            if let jsonEnd = trimmed.range(of: "```", range: afterStart ..< trimmed.endIndex) {
+                let json = String(trimmed[afterStart ..< jsonEnd.lowerBound])
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 if let data = json.data(using: .utf8) {
                     return try JSONDecoder().decode(SentenceGenerationResponse.self, from: data)
@@ -345,8 +345,8 @@ actor SentenceGenerationService {
         // Try ``` code blocks (without json specifier)
         if let codeStart = trimmed.range(of: "```", options: .caseInsensitive) {
             let afterStart = codeStart.upperBound
-            if let codeEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
-                let json = String(trimmed[afterStart..<codeEnd.lowerBound])
+            if let codeEnd = trimmed.range(of: "```", range: afterStart ..< trimmed.endIndex) {
+                let json = String(trimmed[afterStart ..< codeEnd.lowerBound])
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 if let data = json.data(using: .utf8) {
                     return try JSONDecoder().decode(SentenceGenerationResponse.self, from: data)
@@ -356,8 +356,9 @@ actor SentenceGenerationService {
 
         // Try { to } brace delimiters (fallback for unstructured text)
         if let firstBrace = trimmed.firstIndex(of: "{"),
-           let lastBrace = trimmed.lastIndex(of: "}") {
-            let json = String(trimmed[firstBrace...lastBrace])
+           let lastBrace = trimmed.lastIndex(of: "}")
+        {
+            let json = String(trimmed[firstBrace ... lastBrace])
             if let data = json.data(using: .utf8) {
                 return try JSONDecoder().decode(SentenceGenerationResponse.self, from: data)
             }
@@ -510,13 +511,13 @@ actor SentenceGenerationService {
     ) -> SentenceBatchResult {
         let successes = results.filter { if case .success = $0.result { true } else { false } }
         let failures = results.filter { if case .failure = $0.result { true } else { false } }
-        let errors = failures.compactMap { (result) -> SentenceGenerationError? in
-            guard case .failure(let error) = result.result else { return nil }
+        let errors = failures.compactMap { result -> SentenceGenerationError? in
+            guard case let .failure(error) = result.result else { return nil }
             return error
         }
 
         let successfulGenerations: [SuccessfulGeneration] = successes.compactMap { result in
-            guard case .success(let response) = result.result else { return nil }
+            guard case let .success(response) = result.result else { return nil }
             return SuccessfulGeneration(
                 cardId: result.cardId,
                 cardWord: result.cardWord,
@@ -543,11 +544,11 @@ actor SentenceGenerationService {
     /// Log batch completion
     private func logBatchCompletion(_ result: SentenceBatchResult) {
         logger.info("""
-            Batch generation complete:
-            - Success: \(result.successCount)
-            - Failed: \(result.failedCount)
-            - Duration: \(String(format: "%.2f", result.totalDuration))s
-            """)
+        Batch generation complete:
+        - Success: \(result.successCount)
+        - Failed: \(result.failedCount)
+        - Duration: \(String(format: "%.2f", result.totalDuration))s
+        """)
     }
 
     /// Perform generation with exponential backoff retry
@@ -584,7 +585,7 @@ actor SentenceGenerationService {
         let duration = Date().timeIntervalSince(startTime)
 
         switch result {
-        case .success(let response):
+        case let .success(response):
             logger.debug("Generation succeeded: \(cardWord)")
             return SentenceGenerationResult(
                 cardId: cardId,
@@ -592,7 +593,7 @@ actor SentenceGenerationService {
                 result: .success(response),
                 duration: duration
             )
-        case .failure(let error):
+        case let .failure(error):
             logger.error("Generation failed: \(cardWord) - \(error.localizedDescription)")
             return SentenceGenerationResult(
                 cardId: cardId,
@@ -622,10 +623,10 @@ actor SentenceGenerationService {
         let wordCount = sentence.split(separator: " ").count
 
         switch wordCount {
-        case 0...CEFRThresholds.a1Max: return "A1"
-        case (CEFRThresholds.a1Max + 1)...CEFRThresholds.a2Max: return "A2"
-        case (CEFRThresholds.a2Max + 1)...CEFRThresholds.b1Max: return "B1"
-        case (CEFRThresholds.b1Max + 1)...CEFRThresholds.b2Max: return "B2"
+        case 0 ... CEFRThresholds.a1Max: return "A1"
+        case (CEFRThresholds.a1Max + 1) ... CEFRThresholds.a2Max: return "A2"
+        case (CEFRThresholds.a2Max + 1) ... CEFRThresholds.b1Max: return "B1"
+        case (CEFRThresholds.b1Max + 1) ... CEFRThresholds.b2Max: return "B2"
         default: return "C1"
         }
     }
@@ -635,30 +636,30 @@ actor SentenceGenerationService {
         "the": [
             "The book is on the table.",
             "I saw the movie yesterday.",
-            "The cat is sleeping on the couch."
+            "The cat is sleeping on the couch.",
         ],
         "be": [
             "I want to be a doctor.",
             "She will be here soon.",
-            "They are very happy."
+            "They are very happy.",
         ],
         "to": [
             "I need to go to the store.",
             "She wants to learn English.",
-            "We went to the park."
+            "We went to the park.",
         ],
         "of": [
             "A cup of coffee.",
             "The king of France.",
-            "One of the best."
-        ]
+            "One of the best.",
+        ],
     ]
 
     /// Default fallback sentences when word not in library
     private let defaultFallbackSentences = [
         "This is an example sentence.",
         "The word demonstrates its meaning here.",
-        "Practice makes perfect."
+        "Practice makes perfect.",
     ]
 }
 
@@ -683,16 +684,16 @@ enum SentenceGenerationError: LocalizedError {
             return "Invalid service configuration"
         case .rateLimit:
             return "API rate limit exceeded. Please wait a moment and try again."
-        case .clientError(let code, let message):
+        case let .clientError(code, message):
             if let msg = message {
                 return "Request failed (HTTP \(code)): \(msg)"
             }
             return "Request failed (HTTP \(code))"
-        case .serverError(let code, _):
+        case let .serverError(code, _):
             return "Server is experiencing issues (HTTP \(code)). Please try again later."
         case .apiFailed:
             return "Sentence generation API request failed"
-        case .invalidResponse(let reason):
+        case let .invalidResponse(reason):
             if let r = reason {
                 return "Invalid response from generation API: \(r)"
             }

@@ -25,7 +25,7 @@ struct DynamicLightingModifier: ViewModifier {
                         RadialGradient(
                             colors: [
                                 .white.opacity(isPressed ? 0.1 : 0.05),
-                                .clear
+                                .clear,
                             ],
                             center: .topLeading,
                             startRadius: 0,

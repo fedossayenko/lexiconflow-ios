@@ -54,7 +54,7 @@ struct InteractiveGlassModifier: ViewModifier {
                                 LinearGradient(
                                     colors: [
                                         .white.opacity(0.3 * progress),
-                                        .clear
+                                        .clear,
                                     ],
                                     startPoint: offset.width > 0 ? .leading : .trailing,
                                     endPoint: offset.width > 0 ? .trailing : .leading
@@ -76,7 +76,7 @@ struct InteractiveGlassModifier: ViewModifier {
             )
             .hueRotation(.degrees(progress * 5))
             .saturation(progress > 0 ? 1.0 + (progress * 0.2) : 1.0)
-            .scaleEffect(1.0 + (progress * 0.05))  // Subtle "swelling"
+            .scaleEffect(1.0 + (progress * 0.05)) // Subtle "swelling"
             .rotation3DEffect(
                 .degrees(progress * 5),
                 axis: (x: 0, y: 1, z: 0),

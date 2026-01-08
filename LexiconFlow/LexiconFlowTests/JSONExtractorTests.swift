@@ -5,9 +5,9 @@
 //  Tests for JSON extraction utility
 //
 
-import Testing
 import Foundation
 import OSLog
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for JSONExtractor
@@ -19,7 +19,6 @@ import OSLog
 /// - Handling of malformed input
 /// - Preservation of original text when no patterns match
 struct JSONExtractorTests {
-
     let logger = Logger(subsystem: "com.lexiconflow.test", category: "JSONExtractorTests")
 
     // MARK: - Markdown Code Block Tests
@@ -153,7 +152,6 @@ struct JSONExtractorTests {
 
     // MARK: - Complex Scenarios
 
-
     @Test("Extract JSON with unicode characters")
     func extractJsonWithUnicode() {
         let input = """
@@ -229,7 +227,6 @@ struct JSONExtractorTests {
         // Should fall back to brace extraction
         #expect(result.contains("\"word\": \"test\""), "Should fall back to brace extraction")
     }
-
 
     @Test("Handle multiple code blocks")
     func handleMultipleCodeBlocks() {
@@ -358,7 +355,7 @@ struct JSONExtractorTests {
     @Test("Handle large JSON efficiently")
     func handleLargeJson() {
         var items: [String] = []
-        for i in 0..<100 {
+        for i in 0 ..< 100 {
             items.append("{\"id\": \(i), \"value\": \"item_\(i)\"}")
         }
 
@@ -381,7 +378,7 @@ struct JSONExtractorTests {
     @Test("Handle response with multiple code blocks efficiently")
     func handleMultipleBlocksEfficiently() {
         var blocks: [String] = []
-        for i in 0..<50 {
+        for i in 0 ..< 50 {
             blocks += ["```json", "{\"block\": \(i)}", "```"]
         }
 

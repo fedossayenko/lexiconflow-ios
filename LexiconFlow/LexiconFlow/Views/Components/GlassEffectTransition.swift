@@ -35,14 +35,14 @@ extension View {
         case .scaleFade:
             // Scale in/out with opacity for "scaleFade" effect
             // Creates the illusion of content emerging from liquid glass
-            return AnyView(self.transition(.asymmetric(
+            return AnyView(transition(.asymmetric(
                 insertion: .scale(scale: 0.95).combined(with: .opacity),
                 removal: .scale(scale: 1.05).combined(with: .opacity)
             )))
         case .dissolve:
-            return AnyView(self.transition(.opacity))
+            return AnyView(transition(.opacity))
         case .liquid:
-            return AnyView(self.transition(.move(edge: .trailing).combined(with: .opacity)))
+            return AnyView(transition(.move(edge: .trailing).combined(with: .opacity)))
         case .materialize:
             // Glass materialization effect with subtle opacity morphing
             // Creates the illusion of content materializing from glass
@@ -57,7 +57,7 @@ extension View {
             // FUTURE: Revisit when SwiftUI provides better type-erased transition modifiers
             // or when a non-AnyView approach for dynamic transitions is available.
             // Tracking: https://forums.swift.org/t/swiftui-type-erasure-and-accessibility (if applicable)
-            return AnyView(self.transition(.asymmetric(
+            return AnyView(transition(.asymmetric(
                 insertion: .opacity.combined(with: .scale(scale: 0.98)),
                 removal: .opacity.combined(with: .scale(scale: 1.02))
             )))

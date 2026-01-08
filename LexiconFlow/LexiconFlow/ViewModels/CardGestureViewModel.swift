@@ -5,8 +5,8 @@
 //  Manages gesture state for flashcard swipe interactions.
 //
 
-import SwiftUI
 import Combine
+import SwiftUI
 
 /// View model for tracking and updating flashcard swipe gesture state.
 ///
@@ -14,7 +14,6 @@ import Combine
 /// Maps 4-directional swipes to FSRS ratings with appropriate visual effects.
 @MainActor
 class CardGestureViewModel: ObservableObject {
-
     // MARK: - Published Properties
 
     /// Current offset of the card from center.
@@ -46,11 +45,11 @@ class CardGestureViewModel: ObservableObject {
 
     /// Direction of swipe gesture.
     enum SwipeDirection {
-        case left    // Again rating
-        case right   // Good rating
-        case up      // Easy rating
-        case down    // Hard rating
-        case none    // No clear direction
+        case left // Again rating
+        case right // Good rating
+        case up // Easy rating
+        case down // Hard rating
+        case none // No clear direction
     }
 
     /// Result of gesture change processing.
@@ -174,11 +173,11 @@ class CardGestureViewModel: ObservableObject {
     /// - Returns: Corresponding FSRS rating value
     func ratingForDirection(_ direction: SwipeDirection) -> Int {
         switch direction {
-        case .right: return 2  // Good
-        case .left:  return 0  // Again
-        case .up:    return 3  // Easy
-        case .down:  return 1  // Hard
-        case .none:  return 2  // Default to Good
+        case .right: return 2 // Good
+        case .left: return 0 // Again
+        case .up: return 3 // Easy
+        case .down: return 1 // Hard
+        case .none: return 2 // Default to Good
         }
     }
 }
@@ -190,10 +189,10 @@ extension CardGestureViewModel.SwipeDirection {
     var hapticDirection: HapticService.SwipeDirection {
         switch self {
         case .right: return .right
-        case .left:  return .left
-        case .up:    return .up
-        case .down:  return .down
-        case .none:  return .right  // fallback
+        case .left: return .left
+        case .up: return .up
+        case .down: return .down
+        case .none: return .right // fallback
         }
     }
 }

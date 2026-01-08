@@ -13,16 +13,15 @@
 //  These tests verify the saveCard() translation flow through ModelContext changes.
 //
 
-import Testing
-import SwiftUI
-import SwiftData
 import OSLog
+import SwiftData
+import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for AddFlashcardView translation integration
 @MainActor
 struct AddFlashcardViewTests {
-
     // MARK: - Test Fixtures
 
     private func createTestContainer() -> ModelContainer {

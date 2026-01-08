@@ -92,7 +92,7 @@ struct GlassEffectModifier<S: InsettableShape>: ViewModifier {
                                 colors: [
                                     .white.opacity(thickness.specularOpacity),
                                     .clear,
-                                    .white.opacity(thickness.specularOpacity * 0.5)
+                                    .white.opacity(thickness.specularOpacity * 0.5),
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -108,7 +108,7 @@ struct GlassEffectModifier<S: InsettableShape>: ViewModifier {
                         LinearGradient(
                             colors: [
                                 .white.opacity(thickness.overlayOpacity),
-                                .white.opacity(0)
+                                .white.opacity(0),
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing

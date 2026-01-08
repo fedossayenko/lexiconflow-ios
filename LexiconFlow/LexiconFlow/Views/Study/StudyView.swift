@@ -5,9 +5,9 @@
 //  Deck-centric study entry point with multi-deck selection
 //
 
-import SwiftUI
-import SwiftData
 import OSLog
+import SwiftData
+import SwiftUI
 
 struct StudyView: View {
     private static let logger = Logger(subsystem: "com.lexiconflow.study", category: "StudyView")
@@ -148,7 +148,7 @@ struct StudyView: View {
 
                 LazyVGrid(columns: [
                     GridItem(.flexible()),
-                    GridItem(.flexible())
+                    GridItem(.flexible()),
                 ], spacing: 8) {
                     ForEach(selectedDecks.prefix(4), id: \.id) { deck in
                         HStack(spacing: 6) {

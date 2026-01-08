@@ -5,8 +5,8 @@
 //  Tests for timezone-aware date calculations
 //
 
-import Testing
 import Foundation
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for DateMath utilities
@@ -18,7 +18,6 @@ import Foundation
 /// - Edge cases
 @MainActor
 struct DateMathTests {
-
     // MARK: - Elapsed Days Tests
 
     @Test("Elapsed days for same time is zero")

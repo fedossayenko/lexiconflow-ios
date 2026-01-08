@@ -8,8 +8,8 @@
 //  UIKit's haptic generators don't provide observable state for verification.
 //
 
-import Testing
 import CoreFoundation
+import Testing
 @testable import LexiconFlow
 
 /// Saves and restores the original hapticEnabled setting for test isolation.
@@ -25,11 +25,10 @@ private func withHapticEnabled<T>(_ enabled: Bool, operation: () throws -> T) re
 
 @MainActor
 struct HapticServiceTests {
-
     // MARK: - Singleton Tests
 
     @Test("HapticService singleton is consistent")
-    func testSingletonConsistency() {
+    func singletonConsistency() {
         let service1 = HapticService.shared
         let service2 = HapticService.shared
         #expect(service1 === service2, "HapticService should return the same singleton instance")
@@ -38,25 +37,25 @@ struct HapticServiceTests {
     // MARK: - SwipeDirection Enum Tests
 
     @Test("SwipeDirection right case exists")
-    func testRightSwipeDirectionExists() {
+    func rightSwipeDirectionExists() {
         let direction = HapticService.SwipeDirection.right
         #expect(direction == .right, "Right swipe direction should be instantiable")
     }
 
     @Test("SwipeDirection left case exists")
-    func testLeftSwipeDirectionExists() {
+    func leftSwipeDirectionExists() {
         let direction = HapticService.SwipeDirection.left
         #expect(direction == .left, "Left swipe direction should be instantiable")
     }
 
     @Test("SwipeDirection up case exists")
-    func testUpSwipeDirectionExists() {
+    func upSwipeDirectionExists() {
         let direction = HapticService.SwipeDirection.up
         #expect(direction == .up, "Up swipe direction should be instantiable")
     }
 
     @Test("SwipeDirection down case exists")
-    func testDownSwipeDirectionExists() {
+    func downSwipeDirectionExists() {
         let direction = HapticService.SwipeDirection.down
         #expect(direction == .down, "Down swipe direction should be instantiable")
     }
@@ -64,7 +63,7 @@ struct HapticServiceTests {
     // MARK: - Smoke Tests (Verify No Crashes)
 
     @Test("Swipe below threshold does not crash")
-    func testProgressBelowThreshold() {
+    func progressBelowThreshold() {
         let service = HapticService.shared
 
         // These calls should not trigger haptics (progress <= 0.3)
@@ -78,7 +77,7 @@ struct HapticServiceTests {
     }
 
     @Test("Swipe above threshold does not crash")
-    func testProgressAboveThreshold() {
+    func progressAboveThreshold() {
         let service = HapticService.shared
 
         // These calls should trigger haptics (progress > 0.3)
@@ -91,28 +90,28 @@ struct HapticServiceTests {
     }
 
     @Test("Success haptic does not crash")
-    func testSuccessHaptic() {
+    func successHaptic() {
         let service = HapticService.shared
         service.triggerSuccess()
         #expect(true, "Success haptic executed without crash")
     }
 
     @Test("Warning haptic does not crash")
-    func testWarningHaptic() {
+    func warningHaptic() {
         let service = HapticService.shared
         service.triggerWarning()
         #expect(true, "Warning haptic executed without crash")
     }
 
     @Test("Error haptic does not crash")
-    func testErrorHaptic() {
+    func errorHaptic() {
         let service = HapticService.shared
         service.triggerError()
         #expect(true, "Error haptic executed without crash")
     }
 
     @Test("Reset clears cached generators and subsequent calls work")
-    func testResetClearsGenerators() {
+    func resetClearsGenerators() {
         let service = HapticService.shared
 
         // Trigger some haptics to ensure generators are cached
@@ -129,7 +128,7 @@ struct HapticServiceTests {
     }
 
     @Test("Multiple resets are safe")
-    func testMultipleResets() {
+    func multipleResets() {
         let service = HapticService.shared
 
         // Multiple resets should not cause issues
@@ -146,7 +145,7 @@ struct HapticServiceTests {
     // MARK: - Edge Cases
 
     @Test("All swipe directions work with maximum progress")
-    func testAllDirectionsMaxProgress() {
+    func allDirectionsMaxProgress() {
         let service = HapticService.shared
 
         service.triggerSwipe(direction: .right, progress: 1.0)
@@ -158,7 +157,7 @@ struct HapticServiceTests {
     }
 
     @Test("Progress above 1.0 is handled by generator")
-    func testProgressAboveOne() {
+    func progressAboveOne() {
         let service = HapticService.shared
 
         // UIKit generators should clamp values > 1.0 internally
@@ -169,7 +168,7 @@ struct HapticServiceTests {
     }
 
     @Test("Zero progress is handled")
-    func testZeroProgress() {
+    func zeroProgress() {
         let service = HapticService.shared
 
         service.triggerSwipe(direction: .right, progress: 0.0)
@@ -178,7 +177,7 @@ struct HapticServiceTests {
     }
 
     @Test("Negative progress is handled")
-    func testNegativeProgress() {
+    func negativeProgress() {
         let service = HapticService.shared
 
         // Negative progress should be handled gracefully
@@ -190,7 +189,7 @@ struct HapticServiceTests {
     // MARK: - AppSettings Integration Tests
 
     @Test("HapticService respects hapticEnabled=false for triggerSwipe")
-    func testTriggerSwipeRespectsSetting() {
+    func triggerSwipeRespectsSetting() {
         let service = HapticService.shared
 
         // When hapticEnabled is false, triggerSwipe should return early
@@ -211,7 +210,7 @@ struct HapticServiceTests {
     }
 
     @Test("HapticService respects hapticEnabled=false for triggerSuccess")
-    func testTriggerSuccessRespectsSetting() {
+    func triggerSuccessRespectsSetting() {
         let service = HapticService.shared
 
         withHapticEnabled(false) {
@@ -226,7 +225,7 @@ struct HapticServiceTests {
     }
 
     @Test("HapticService respects hapticEnabled=false for triggerWarning")
-    func testTriggerWarningRespectsSetting() {
+    func triggerWarningRespectsSetting() {
         let service = HapticService.shared
 
         withHapticEnabled(false) {
@@ -241,7 +240,7 @@ struct HapticServiceTests {
     }
 
     @Test("HapticService respects hapticEnabled=false for triggerError")
-    func testTriggerErrorRespectsSetting() {
+    func triggerErrorRespectsSetting() {
         let service = HapticService.shared
 
         withHapticEnabled(false) {
@@ -256,7 +255,7 @@ struct HapticServiceTests {
     }
 
     @Test("HapticService progress threshold still enforced when hapticEnabled=true")
-    func testProgressThresholdRespectedWhenEnabled() {
+    func progressThresholdRespectedWhenEnabled() {
         let service = HapticService.shared
 
         withHapticEnabled(true) {
@@ -275,7 +274,7 @@ struct HapticServiceTests {
     // MARK: - CoreHaptics Engine Tests
 
     @Test("HapticService handles CoreHaptics engine setup")
-    func testCoreHapticsEngineSetup() {
+    func coreHapticsEngineSetup() {
         let service = HapticService.shared
 
         // Trigger a haptic to ensure engine is set up
@@ -289,7 +288,7 @@ struct HapticServiceTests {
     }
 
     @Test("HapticService resets CoreHaptics engine")
-    func testCoreHapticsEngineReset() {
+    func coreHapticsEngineReset() {
         let service = HapticService.shared
 
         // Trigger some haptics
@@ -310,7 +309,7 @@ struct HapticServiceTests {
     }
 
     @Test("HapticService restarts engine after background")
-    func testCoreHapticsEngineRestart() {
+    func coreHapticsEngineRestart() {
         let service = HapticService.shared
 
         // Reset (simulating background)
@@ -328,7 +327,7 @@ struct HapticServiceTests {
     }
 
     @Test("HapticService gracefully falls back to UIKit")
-    func testUIKitFallback() {
+    func uIKitFallback() {
         let service = HapticService.shared
 
         // Even if CoreHaptics fails, UIKit fallback should work
@@ -343,7 +342,7 @@ struct HapticServiceTests {
     }
 
     @Test("HapticService creates patterns for all directions")
-    func testHapticPatternCreation() {
+    func hapticPatternCreation() {
         let service = HapticService.shared
 
         // Trigger all swipe directions to ensure patterns are created
@@ -358,14 +357,14 @@ struct HapticServiceTests {
     }
 
     @Test("HapticService uses custom patterns for notifications")
-    func testNotificationPatterns() {
+    func notificationPatterns() {
         let service = HapticService.shared
 
         withHapticEnabled(true) {
             // Each should use a custom CoreHaptics pattern
-            service.triggerSuccess()  // Double tap pattern
-            service.triggerWarning()  // Medium intensity pattern
-            service.triggerError()    // Sharp, intense pattern
+            service.triggerSuccess() // Double tap pattern
+            service.triggerWarning() // Medium intensity pattern
+            service.triggerError() // Sharp, intense pattern
         }
 
         #expect(true, "HapticService should use custom patterns for notifications")

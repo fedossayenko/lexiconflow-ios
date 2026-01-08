@@ -5,8 +5,8 @@
 //  Tests for analytics and error tracking with mock backend
 //
 
-import Testing
 import Foundation
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for Analytics
@@ -17,7 +17,6 @@ import Foundation
 /// - Performance measurement
 /// - User property management
 struct AnalyticsTests {
-
     /// Shared mock backend for all tests (reset before each test)
     private static let mockBackend = MockAnalyticsBackend()
 
@@ -49,7 +48,7 @@ struct AnalyticsTests {
         // Track event with metadata
         Analytics.trackEvent("test_event_with_metadata", metadata: [
             "key1": "value1",
-            "key2": "value2"
+            "key2": "value2",
         ])
 
         // Verify event with metadata was recorded
@@ -74,7 +73,7 @@ struct AnalyticsTests {
 
         // Track error with metadata
         Analytics.trackError("test_error_with_metadata", error: testError, metadata: [
-            "context": "test_context"
+            "context": "test_context",
         ])
 
         // Verify error with metadata was recorded
@@ -100,12 +99,12 @@ struct AnalyticsTests {
         // Track performance with metadata
         Analytics.trackPerformance("test_operation_with_metadata", duration: 1.5, metadata: [
             "iterations": "100",
-            "result": "success"
+            "result": "success",
         ])
 
         // Verify performance with metadata was recorded
         #expect(Self.mockBackend.events.contains { event in
-            if case .performance("test_operation_with_metadata", 1.5, let metadata) = event {
+            if case let .performance("test_operation_with_metadata", 1.5, metadata) = event {
                 return metadata["iterations"] == "100" && metadata["result"] == "success"
             }
             return false
@@ -121,7 +120,7 @@ struct AnalyticsTests {
 
         // Verify issue was recorded
         #expect(Self.mockBackend.events.contains { event in
-            if case .issue("test_issue", let metadata) = event {
+            if case let .issue("test_issue", metadata) = event {
                 return metadata["message"] == "Something unusual happened"
             }
             return false
@@ -135,7 +134,7 @@ struct AnalyticsTests {
 
         // Verify issue with metadata was recorded
         #expect(Self.mockBackend.events.contains { event in
-            if case .issue("test_issue_with_metadata", let metadata) = event {
+            if case let .issue("test_issue_with_metadata", metadata) = event {
                 return metadata["message"] == "Issue with context" && metadata["state"] == "unusual"
             }
             return false
@@ -168,7 +167,7 @@ struct AnalyticsTests {
         Analytics.setUserProperties([
             "premium": "true",
             "study_streak": "30",
-            "decks_count": "5"
+            "decks_count": "5",
         ])
 
         // Verify user properties were recorded
@@ -181,6 +180,7 @@ struct AnalyticsTests {
     }
 
     // MARK: - Edge Case Tests
+
     @Test("Handle empty event name")
     func emptyEventName() {
         Self.setupMockBackend()
@@ -201,7 +201,7 @@ struct AnalyticsTests {
             "emoji": "🎉📚",
             "quotes": "\"quoted\"",
             "newlines": "line1\nline2",
-            "unicode": "日本語"
+            "unicode": "日本語",
         ])
 
         // Verify event was recorded with special characters
@@ -216,7 +216,7 @@ struct AnalyticsTests {
         let longValue = String(repeating: "a", count: 10000)
 
         Analytics.trackEvent("long_value", metadata: [
-            "long": longValue
+            "long": longValue,
         ])
 
         // Verify event was recorded with long value
@@ -280,7 +280,7 @@ struct AnalyticsTests {
 
         Analytics.trackEvent("int_test", metadata: [
             "count": "42",
-            "index": "0"
+            "index": "0",
         ])
 
         // Verify event was recorded
@@ -294,7 +294,7 @@ struct AnalyticsTests {
 
         Analytics.trackEvent("double_test", metadata: [
             "ratio": "0.75",
-            "percentage": "99.9"
+            "percentage": "99.9",
         ])
 
         // Verify event was recorded
@@ -308,7 +308,7 @@ struct AnalyticsTests {
 
         Analytics.trackEvent("bool_test", metadata: [
             "enabled": "true",
-            "disabled": "false"
+            "disabled": "false",
         ])
 
         // Verify event was recorded
@@ -322,10 +322,10 @@ struct AnalyticsTests {
         Self.setupMockBackend()
         defer { Self.teardownMockBackend() }
 
-        for i in 0..<10 {
+        for i in 0 ..< 10 {
             Analytics.trackEvent("event_\(i)", metadata: [
                 "index": "\(i)",
-                "doubled": "\(i * 2)"
+                "doubled": "\(i * 2)",
             ])
         }
 
@@ -333,7 +333,7 @@ struct AnalyticsTests {
         #expect(Self.mockBackend.events.count == 10, "Should track exactly 10 events")
 
         // Verify each event was recorded with correct metadata
-        for i in 0..<10 {
+        for i in 0 ..< 10 {
             #expect(Self.mockBackend.didTrackEvent("event_\(i)"), "Event \(i) should be tracked")
         }
     }
@@ -345,7 +345,7 @@ struct AnalyticsTests {
 
         let outerStart = Date()
         let innerStart = Date()
-        _ = (0..<100).reduce(0, +)
+        _ = (0 ..< 100).reduce(0, +)
         let innerDuration = Date().timeIntervalSince(innerStart)
         #expect(innerDuration > 0, "Inner should have duration")
         let outerDuration = Date().timeIntervalSince(outerStart)
@@ -377,10 +377,10 @@ struct AnalyticsTests {
         let startTime = Date()
         // Simulate a multi-step operation
         var sum = 0
-        for i in 0..<100 {
+        for i in 0 ..< 100 {
             sum += i
         }
-        try? await Task.sleep(nanoseconds: 1_000_000) // 1ms
+        try? await Task.sleep(nanoseconds: 1000000) // 1ms
         _ = sum
         let duration = Date().timeIntervalSince(startTime)
 
@@ -395,7 +395,7 @@ struct AnalyticsTests {
         defer { Self.teardownMockBackend() }
 
         await withTaskGroup(of: Void.self) { group in
-            for i in 0..<50 {
+            for i in 0 ..< 50 {
                 group.addTask {
                     Analytics.trackEvent("concurrent_\(i)")
                 }
@@ -412,10 +412,10 @@ struct AnalyticsTests {
         defer { Self.teardownMockBackend() }
 
         await withTaskGroup(of: Void.self) { group in
-            for i in 0..<20 {
+            for i in 0 ..< 20 {
                 group.addTask {
                     let startTime = Date()
-                    _ = (0..<100).reduce(0, +)
+                    _ = (0 ..< 100).reduce(0, +)
                     let duration = Date().timeIntervalSince(startTime)
                     // Use duration to avoid unused variable warning
                     _ = duration
@@ -436,7 +436,7 @@ struct AnalyticsTests {
 
         let startTime = Date()
         // Simulate some work
-        _ = (0..<1000).reduce(0, +)
+        _ = (0 ..< 1000).reduce(0, +)
         let duration = Date().timeIntervalSince(startTime)
 
         #expect(duration >= 0, "Duration should be non-negative")
@@ -450,7 +450,7 @@ struct AnalyticsTests {
 
         let startTime = Date()
         // Simulate async work
-        try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        try? await Task.sleep(nanoseconds: 10000000) // 10ms
         let duration = Date().timeIntervalSince(startTime)
 
         #expect(duration >= 0.01, "Duration should be at least 10ms")

@@ -6,17 +6,16 @@
 //  Covers: Flashcard, Deck, FlashcardReview, FSRSState
 //
 
-import Testing
 import Foundation
-import SwiftData
 import FSRS
+import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for SwiftData models
 /// Uses shared container for performance - each test clears context before use
 @MainActor
 struct ModelTests {
-
     /// Get a fresh isolated context for testing
     /// Caller should call clearAll() before use to ensure test isolation
     private func freshContext() -> ModelContext {
@@ -173,7 +172,7 @@ struct ModelTests {
         let flashcard = Flashcard(word: "test", definition: "A test")
         context.insert(flashcard)
 
-        for i in 1...5 {
+        for i in 1 ... 5 {
             let sentence = try GeneratedSentence(
                 sentenceText: "Sentence \(i)",
                 cefrLevel: "A1"
@@ -204,7 +203,7 @@ struct ModelTests {
         context.insert(flashcard)
 
         // Add initial sentences
-        for i in 1...2 {
+        for i in 1 ... 2 {
             let sentence = try GeneratedSentence(
                 sentenceText: "Old sentence \(i)",
                 cefrLevel: "A1"
@@ -218,7 +217,7 @@ struct ModelTests {
         #expect(initialCount == 2)
 
         // Add new sentences (simulating regeneration)
-        for i in 1...3 {
+        for i in 1 ... 3 {
             let sentence = try GeneratedSentence(
                 sentenceText: "New sentence \(i)",
                 cefrLevel: "A2"
@@ -262,7 +261,7 @@ struct ModelTests {
         let deck = Deck(name: "Test", icon: "📚")
         context.insert(deck)
 
-        for i in 1...3 {
+        for i in 1 ... 3 {
             let card = Flashcard(word: "word\(i)", definition: "def\(i)")
             card.deck = deck
             context.insert(card)
@@ -370,10 +369,10 @@ struct ModelTests {
 
     @Test("CardRating FSRS conversion")
     func cardRatingFSRSConversion() {
-        #expect(CardRating.again.toFSRS == .again)   // 0 → 1
-        #expect(CardRating.hard.toFSRS == .hard)     // 1 → 2
-        #expect(CardRating.good.toFSRS == .good)     // 2 → 3
-        #expect(CardRating.easy.toFSRS == .easy)     // 3 → 4
+        #expect(CardRating.again.toFSRS == .again) // 0 → 1
+        #expect(CardRating.hard.toFSRS == .hard) // 1 → 2
+        #expect(CardRating.good.toFSRS == .good) // 2 → 3
+        #expect(CardRating.easy.toFSRS == .easy) // 3 → 4
     }
 
     @Test("CardRating from FSRS")

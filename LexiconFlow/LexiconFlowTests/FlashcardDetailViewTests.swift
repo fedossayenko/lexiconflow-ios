@@ -9,14 +9,13 @@
 //  Full UI behavior testing requires UI tests or snapshot tests.
 //
 
-import Testing
-import SwiftUI
 import SwiftData
+import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 @MainActor
 struct FlashcardDetailViewTests {
-
     // MARK: - Test Fixtures
 
     private func createTestFlashcard(
@@ -177,7 +176,7 @@ struct FlashcardDetailViewTests {
         let reviews = [
             createTestDTO(rating: 2, daysAgo: 1, scheduledDays: 3.0, elapsedDays: 1.0),
             createTestDTO(rating: 3, daysAgo: 5, scheduledDays: 7.0, elapsedDays: 5.0),
-            createTestDTO(rating: 1, daysAgo: 10, scheduledDays: 2.0, elapsedDays: 3.0)
+            createTestDTO(rating: 1, daysAgo: 10, scheduledDays: 2.0, elapsedDays: 3.0),
         ]
 
         @State var selectedFilter: ReviewHistoryFilter = .allTime
@@ -255,7 +254,7 @@ struct FlashcardDetailViewTests {
         let reviews = [
             createTestDTO(rating: 2, daysAgo: 1, scheduledDays: 3.0, elapsedDays: 1.0), // last week
             createTestDTO(rating: 2, daysAgo: 10, scheduledDays: 14.0, elapsedDays: 10.0), // last month
-            createTestDTO(rating: 2, daysAgo: 40, scheduledDays: 45.0, elapsedDays: 40.0) // all time
+            createTestDTO(rating: 2, daysAgo: 40, scheduledDays: 45.0, elapsedDays: 40.0), // all time
         ]
 
         @State var selectedFilter: ReviewHistoryFilter = .allTime
@@ -274,7 +273,7 @@ struct FlashcardDetailViewTests {
     func reviewHistoryListViewWithLastWeekFilter() {
         let reviews = [
             createTestDTO(rating: 2, daysAgo: 1, scheduledDays: 3.0, elapsedDays: 1.0),
-            createTestDTO(rating: 2, daysAgo: 5, scheduledDays: 7.0, elapsedDays: 5.0)
+            createTestDTO(rating: 2, daysAgo: 5, scheduledDays: 7.0, elapsedDays: 5.0),
         ]
 
         @State var selectedFilter: ReviewHistoryFilter = .lastWeek
@@ -294,7 +293,7 @@ struct FlashcardDetailViewTests {
     func reviewHistoryListViewWithLastMonthFilter() {
         let reviews = [
             createTestDTO(rating: 2, daysAgo: 5, scheduledDays: 7.0, elapsedDays: 5.0),
-            createTestDTO(rating: 2, daysAgo: 20, scheduledDays: 25.0, elapsedDays: 20.0)
+            createTestDTO(rating: 2, daysAgo: 20, scheduledDays: 25.0, elapsedDays: 20.0),
         ]
 
         @State var selectedFilter: ReviewHistoryFilter = .lastMonth
@@ -539,7 +538,7 @@ struct FlashcardDetailViewTests {
             reviews: reviews,
             selectedFilter: $selectedFilter,
             onFilterChange: { _ in },
-            onExport: { }
+            onExport: {}
         )
 
         // Verify accessibility labels can be set
@@ -609,7 +608,7 @@ struct FlashcardDetailViewTests {
         var reviews: [FlashcardReviewDTO] = []
 
         // Create 100 reviews
-        for i in 0..<100 {
+        for i in 0 ..< 100 {
             reviews.append(createTestDTO(
                 rating: i % 4,
                 daysAgo: i,

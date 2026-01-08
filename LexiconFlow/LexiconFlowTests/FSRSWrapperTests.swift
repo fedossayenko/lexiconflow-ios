@@ -6,9 +6,9 @@
 //  Updated for DTO-based API (tests data transfer instead of mutation)
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for FSRSWrapper actor with DTO API
@@ -20,7 +20,6 @@ import SwiftData
 /// - Edge cases and error handling
 @MainActor
 struct FSRSWrapperTests {
-
     // MARK: - Test Fixtures
 
     private func freshContext() -> ModelContext {
@@ -73,7 +72,7 @@ struct FSRSWrapperTests {
         #expect(result.retrievability >= 0 && result.retrievability <= 1)
         #expect(result.dueDate > now)
         #expect(result.stateEnum == FlashcardState.review.rawValue ||
-                result.stateEnum == FlashcardState.learning.rawValue)
+            result.stateEnum == FlashcardState.learning.rawValue)
         #expect(result.scheduledDays > 0)
         #expect(result.elapsedDays == 0) // New card has no elapsed time
     }
@@ -85,7 +84,7 @@ struct FSRSWrapperTests {
 
         var scheduledDays: [Int: Double] = [:]
 
-        for rating in 0...3 {
+        for rating in 0 ... 3 {
             try context.clearAll()
             let flashcard = createTestFlashcard(context: context, word: "card\(rating)")
             try context.save()
@@ -169,7 +168,7 @@ struct FSRSWrapperTests {
             now: Date()
         )
         #expect(result1.stateEnum == FlashcardState.learning.rawValue ||
-                result1.stateEnum == FlashcardState.relearning.rawValue)
+            result1.stateEnum == FlashcardState.relearning.rawValue)
 
         // Review → Relearning (Again on review card)
         try context.clearAll()
@@ -254,7 +253,7 @@ struct FSRSWrapperTests {
 
         // Should default to Good behavior
         #expect(result.stateEnum == FlashcardState.review.rawValue ||
-                result.stateEnum == FlashcardState.learning.rawValue)
+            result.stateEnum == FlashcardState.learning.rawValue)
     }
 
     @Test("Handles negative elapsed days (clock skew)")
@@ -383,7 +382,7 @@ struct FSRSWrapperTests {
         // Create a date across a DST boundary (e.g., during spring forward)
         // Use calendar to ensure proper DST handling
         let calendar = Calendar(identifier: .gregorian)
-        let now = calendar.date(from: DateComponents(year: 2026, month: 3, day:15, hour: 12))!
+        let now = calendar.date(from: DateComponents(year: 2026, month: 3, day: 15, hour: 12))!
         let lastReview = calendar.date(from: DateComponents(year: 2026, month: 3, day: 8, hour: 12))!
 
         flashcard.fsrsState!.lastReviewDate = lastReview
@@ -397,7 +396,9 @@ struct FSRSWrapperTests {
         )
 
         // DateMath should handle DST transitions correctly
-        #expect(result.elapsedDays >= 6.0 && result.elapsedDays <= 8.0,
-               "Elapsed days should account for DST transition")
+        #expect(
+            result.elapsedDays >= 6.0 && result.elapsedDays <= 8.0,
+            "Elapsed days should account for DST transition"
+        )
     }
 }

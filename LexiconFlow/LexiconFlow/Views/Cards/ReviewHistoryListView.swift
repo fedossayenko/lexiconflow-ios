@@ -39,7 +39,7 @@ struct ReviewHistoryListView: View {
         onExport: (() -> Void)? = nil
     ) {
         self.reviews = reviews
-        self._selectedFilter = selectedFilter
+        _selectedFilter = selectedFilter
         self.onFilterChange = onFilterChange
         self.onExport = onExport
     }
@@ -151,7 +151,7 @@ struct ReviewHistoryListView: View {
                     reviews: sampleReviews,
                     selectedFilter: $selectedFilter,
                     onFilterChange: { _ in },
-                    onExport: { }
+                    onExport: {}
                 )
                 .navigationTitle("Review History")
             }
@@ -199,7 +199,7 @@ struct ReviewHistoryListView: View {
                     scheduledDays: 5.0,
                     elapsedDays: 4.0,
                     stateChange: .firstReview
-                )
+                ),
             ]
         }
     }

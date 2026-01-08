@@ -14,15 +14,14 @@
 //  execute or propagate malicious input.
 //
 
-import Testing
-import SwiftData
 import Foundation
+import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for edge cases and security
 @MainActor
 struct EdgeCaseTests {
-
     // MARK: - Test Fixtures
 
     private func createTestContainer() -> ModelContainer {
@@ -275,7 +274,7 @@ struct EdgeCaseTests {
             "'; DROP TABLE cards; --",
             "' OR '1'='1",
             "admin'--",
-            "' UNION SELECT * FROM users--"
+            "' UNION SELECT * FROM users--",
         ]
 
         for input in maliciousInputs {
@@ -307,7 +306,7 @@ struct EdgeCaseTests {
             "<script>alert('xss')</script>",
             "<img src=x onerror=alert('xss')>",
             "javascript:alert('xss')",
-            "<svg onload=alert('xss')>"
+            "<svg onload=alert('xss')>",
         ]
 
         for payload in xssPayloads {
@@ -339,7 +338,7 @@ struct EdgeCaseTests {
             "../../../etc/passwd",
             "..\\..\\..\\windows\\system32",
             "/etc/passwd",
-            "C:\\Windows\\System32\\config\\sam"
+            "C:\\Windows\\System32\\config\\sam",
         ]
 
         for payload in pathTraversalPayloads {
@@ -372,7 +371,7 @@ struct EdgeCaseTests {
             "; ls -la",
             "$(whoami)",
             "`cat /etc/passwd`",
-            "| cat /etc/hosts"
+            "| cat /etc/hosts",
         ]
 
         for payload in commandPayloads {
@@ -492,11 +491,12 @@ struct EdgeCaseTests {
 
         // Common control characters
         let controlChars = String(
-            [Character(Unicode.Scalar(0x1B)), // ESC
-             Character(Unicode.Scalar(0x00)), // NUL
-             Character(Unicode.Scalar(0x09)), // TAB
-             Character(Unicode.Scalar(0x0A)), // LF
-             Character(Unicode.Scalar(0x0D))  // CR
+            [
+                Character(Unicode.Scalar(0x1B)), // ESC
+                Character(Unicode.Scalar(0x00)), // NUL
+                Character(Unicode.Scalar(0x09)), // TAB
+                Character(Unicode.Scalar(0x0A)), // LF
+                Character(Unicode.Scalar(0x0D)), // CR
             ]
         )
 
@@ -612,10 +612,10 @@ struct EdgeCaseTests {
         let context = container.mainContext
 
         // 1 million characters (extreme case)
-        let extremeWord = String(repeating: "x", count: 1_000_000)
+        let extremeWord = String(repeating: "x", count: 1000000)
         let flashcard = try createFlashcard(word: extremeWord, definition: "def", in: context)
 
-        #expect(flashcard.word.count == 1_000_000, "1M char word should be stored")
+        #expect(flashcard.word.count == 1000000, "1M char word should be stored")
     }
 
     @Test("Handle all unicode characters")
@@ -638,7 +638,7 @@ struct EdgeCaseTests {
         // Rapid updates to same flashcard
         let flashcard = try createFlashcard(word: "initial", definition: "initial", in: context)
 
-        for i in 0..<10 {
+        for i in 0 ..< 10 {
             flashcard.word = "update\(i)"
             flashcard.definition = "changed \(i) times"
         }
@@ -655,7 +655,6 @@ struct EdgeCaseTests {
 @Suite("Deck-Centric Edge Cases")
 @MainActor
 struct DeckCentricEdgeCases {
-
     private func freshContext() -> ModelContext {
         TestContainers.freshContext()
     }
@@ -759,7 +758,7 @@ struct DeckCentricEdgeCases {
         try context.clearAll()
 
         // Create 100 decks
-        for i in 0..<100 {
+        for i in 0 ..< 100 {
             _ = createDeck(context: context, name: "Deck \(i)")
         }
 
@@ -805,7 +804,7 @@ struct DeckCentricEdgeCases {
         let deck = createDeck(context: context)
 
         // Create multiple cards
-        for i in 1...5 {
+        for i in 1 ... 5 {
             let card = Flashcard(word: "card\(i)", definition: "card\(i)")
             card.deck = deck
             context.insert(card)

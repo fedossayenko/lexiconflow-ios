@@ -9,14 +9,13 @@
 //  Full UI behavior testing requires UI tests or snapshot tests.
 //
 
-import Testing
-import SwiftUI
 import SwiftData
+import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 @MainActor
 struct DeckDetailViewTests {
-
     // MARK: - Test Fixtures
 
     private func createTestContainer() -> ModelContainer {
@@ -302,7 +301,7 @@ struct DeckDetailViewTests {
         let deck = createTestDeck(in: context, name: "Many Cards")
 
         // Create 100 cards
-        for i in 0..<100 {
+        for i in 0 ..< 100 {
             createTestCard(in: context, word: "Card\(i)", deck: deck)
         }
 

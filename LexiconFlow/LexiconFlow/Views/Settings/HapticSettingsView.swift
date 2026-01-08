@@ -69,7 +69,7 @@ struct HapticSettingsView: View {
 
         // Reset after a short delay
         Task {
-            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+            try? await Task.sleep(nanoseconds: 500000000) // 0.5 seconds
             await MainActor.run {
                 isTesting = false
             }

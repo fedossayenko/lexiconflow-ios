@@ -5,8 +5,8 @@
 //  Deck-centric study view: Lists all decks with study statistics
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct DeckStudyListView: View {
     @Environment(\.modelContext) private var modelContext

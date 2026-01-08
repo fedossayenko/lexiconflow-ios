@@ -10,7 +10,6 @@ import SwiftUI
 
 /// Centralized theme utilities for LexiconFlow
 enum Theme {
-
     // MARK: - CEFR Level Colors
 
     /// Returns the color associated with a CEFR level
@@ -62,7 +61,7 @@ enum Theme {
 
         switch style {
         case .compact:
-            opacity = cefrBadgeOpacity(for: level) * 0.8  // Slightly lighter for compact
+            opacity = cefrBadgeOpacity(for: level) * 0.8 // Slightly lighter for compact
         case .standard:
             opacity = cefrBadgeOpacity(for: level)
         }
@@ -72,8 +71,8 @@ enum Theme {
 
     /// Badge style variants
     enum BadgeStyle {
-        case standard    // Full-size badges (e.g., on cards)
-        case compact     // Smaller badges (e.g., in lists)
+        case standard // Full-size badges (e.g., on cards)
+        case compact // Smaller badges (e.g., in lists)
     }
 
     // MARK: - Animation Constants
@@ -152,7 +151,7 @@ extension View {
     /// - Parameter level: The CEFR level string
     /// - Returns: The view with CEFR color applied
     func cefrStyled(for level: String) -> some View {
-        self.foregroundStyle(Theme.cefrColor(for: level))
+        foregroundStyle(Theme.cefrColor(for: level))
     }
 
     /// Applies CEFR background styling
@@ -162,6 +161,6 @@ extension View {
     /// - Returns: The view with CEFR background applied
     func cefrBackground(for level: String, style: Theme.BadgeStyle = .standard) -> some View {
         let style = Theme.cefrBadgeStyle(for: level, style: style)
-        return self.background(style.color.opacity(style.opacity))
+        return background(style.color.opacity(style.opacity))
     }
 }

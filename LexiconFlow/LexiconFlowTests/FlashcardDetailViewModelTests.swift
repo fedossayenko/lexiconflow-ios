@@ -18,15 +18,14 @@
 //    invalid ratings, DTO properties verification, filter selection
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for FlashcardDetailViewModel
 @MainActor
 struct FlashcardDetailViewModelTests {
-
     /// Get a fresh isolated context for testing
     private func freshContext() -> ModelContext {
         return TestContainers.freshContext()
@@ -453,7 +452,7 @@ struct FlashcardDetailViewModelTests {
         let flashcard = Flashcard(word: "test", definition: "Test stats")
         context.insert(flashcard)
 
-        for i in 0..<5 {
+        for i in 0 ..< 5 {
             let review = FlashcardReview(
                 rating: i % 4,
                 reviewDate: Date().addingTimeInterval(-86400 * Double(5 - i)),
@@ -585,7 +584,7 @@ struct FlashcardDetailViewModelTests {
         let now = Date()
 
         // Create multiple reviews
-        for i in 0..<5 {
+        for i in 0 ..< 5 {
             let review = FlashcardReview(
                 rating: i % 4,
                 reviewDate: now.addingTimeInterval(-86400 * Double(5 - i)),
@@ -725,7 +724,7 @@ struct FlashcardDetailViewModelTests {
 
         // Create 150 reviews
         let reviewCount = 150
-        for i in 0..<reviewCount {
+        for i in 0 ..< reviewCount {
             let review = FlashcardReview(
                 rating: i % 4,
                 reviewDate: Date().addingTimeInterval(-86400 * Double(reviewCount - i)),
@@ -764,7 +763,7 @@ struct FlashcardDetailViewModelTests {
         let now = Date()
 
         // Create 150 reviews spread over 6 months
-        for i in 0..<150 {
+        for i in 0 ..< 150 {
             let daysAgo = Double(i) * 1.2 // Spread out over ~180 days
             let review = FlashcardReview(
                 rating: i % 4,
@@ -861,7 +860,7 @@ struct FlashcardDetailViewModelTests {
         let baseDate = Date()
 
         // Multiple reviews on same day (cram mode) - created in past so filter includes them
-        for i in 0..<3 {
+        for i in 0 ..< 3 {
             let review = FlashcardReview(
                 rating: 2,
                 reviewDate: baseDate.addingTimeInterval(-Double(i * 3600)), // 1 hour ago, 2 hours ago, 3 hours ago
