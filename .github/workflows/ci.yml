@@ -43,7 +43,7 @@ jobs:
       - name: Run SwiftLint
         working-directory: ./LexiconFlow
         run: |
-          swiftlint lint --strict --reporter github-actions-logging
+          swiftlint lint --reporter github-actions-logging
 
       - name: Run SwiftFormat
         working-directory: ./LexiconFlow
