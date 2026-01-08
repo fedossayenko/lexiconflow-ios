@@ -92,7 +92,7 @@ jobs:
           xcodebuild build \
             -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1'
+            -destination 'platform=iOS Simulator,name=Any iOS Simulator Device'
 
   # Test with Coverage
   test:
@@ -133,7 +133,7 @@ jobs:
           xcodebuild test \
             -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1' \
+            -destination 'platform=iOS Simulator,name=Any iOS Simulator Device' \
             -only-testing:LexiconFlowTests \
             -parallel-testing-enabled NO \
             -enableCodeCoverage YES \
