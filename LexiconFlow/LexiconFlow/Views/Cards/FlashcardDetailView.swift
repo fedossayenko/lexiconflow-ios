@@ -373,8 +373,8 @@ private extension Preview {
             // Preview failure indicates a real problem - log and use fallback
             assertionFailure("Failed to create preview container: \(error.localizedDescription)")
             // Fallback: create empty container (in-memory, no schema)
-            // Use ModelContainer.empty() which doesn't throw
-            return ModelContainer.empty()
+            // Force try is acceptable for preview failure (dev-time only)
+            return try! ModelContainer(for: Schema(), configurations: config)
         }
     }
 }
