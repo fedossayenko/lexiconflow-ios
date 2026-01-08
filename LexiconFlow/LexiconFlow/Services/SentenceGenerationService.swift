@@ -271,8 +271,10 @@ actor SentenceGenerationService {
             ]
         )
 
-        guard let url = URL(string: baseURL) else {
-            logger.error("Invalid base URL: \(baseURL)")
+        // swiftformat:disable:next redundantSelf
+        guard let url = URL(string: self.baseURL) else {
+            // swiftformat:disable:next redundantSelf
+            logger.error("Invalid base URL: \(self.baseURL)")
             throw SentenceGenerationError.invalidConfiguration
         }
 
