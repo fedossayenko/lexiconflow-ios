@@ -86,13 +86,16 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
+      - name: List Available Simulators
+        run: xcrun simctl list devices available
+
       - name: Build
         working-directory: ./LexiconFlow
         run: |
           xcodebuild build \
             -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
-            -destination 'platform=iOS Simulator,name=Any iOS Simulator Device'
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1'
 
   # Test with Coverage
   test:
@@ -127,13 +130,16 @@ jobs:
         with:
           xcode-version: '26.1.1'
 
+      - name: List Available Simulators
+        run: xcrun simctl list devices available
+
       - name: Test with Coverage
         working-directory: ./LexiconFlow
         run: |
           xcodebuild test \
             -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
-            -destination 'platform=iOS Simulator,name=Any iOS Simulator Device' \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1' \
             -only-testing:LexiconFlowTests \
             -parallel-testing-enabled NO \
             -enableCodeCoverage YES \
