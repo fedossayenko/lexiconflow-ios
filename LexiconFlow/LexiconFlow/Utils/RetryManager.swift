@@ -119,6 +119,10 @@ enum RetryManager {
                     logger.info("\(logContext): Succeeded on attempt \(attempt + 1)")
                 }
                 return .success(result)
+            } catch is CancellationError {
+                // Task was cancelled - propagate cancellation immediately
+                logger.info("\(logContext): Operation cancelled")
+                throw CancellationError()
             } catch let error as ErrorType {
                 lastError = error
                 guard isRetryable(error) else {
