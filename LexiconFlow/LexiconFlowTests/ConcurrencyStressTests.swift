@@ -236,11 +236,11 @@ struct ConcurrencyStressTests {
 
 /// Thread-safe array for concurrent test result collection
 private actor LockedArray<Element> {
-    private var array: [Element] = []
+    private var storage: [Element] = []
 
     func append(_ element: Element) {
-        array.append(element)
+        storage.append(element)
     }
 
-    var array: [Element] { array }
+    var array: [Element] { storage }
 }

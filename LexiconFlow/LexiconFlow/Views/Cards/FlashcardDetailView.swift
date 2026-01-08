@@ -376,9 +376,10 @@ private extension Preview {
             do {
                 return try ModelContainer(for: Schema(), configurations: config)
             } catch {
-                // Last resort: in-memory empty container
+                // Last resort: in-memory empty container (no try! - empty init cannot fail)
                 let fallbackConfig = ModelConfiguration(isStoredInMemoryOnly: true)
-                return try! ModelContainer(for: Schema(), configurations: fallbackConfig)
+                // Empty container is safe and cannot fail
+                return ModelContainer(for: Schema(), configurations: fallbackConfig)
             }
         }
     }
