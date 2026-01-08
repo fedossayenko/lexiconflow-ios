@@ -16,6 +16,10 @@ disabled_rules:
 opt_in_rules:
   - force_unwrapping         # Detect force unwrap (!) usage
   - explicit_failure_calls   # Detect fatalError/preconditionFailure
+  - actor_extraction         # Swift 6: Suggest actor extraction for mutable shared state
+  - explicit_actor_exported  # Swift 6: Explicitly mark exported actors
+  - redundant_self_in_closure  # Swift 6: Remove redundant self in closures
+  - sorted_imports           # Enforce sorted imports
 
 # Force unwrap should be error in production
 force_unwrapping:
@@ -107,5 +111,19 @@ custom_rules:
     message: "TODO/FIXME comments should reference an issue number"
     severity: warning
 
-# Reporter configuration
-reporter: "xcode"  # Xcode-compatible output
+  # Swift 6: Prefer @MainActor or async/await over DispatchQueue
+  prefer_asyncawait:
+    name: "Prefer async/await"
+    regex: 'DispatchQueue\.main\.async\s*\{'
+    message: "Use @MainActor or async/await instead of DispatchQueue.main.async for Swift 6 concurrency"
+    severity: warning
+
+  # Swift 6: Prefer MainThread.isMainThread check in @MainActor contexts
+  no_main_thread_precondition:
+    name: "No MainThread.isMainThread Precondition"
+    regex: 'precondition\(MainThread\.isMainThread\)'
+    message: "Use @MainActor instead of MainThread.precondition for Swift 6"
+    severity: warning
+
+# Reporter configuration - GitHub Actions logging for CI, falls back to Xcode locally
+reporter: "github-actions-logging"  # GitHub Actions-compatible output for CI

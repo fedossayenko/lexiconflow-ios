@@ -1,0 +1,32 @@
+--swiftformat v0.55
+--indent 4
+--width auto
+--wrap arguments
+--wrap collections
+--disable trailingWhitespace,unusedImports
+
+-- Swift 6 concurrency formatting
+--patternMatching default
+--tupl eFormatting default
+--extensionAccessControl onOneLine
+
+-- Privacy-first architecture
+--privacy explicit
+
+-- Import organization
+--importGrouping testable
+
+-- Empty braces
+--emptyBraces inline
+
+-- Whitespace around operators
+--spacing aroundOperators
+
+-- Number formatting
+--decimalGrouping none
+
+-- Comments
+--stripUnusedArgs false
+
+-- Organize declarations
+--sortDeclarations true
