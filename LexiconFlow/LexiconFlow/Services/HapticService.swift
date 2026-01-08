@@ -67,6 +67,9 @@ class HapticService {
     /// CoreHaptics engine (iOS 13+)
     private var hapticEngine: CHHapticEngine?
 
+    /// Flag to prevent recursive setupHapticEngine() calls
+    private var isSettingUpEngine = false
+
     /// Device capability detection
     private var supportsHaptics: Bool {
         CHHapticEngine.capabilitiesForHardware().supportsHaptics
@@ -79,6 +82,9 @@ class HapticService {
     /// Sets up the CoreHaptics engine with graceful failure handling.
     private func setupHapticEngine() {
         guard supportsHaptics else { return }
+        guard !isSettingUpEngine else { return }
+        isSettingUpEngine = true
+        defer { isSettingUpEngine = false }
 
         do {
             hapticEngine = try CHHapticEngine()

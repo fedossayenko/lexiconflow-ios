@@ -75,6 +75,9 @@ final actor OnDeviceTranslationService {
     /// Active translation session for managing language state
     private var translationSession: TranslationSession?
 
+    /// Background language pack download task (for parallel download + system settings fallback)
+    nonisolated(unsafe) private var downloadTask: Task<Void, Never>?
+
     /// Current source language configuration (stored as BCP 47 language code)
     private var sourceLanguageCode: String = "en"
 
@@ -263,23 +266,18 @@ final actor OnDeviceTranslationService {
     /// - Parameter language: `Locale.Language` object to check
     /// - Returns: `true` if the language pack needs download, `false` if already installed
     func needsLanguageDownload(_ language: Locale.Language) async -> Bool {
-        let availability = LanguageAvailability()
+        // FIXED: Return true if language is NOT available (needs download)
+        // Previously returned !isSupported which was inverted logic
+        let isAvailable = await isLanguageAvailable(language)
+        let needsDownload = !isAvailable
 
-        // Check if the language is supported by the Translation framework
-        // Note: iOS 26 Translation framework handles language pack downloads automatically
-        // when creating a TranslationSession. This method checks framework support only.
-        let supportedLanguages = await availability.supportedLanguages
-        let isSupported = supportedLanguages.contains(language)
-
-        if !isSupported {
-            logger.info("Language is not supported by Translation framework")
+        if needsDownload {
+            logger.info("Language pack needs download: not currently available")
         } else {
-            logger.debug("Language is supported by Translation framework")
+            logger.debug("Language pack already installed: no download needed")
         }
 
-        // Return false (no download needed) for supported languages
-        // The framework will handle language pack downloads automatically
-        return !isSupported
+        return needsDownload
     }
 
     /// Check if a language pack needs to be downloaded (convenience method)
@@ -330,13 +328,12 @@ final actor OnDeviceTranslationService {
     func requestLanguageDownload(_ language: Locale.Language) async throws {
         // Store language code for error messages
         let languageCode = String(describing: language)
-        logger.info("Requesting language pack download")
+        logger.info("Requesting language pack download for '\(languageCode)'")
 
-        // Check if language is already available
-        if await isLanguageAvailable(language) {
-            logger.info("Language pack already installed")
-            return
-        }
+        // FIXED: Removed early return check for isLanguageAvailable()
+        // Previously: If language appeared available, method returned early without triggering download
+        // Now: Always attempt to trigger download via TranslationSession creation
+        // The session creation will handle already-installed languages gracefully
 
         // Create a translation session to trigger language download
         // The system will prompt the user to download the required language pack
@@ -344,9 +341,10 @@ final actor OnDeviceTranslationService {
 
         do {
             // iOS 26 API: TranslationSession takes installedSource and target directly
+            // If language is already installed, session creation succeeds without prompt
+            // If language needs download, system prompts user to download
             let session = TranslationSession(installedSource: language, target: temporaryTarget)
-            // The session creation will trigger the download prompt if needed
-            logger.info("Language download request initiated")
+            logger.info("Language download request completed successfully")
             _ = session // Mark as used to avoid warning
         } catch {
             logger.error("Failed to request language download: \(error.localizedDescription)")
@@ -374,6 +372,67 @@ final actor OnDeviceTranslationService {
     func requestLanguageDownload(_ language: String) async throws {
         let lang = Locale.Language(identifier: language)
         try await requestLanguageDownload(lang)
+    }
+
+    /// Request language pack download in background (parallel fallback approach)
+    ///
+    /// **Usage:**
+    /// ```swift
+    /// // Start background download while showing system settings button
+    /// service.requestLanguageDownloadInBackground("es")
+    ///
+    /// // UI shows both "Downloading..." and "Open System Settings" button
+    /// // If automatic download succeeds, availability updates automatically
+    /// // If automatic download fails, user can use system settings button
+    /// ```
+    ///
+    /// **Behavior:**
+    /// - Cancels any existing background download attempt
+    /// - Starts new background attempt without blocking
+    /// - Silently fails if download doesn't work (UI shows system settings fallback)
+    /// - Logs success/failure for monitoring
+    ///
+    /// **Rationale:**
+    /// This enables the parallel fallback approach where:
+    /// 1. Background download attempts automatic download
+    /// 2. System settings button is always available as reliable fallback
+    /// 3. Best of both: automatic UX + reliable manual override
+    ///
+    /// - Parameter language: Language identifier string to download (e.g., "en", "ru", "es")
+    nonisolated(unsafe) func requestLanguageDownloadInBackground(_ language: String) {
+        // Cancel any existing download attempt
+        downloadTask?.cancel()
+
+        let lang = Locale.Language(identifier: language)
+        let languageCode = String(describing: language)
+
+        logger.info("Starting background language pack download for '\(languageCode)'")
+
+        // Start new background attempt
+        downloadTask = Task {
+            do {
+                try await requestLanguageDownload(lang)
+                logger.info("Background language pack download succeeded for '\(languageCode)'")
+            } catch {
+                logger.warning("Background language pack download failed for '\(languageCode)': \(error.localizedDescription)")
+                // Silently fail - UI shows system settings button
+                // This is expected behavior: automatic download may not work,
+                // but system settings fallback provides reliable download path
+            }
+        }
+    }
+
+    /// Cancel any pending background language pack download
+    ///
+    /// **Usage:**
+    /// ```swift
+    /// // User navigates away from settings view
+    /// service.cancelBackgroundDownload()
+    /// ```
+    nonisolated(unsafe) func cancelBackgroundDownload() {
+        downloadTask?.cancel()
+        downloadTask = nil
+        logger.debug("Background language pack download cancelled")
     }
 
     // MARK: - Batch Translation Types

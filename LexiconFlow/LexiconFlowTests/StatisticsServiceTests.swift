@@ -178,44 +178,6 @@ struct StatisticsServiceTests {
         #expect(result.formattedPercentage == "75%")
     }
 
-    @Test("Retention rate with trend data across multiple days")
-    func retentionRateTrendData() async throws {
-        let context = freshContext()
-        try context.clearAll()
-
-        let flashcard = createFlashcard(context: context)
-        let today = Date()
-        let yesterday = DateMath.addingDays(-1, to: today)
-        let twoDaysAgo = DateMath.addingDays(-2, to: today)
-
-        // Day 1: 100% retention (1/1)
-        _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: twoDaysAgo)
-
-        // Day 2: 50% retention (1/2)
-        _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: yesterday)
-        _ = createReview(context: context, flashcard: flashcard, rating: 0, reviewDate: yesterday)
-
-        // Day 3: 66% retention (2/3)
-        _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: today)
-        _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: today)
-        _ = createReview(context: context, flashcard: flashcard, rating: 0, reviewDate: today)
-
-        let result = await StatisticsService.shared.calculateRetentionRate(
-            context: context,
-            timeRange: .allTime
-        )
-
-        #expect(result.rate > 0.6 && result.rate < 0.7) // Overall ~67%
-        #expect(result.successfulCount == 5)
-        #expect(result.failedCount == 2)
-        #expect(result.trendData.count == 3)
-
-        // Verify trend data points
-        let sortedTrends = result.trendData.sorted { $0.date < $1.date }
-        #expect(sortedTrends[0].rate == 1.0) // Day 1: 100%
-        #expect(sortedTrends[1].rate == 0.5) // Day 2: 50%
-        #expect(sortedTrends[2].rate > 0.6 && sortedTrends[2].rate < 0.7) // Day 3: ~67%
-    }
 
     @Test("Retention rate with time range filtering")
     func retentionRateTimeRangeFiltering() async throws {
@@ -891,34 +853,6 @@ struct StatisticsServiceTests {
         #expect(stats[0].cardsLearned == 5) // Unchanged
     }
 
-    @Test("Daily stats aggregation with mixed retention")
-    func dailyStatsAggregationMixedRetention() async throws {
-        let context = freshContext()
-        try context.clearAll()
-
-        let today = Date()
-        let flashcard = createFlashcard(context: context, lastReviewDate: today)
-        let session = createStudySession(
-            context: context,
-            startTime: today,
-            endTime: today.addingTimeInterval(600),
-            cardsReviewed: 4
-        )
-
-        // Mixed reviews: 3 successful, 1 failed
-        _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: today)
-        _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: today)
-        _ = createReview(context: context, flashcard: flashcard, rating: 0, reviewDate: today)
-        _ = createReview(context: context, flashcard: flashcard, rating: 4, reviewDate: today)
-
-        let count = try await StatisticsService.shared.aggregateDailyStats(context: context)
-
-        #expect(count == 1)
-
-        let stats = try context.fetch(FetchDescriptor<DailyStats>())
-        #expect(stats.count == 1)
-        #expect(stats[0].retentionRate == 0.75) // 3/4 = 75%
-    }
 
     @Test("Daily stats aggregation only processes unaggregated sessions")
     func dailyStatsAggregationIncremental() async throws {

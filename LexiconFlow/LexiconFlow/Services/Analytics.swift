@@ -18,11 +18,29 @@ import OSLog
 /// be swapped with different providers (Firebase, Sentry, custom backend).
 ///
 /// **Current Implementation**: Console-based logging for development.
-/// **Production**: Provider integration tracked in project roadmap.
+/// **Production**: Should integrate Firebase Crashlytics or Sentry.
+///
+/// **Testing**: Supports dependency injection via `setBackend()` for unit tests.
 enum Analytics {
 
     /// Logger for analytics output
     private static let logger = Logger(subsystem: "com.lexiconflow.analytics", category: "Analytics")
+
+    /// Current analytics backend (defaults to production implementation)
+    private static var backend: AnalyticsBackend = ProductionAnalyticsBackend()
+
+    /// Set a custom analytics backend (for testing)
+    ///
+    /// - Parameter backend: The analytics backend to use
+    /// - Note: This should only be called in tests. Production code uses the default.
+    static func setBackend(_ backend: AnalyticsBackend) {
+        Self.backend = backend
+    }
+
+    /// Reset to the production backend (for test cleanup)
+    static func resetToProductionBackend() {
+        Self.backend = ProductionAnalyticsBackend()
+    }
 
     // MARK: - Event Tracking
 
@@ -34,18 +52,8 @@ enum Analytics {
     /// - Parameters:
     ///   - name: Event name (e.g., "card_reviewed", "deck_created")
     ///   - metadata: Optional key-value pairs for additional context
-    static func trackEvent(_ name: String, metadata: [String: String] = [:]) async {
-        let logMessage: String
-        if metadata.isEmpty {
-            logMessage = "Event: \(name)"
-        } else {
-            let metadataString = metadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
-            logMessage = "Event: \(name) [\(metadataString)]"
-        }
-
-        logger.info("\(logMessage)")
-
-        // Provider integration: FirebaseAnalytics.logEvent(), Sentry.capture(), etc.
+    static func trackEvent(_ name: String, metadata: [String: String] = [:]) {
+        backend.trackEvent(name, metadata: metadata)
     }
 
     /// Track an error or exception
@@ -61,16 +69,8 @@ enum Analytics {
         _ name: String,
         error: Error,
         metadata: [String: String] = [:]
-    ) async {
-        let errorMessage = error.localizedDescription
-        var fullMetadata = metadata
-        fullMetadata["error_description"] = errorMessage
-        fullMetadata["error_type"] = String(describing: type(of: error))
-
-        let metadataString = fullMetadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
-        logger.error("❌ Error: \(name) [\(metadataString)]")
-
-        // Provider integration: Crashlytics.crashlytics().record(), SentrySDK.capture(error:)
+    ) {
+        backend.trackError(name, error: error, metadata: metadata)
     }
 
     /// Track a non-fatal issue
@@ -87,14 +87,8 @@ enum Analytics {
         _ name: String,
         message: String,
         metadata: [String: String] = [:]
-    ) async {
-        var fullMetadata = metadata
-        fullMetadata["message"] = message
-
-        let metadataString = fullMetadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
-        logger.warning("⚠️ Issue: \(name) [\(metadataString)]")
-
-        // Provider integration: SentrySDK.capture(message:)
+    ) {
+        backend.trackIssue(name, message: message, metadata: metadata)
     }
 
     // MARK: - User Identification
@@ -104,9 +98,8 @@ enum Analytics {
     /// **Why async**: User identification may involve network calls to remote services.
     ///
     /// - Parameter userId: Unique user identifier
-    static func setUserId(_ userId: String) async {
-        logger.info("Set User ID: \(userId)")
-        // Provider integration: Analytics.setUserID(), SentrySDK.setUser()
+    static func setUserId(_ userId: String) {
+        backend.setUserId(userId)
     }
 
     /// Set user properties for segmentation
@@ -114,10 +107,8 @@ enum Analytics {
     /// **Why async**: Setting properties may involve network calls to remote services.
     ///
     /// - Parameter properties: Dictionary of user properties
-    static func setUserProperties(_ properties: [String: Any]) async {
-        let propertyString = properties.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
-        logger.info("Set User Properties: [\(propertyString)]")
-        // Provider integration: Analytics.setUserProperties(), SentrySDK.setContext()
+    static func setUserProperties(_ properties: [String: Any]) {
+        backend.setUserProperties(properties)
     }
 
     // MARK: - Performance Tracking
@@ -134,14 +125,8 @@ enum Analytics {
         _ name: String,
         duration: TimeInterval,
         metadata: [String: String] = [:]
-    ) async {
-        var fullMetadata = metadata
-        fullMetadata["duration_ms"] = String(format: "%.2f", duration * 1000)
-
-        let metadataString = fullMetadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
-        logger.info("⏱ Performance: \(name) [\(metadataString)]")
-
-        // Provider integration: FirebasePerformance.startTrace(), SentrySDK.startTransaction()
+    ) {
+        backend.trackPerformance(name, duration: duration, metadata: metadata)
     }
 
     /// Measure and track a block of code's execution time
@@ -157,7 +142,7 @@ enum Analytics {
         let result = try await block()
         let duration = Date().timeIntervalSince(start)
 
-        await trackPerformance(name, duration: duration)
+        trackPerformance(name, duration: duration)
 
         return result
     }

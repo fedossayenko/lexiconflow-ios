@@ -132,6 +132,7 @@ final class SentenceGenerationViewModel: ObservableObject {
             errorMessage = error.localizedDescription
             generationMessage = nil
             logger.error("Unexpected error during sentence generation: \(error.localizedDescription)")
+            Analytics.trackError("sentence_generation_unexpected", error: error)
         }
 
         isGenerating = false
@@ -177,6 +178,7 @@ final class SentenceGenerationViewModel: ObservableObject {
         } catch {
             logger.error("Failed to save fallback sentences: \(error.localizedDescription)")
             errorMessage = "Failed to save offline sentences"
+            Analytics.trackError("save_fallback_sentences_failed", error: error)
         }
     }
 
@@ -232,6 +234,7 @@ final class SentenceGenerationViewModel: ObservableObject {
             logger.info("Cleaned up \(expired.count) expired sentences for '\(card.word)'")
         } catch {
             logger.error("Failed to cleanup expired sentences: \(error.localizedDescription)")
+            Analytics.trackError("cleanup_expired_sentences_failed", error: error)
         }
     }
 

@@ -166,3 +166,8 @@ enum RetryManager {
         preconditionFailure("Operation threw error type that doesn't match declared ErrorType. Check operation signature.")
     }
 }
+
+/// Error type for RetryManager failures
+enum RetryManagerError: Error, Sendable {
+    case unknownCompletion
+}

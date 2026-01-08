@@ -210,9 +210,12 @@ struct AddFlashcardView: View {
 
         isTranslating = false
 
-        // 2b. Automatic sentence generation (if translation enabled)
+        // 2b. Automatic sentence generation (if translation and sentence generation enabled)
         // Note: Sentence generation uses cloud TranslationService separately
-        if AppSettings.isTranslationEnabled && TranslationService.shared.isConfigured {
+        // This is an optional premium feature that requires both translation AND sentence generation to be enabled
+        if AppSettings.isTranslationEnabled &&
+           AppSettings.isSentenceGenerationEnabled &&
+           TranslationService.shared.isConfigured {
             isGeneratingSentences = true
 
             do {
