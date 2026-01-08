@@ -366,35 +366,14 @@ struct FlashcardDetailView: View {
 
 private extension Preview {
     static func makePreviewContainer() -> ModelContainer {
-        // Empty model for fallback container
-        @Model
-        final class EmptyModel {
-            init() {}
-        }
-
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         do {
             return try ModelContainer(for: Flashcard.self, configurations: config)
         } catch {
             // Preview failure indicates a real problem - log and use fallback
             assertionFailure("Failed to create preview container: \(error.localizedDescription)")
-            // Fallback: create container with no schema (minimal recovery)
-            do {
-                return try ModelContainer(for: Schema(), configurations: config)
-            } catch {
-                // Last resort: empty model container (cannot fail with EmptyModel)
-                let fallbackConfig = ModelConfiguration(isStoredInMemoryOnly: true)
-                // EmptyModel is minimal and should always succeed
-                do {
-                    return try ModelContainer(for: EmptyModel.self, configurations: fallbackConfig)
-                } catch {
-                    // Absolute last resort - this should never happen
-                    // If it does, there's a fundamental SwiftData issue
-                    assertionFailure("EmptyModel container creation failed: \(error)")
-                    // Return in-memory container with empty schema
-                    return try ModelContainer(for: Schema([EmptyModel.self]), configurations: fallbackConfig)
-                }
-            }
+            // Fallback: create empty container (in-memory, no schema)
+            return try ModelContainer(for: Schema(), configurations: config)
         }
     }
 }

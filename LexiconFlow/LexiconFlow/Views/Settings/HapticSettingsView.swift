@@ -63,7 +63,7 @@ struct HapticSettingsView: View {
         .navigationTitle("Haptic Feedback")
     }
 
-    private func testHaptic() {
+    func testHaptic() {
         isTesting = true
         hapticService.triggerSuccess()
 

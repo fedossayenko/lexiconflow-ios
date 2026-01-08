@@ -21,20 +21,17 @@ struct LexiconFlowApp: App {
     /// This is used when even runtime container creation fails
     private static let emptyFallbackContainer: ModelContainer = {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
-        let schema = Schema([EmptyModel.self])
         do {
-            return try ModelContainer(for: schema, configurations: [configuration])
+            return try ModelContainer(for: EmptyModel.self, configurations: configuration)
         } catch {
             // If this fails during static initialization, the app cannot launch on this device
             // This is a catastrophic failure indicating SwiftData is completely broken
             // Use assertionFailure instead of fatalError to prevent production crash
             assertionFailure("SwiftData is completely non-functional on this device: \(error)")
-            // As last resort, create minimal container without throwing
-            // ModelContainer(for:) with EmptyModel should always succeed in practice
-            // If it somehow fails, the crash is preferable to returning an invalid container
+            // As last resort, create minimal container with empty schema
             let fallbackConfig = ModelConfiguration(isStoredInMemoryOnly: true)
             do {
-                return try ModelContainer(for: EmptyModel.self, configurations: [fallbackConfig])
+                return try ModelContainer(for: EmptyModel.self, configurations: fallbackConfig)
             } catch {
                 // Absolute failure - SwiftData is completely broken
                 // This should never happen on a functioning device
