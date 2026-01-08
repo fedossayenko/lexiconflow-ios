@@ -289,7 +289,7 @@ private func makeStudyViewWithDecksPreview() -> some View {
     } catch {
         Logger(subsystem: "com.lexiconflow.preview", category: "StudyView")
             .error("Failed to create preview container: \(error)")
-        return Text("Preview Unavailable")
+        return AnyView(Text("Preview Unavailable"))
     }
     let context = ModelContext(container)
 
@@ -302,6 +302,5 @@ private func makeStudyViewWithDecksPreview() -> some View {
     // Set selected deck IDs
     AppSettings.selectedDeckIDs = [deck1.id, deck2.id]
 
-    return StudyView()
-        .modelContainer(container)
+    return AnyView(StudyView().modelContainer(container))
 }

@@ -282,7 +282,7 @@ private func makeDeckSelectionPreview() -> some View {
     } catch {
         Logger(subsystem: "com.lexiconflow.preview", category: "DeckSelectionView")
             .error("Failed to create preview container: \(error)")
-        return Text("Preview Unavailable")
+        return AnyView(Text("Preview Unavailable"))
     }
     let context = ModelContext(container)
 
@@ -295,6 +295,5 @@ private func makeDeckSelectionPreview() -> some View {
     _ = context.insert(deck2)
     _ = context.insert(deck3)
 
-    return DeckSelectionView()
-        .modelContainer(container)
+    return AnyView(DeckSelectionView().modelContainer(container))
 }

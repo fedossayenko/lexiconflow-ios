@@ -29,8 +29,8 @@ struct LexiconFlowApp: App {
             // This is a catastrophic failure indicating SwiftData is completely broken
             // Use assertionFailure instead of fatalError to prevent production crash
             assertionFailure("SwiftData is completely non-functional on this device: \(error)")
-            // Return empty container as last resort
-            return ModelContainer(for: [])
+            // Return empty container as last resort - use the schema we already defined
+            return try! ModelContainer(for: schema, configurations: [configuration])
         }
     }()
 
