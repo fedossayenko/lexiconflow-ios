@@ -60,8 +60,8 @@ struct ConcurrencyStressTests {
 
         let flashcard = Flashcard(
             word: "concurrent",
-            phonetic: "/kənˈkɜːrənt/",
-            definition: "existing or happening at the same time"
+            definition: "existing or happening at the same time",
+            phonetic: "/kənˈkɜːrənt/"
         )
         flashcard.deck = deck
 
@@ -95,7 +95,7 @@ struct ConcurrencyStressTests {
             for _ in 0 ..< concurrencyCount {
                 group.addTask {
                     // Call actor-isolated FSRSWrapper
-                    try! FSRSWrapper.shared.processReview(
+                    try! await FSRSWrapper.shared.processReview(
                         flashcard: flashcard,
                         rating: Int.random(in: 1 ... 5)
                     )
@@ -124,8 +124,9 @@ struct ConcurrencyStressTests {
     @Test("MainActor ViewModel prevents concurrent mutation")
     @MainActor
     func mainActorViewModelSafety() async throws {
-        let viewModel = Scheduler(modelContext: freshContext())
-        let flashcard = createTestFlashcard(in: viewModel.modelContext)
+        let context = freshContext()
+        let viewModel = Scheduler(modelContext: context)
+        let flashcard = createTestFlashcard(in: context)
 
         // Track results
         let results = LockedArray<FlashcardReview?>()
@@ -143,7 +144,7 @@ struct ConcurrencyStressTests {
             }
 
             for await result in group {
-                if let result {
+                if let result = result {
                     await results.append(result)
                 }
             }
@@ -173,10 +174,7 @@ struct ConcurrencyStressTests {
             rating: 3
         )
 
-        // Verify DTO is Sendable (compilation test)
-        #expect(dto is Sendable, "DTOs must conform to Sendable")
-
-        // Verify DTO properties are accessible
+        // Verify DTO properties are accessible (Sendable check is at compile time)
         #expect(dto.stability > 0)
         #expect(dto.difficulty > 0)
         #expect(dto.dueDate > Date())
@@ -190,7 +188,8 @@ struct ConcurrencyStressTests {
         await service.setLanguages(source: "en", target: "es")
 
         // Skip if language pair not supported
-        guard service.isLanguagePairSupported() else {
+        let isSupported = await service.isLanguagePairSupported()
+        guard isSupported else {
             print("Skipping: Language pair not supported")
             return
         }
