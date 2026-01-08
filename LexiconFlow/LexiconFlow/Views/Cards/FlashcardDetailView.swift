@@ -151,7 +151,7 @@ struct FlashcardDetailView: View {
     /// Card information header showing word, definition, translation, phonetic, and CEFR
     @ViewBuilder
     private var cardInfoSection: some View {
-        if let viewModel = viewModel {
+        if viewModel != nil {
             VStack(alignment: .leading, spacing: 20) {
                 // Word and CEFR badge row
                 HStack(alignment: .top, spacing: 12) {

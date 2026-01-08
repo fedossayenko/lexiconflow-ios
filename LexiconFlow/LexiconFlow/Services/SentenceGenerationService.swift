@@ -24,7 +24,9 @@ actor SentenceGenerationService {
     // MARK: - Configuration Constants
 
     /// Configuration constants for sentence generation operations
-    private enum Config {
+    ///
+    /// **Note**: Marked `nonisolated` to allow safe access from any context
+    private nonisolated enum Config {
         /// Maximum concurrent sentence generation requests
         /// Conservative limit to avoid rate limiting with sentence generation API
         static let defaultMaxConcurrency = 3
@@ -282,9 +284,9 @@ actor SentenceGenerationService {
 
         logger.debug("Sending sentence generation request for '\(cardWord)'")
 
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        let (data, urlResponse) = try await URLSession.shared.data(for: urlRequest)
 
-        guard let httpResponse = response as? HTTPURLResponse else {
+        guard let httpResponse = urlResponse as? HTTPURLResponse else {
             let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
             logger.error("Generation API error: Invalid HTTP response - \(String(errorBody.prefix(200)))")
             throw SentenceGenerationError.apiFailed
@@ -315,23 +317,58 @@ actor SentenceGenerationService {
         let rawResponse = try JSONDecoder().decode(ZAIResponse.self, from: data)
         let content = rawResponse.choices.first?.message.content ?? ""
 
-        // Extract JSON from content (handle markdown code blocks)
-        let jsonContent = JSONExtractor.extract(from: content, logger: logger)
+        // Extract and decode JSON synchronously without Logger to avoid @MainActor isolation
+        let response = try decodeJSONResponseSynchronously(from: content)
+        logger.info("Successfully generated \(response.items.count) sentences for '\(cardWord)'")
+        return response
+    }
 
-        guard let data = jsonContent.data(using: .utf8) else {
-            logger.error("Failed to decode JSON content as UTF-8")
-            throw SentenceGenerationError.invalidResponse(reason: "Content is not valid UTF-8")
+    /// Extract and decode JSON response without Logger dependency (nonisolated)
+    ///
+    /// This helper method inlines JSON extraction and decoding logic to avoid @MainActor
+    /// isolation issues that occur when passing Logger to JSONExtractor.extract(from:logger:).
+    private nonisolated func decodeJSONResponseSynchronously(from text: String) throws -> SentenceGenerationResponse {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Try ```json code blocks (preferred format)
+        if let jsonStart = trimmed.range(of: "```json", options: .caseInsensitive) {
+            let afterStart = jsonStart.upperBound
+            if let jsonEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
+                let json = String(trimmed[afterStart..<jsonEnd.lowerBound])
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                if let data = json.data(using: .utf8) {
+                    return try JSONDecoder().decode(SentenceGenerationResponse.self, from: data)
+                }
+            }
         }
 
-        do {
-            let response = try JSONDecoder().decode(SentenceGenerationResponse.self, from: data)
-            logger.info("Successfully generated \(response.items.count) sentences for '\(cardWord)'")
-            return response
-        } catch {
-            logger.error("JSON decode error: \(error.localizedDescription)")
-            logger.error("Content that failed to decode: \(String(jsonContent.prefix(500)))")
-            throw SentenceGenerationError.invalidResponse(reason: error.localizedDescription)
+        // Try ``` code blocks (without json specifier)
+        if let codeStart = trimmed.range(of: "```", options: .caseInsensitive) {
+            let afterStart = codeStart.upperBound
+            if let codeEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
+                let json = String(trimmed[afterStart..<codeEnd.lowerBound])
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                if let data = json.data(using: .utf8) {
+                    return try JSONDecoder().decode(SentenceGenerationResponse.self, from: data)
+                }
+            }
         }
+
+        // Try { to } brace delimiters (fallback for unstructured text)
+        if let firstBrace = trimmed.firstIndex(of: "{"),
+           let lastBrace = trimmed.lastIndex(of: "}") {
+            let json = String(trimmed[firstBrace...lastBrace])
+            if let data = json.data(using: .utf8) {
+                return try JSONDecoder().decode(SentenceGenerationResponse.self, from: data)
+            }
+        }
+
+        // If no patterns matched, try to decode the original trimmed text
+        if let data = trimmed.data(using: .utf8) {
+            return try JSONDecoder().decode(SentenceGenerationResponse.self, from: data)
+        }
+
+        throw SentenceGenerationError.invalidResponse(reason: "Could not extract or decode JSON from response")
     }
 
     // MARK: - Batch Generation
@@ -415,7 +452,7 @@ actor SentenceGenerationService {
                     if let result = try await group.next() {
                         results.append(result)
                         completedCount += 1
-                        await reportProgress(
+                        reportProgress(
                             handler: progressHandler,
                             current: completedCount,
                             total: cards.count,
@@ -439,7 +476,7 @@ actor SentenceGenerationService {
             for try await result in group {
                 results.append(result)
                 completedCount += 1
-                await reportProgress(
+                reportProgress(
                     handler: progressHandler,
                     current: completedCount,
                     total: cards.count,

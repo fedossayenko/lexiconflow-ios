@@ -136,7 +136,7 @@ struct FlashcardView: View {
                 }
                 .onEnded { value in
                     let direction = gestureViewModel.detectDirection(translation: value.translation)
-                    let distance = max(abs(value.translation.width), abs(value.translation.height))
+                    _ = max(abs(value.translation.width), abs(value.translation.height))
                     let shouldCommit = gestureViewModel.shouldCommitSwipe(translation: value.translation)
 
                     if shouldCommit {

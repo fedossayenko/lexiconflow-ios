@@ -356,17 +356,12 @@ final actor OnDeviceTranslationService {
         // The system will prompt the user to download the required language pack
         let temporaryTarget = Locale.Language(identifier: "en")
 
-        do {
-            // iOS 26 API: TranslationSession takes installedSource and target directly
-            // If language is already installed, session creation succeeds without prompt
-            // If language needs download, system prompts user to download
-            let session = TranslationSession(installedSource: language, target: temporaryTarget)
-            logger.info("Language download request completed successfully")
-            _ = session // Mark as used to avoid warning
-        } catch {
-            logger.error("Failed to request language download: \(error.localizedDescription)")
-            throw OnDeviceTranslationError.languagePackDownloadFailed(language: languageCode)
-        }
+        // iOS 26 API: TranslationSession takes installedSource and target directly
+        // If language is already installed, session creation succeeds without prompt
+        // If language needs download, system prompts user to download
+        let session = TranslationSession(installedSource: language, target: temporaryTarget)
+        logger.info("Language download request completed successfully")
+        _ = session // Mark as used to avoid warning
     }
 
     /// Request download of a language pack for offline translation (convenience method)
@@ -872,7 +867,7 @@ final actor OnDeviceTranslationService {
                     if let result = try await group.next() {
                         results.append(result)
                         completedCount += 1
-                        await reportProgress(
+                        reportProgress(
                             handler: progressHandler,
                             current: completedCount,
                             total: texts.count,
@@ -893,7 +888,7 @@ final actor OnDeviceTranslationService {
             for try await result in group {
                 results.append(result)
                 completedCount += 1
-                await reportProgress(
+                reportProgress(
                     handler: progressHandler,
                     current: completedCount,
                     total: texts.count,

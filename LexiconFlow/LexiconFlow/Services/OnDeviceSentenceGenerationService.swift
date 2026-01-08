@@ -27,7 +27,9 @@ actor OnDeviceSentenceGenerationService {
     // MARK: - Configuration Constants
 
     /// Configuration constants for sentence generation operations
-    private enum Config {
+    ///
+    /// **Note**: Marked `nonisolated` to allow safe access from any context
+    private nonisolated enum Config {
         /// Default number of sentences to generate per flashcard
         static let defaultSentencesPerCard = 3
 
@@ -234,8 +236,8 @@ actor OnDeviceSentenceGenerationService {
         from response: String,
         word: String
     ) throws -> SentenceGenerationResponse {
-        // Extract JSON from response (handle markdown code blocks)
-        let jsonContent = JSONExtractor.extract(from: response, logger: logger)
+        // Extract JSON synchronously without Logger to avoid @MainActor isolation
+        let jsonContent = extractJSONSynchronously(from: response)
 
         guard let data = jsonContent.data(using: .utf8) else {
             logger.error("Failed to decode JSON content as UTF-8")
@@ -258,6 +260,44 @@ actor OnDeviceSentenceGenerationService {
             logger.error("Content that failed to decode: \(String(jsonContent.prefix(500)))")
             throw OnDeviceSentenceGenerationError.generationFailed(error.localizedDescription)
         }
+    }
+
+    /// Extract JSON from text without Logger dependency (nonisolated)
+    ///
+    /// This helper method inlines JSON extraction logic to avoid @MainActor isolation
+    /// issues that occur when passing Logger to JSONExtractor.extract(from:logger:).
+    private nonisolated func extractJSONSynchronously(from text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Try ```json code blocks (preferred format)
+        if let jsonStart = trimmed.range(of: "```json", options: .caseInsensitive) {
+            let afterStart = jsonStart.upperBound
+            if let jsonEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
+                let json = String(trimmed[afterStart..<jsonEnd.lowerBound])
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                return json
+            }
+        }
+
+        // Try ``` code blocks (without json specifier)
+        if let codeStart = trimmed.range(of: "```", options: .caseInsensitive) {
+            let afterStart = codeStart.upperBound
+            if let codeEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
+                let json = String(trimmed[afterStart..<codeEnd.lowerBound])
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                return json
+            }
+        }
+
+        // Try { to } brace delimiters (fallback for unstructured text)
+        if let firstBrace = trimmed.firstIndex(of: "{"),
+           let lastBrace = trimmed.lastIndex(of: "}") {
+            let json = String(trimmed[firstBrace...lastBrace])
+            return json
+        }
+
+        // Return original if no JSON patterns matched
+        return trimmed
     }
 
     /// Helper struct for JSON decoding
@@ -354,7 +394,7 @@ actor OnDeviceSentenceGenerationService {
                     if let result = try await group.next() {
                         results.append(result)
                         completedCount += 1
-                        await reportProgress(
+                        reportProgress(
                             handler: progressHandler,
                             current: completedCount,
                             total: cards.count,
@@ -378,7 +418,7 @@ actor OnDeviceSentenceGenerationService {
             for try await result in group {
                 results.append(result)
                 completedCount += 1
-                await reportProgress(
+                reportProgress(
                     handler: progressHandler,
                     current: completedCount,
                     total: cards.count,

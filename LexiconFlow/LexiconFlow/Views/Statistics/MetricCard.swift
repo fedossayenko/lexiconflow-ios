@@ -78,7 +78,6 @@ struct MetricCard: View {
         color: .blue
     )
     .padding()
-    .previewLayout(.sizeThatFits)
 }
 
 #Preview("Metric Card - Orange") {
@@ -90,7 +89,6 @@ struct MetricCard: View {
         color: .orange
     )
     .padding()
-    .previewLayout(.sizeThatFits)
 }
 
 #Preview("Metric Card - Green") {
@@ -102,7 +100,6 @@ struct MetricCard: View {
         color: .green
     )
     .padding()
-    .previewLayout(.sizeThatFits)
 }
 
 #Preview("Metric Card - Purple") {
@@ -114,7 +111,6 @@ struct MetricCard: View {
         color: .purple
     )
     .padding()
-    .previewLayout(.sizeThatFits)
 }
 
 #Preview("Metric Card - Dark Mode") {
@@ -137,5 +133,4 @@ struct MetricCard: View {
     }
     .padding()
     .preferredColorScheme(.dark)
-    .previewLayout(.sizeThatFits)
 }

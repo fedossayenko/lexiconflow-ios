@@ -86,55 +86,45 @@ final class StatisticsViewModel: ObservableObject {
     /// 2. Calls StatisticsService for all metrics
     /// 3. Updates published properties with DTOs
     /// 4. Handles errors with Analytics tracking
-    /// 5. Times out after 10 seconds to prevent infinite hangs
     ///
     /// **Usage**: Call on view appear and after time range changes
+    /// **Note**: Uses sequential await instead of async let to avoid capturing non-Sendable ModelContext
     func refresh() async {
         isLoading = true
         errorMessage = nil
 
         logger.debug("Refreshing statistics for time range: \(self.selectedTimeRange.displayName)")
 
-        // Fetch all metrics concurrently without wrapper (ModelContext is non-Sendable)
-        do {
-            async let retention = statisticsService.calculateRetentionRate(
-                context: modelContext,
-                timeRange: selectedTimeRange
-            )
+        // Fetch metrics sequentially to avoid capturing non-Sendable ModelContext in Sendable closure
+        // Swift 6 strict concurrency requires this approach
+        let retentionResult = await statisticsService.calculateRetentionRate(
+            context: modelContext,
+            timeRange: selectedTimeRange
+        )
 
-            async let streak = statisticsService.calculateStudyStreak(
-                context: modelContext,
-                timeRange: selectedTimeRange
-            )
+        let streakResult = await statisticsService.calculateStudyStreak(
+            context: modelContext,
+            timeRange: selectedTimeRange
+        )
 
-            async let fsrs = statisticsService.calculateFSRSMetrics(
-                context: modelContext,
-                timeRange: selectedTimeRange
-            )
+        let fsrsResult = await statisticsService.calculateFSRSMetrics(
+            context: modelContext,
+            timeRange: selectedTimeRange
+        )
 
-            // Await all results
-            let (retentionResult, streakResult, fsrsResult) = await (retention, streak, fsrs)
+        // Update published properties on main actor
+        self.retentionData = retentionResult
+        self.streakData = streakResult
+        self.fsrsMetrics = fsrsResult
 
-            // Update published properties on main actor
-            self.retentionData = retentionResult
-            self.streakData = streakResult
-            self.fsrsMetrics = fsrsResult
+        self.logger.info("""
+            Statistics refreshed:
+            - Retention: \(retentionResult.formattedPercentage)
+            - Streak: \(streakResult.currentStreak) days
+            - FSRS: \(fsrsResult.formattedStability) avg stability
+            """)
 
-            self.logger.info("""
-                Statistics refreshed:
-                - Retention: \(retentionResult.formattedPercentage)
-                - Streak: \(streakResult.currentStreak) days
-                - FSRS: \(fsrsResult.formattedStability) avg stability
-                """)
-
-            isLoading = false
-        } catch {
-            // Handle errors
-            errorMessage = error.localizedDescription
-            isLoading = false
-            Analytics.trackError("statistics_refresh_failed", error: error)
-            logger.error("Failed to refresh statistics: \(error.localizedDescription)")
-        }
+        isLoading = false
     }
 
     /// Change the selected time range and refresh data

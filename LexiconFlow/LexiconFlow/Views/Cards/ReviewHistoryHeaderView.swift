@@ -203,7 +203,7 @@ struct ReviewHistoryHeaderView: View {
 
     /// Accessibility label for state and stability
     private var stateAccessibilityLabel: String {
-        guard let state = currentState else {
+        guard currentState != nil else {
             return "No FSRS state"
         }
 

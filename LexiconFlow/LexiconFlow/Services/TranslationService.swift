@@ -17,7 +17,9 @@ final class TranslationService {
     // MARK: - Configuration Constants
 
     /// Configuration constants for translation operations
-    private enum Config {
+    ///
+    /// **Note**: Marked `nonisolated` to allow safe access from any context
+    private nonisolated enum Config {
         /// Maximum concurrent API requests (prevents rate limiting)
         /// Z.ai API typically handles 5-10 concurrent requests efficiently
         static let defaultMaxConcurrency = 5
@@ -375,7 +377,7 @@ final class TranslationService {
                     if let result = try await group.next() {
                         results.append(result)
                         completedCount += 1
-                        await reportProgress(
+                        reportProgress(
                             handler: progressHandler,
                             current: completedCount,
                             total: cards.count,
@@ -393,7 +395,7 @@ final class TranslationService {
             for try await result in group {
                 results.append(result)
                 completedCount += 1
-                await reportProgress(
+                reportProgress(
                     handler: progressHandler,
                     current: completedCount,
                     total: cards.count,

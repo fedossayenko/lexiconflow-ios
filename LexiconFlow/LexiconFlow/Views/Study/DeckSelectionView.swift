@@ -291,9 +291,9 @@ private func makeDeckSelectionPreview() -> some View {
     let deck2 = Deck(name: "Phrases", icon: "text.bubble", order: 1)
     let deck3 = Deck(name: "Grammar", icon: "text.alignleft", order: 2)
 
-    _ = context.insert(deck1)
-    _ = context.insert(deck2)
-    _ = context.insert(deck3)
+    context.insert(deck1)
+    context.insert(deck2)
+    context.insert(deck3)
 
     return AnyView(DeckSelectionView().modelContainer(container))
 }
