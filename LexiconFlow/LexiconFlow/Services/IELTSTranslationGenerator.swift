@@ -326,7 +326,8 @@ final class IELTSTranslationGenerator {
                     percentage: (batchProgress.current * 100) / batchProgress.total
                 )
                 progressHandler?(progress)
-                logger.info("Progress: \(progress.description)")
+                let progressDescription = progress.description
+                logger.info("Progress: \(progressDescription)")
             }
         )
 
