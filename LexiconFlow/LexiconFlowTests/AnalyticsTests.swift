@@ -141,7 +141,6 @@ struct AnalyticsTests {
             return false
         }, "Issue with metadata should be tracked")
     }
-    }
 
     // MARK: - User Management Tests
 
@@ -181,6 +180,7 @@ struct AnalyticsTests {
         }, "User properties should be tracked")
     }
 
+    // MARK: - Edge Case Tests
     @Test("Handle empty event name")
     func emptyEventName() {
         Self.setupMockBackend()
