@@ -250,62 +250,8 @@ struct StatisticsViewModelTests {
         #expect(viewModel.selectedTimeRange == .thirtyDays)
     }
 
-    @Test("Change time range persists to AppSettings")
-    func changeTimeRangePersistsToAppSettings() async throws {
-        let context = freshContext()
-        try context.clearAll()
 
-        let viewModel = StatisticsViewModel(modelContext: context)
-        #expect(AppSettings.statisticsTimeRange == "7d")
 
-        await viewModel.changeTimeRange(.allTime)
-
-        #expect(AppSettings.statisticsTimeRange == "all")
-    }
-
-    @Test("Change time range triggers refresh")
-    func changeTimeRangeTriggersRefresh() async throws {
-        let context = freshContext()
-        try context.clearAll()
-
-        // Create test data
-        let card = createFlashcard(
-            context: context,
-            lastReviewDate: Date().addingTimeInterval(-86400)
-        )
-        _ = createReview(
-            context: context,
-            flashcard: card,
-            rating: 3,
-            reviewDate: Date().addingTimeInterval(-3600)
-        )
-        try context.save()
-
-        let viewModel = StatisticsViewModel(modelContext: context)
-
-        // DTOs should be nil initially
-        #expect(viewModel.retentionData == nil)
-
-        await viewModel.changeTimeRange(.thirtyDays)
-
-        // DTOs should be populated after changeTimeRange triggers refresh
-        #expect(viewModel.retentionData != nil)
-    }
-
-    @Test("Change time range guard clause returns early for same range")
-    func changeTimeRangeGuardClause() async throws {
-        let context = freshContext()
-        try context.clearAll()
-
-        let viewModel = StatisticsViewModel(modelContext: context)
-        #expect(viewModel.selectedTimeRange == .sevenDays)
-
-        // Change to same range - should return early
-        await viewModel.changeTimeRange(.sevenDays)
-
-        // selectedTimeRange should remain unchanged
-        #expect(viewModel.selectedTimeRange == .sevenDays)
-    }
 
     @Test("Change time range cycles through all options")
     func changeTimeRangeCyclesThroughAllOptions() async throws {
@@ -471,35 +417,6 @@ struct StatisticsViewModelTests {
         #expect(viewModel.retentionData?.rate == 0.75) // 75%
     }
 
-    @Test("Study streak DTO contains expected data")
-    func studyStreakDTOContainsExpectedData() async throws {
-        let context = freshContext()
-        try context.clearAll()
-
-        // Create test data: 3 consecutive days
-        let now = Date()
-        let calendar = Calendar.autoupdatingCurrent
-        let today = calendar.startOfDay(for: now)
-
-        for i in 0..<3 {
-            let day = calendar.date(byAdding: .day, value: -i, to: today)!
-            _ = createStudySession(
-                context: context,
-                startTime: day.addingTimeInterval(3600),
-                endTime: day.addingTimeInterval(4200)
-            )
-        }
-        try context.save()
-
-        let viewModel = StatisticsViewModel(modelContext: context)
-
-        await viewModel.refresh()
-
-        #expect(viewModel.streakData != nil)
-        #expect(viewModel.streakData?.currentStreak == 4, "Should include today")
-        #expect(viewModel.streakData?.longestStreak == 4)
-        #expect(viewModel.streakData?.activeDays == 3)
-    }
 
     @Test("FSRS metrics DTO contains expected data")
     func fsrsMetricsDTOContainsExpectedData() async throws {

@@ -36,15 +36,15 @@ struct AnalyticsTests {
 
     @Test("Track event without crashing")
     func trackEvent() {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         // Track basic event
         Analytics.trackEvent("test_event")
 
         // Verify event was recorded
-        #expect(mockBackend.didTrackEvent("test_event"), "Event should be tracked")
-        #expect(mockBackend.eventCount(for: "test_event") == 1, "Should have exactly 1 event")
+        #expect(Self.mockBackend.didTrackEvent("test_event"), "Event should be tracked")
+        #expect(Self.mockBackend.eventCount(for: "test_event") == 1, "Should have exactly 1 event")
 
         // Track event with metadata
         Analytics.trackEvent("test_event_with_metadata", metadata: [
@@ -53,13 +53,13 @@ struct AnalyticsTests {
         ])
 
         // Verify event with metadata was recorded
-        #expect(mockBackend.didTrackEvent("test_event_with_metadata"), "Event with metadata should be tracked")
+        #expect(Self.mockBackend.didTrackEvent("test_event_with_metadata"), "Event with metadata should be tracked")
     }
 
     @Test("Track error without crashing")
     func trackError() {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         let testError = NSError(
             domain: "test.domain",
@@ -71,7 +71,7 @@ struct AnalyticsTests {
         Analytics.trackError("test_error", error: testError)
 
         // Verify error was recorded
-        #expect(mockBackend.didTrackError("test_error"), "Error should be tracked")
+        #expect(Self.mockBackend.didTrackError("test_error"), "Error should be tracked")
 
         // Track error with metadata
         Analytics.trackError("test_error_with_metadata", error: testError, metadata: [
@@ -79,19 +79,19 @@ struct AnalyticsTests {
         ])
 
         // Verify error with metadata was recorded
-        #expect(mockBackend.didTrackError("test_error_with_metadata"), "Error with metadata should be tracked")
+        #expect(Self.mockBackend.didTrackError("test_error_with_metadata"), "Error with metadata should be tracked")
     }
 
     @Test("Track performance without crashing")
     func trackPerformance() {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         // Track performance
         Analytics.trackPerformance("test_operation", duration: 0.123)
 
         // Verify performance was recorded
-        #expect(mockBackend.events.contains { event in
+        #expect(Self.mockBackend.events.contains { event in
             if case .performance("test_operation", 0.123, _) = event {
                 return true
             }
@@ -105,7 +105,7 @@ struct AnalyticsTests {
         ])
 
         // Verify performance with metadata was recorded
-        #expect(mockBackend.events.contains { event in
+        #expect(Self.mockBackend.events.contains { event in
             if case .performance("test_operation_with_metadata", 1.5, let metadata) = event {
                 return metadata["iterations"] == "100" && metadata["result"] == "success"
             }
@@ -115,13 +115,13 @@ struct AnalyticsTests {
 
     @Test("Track issue without crashing")
     func trackIssue() {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         Analytics.trackIssue("test_issue", message: "Something unusual happened")
 
         // Verify issue was recorded
-        #expect(mockBackend.events.contains { event in
+        #expect(Self.mockBackend.events.contains { event in
             if case .issue("test_issue", let metadata) = event {
                 return metadata["message"] == "Something unusual happened"
             }
@@ -135,7 +135,7 @@ struct AnalyticsTests {
         )
 
         // Verify issue with metadata was recorded
-        #expect(mockBackend.events.contains { event in
+        #expect(Self.mockBackend.events.contains { event in
             if case .issue("test_issue_with_metadata", let metadata) = event {
                 return metadata["message"] == "Issue with context" && metadata["state"] == "unusual"
             }
@@ -147,13 +147,13 @@ struct AnalyticsTests {
 
     @Test("Set user ID without crashing")
     func setUserId() {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         Analytics.setUserId("test_user_123")
 
         // Verify user ID was recorded
-        #expect(mockBackend.events.contains { event in
+        #expect(Self.mockBackend.events.contains { event in
             if case .setUserId("test_user_123") = event {
                 return true
             }
@@ -163,8 +163,8 @@ struct AnalyticsTests {
 
     @Test("Set user properties without crashing")
     func setUserProperties() {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         Analytics.setUserProperties([
             "premium": "true",
@@ -173,7 +173,7 @@ struct AnalyticsTests {
         ])
 
         // Verify user properties were recorded
-        #expect(mockBackend.events.contains { event in
+        #expect(Self.mockBackend.events.contains { event in
             if case .setUserProperties = event {
                 return true
             }
@@ -185,19 +185,19 @@ struct AnalyticsTests {
 
     @Test("Handle empty event name")
     func emptyEventName() {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         Analytics.trackEvent("", metadata: [:])
 
         // Should record even with empty name
-        #expect(mockBackend.didTrackEvent(""), "Empty event name should be tracked")
+        #expect(Self.mockBackend.didTrackEvent(""), "Empty event name should be tracked")
     }
 
     @Test("Handle special characters in metadata")
     func specialCharactersInMetadata() {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         Analytics.trackEvent("special_chars", metadata: [
             "emoji": "🎉📚",
@@ -207,13 +207,13 @@ struct AnalyticsTests {
         ])
 
         // Verify event was recorded with special characters
-        #expect(mockBackend.didTrackEvent("special_chars"), "Event with special characters should be tracked")
+        #expect(Self.mockBackend.didTrackEvent("special_chars"), "Event with special characters should be tracked")
     }
 
     @Test("Handle very long metadata values")
     func longMetadataValues() {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         let longValue = String(repeating: "a", count: 10000)
 
@@ -222,13 +222,13 @@ struct AnalyticsTests {
         ])
 
         // Verify event was recorded with long value
-        #expect(mockBackend.didTrackEvent("long_value"), "Event with long metadata should be tracked")
+        #expect(Self.mockBackend.didTrackEvent("long_value"), "Event with long metadata should be tracked")
     }
 
     @Test("Handle nil error gracefully")
     func nilErrorHandling() {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         // Create an optional error that's nil
         let optionalError: Error? = nil
@@ -238,18 +238,18 @@ struct AnalyticsTests {
         }
 
         // No event should be tracked since error was nil
-        #expect(mockBackend.events.isEmpty, "No event should be tracked for nil error")
+        #expect(Self.mockBackend.events.isEmpty, "No event should be tracked for nil error")
     }
 
     @Test("Handle zero duration")
     func zeroDuration() {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         Analytics.trackPerformance("instant", duration: 0)
 
         // Verify performance was recorded
-        #expect(mockBackend.events.contains { event in
+        #expect(Self.mockBackend.events.contains { event in
             if case .performance("instant", 0, _) = event {
                 return true
             }
@@ -259,13 +259,13 @@ struct AnalyticsTests {
 
     @Test("Handle negative duration")
     func negativeDuration() {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         Analytics.trackPerformance("negative", duration: -1.0)
 
         // Verify performance was recorded even with negative duration
-        #expect(mockBackend.events.contains { event in
+        #expect(Self.mockBackend.events.contains { event in
             if case .performance("negative", -1.0, _) = event {
                 return true
             }
@@ -277,8 +277,8 @@ struct AnalyticsTests {
 
     @Test("Metadata converts integers correctly")
     func integerMetadata() {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         Analytics.trackEvent("int_test", metadata: [
             "count": "42",
@@ -286,13 +286,13 @@ struct AnalyticsTests {
         ])
 
         // Verify event was recorded
-        #expect(mockBackend.didTrackEvent("int_test"), "Event with integer metadata should be tracked")
+        #expect(Self.mockBackend.didTrackEvent("int_test"), "Event with integer metadata should be tracked")
     }
 
     @Test("Metadata converts doubles correctly")
     func doubleMetadata() {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         Analytics.trackEvent("double_test", metadata: [
             "ratio": "0.75",
@@ -300,13 +300,13 @@ struct AnalyticsTests {
         ])
 
         // Verify event was recorded
-        #expect(mockBackend.didTrackEvent("double_test"), "Event with double metadata should be tracked")
+        #expect(Self.mockBackend.didTrackEvent("double_test"), "Event with double metadata should be tracked")
     }
 
     @Test("Metadata converts booleans correctly")
     func booleanMetadata() {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         Analytics.trackEvent("bool_test", metadata: [
             "enabled": "true",
@@ -314,15 +314,15 @@ struct AnalyticsTests {
         ])
 
         // Verify event was recorded
-        #expect(mockBackend.didTrackEvent("bool_test"), "Event with boolean metadata should be tracked")
+        #expect(Self.mockBackend.didTrackEvent("bool_test"), "Event with boolean metadata should be tracked")
     }
 
     // MARK: - Complex Scenarios
 
     @Test("Track multiple events in sequence")
     func multipleEvents() {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         for i in 0..<10 {
             Analytics.trackEvent("event_\(i)", metadata: [
@@ -332,18 +332,18 @@ struct AnalyticsTests {
         }
 
         // Verify all 10 events were recorded
-        #expect(mockBackend.events.count == 10, "Should track exactly 10 events")
+        #expect(Self.mockBackend.events.count == 10, "Should track exactly 10 events")
 
         // Verify each event was recorded with correct metadata
         for i in 0..<10 {
-            #expect(mockBackend.didTrackEvent("event_\(i)"), "Event \(i) should be tracked")
+            #expect(Self.mockBackend.didTrackEvent("event_\(i)"), "Event \(i) should be tracked")
         }
     }
 
     @Test("Track nested benchmark operations")
     func nestedBenchmarks() {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         let outerStart = Date()
         let innerStart = Date()
@@ -357,8 +357,8 @@ struct AnalyticsTests {
 
     @Test("Benchmark with very fast operation")
     func veryFastOperation() {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         let startTime = Date()
         let x = 1 + 1
@@ -373,8 +373,8 @@ struct AnalyticsTests {
 
     @Test("Benchmark with complex operation")
     func complexOperation() async {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         let startTime = Date()
         // Simulate a multi-step operation
@@ -393,8 +393,8 @@ struct AnalyticsTests {
 
     @Test("Handle concurrent event tracking")
     func concurrentEventTracking() async {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         await withTaskGroup(of: Void.self) { group in
             for i in 0..<50 {
@@ -405,13 +405,13 @@ struct AnalyticsTests {
         }
 
         // Verify all 50 events were recorded
-        #expect(mockBackend.events.count == 50, "Should track exactly 50 concurrent events")
+        #expect(Self.mockBackend.events.count == 50, "Should track exactly 50 concurrent events")
     }
 
     @Test("Handle concurrent benchmark measurements")
     func concurrentBenchmarks() async {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         await withTaskGroup(of: Void.self) { group in
             for i in 0..<20 {
@@ -433,8 +433,8 @@ struct AnalyticsTests {
 
     @Test("Benchmark measures synchronous operation")
     func benchmarkSyncOperation() {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         let startTime = Date()
         // Simulate some work
@@ -447,8 +447,8 @@ struct AnalyticsTests {
 
     @Test("Benchmark measures async operation")
     func benchmarkAsyncOperation() async {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         let startTime = Date()
         // Simulate async work
@@ -461,8 +461,8 @@ struct AnalyticsTests {
 
     @Test("Benchmark throws propagate correctly")
     func benchmarkThrows() {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         struct TestError: Error {}
 
@@ -478,8 +478,8 @@ struct AnalyticsTests {
 
     @Test("Benchmark async throws propagate correctly")
     func benchmarkAsyncThrows() async {
-        setupMockBackend()
-        defer { teardownMockBackend() }
+        Self.setupMockBackend()
+        defer { Self.teardownMockBackend() }
 
         struct TestError: Error {}
 

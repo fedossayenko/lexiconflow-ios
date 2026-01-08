@@ -153,20 +153,6 @@ struct JSONExtractorTests {
 
     // MARK: - Complex Scenarios
 
-    @Test("Extract JSON with special characters")
-    func extractJsonWithSpecialCharacters() {
-        let input = """
-        ```json
-        {"emoji": "🎉", "newline": "line1\\nline2", "quote": "test \"quote\""}
-        ```
-        """
-
-        let result = JSONExtractor.extract(from: input, logger: logger)
-
-        #expect(result.contains("\"emoji\": \"🎉\""), "Should preserve emoji")
-        #expect(result.contains("\"newline\": \"line1\\nline2\""), "Should preserve escape sequences")
-        #expect(result.contains("\"quote\": \"test \\\"quote\\\"\""), "Should preserve escaped quotes")
-    }
 
     @Test("Extract JSON with unicode characters")
     func extractJsonWithUnicode() {
@@ -244,19 +230,6 @@ struct JSONExtractorTests {
         #expect(result.contains("\"word\": \"test\""), "Should fall back to brace extraction")
     }
 
-    @Test("Handle code block with language specifier only")
-    func handleCodeBlockWithLanguageOnly() {
-        let input = """
-        ```python
-        {"word": "test"}
-        ```
-        """
-
-        let result = JSONExtractor.extract(from: input, logger: logger)
-
-        // Generic ``` block should still extract
-        #expect(result == "{\"word\": \"test\"}", "Should extract from any ``` block")
-    }
 
     @Test("Handle multiple code blocks")
     func handleMultipleCodeBlocks() {

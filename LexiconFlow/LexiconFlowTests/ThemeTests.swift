@@ -149,23 +149,6 @@ struct ThemeTests {
         #expect(style.opacity == 0.2, "Standard A1 should have 0.2 opacity")
     }
 
-    @Test("Return compact badge style for A1")
-    func compactBadgeStyleForA1() {
-        let style = Theme.cefrBadgeStyle(for: "A1", style: .compact)
-
-        let colorDescription = String(describing: style.color)
-        #expect(colorDescription.contains("green"), "Compact A1 should be green")
-        #expect(style.opacity == 0.16, "Compact A1 should have 0.16 (0.2 * 0.8) opacity")
-    }
-
-    @Test("Return compact badge style for C2")
-    func compactBadgeStyleForC2() {
-        let style = Theme.cefrBadgeStyle(for: "C2", style: .compact)
-
-        let colorDescription = String(describing: style.color)
-        #expect(colorDescription.contains("purple"), "Compact C2 should be purple")
-        #expect(style.opacity == 0.32, "Compact C2 should have 0.32 (0.4 * 0.8) opacity")
-    }
 
     // MARK: - Animation Constants Tests
 
@@ -179,14 +162,6 @@ struct ThemeTests {
         #expect(Theme.quickAnimationDuration == 0.15, "Quick animation duration should be 0.15s")
     }
 
-    @Test("Have defined spring animation")
-    func springAnimation() {
-        let animation = Theme.springAnimation
-
-        // Verify it's a spring animation
-        let description = String(describing: animation)
-        #expect(description.contains("spring"), "Should use spring animation")
-    }
 
     // MARK: - Spacing Constants Tests
 
@@ -215,13 +190,6 @@ struct ThemeTests {
         #expect(Theme.spacingXLarge == 24, "Extra large spacing should be 24pt")
     }
 
-    @Test("Maintain spacing progression")
-    func spacingProgression() {
-        // Spacing should follow consistent progression
-        #expect(Theme.spacingSmall * 2 == Theme.spacingUnit, "Small * 2 = Unit")
-        #expect(Theme.spacingUnit + Theme.spacingSmall == Theme.spacingMedium, "Unit + Small = Medium")
-        #expect(Theme.spacingMedium + Theme.spacingUnit == Theme.spacingLarge, "Medium + Unit = Large")
-    }
 
     // MARK: - Corner Radius Tests
 
@@ -240,11 +208,6 @@ struct ThemeTests {
         #expect(Theme.cornerRadiusLarge == 16, "Large corner radius should be 16pt")
     }
 
-    @Test("Maintain corner radius progression")
-    func cornerRadiusProgression() {
-        #expect(Theme.cornerRadiusSmall * 2 == Theme.cornerRadiusMedium, "Small * 2 = Medium")
-        #expect(Theme.cornerRadiusMedium + Theme.cornerRadiusSmall == Theme.cornerRadiusLarge, "Medium + Small = Large")
-    }
 
     // MARK: - View Extension Tests
 

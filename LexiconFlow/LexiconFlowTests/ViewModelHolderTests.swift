@@ -33,6 +33,7 @@ final class TestViewModel: ObservableObject {
 /// - Proper objectWillChange forwarding
 /// - Observation setup on value assignment
 /// - Cancellation on value change
+@MainActor
 struct ViewModelHolderTests {
 
     // MARK: - Initialization Tests
