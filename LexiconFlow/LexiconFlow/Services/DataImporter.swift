@@ -182,6 +182,21 @@ final class DataImporter {
                 imageData: cardData.imageData
             )
 
+            // Set CEFR level if provided
+            if let cefrLevel = cardData.cefrLevel {
+                do {
+                    try flashcard.setCEFRLevel(cefrLevel)
+                } catch {
+                    // Log but continue - don't fail entire batch for invalid CEFR level
+                    Self.logger.warning("⚠️ Invalid CEFR level '\(cefrLevel)' for word '\(cardData.word)': \(error)")
+                }
+            }
+
+            // Set translation if provided
+            if let translation = cardData.russianTranslation {
+                flashcard.translation = translation
+            }
+
             // Associate with deck if provided
             if let deck {
                 flashcard.deck = deck
@@ -216,17 +231,23 @@ struct FlashcardData: Sendable {
     let definition: String
     let phonetic: String?
     let imageData: Data?
+    let cefrLevel: String? // CEFR level (A1, A2, B1, B2, C1, C2)
+    let russianTranslation: String? // Russian translation of the word
 
     init(
         word: String,
         definition: String,
         phonetic: String? = nil,
-        imageData: Data? = nil
+        imageData: Data? = nil,
+        cefrLevel: String? = nil,
+        russianTranslation: String? = nil
     ) {
         self.word = word
         self.definition = definition
         self.phonetic = phonetic
         self.imageData = imageData
+        self.cefrLevel = cefrLevel
+        self.russianTranslation = russianTranslation
     }
 }
 

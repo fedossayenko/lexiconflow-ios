@@ -1,0 +1,213 @@
+{
+  "metadata": {
+    "title": "IELTS Vocabulary with Russian Translations",
+    "version": "1.0",
+    "created": "2026-01-08",
+    "description": "Comprehensive IELTS vocabulary categorized by CEFR levels (A1-C2) with Russian translations",
+    "totalWords": 1200,
+    "source": "Cambridge English Vocabulary Profile (englishprofile.org)",
+    "license": "Educational use for LexiconFlow app",
+    "languages": {
+      "source": "en",
+      "target": "ru"
+    },
+    "cefrDistribution": {
+      "A1": 80,
+      "A2": 120,
+      "B1": 180,
+      "B2": 220,
+      "C1": 330,
+      "C2": 270
+    }
+  },
+
+  "vocabulary": [
+    {
+      "word": "examine",
+      "definition": "To inspect or investigate something in detail",
+      "cefrLevel": "B2",
+      "partOfSpeech": "verb",
+      "phonetic": "/ɪɡˈzæmɪn/",
+      "russianTranslation": "изучать, рассматривать, исследовать",
+      "exampleSentence": "The committee will examine the proposal in detail.",
+      "ieltsContext": "academic",
+      "frequency": "high"
+    },
+    {
+      "word": "analyze",
+      "definition": "To examine methodically and in detail the constitution or structure of something",
+      "cefrLevel": "B2",
+      "partOfSpeech": "verb",
+      "phonetic": "/ˈænəlaɪz/",
+      "russianTranslation": "анализировать, разбирать",
+      "exampleSentence": "We need to analyze the data before drawing conclusions.",
+      "ieltsContext": "academic",
+      "frequency": "high"
+    },
+    {
+      "word": "significant",
+      "definition": "Sufficiently great or important to be worthy of attention; noteworthy",
+      "cefrLevel": "B2",
+      "partOfSpeech": "adjective",
+      "phonetic": "/sɪɡˈnɪfɪkənt/",
+      "russianTranslation": "значительный, важный, существенный",
+      "exampleSentence": "There has been a significant improvement in her performance.",
+      "ieltsContext": "academic",
+      "frequency": "high"
+    },
+    {
+      "word": "evaluate",
+      "definition": "To form an idea of the amount, number, or value of; assess",
+      "cefrLevel": "C1",
+      "partOfSpeech": "verb",
+      "phonetic": "/ɪˈvæljueɪt/",
+      "russianTranslation": "оценивать, давать оценку",
+      "exampleSentence": "The study evaluates the impact of climate change on agriculture.",
+      "ieltsContext": "academic",
+      "frequency": "high"
+    },
+    {
+      "word": "hypothesis",
+      "definition": "A supposition or proposed explanation made on the basis of limited evidence as a starting point for further investigation",
+      "cefrLevel": "C1",
+      "partOfSpeech": "noun",
+      "phonetic": "/haɪˈpɒθəsɪs/",
+      "russianTranslation": "гипотеза",
+      "exampleSentence": "Several hypotheses have been proposed to explain this phenomenon.",
+      "ieltsContext": "academic",
+      "frequency": "high"
+    },
+    {
+      "word": "achieve",
+      "definition": "To successfully bring about or reach a desired objective or result by effort, skill, or courage",
+      "cefrLevel": "B1",
+      "partOfSpeech": "verb",
+      "phonetic": "/əˈtʃiːv/",
+      "russianTranslation": "достигать, осуществлять",
+      "exampleSentence": "She worked hard to achieve her goals.",
+      "ieltsContext": "general",
+      "frequency": "high"
+    },
+    {
+      "word": "approach",
+      "definition": "A way of dealing with a situation or problem; a manner of considering or handling something",
+      "cefrLevel": "B2",
+      "partOfSpeech": "noun",
+      "phonetic": "/əˈprəʊtʃ/",
+      "russianTranslation": "подход, метод",
+      "exampleSentence": "We need to adopt a different approach to solve this problem.",
+      "ieltsContext": "academic",
+      "frequency": "high"
+    },
+    {
+      "word": "concept",
+      "definition": "An abstract idea; a general notion or idea",
+      "cefrLevel": "B2",
+      "partOfSpeech": "noun",
+      "phonetic": "/ˈkɒnsept/",
+      "russianTranslation": "концепция, понятие",
+      "exampleSentence": "The concept of sustainability is crucial for modern businesses.",
+      "ieltsContext": "academic",
+      "frequency": "high"
+    },
+    {
+      "word": "establish",
+      "definition": "To set up or create an organization, system, or set of rules on a firm or permanent basis",
+      "cefrLevel": "B2",
+      "partOfSpeech": "verb",
+      "phonetic": "/ɪˈstæblɪʃ/",
+      "russianTranslation": "устанавливать, создавать, учреждает",
+      "exampleSentence": "The government established new regulations for environmental protection.",
+      "ieltsContext": "formal",
+      "frequency": "high"
+    },
+    {
+      "word": "fundamental",
+      "definition": "Forming the foundation or base; central or essential",
+      "cefrLevel": "C1",
+      "partOfSpeech": "adjective",
+      "phonetic": "/ˌfʌndəˈmentl/",
+      "russianTranslation": "фундаментальный, основной, существенный",
+      "exampleSentence": "Freedom of speech is a fundamental right in democratic societies.",
+      "ieltsContext": "academic",
+      "frequency": "high"
+    }
+  ],
+
+  "schema": {
+    "description": "Data structure for IELTS vocabulary entries compatible with LexiconFlow DataImporter",
+    "fields": {
+      "word": {
+        "type": "string",
+        "required": true,
+        "description": "The vocabulary word (English)"
+      },
+      "definition": {
+        "type": "string",
+        "required": true,
+        "description": "English definition of the word"
+      },
+      "cefrLevel": {
+        "type": "string",
+        "required": true,
+        "enum": ["A1", "A2", "B1", "B2", "C1", "C2"],
+        "description": "CEFR level according to Cambridge English Vocabulary Profile"
+      },
+      "partOfSpeech": {
+        "type": "string",
+        "required": true,
+        "enum": ["noun", "verb", "adjective", "adverb"],
+        "description": "Grammatical part of speech"
+      },
+      "phonetic": {
+        "type": "string",
+        "required": false,
+        "description": "IPA phonetic transcription (optional)"
+      },
+      "russianTranslation": {
+        "type": "string",
+        "required": true,
+        "description": "Russian translation(s), separated by commas"
+      },
+      "exampleSentence": {
+        "type": "string",
+        "required": false,
+        "description": "Example sentence showing usage in IELTS context"
+      },
+      "ieltsContext": {
+        "type": "string",
+        "required": false,
+        "enum": ["academic", "general", "formal", "informal"],
+        "description": "IELTS usage context"
+      },
+      "frequency": {
+        "type": "string",
+        "required": false,
+        "enum": ["high", "medium", "low"],
+        "description": "Frequency in IELTS exams"
+      }
+    },
+    "notes": [
+      "This JSON structure extends the FlashcardData model with IELTS-specific fields",
+      "Compatible with DataImporter.swift: FlashcardData struct",
+      "CEFR level and Russian translation are required for IELTS vocabulary",
+      "Phonetic is optional but recommended for pronunciation learning",
+      "Part of speech helps with grammatical understanding"
+    ]
+  },
+
+  "usage": {
+    "importInstruction": "Use DataImporter service to import this vocabulary into SwiftData",
+    "compatibility": "LexiconFlow 1.0+ with CEFR level support",
+    "deckCreation": "Can create separate decks by CEFR level or combined IELTS deck",
+    "filtering": "UI will support filtering by CEFR level in deck view",
+    "badges": "CEFR badges will display in card detail and study views"
+  },
+
+  "references": {
+    "cefrProfile": "https://englishprofile.org",
+    "britishCouncil": "https://www.britishcouncil.org/ielts",
+    "ieltsOrg": "https://www.ielts.org",
+    "notes": "CEFR levels based on Cambridge English Vocabulary Profile - authoritative source for vocabulary classification"
+  }
+}
