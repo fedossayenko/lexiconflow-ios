@@ -119,10 +119,6 @@ enum RetryManager {
                     logger.info("\(logContext): Succeeded on attempt \(attempt + 1)")
                 }
                 return .success(result)
-            } catch is CancellationError {
-                // Task was cancelled - propagate cancellation immediately
-                logger.info("\(logContext): Operation cancelled")
-                throw CancellationError()
             } catch let error as ErrorType {
                 lastError = error
                 guard isRetryable(error) else {
@@ -140,7 +136,24 @@ enum RetryManager {
                 }
             } catch {
                 // Unknown error type that doesn't match ErrorType
-                // This is a programming error - operation should throw ErrorType
+                // This could be CancellationError or other system errors
+                // Check if it's a cancellation - we should not retry cancelled operations
+                if error is CancellationError {
+                    logger.info("\(logContext): Operation cancelled")
+                    // Rethrow cancellation to propagate it properly
+                    // Since we can't throw from here, return failure with last error if available
+                    if let existingError = lastError {
+                        return .failure(existingError)
+                    }
+                    // No last error available - this shouldn't happen in practice
+                    // Log critical failure for debugging
+                    logger.critical("\(logContext): Cancellation with no previous error - this should not happen")
+                    // We cannot return a meaningful error here, so we exit
+                    // This is a programming error - the operation should not cancel on first attempt
+                    // Use preconditionFailure which can be disabled with -Ounchecked compile flag
+                    preconditionFailure("CancellationError encountered in executeWithRetry with no previous error")
+                }
+
                 logger.error("\(logContext): Operation threw unexpected error type - \(error.localizedDescription)")
                 // Store as last error (will be handled below)
                 // Since we can't convert to ErrorType, we'll need to handle this case
