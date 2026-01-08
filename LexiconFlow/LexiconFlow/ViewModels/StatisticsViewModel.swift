@@ -97,8 +97,11 @@ final class StatisticsViewModel: ObservableObject {
 
         // Wrap with timeout to prevent infinite hangs
         do {
-            try await withTimeout(seconds: 10) { [weak self] in
-                guard let self = self else { return }
+            // Fetch data with timeout - returns results tuple
+            let results: (retention: RetentionRateData, streak: StudyStreakData, fsrs: FSRSMetricsData) = try await withTimeout(seconds: 10) { [weak self] in
+                guard let self = self else {
+                    throw TimeoutError.timedOut(10) // Self was deallocated
+                }
 
                 // Fetch all metrics concurrently
                 async let retention = self.statisticsService.calculateRetentionRate(
@@ -116,21 +119,23 @@ final class StatisticsViewModel: ObservableObject {
                     timeRange: self.selectedTimeRange
                 )
 
-                // Await all results
+                // Await all results and return as tuple
                 let (retentionResult, streakResult, fsrsResult) = await (retention, streak, fsrs)
-
-                // Update published properties
-                self.retentionData = retentionResult
-                self.streakData = streakResult
-                self.fsrsMetrics = fsrsResult
-
-                self.logger.info("""
-                    Statistics refreshed:
-                    - Retention: \(retentionResult.formattedPercentage)
-                    - Streak: \(streakResult.currentStreak) days
-                    - FSRS: \(fsrsResult.formattedStability) avg stability
-                    """)
+                return (retentionResult, streakResult, fsrsResult)
             }
+
+            // Update published properties on main actor (outside the Sendable closure)
+            self.retentionData = results.retention
+            self.streakData = results.streak
+            self.fsrsMetrics = results.fsrs
+
+            self.logger.info("""
+                Statistics refreshed:
+                - Retention: \(results.retention.formattedPercentage)
+                - Streak: \(results.streak.currentStreak) days
+                - FSRS: \(results.fsrs.formattedStability) avg stability
+                """)
+
             isLoading = false
         } catch let timeoutError as TimeoutError {
             errorMessage = "Loading timed out. Please check your connection and try again."

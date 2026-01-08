@@ -11,19 +11,25 @@ struct SettingsView: View {
     // MARK: - URL Constants
 
     /// URL for FSRS algorithm repository
-    /// Uses assert() to validate URL at compile time (debug builds only)
+    /// Uses assertionFailure to validate URL and provides safe fallback
     private static let fsrsURL: URL = {
         let urlString = "https://github.com/open-spaced-repetition/fsrs.js"
-        assert(URL(string: urlString) != nil, "Invalid FSRS URL: \(urlString)")
-        return URL(string: urlString)!
+        guard let url = URL(string: urlString) else {
+            assertionFailure("Failed to create FSRS URL")
+            return URL(string: "file://")! // Last resort - always valid
+        }
+        return url
     }()
 
     /// URL for LexiconFlow iOS repository
-    /// Uses assert() to validate URL at compile time (debug builds only)
+    /// Uses assertionFailure to validate URL and provides safe fallback
     private static let repoURL: URL = {
         let urlString = "https://github.com/fedossayenko/lexiconflow-ios"
-        assert(URL(string: urlString) != nil, "Invalid repo URL: \(urlString)")
-        return URL(string: urlString)!
+        guard let url = URL(string: urlString) else {
+            assertionFailure("Failed to create repo URL")
+            return URL(string: "file://")! // Last resort - always valid
+        }
+        return url
     }()
 
     var body: some View {

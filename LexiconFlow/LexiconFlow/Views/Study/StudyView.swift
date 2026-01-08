@@ -287,7 +287,9 @@ private func makeStudyViewWithDecksPreview() -> some View {
     do {
         container = try ModelContainer(for: Deck.self, Flashcard.self, FSRSState.self, FlashcardReview.self, configurations: config)
     } catch {
-        fatalError("Failed to create preview container: \(error)")
+        Logger(subsystem: "com.lexiconflow.preview", category: "StudyView")
+            .error("Failed to create preview container: \(error)")
+        return AnyView(Text("Preview Unavailable"))
     }
     let context = ModelContext(container)
 
@@ -300,6 +302,5 @@ private func makeStudyViewWithDecksPreview() -> some View {
     // Set selected deck IDs
     AppSettings.selectedDeckIDs = [deck1.id, deck2.id]
 
-    return StudyView()
-        .modelContainer(container)
+    return AnyView(StudyView().modelContainer(container))
 }

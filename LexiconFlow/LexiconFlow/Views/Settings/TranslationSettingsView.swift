@@ -22,6 +22,7 @@ struct TranslationSettingsView: View {
     @State private var isCheckingAvailability = false
     @State private var isDownloadingLanguage = false
     @State private var downloadError: String?
+    @SceneStorage("returnedFromSettings") private var returnedFromSettings = false
 
     private let logger = Logger(subsystem: "com.lexiconflow.translation", category: "TranslationSettingsView")
     private let onDeviceService = OnDeviceTranslationService.shared
@@ -78,6 +79,9 @@ struct TranslationSettingsView: View {
                         },
                         onDownloadTarget: {
                             Task { await downloadLanguagePack(.target) }
+                        },
+                        onOpenSystemSettings: {
+                            openSystemSettingsForLanguagePacks()
                         }
                     )
                 }
@@ -91,6 +95,12 @@ struct TranslationSettingsView: View {
         .onAppear {
             // Check language availability on appear
             Task {
+                // If user just returned from system settings, refresh availability
+                // in case they installed language packs
+                if returnedFromSettings {
+                    logger.info("User returned from system settings - refreshing language availability")
+                    returnedFromSettings = false
+                }
                 await checkLanguageAvailability()
             }
         }
@@ -140,10 +150,41 @@ struct TranslationSettingsView: View {
         } catch {
             logger.error("Failed to download language pack: \(error.localizedDescription)")
             downloadError = error.localizedDescription
-            Analytics.trackError("language_pack_download", error: error)
+            Task { await Analytics.trackError("language_pack_download", error: error) }
         }
 
         isDownloadingLanguage = false
+    }
+
+    /// Open iOS System Settings to download language packs
+    ///
+    /// This provides a reliable fallback when automatic download fails.
+    /// Language packs can be downloaded in Settings → General → Translation.
+    private func openSystemSettingsForLanguagePacks() {
+        // Set flag to detect when user returns from settings
+        returnedFromSettings = true
+
+        // iOS 26 URL scheme for Translation settings
+        // Note: URL schemes may change between iOS versions
+        if let url = URL(string: "App-prefs:General&path=TRANSLATION") {
+            logger.info("Opening system settings for language pack download")
+
+            if UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url)
+            } else {
+                // Fallback: Open main settings if specific path doesn't work
+                if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                    logger.info("Opening main system settings as fallback")
+                    UIApplication.shared.open(settingsURL)
+                }
+            }
+        } else {
+            // Final fallback: Open main settings
+            if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                logger.info("Opening main system settings as final fallback")
+                UIApplication.shared.open(settingsURL)
+            }
+        }
     }
 }
 
@@ -164,6 +205,7 @@ private struct OnDeviceLanguageStatusView: View {
     let downloadError: String?
     let onDownloadSource: () -> Void
     let onDownloadTarget: () -> Void
+    let onOpenSystemSettings: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -193,6 +235,21 @@ private struct OnDeviceLanguageStatusView: View {
                     isDownloading: isDownloading,
                     onTap: onDownloadTarget
                 )
+
+                // Open System Settings Button (always shown when not all downloaded)
+                if !sourceDownloaded || !targetDownloaded {
+                    Button(action: onOpenSystemSettings) {
+                        HStack {
+                            Image(systemName: "gear")
+                            Text("Open System Settings to Download Language Packs")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                }
 
                 // Error Message
                 if let error = downloadError {

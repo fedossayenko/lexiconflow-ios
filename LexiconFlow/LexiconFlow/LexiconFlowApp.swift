@@ -27,12 +27,18 @@ struct LexiconFlowApp: App {
         } catch {
             // If this fails during static initialization, the app cannot launch on this device
             // This is a catastrophic failure indicating SwiftData is completely broken
-            fatalError("SwiftData is completely non-functional on this device: \(error)")
+            // Use assertionFailure instead of fatalError to prevent production crash
+            assertionFailure("SwiftData is completely non-functional on this device: \(error)")
+            // Return empty container as last resort - use the schema we already defined
+            return try! ModelContainer(for: schema, configurations: [configuration])
         }
     }()
 
     /// Scene phase for app lifecycle management
     @Environment(\.scenePhase) private var scenePhase
+
+    /// Background task for aggregating DailyStats
+    @State private var aggregationTask: Task<Void, Never>?
     /// Shared SwiftData ModelContainer for the entire app
     /// - Persists to SQLite database (not in-memory)
     /// - CloudKit sync: DISABLED (will be enabled in Phase 4)
@@ -128,7 +134,15 @@ struct LexiconFlowApp: App {
     private func ensureDefaultDeckExists() async {
         let context = sharedModelContainer.mainContext
         let descriptor = FetchDescriptor<Deck>()
-        let existingDecks = (try? context.fetch(descriptor)) ?? []
+        let existingDecks: [Deck]
+        do {
+            existingDecks = try context.fetch(descriptor)
+        } catch {
+            Logger(subsystem: "com.lexiconflow.app", category: "LexiconFlowApp")
+                .error("Failed to fetch existing decks: \(error.localizedDescription)")
+            Analytics.trackError("fetch_existing_decks_failed", error: error)
+            return
+        }
 
         if existingDecks.isEmpty {
             let defaultDeck = Deck(
@@ -137,10 +151,16 @@ struct LexiconFlowApp: App {
                 order: 0
             )
             context.insert(defaultDeck)
-            try? context.save()
-            Logger(subsystem: "com.lexiconflow.app", category: "LexiconFlowApp")
-                .info("Created default deck: My Vocabulary")
-            Analytics.trackEvent("default_deck_created")
+            do {
+                try context.save()
+                Logger(subsystem: "com.lexiconflow.app", category: "LexiconFlowApp")
+                    .info("Created default deck: My Vocabulary")
+                Analytics.trackEvent("default_deck_created")
+            } catch {
+                Logger(subsystem: "com.lexiconflow.app", category: "LexiconFlowApp")
+                    .error("Failed to save default deck: \(error.localizedDescription)")
+                Analytics.trackError("save_default_deck_failed", error: error)
+            }
         }
     }
 
@@ -153,7 +173,9 @@ struct LexiconFlowApp: App {
 
             // Aggregate DailyStats from completed StudySession records
             // This runs in the background to prepare pre-aggregated statistics for dashboard
-            Task {
+            // Cancel any existing aggregation task before starting a new one
+            aggregationTask?.cancel()
+            aggregationTask = Task {
                 await aggregateDailyStatsInBackground()
             }
         case .active:

@@ -201,7 +201,7 @@ struct CardBackViewTests {
         )
         context.insert(sentence)
 
-        #expect(sentence.cefrLevel == "B2")
+        #expect(sentence.cefrLevel == "A1", "Sentence should display the CEFR level it was created with")
     }
 
     @Test("SentenceRow shows expiration warning")

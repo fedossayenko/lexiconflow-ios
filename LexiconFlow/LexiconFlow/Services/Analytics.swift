@@ -19,10 +19,28 @@ import OSLog
 ///
 /// **Current Implementation**: Console-based logging for development.
 /// **Production**: Should integrate Firebase Crashlytics or Sentry.
+///
+/// **Testing**: Supports dependency injection via `setBackend()` for unit tests.
 enum Analytics {
 
     /// Logger for analytics output
     private static let logger = Logger(subsystem: "com.lexiconflow.analytics", category: "Analytics")
+
+    /// Current analytics backend (defaults to production implementation)
+    private static var backend: AnalyticsBackend = ProductionAnalyticsBackend()
+
+    /// Set a custom analytics backend (for testing)
+    ///
+    /// - Parameter backend: The analytics backend to use
+    /// - Note: This should only be called in tests. Production code uses the default.
+    static func setBackend(_ backend: AnalyticsBackend) {
+        Self.backend = backend
+    }
+
+    /// Reset to the production backend (for test cleanup)
+    static func resetToProductionBackend() {
+        Self.backend = ProductionAnalyticsBackend()
+    }
 
     // MARK: - Event Tracking
 
@@ -32,18 +50,7 @@ enum Analytics {
     ///   - name: Event name (e.g., "card_reviewed", "deck_created")
     ///   - metadata: Optional key-value pairs for additional context
     static func trackEvent(_ name: String, metadata: [String: String] = [:]) {
-        let logMessage: String
-        if metadata.isEmpty {
-            logMessage = "Event: \(name)"
-        } else {
-            let metadataString = metadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
-            logMessage = "Event: \(name) [\(metadataString)]"
-        }
-
-        logger.info("\(logMessage)")
-
-        // TODO: Send to analytics provider
-        // FirebaseAnalytics.Analytics.logEvent(name, parameters: metadata)
+        backend.trackEvent(name, metadata: metadata)
     }
 
     /// Track an error or exception
@@ -57,17 +64,7 @@ enum Analytics {
         error: Error,
         metadata: [String: String] = [:]
     ) {
-        let errorMessage = error.localizedDescription
-        var fullMetadata = metadata
-        fullMetadata["error_description"] = errorMessage
-        fullMetadata["error_type"] = String(describing: type(of: error))
-
-        let metadataString = fullMetadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
-        logger.error("❌ Error: \(name) [\(metadataString)]")
-
-        // TODO: Send to crash reporting provider
-        // Crashlytics.crashlytics().record(error: error)
-        // SentrySDK.capture(error: error)
+        backend.trackError(name, error: error, metadata: metadata)
     }
 
     /// Track a non-fatal issue
@@ -83,14 +80,7 @@ enum Analytics {
         message: String,
         metadata: [String: String] = [:]
     ) {
-        var fullMetadata = metadata
-        fullMetadata["message"] = message
-
-        let metadataString = fullMetadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
-        logger.warning("⚠️ Issue: \(name) [\(metadataString)]")
-
-        // TODO: Send to error tracking provider
-        // SentrySDK.capture(message: message)
+        backend.trackIssue(name, message: message, metadata: metadata)
     }
 
     // MARK: - User Identification
@@ -99,18 +89,14 @@ enum Analytics {
     ///
     /// - Parameter userId: Unique user identifier
     static func setUserId(_ userId: String) {
-        logger.info("Set User ID: \(userId)")
-        // TODO: Set user ID in analytics provider
-        // Analytics.setUserID(userId)
+        backend.setUserId(userId)
     }
 
     /// Set user properties for segmentation
     ///
     /// - Parameter properties: Dictionary of user properties
     static func setUserProperties(_ properties: [String: Any]) {
-        let propertyString = properties.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
-        logger.info("Set User Properties: [\(propertyString)]")
-        // TODO: Set user properties in analytics provider
+        backend.setUserProperties(properties)
     }
 
     // MARK: - Performance Tracking
@@ -126,14 +112,7 @@ enum Analytics {
         duration: TimeInterval,
         metadata: [String: String] = [:]
     ) {
-        var fullMetadata = metadata
-        fullMetadata["duration_ms"] = String(format: "%.2f", duration * 1000)
-
-        let metadataString = fullMetadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
-        logger.info("⏱ Performance: \(name) [\(metadataString)]")
-
-        // TODO: Send to performance monitoring
-        // FirebasePerformance.getInstance().startTrace(name)
+        backend.trackPerformance(name, duration: duration, metadata: metadata)
     }
 
     /// Measure and track a block of code's execution time

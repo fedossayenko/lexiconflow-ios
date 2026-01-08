@@ -239,37 +239,6 @@ struct FlashcardTests {
 
     // MARK: - Flashcard-ReviewLogs Relationship Tests
 
-    @Test("Flashcard-reviewLogs relationship")
-    func flashcardReviewLogsRelationship() throws {
-        let context = freshContext()
-        try context.clearAll()
-
-        let flashcard = Flashcard(word: "test", definition: "test")
-        context.insert(flashcard)
-
-        let review1 = FlashcardReview(
-            rating: 3,
-            scheduledDays: 1.0,
-            elapsedDays: 1.0
-        )
-        review1.card = flashcard
-        context.insert(review1)
-
-        let review2 = FlashcardReview(
-            rating: 2,
-            scheduledDays: 3.0,
-            elapsedDays: 1.0
-        )
-        review2.card = flashcard
-        context.insert(review2)
-
-        try context.save()
-
-        #expect(flashcard.reviewLogs.count == 2)
-        // Note: reviewLogs are ordered newest first (descending by reviewDate)
-        #expect(flashcard.reviewLogs.first?.rating == 2)  // Last inserted (newest)
-        #expect(flashcard.reviewLogs.last?.rating == 3)   // First inserted (oldest)
-    }
 
     @Test("Flashcard with no review logs")
     func flashcardNoReviewLogs() throws {

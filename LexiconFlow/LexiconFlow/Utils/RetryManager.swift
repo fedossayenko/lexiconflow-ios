@@ -110,6 +110,21 @@ enum RetryManager {
 
         // This should never happen - operation should have either succeeded or failed
         // If we reach here, there's a bug in the retry logic
-        fatalError("RetryManager completed without success or failure - this should never happen")
+        logger.critical("RetryManager completed without success or failure - this should never happen")
+
+        // Since we can't convert RetryManagerError to arbitrary ErrorType,
+        // we need to handle this case differently. Use force unwrap on lastError
+        // or throw a fatal error since this is a programming error.
+        if let error = lastError {
+            return .failure(error)
+        }
+
+        // No error and no success - this is a critical bug
+        fatalError("RetryManager completed in impossible state - no success, no failure, no error")
     }
+}
+
+/// Error type for RetryManager failures
+enum RetryManagerError: Error, Sendable {
+    case unknownCompletion
 }
