@@ -59,7 +59,7 @@ struct FlashcardDetailView: View {
 
     var body: some View {
         Group {
-            if let viewModel = viewModel {
+            if let viewModel {
                 mainContent(viewModel: viewModel)
             } else {
                 ProgressView("Loading...")
@@ -125,7 +125,7 @@ struct FlashcardDetailView: View {
             // Track filter changes for analytics
             Analytics.trackEvent("review_history_filter_changed", metadata: [
                 "filter": newFilter.rawValue,
-                "flashcard_word": flashcard.word,
+                "flashcard_word": flashcard.word
             ])
         }
     }
@@ -251,7 +251,7 @@ struct FlashcardDetailView: View {
     /// Review history header with statistics
     @ViewBuilder
     private var reviewHistoryHeader: some View {
-        if let viewModel = viewModel {
+        if let viewModel {
             VStack(spacing: 16) {
                 // Section title
                 HStack {
@@ -287,7 +287,7 @@ struct FlashcardDetailView: View {
     /// 4. Track export with analytics
     /// 5. Trigger haptic feedback (success or error)
     private func exportReviewHistory() async {
-        guard let viewModel = viewModel else { return }
+        guard let viewModel else { return }
 
         Self.logger.info("Exporting review history for '\(flashcard.word)'")
 
@@ -317,30 +317,30 @@ struct FlashcardDetailView: View {
     /// SF Symbol icon for FSRS state
     private func stateIcon(for state: FlashcardState) -> String {
         switch state {
-        case .new: return "sparkles"
-        case .learning: return "graduationcap.fill"
-        case .review: return "checkmark.circle.fill"
-        case .relearning: return "arrow.clockwise.circle.fill"
+        case .new: "sparkles"
+        case .learning: "graduationcap.fill"
+        case .review: "checkmark.circle.fill"
+        case .relearning: "arrow.clockwise.circle.fill"
         }
     }
 
     /// Color for FSRS state
     private func stateColor(for state: FlashcardState) -> Color {
         switch state {
-        case .new: return .purple
-        case .learning: return .blue
-        case .review: return .green
-        case .relearning: return .orange
+        case .new: .purple
+        case .learning: .blue
+        case .review: .green
+        case .relearning: .orange
         }
     }
 
     /// Human-readable state label
     private func stateLabel(for state: FlashcardState) -> String {
         switch state {
-        case .new: return "New"
-        case .learning: return "Learning"
-        case .review: return "Review"
-        case .relearning: return "Relearning"
+        case .new: "New"
+        case .learning: "Learning"
+        case .review: "Review"
+        case .relearning: "Relearning"
         }
     }
 

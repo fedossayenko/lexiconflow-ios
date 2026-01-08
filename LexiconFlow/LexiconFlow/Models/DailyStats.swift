@@ -80,7 +80,7 @@ final class DailyStats {
         let remainingSeconds = seconds % 60
 
         if hours > 0 {
-            if minutes == 0 && remainingSeconds == 0 {
+            if minutes == 0, remainingSeconds == 0 {
                 return "\(hours)h"
             } else if remainingSeconds == 0 {
                 return "\(hours)h \(minutes)m"

@@ -583,11 +583,10 @@ struct FlashcardReviewDTOTests {
         let currentState = FlashcardState.review
         let rating = 2 // Good (passing)
 
-        let stateChange: ReviewStateChange
-        if previousState == .learning, currentState == .review, rating > 0 {
-            stateChange = .graduated
+        let stateChange: ReviewStateChange = if previousState == .learning, currentState == .review, rating > 0 {
+            .graduated
         } else {
-            stateChange = .none
+            .none
         }
 
         #expect(stateChange == .graduated)
@@ -599,11 +598,10 @@ struct FlashcardReviewDTOTests {
         let currentState = FlashcardState.relearning
         let rating = 0 // Again (failed)
 
-        let stateChange: ReviewStateChange
-        if rating == 0, currentState == .relearning {
-            stateChange = .relearning
+        let stateChange: ReviewStateChange = if rating == 0, currentState == .relearning {
+            .relearning
         } else {
-            stateChange = .none
+            .none
         }
 
         #expect(stateChange == .relearning)
@@ -616,13 +614,12 @@ struct FlashcardReviewDTOTests {
         let currentState = FlashcardState.review
         let rating = 2 // Good
 
-        let stateChange: ReviewStateChange
-        if previousState == .learning, currentState == .review {
-            stateChange = .graduated
+        let stateChange: ReviewStateChange = if previousState == .learning, currentState == .review {
+            .graduated
         } else if rating == 0, currentState == .relearning {
-            stateChange = .relearning
+            .relearning
         } else {
-            stateChange = .none
+            .none
         }
 
         #expect(stateChange == .none)
@@ -635,17 +632,16 @@ struct FlashcardReviewDTOTests {
         let currentState = FlashcardState.review
         let rating = 2 // Good
 
-        let stateChange: ReviewStateChange
-        if let previous = previousState {
+        let stateChange: ReviewStateChange = if let previous = previousState {
             if previous == .learning, currentState == .review {
-                stateChange = .graduated
+                .graduated
             } else if rating == 0, currentState == .relearning {
-                stateChange = .relearning
+                .relearning
             } else {
-                stateChange = .none
+                .none
             }
         } else {
-            stateChange = .none
+            .none
         }
 
         #expect(stateChange == .none, "Missing previous state should result in no state change")
@@ -658,13 +654,12 @@ struct FlashcardReviewDTOTests {
         let currentState = FlashcardState.learning
         let rating = 2 // Good
 
-        let stateChange: ReviewStateChange
-        if previousState == .learning, currentState == .review {
-            stateChange = .graduated
+        let stateChange: ReviewStateChange = if previousState == .learning, currentState == .review {
+            .graduated
         } else if rating == 0, currentState == .relearning {
-            stateChange = .relearning
+            .relearning
         } else {
-            stateChange = .none
+            .none
         }
 
         #expect(stateChange == .none, "Learning to learning is not graduation")

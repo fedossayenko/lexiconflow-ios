@@ -101,7 +101,7 @@ final class DataImporter {
                     duration: Date().timeIntervalSince(startTime),
                     metadata: [
                         "batch_size": "\(batch.count)",
-                        "total_processed": "\(result.importedCount)",
+                        "total_processed": "\(result.importedCount)"
                     ]
                 )
 
@@ -120,7 +120,7 @@ final class DataImporter {
                     error: error,
                     metadata: [
                         "batch_number": "\(batchNumber)",
-                        "batch_size": "\(batch.count)",
+                        "batch_size": "\(batch.count)"
                     ]
                 )
             }
@@ -141,7 +141,7 @@ final class DataImporter {
             "imported_count": "\(result.importedCount)",
             "skipped_count": "\(result.skippedCount)",
             "error_count": "\(result.errors.count)",
-            "duration_seconds": String(format: "%.2f", duration),
+            "duration_seconds": String(format: "%.2f", duration)
         ])
 
         return result
@@ -165,7 +165,7 @@ final class DataImporter {
         // PERFORMANCE: Fetch existing cards ONCE per batch, not per card
         // This changes from O(n²) to O(n) complexity
         let allCards = try modelContext.fetch(FetchDescriptor<Flashcard>())
-        let existingWords = Set(allCards.map { $0.word })
+        let existingWords = Set(allCards.map(\.word))
 
         for cardData in cards {
             // O(1) duplicate check using Set
@@ -183,7 +183,7 @@ final class DataImporter {
             )
 
             // Associate with deck if provided
-            if let deck = deck {
+            if let deck {
                 flashcard.deck = deck
             }
 

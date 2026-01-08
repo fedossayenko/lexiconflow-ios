@@ -139,22 +139,22 @@ enum GeneratedSentenceError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .emptyText:
-            return "Sentence text cannot be empty"
+            "Sentence text cannot be empty"
         case let .invalidCEFRLevel(level):
-            return "Invalid CEFR level: \(level). Must be one of: A1, A2, B1, B2, C1, C2"
+            "Invalid CEFR level: \(level). Must be one of: A1, A2, B1, B2, C1, C2"
         case .invalidTTL:
-            return "TTL must be positive (greater than 0)"
+            "TTL must be positive (greater than 0)"
         }
     }
 
     var recoverySuggestion: String? {
         switch self {
         case .emptyText:
-            return "Provide a non-empty sentence text"
+            "Provide a non-empty sentence text"
         case .invalidCEFRLevel:
-            return "Use a valid CEFR level (A1, A2, B1, B2, C1, or C2)"
+            "Use a valid CEFR level (A1, A2, B1, B2, C1, or C2)"
         case .invalidTTL:
-            return "Specify a positive TTL value (typically 7 days)"
+            "Specify a positive TTL value (typically 7 days)"
         }
     }
 }

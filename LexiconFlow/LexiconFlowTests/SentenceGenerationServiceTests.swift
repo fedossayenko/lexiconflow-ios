@@ -221,7 +221,7 @@ struct SentenceGenerationServiceTests {
         let fallbacks = await service.getStaticFallbackSentences(for: "be")
 
         #expect(fallbacks.count == 3)
-        let sentences = fallbacks.map { $0.sentence }
+        let sentences = fallbacks.map(\.sentence)
         #expect(sentences.contains("I want to be a doctor."))
     }
 
@@ -232,7 +232,7 @@ struct SentenceGenerationServiceTests {
         let fallbacks = await service.getStaticFallbackSentences(for: "to")
 
         #expect(fallbacks.count == 3)
-        let sentences = fallbacks.map { $0.sentence }
+        let sentences = fallbacks.map(\.sentence)
         #expect(sentences.contains("I need to go to the store."))
     }
 
@@ -243,7 +243,7 @@ struct SentenceGenerationServiceTests {
         let fallbacks = await service.getStaticFallbackSentences(for: "of")
 
         #expect(fallbacks.count == 3)
-        let sentences = fallbacks.map { $0.sentence }
+        let sentences = fallbacks.map(\.sentence)
         #expect(sentences.contains("A cup of coffee."))
     }
 
@@ -311,7 +311,7 @@ struct SentenceGenerationServiceTests {
             .apiFailed,
             .invalidResponse(reason: "Parse error"),
             .cancelled,
-            .offline,
+            .offline
         ]
 
         for error in errors {
@@ -364,7 +364,7 @@ struct SentenceGenerationServiceTests {
         let retryableErrors: [SentenceGenerationError] = [
             .rateLimit,
             .serverError(statusCode: 500, message: "Internal error"),
-            .offline,
+            .offline
         ]
 
         for error in retryableErrors {
@@ -380,7 +380,7 @@ struct SentenceGenerationServiceTests {
             .clientError(statusCode: 400, message: "Bad request"),
             .apiFailed,
             .invalidResponse(reason: "Parse error"),
-            .cancelled,
+            .cancelled
         ]
 
         for error in nonRetryableErrors {

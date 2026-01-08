@@ -113,10 +113,10 @@ class HapticService {
                 eventType: .hapticTransient,
                 parameters: [
                     CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity * HapticProfile.medium)),
-                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.8),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.8)
                 ],
                 relativeTime: 0
-            ),
+            )
         ]
         return try CHHapticPattern(events: events, parameters: [])
     }
@@ -129,10 +129,10 @@ class HapticService {
                 eventType: .hapticTransient,
                 parameters: [
                     CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity * HapticProfile.light)),
-                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.3),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.3)
                 ],
                 relativeTime: 0
-            ),
+            )
         ]
         return try CHHapticPattern(events: events, parameters: [])
     }
@@ -145,10 +145,10 @@ class HapticService {
                 eventType: .hapticTransient,
                 parameters: [
                     CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity * HapticProfile.strong)),
-                    CHHapticEventParameter(parameterID: .hapticSharpness, value: Float(HapticProfile.maximum)),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: Float(HapticProfile.maximum))
                 ],
                 relativeTime: 0
-            ),
+            )
         ]
         return try CHHapticPattern(events: events, parameters: [])
     }
@@ -161,10 +161,10 @@ class HapticService {
                 eventType: .hapticTransient,
                 parameters: [
                     CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity * 0.6)),
-                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5)
                 ],
                 relativeTime: 0
-            ),
+            )
         ]
         return try CHHapticPattern(events: events, parameters: [])
     }
@@ -177,7 +177,7 @@ class HapticService {
                 eventType: .hapticTransient,
                 parameters: [
                     CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(HapticProfile.maximum)),
-                    CHHapticEventParameter(parameterID: .hapticSharpness, value: Float(HapticProfile.medium)),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: Float(HapticProfile.medium))
                 ],
                 relativeTime: 0
             ),
@@ -185,10 +185,10 @@ class HapticService {
                 eventType: .hapticTransient,
                 parameters: [
                     CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(HapticProfile.medium)),
-                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.5)
                 ],
                 relativeTime: 0.1
-            ),
+            )
         ]
         return try CHHapticPattern(events: events, parameters: [])
     }
@@ -201,10 +201,10 @@ class HapticService {
                 eventType: .hapticTransient,
                 parameters: [
                     CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.7),
-                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.6),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.6)
                 ],
                 relativeTime: 0
-            ),
+            )
         ]
         return try CHHapticPattern(events: events, parameters: [])
     }
@@ -217,10 +217,10 @@ class HapticService {
                 eventType: .hapticTransient,
                 parameters: [
                     CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
-                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 1.0),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 1.0)
                 ],
                 relativeTime: 0
-            ),
+            )
         ]
         return try CHHapticPattern(events: events, parameters: [])
     }
@@ -238,7 +238,7 @@ class HapticService {
                 eventType: .hapticTransient,
                 parameters: [
                     CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity)),
-                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.9),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.9)
                 ],
                 relativeTime: 0
             ),
@@ -247,10 +247,10 @@ class HapticService {
                 eventType: .hapticTransient,
                 parameters: [
                     CHHapticEventParameter(parameterID: .hapticIntensity, value: Float(intensity * 0.7)),
-                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.8),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.8)
                 ],
                 relativeTime: 0.15
-            ),
+            )
         ]
         return try CHHapticPattern(events: events, parameters: [])
     }
@@ -313,16 +313,15 @@ class HapticService {
     /// Triggers haptic feedback using CoreHaptics engine.
     private func triggerCoreHapticSwipe(direction: SwipeDirection, progress: CGFloat, engine: CHHapticEngine) {
         do {
-            let pattern: CHHapticPattern
-            switch direction {
+            let pattern: CHHapticPattern = switch direction {
             case .right:
-                pattern = try createSwipeRightPattern(intensity: progress)
+                try createSwipeRightPattern(intensity: progress)
             case .left:
-                pattern = try createSwipeLeftPattern(intensity: progress)
+                try createSwipeLeftPattern(intensity: progress)
             case .up:
-                pattern = try createSwipeUpPattern(intensity: progress)
+                try createSwipeUpPattern(intensity: progress)
             case .down:
-                pattern = try createSwipeDownPattern(intensity: progress)
+                try createSwipeDownPattern(intensity: progress)
             }
 
             let player = try engine.makePlayer(with: pattern)
@@ -337,12 +336,11 @@ class HapticService {
 
     /// Triggers haptic feedback using UIKit generators (fallback).
     private func triggerUIKitSwipe(direction: SwipeDirection, progress: CGFloat) {
-        let style: UIImpactFeedbackGenerator.FeedbackStyle
-        switch direction {
-        case .right: style = .medium
-        case .left: style = .light
-        case .up: style = .heavy
-        case .down: style = .medium
+        let style: UIImpactFeedbackGenerator.FeedbackStyle = switch direction {
+        case .right: .medium
+        case .left: .light
+        case .up: .heavy
+        case .down: .medium
         }
 
         let generator = getGenerator(style: style)

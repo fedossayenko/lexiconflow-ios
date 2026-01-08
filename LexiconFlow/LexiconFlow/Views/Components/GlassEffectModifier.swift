@@ -13,56 +13,56 @@ enum GlassThickness {
     var material: Material {
         switch self {
         case .thin:
-            return .ultraThinMaterial
+            .ultraThinMaterial
         case .regular:
-            return .thinMaterial
+            .thinMaterial
         case .thick:
-            return .regularMaterial
+            .regularMaterial
         }
     }
 
     /// The corner radius for the glass shape.
     var cornerRadius: CGFloat {
         switch self {
-        case .thin: return 12
-        case .regular: return 16
-        case .thick: return 20
+        case .thin: 12
+        case .regular: 16
+        case .thick: 20
         }
     }
 
     /// The shadow radius for depth effect.
     var shadowRadius: CGFloat {
         switch self {
-        case .thin: return 5
-        case .regular: return 10
-        case .thick: return 15
+        case .thin: 5
+        case .regular: 10
+        case .thick: 15
         }
     }
 
     /// The opacity of the glass overlay.
     var overlayOpacity: Double {
         switch self {
-        case .thin: return 0.1
-        case .regular: return 0.2
-        case .thick: return 0.3
+        case .thin: 0.1
+        case .regular: 0.2
+        case .thick: 0.3
         }
     }
 
     /// Blur radius for refraction effect (simulates light bending through glass)
     var refractionBlur: CGFloat {
         switch self {
-        case .thin: return 2
-        case .regular: return 5
-        case .thick: return 8
+        case .thin: 2
+        case .regular: 5
+        case .thick: 8
         }
     }
 
     /// Specular highlight intensity (creates "shiny" appearance)
     var specularOpacity: Double {
         switch self {
-        case .thin: return 0.15
-        case .regular: return 0.25
-        case .thick: return 0.35
+        case .thin: 0.15
+        case .regular: 0.25
+        case .thick: 0.35
         }
     }
 }
@@ -92,7 +92,7 @@ struct GlassEffectModifier<S: InsettableShape>: ViewModifier {
                                 colors: [
                                     .white.opacity(thickness.specularOpacity),
                                     .clear,
-                                    .white.opacity(thickness.specularOpacity * 0.5),
+                                    .white.opacity(thickness.specularOpacity * 0.5)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -108,7 +108,7 @@ struct GlassEffectModifier<S: InsettableShape>: ViewModifier {
                         LinearGradient(
                             colors: [
                                 .white.opacity(thickness.overlayOpacity),
-                                .white.opacity(0),
+                                .white.opacity(0)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -127,7 +127,7 @@ extension View {
     ///   - thickness: The thickness of the glass effect (thin, regular, thick).
     ///   - shape: The shape to clip the glass effect to.
     /// - Returns: A view with the glass effect applied.
-    func glassEffect<S: InsettableShape>(_ thickness: GlassThickness, in shape: S) -> some View {
+    func glassEffect(_ thickness: GlassThickness, in shape: some InsettableShape) -> some View {
         modifier(GlassEffectModifier(thickness: thickness, shape: shape))
     }
 

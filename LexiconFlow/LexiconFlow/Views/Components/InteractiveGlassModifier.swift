@@ -54,7 +54,7 @@ struct InteractiveGlassModifier: ViewModifier {
                                 LinearGradient(
                                     colors: [
                                         .white.opacity(0.3 * progress),
-                                        .clear,
+                                        .clear
                                     ],
                                     startPoint: offset.width > 0 ? .leading : .trailing,
                                     endPoint: offset.width > 0 ? .trailing : .leading

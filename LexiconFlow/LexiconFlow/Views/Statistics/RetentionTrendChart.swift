@@ -72,7 +72,7 @@ struct RetentionTrendChart: View {
                     LinearGradient(
                         colors: [
                             Color.blue.opacity(0.3),
-                            Color.blue.opacity(0.05),
+                            Color.blue.opacity(0.05)
                         ],
                         startPoint: .top,
                         endPoint: .bottom
@@ -169,7 +169,7 @@ struct RetentionTrendChart: View {
         let count = sortedTrendData.count
         if count <= 7 {
             // Show all dates for small datasets
-            return sortedTrendData.map { $0.date }
+            return sortedTrendData.map(\.date)
         } else if count <= 30 {
             // Show every 5th date for medium datasets
             return stride(from: 0, to: count, by: 5).map {
@@ -180,7 +180,7 @@ struct RetentionTrendChart: View {
             let first = sortedTrendData.first?.date
             let middle = sortedTrendData[count / 2].date
             let last = sortedTrendData.last?.date
-            return [first, middle, last].compactMap { $0 }
+            return [first, middle, last].compactMap(\.self)
         }
     }
 
@@ -244,7 +244,7 @@ struct RetentionTrendChart: View {
         }
 
         // Show min/max retention rates
-        let rates = sorted.map { $0.rate }
+        let rates = sorted.map(\.rate)
         let minRate = rates.min() ?? 0
         let maxRate = rates.max() ?? 0
 
@@ -274,7 +274,7 @@ struct RetentionTrendChart: View {
         (date: now.addingTimeInterval(-3 * 24 * 3600), rate: 0.80),
         (date: now.addingTimeInterval(-2 * 24 * 3600), rate: 0.85),
         (date: now.addingTimeInterval(-1 * 24 * 3600), rate: 0.88),
-        (date: now, rate: 0.90),
+        (date: now, rate: 0.90)
     ]
 
     let data = RetentionRateData(
@@ -345,7 +345,7 @@ struct RetentionTrendChart: View {
         (date: now.addingTimeInterval(-3 * 24 * 3600), rate: 0.80),
         (date: now.addingTimeInterval(-2 * 24 * 3600), rate: 0.85),
         (date: now.addingTimeInterval(-1 * 24 * 3600), rate: 0.88),
-        (date: now, rate: 0.90),
+        (date: now, rate: 0.90)
     ]
 
     let data = RetentionRateData(

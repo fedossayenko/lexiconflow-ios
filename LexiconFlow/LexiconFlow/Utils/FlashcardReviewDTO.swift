@@ -135,9 +135,9 @@ struct FlashcardReviewDTO: Sendable, Identifiable {
     var stateChangeBadge: String? {
         switch stateChange {
         case .none:
-            return nil
+            nil
         case .firstReview, .graduated, .relearning:
-            return stateChange.rawValue
+            stateChange.rawValue
         }
     }
 
@@ -235,19 +235,18 @@ extension FlashcardReviewDTO {
         isFirstReview: Bool = false
     ) -> FlashcardReviewDTO {
         // Detect state transition
-        let stateChange: ReviewStateChange
-        if isFirstReview {
-            stateChange = .firstReview
+        let stateChange: ReviewStateChange = if isFirstReview {
+            .firstReview
         } else if let previous = previousState {
-            if previous == .learning && currentState == .review {
-                stateChange = .graduated
-            } else if review.rating == 0 && currentState == .relearning {
-                stateChange = .relearning
+            if previous == .learning, currentState == .review {
+                .graduated
+            } else if review.rating == 0, currentState == .relearning {
+                .relearning
             } else {
-                stateChange = .none
+                .none
             }
         } else {
-            stateChange = .none
+            .none
         }
 
         return FlashcardReviewDTO(

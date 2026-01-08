@@ -21,27 +21,27 @@ enum FlashcardDetailError: LocalizedError, Sendable {
     var errorDescription: String? {
         switch self {
         case .exportFailed:
-            return "Failed to export review history. Please try again."
+            "Failed to export review history. Please try again."
         case .invalidFlashcard:
-            return "Invalid flashcard data."
+            "Invalid flashcard data."
         }
     }
 
     var failureReason: String? {
         switch self {
         case let .exportFailed(message):
-            return "Underlying error: \(message)"
+            "Underlying error: \(message)"
         case .invalidFlashcard:
-            return "Flashcard object is nil or incomplete"
+            "Flashcard object is nil or incomplete"
         }
     }
 
     var recoverySuggestion: String? {
         switch self {
         case .exportFailed:
-            return "Try again. If the problem persists, check your storage."
+            "Try again. If the problem persists, check your storage."
         case .invalidFlashcard:
-            return "Navigate back and select the card again."
+            "Navigate back and select the card again."
         }
     }
 }
@@ -148,7 +148,7 @@ final class FlashcardDetailViewModel: ObservableObject {
     /// always reflects the current database state.
     private var allReviews: [FlashcardReview] {
         // SwiftData relationship is automatically maintained
-        return flashcard.reviewLogs
+        flashcard.reviewLogs
     }
 
     /// Filtered review history as DTOs with state changes
@@ -421,7 +421,7 @@ final class FlashcardDetailViewModel: ObservableObject {
             "flashcard_word": flashcard.word,
             "review_count": "\(totalReviewCount)",
             "current_state": currentFSRSState?.rawValue ?? "none",
-            "stability": currentStability.map { String(format: "%.2f", $0) } ?? "0.0",
+            "stability": currentStability.map { String(format: "%.2f", $0) } ?? "0.0"
         ])
     }
 
@@ -431,7 +431,7 @@ final class FlashcardDetailViewModel: ObservableObject {
     func trackFilterChange(_ filter: ReviewHistoryFilter) async {
         await Analytics.trackEvent("review_history_filter_changed", metadata: [
             "filter": filter.rawValue,
-            "flashcard_word": flashcard.word,
+            "flashcard_word": flashcard.word
         ])
     }
 
@@ -451,7 +451,7 @@ final class FlashcardDetailViewModel: ObservableObject {
             "flashcard_word": flashcard.word,
             "review_count": "\(filteredReviews.count)",
             "filter_type": selectedFilter.rawValue,
-            "file_size_bytes": "\(csvByteCount)",
+            "file_size_bytes": "\(csvByteCount)"
         ])
     }
 }

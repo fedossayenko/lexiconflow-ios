@@ -126,28 +126,28 @@ struct ReviewHistoryHeaderView: View {
     /// SF Symbol icon for current FSRS state
     private var currentStateIcon: String {
         switch currentState {
-        case .new: return "sparkles"
-        case .learning: return "graduationcap.fill"
-        case .review: return "checkmark.circle.fill"
-        case .relearning: return "arrow.clockwise.circle.fill"
-        case .none: return "questionmark.circle.fill"
+        case .new: "sparkles"
+        case .learning: "graduationcap.fill"
+        case .review: "checkmark.circle.fill"
+        case .relearning: "arrow.clockwise.circle.fill"
+        case .none: "questionmark.circle.fill"
         }
     }
 
     /// Color for FSRS state
     private var stateColor: Color {
         switch currentState {
-        case .new: return .purple
-        case .learning: return .blue
-        case .review: return .green
-        case .relearning: return .orange
-        case .none: return .gray
+        case .new: .purple
+        case .learning: .blue
+        case .review: .green
+        case .relearning: .orange
+        case .none: .gray
         }
     }
 
     /// Stability text in days
     private var stabilityText: String {
-        guard let stability = stability else { return "--" }
+        guard let stability else { return "--" }
 
         if stability < 1.0 {
             let hours = Int(stability * 24)
@@ -167,11 +167,11 @@ struct ReviewHistoryHeaderView: View {
     /// Human-readable state label
     private var stateLabel: String {
         switch currentState {
-        case .new: return "New"
-        case .learning: return "Learning"
-        case .review: return "Review"
-        case .relearning: return "Relearning"
-        case .none: return "No State"
+        case .new: "New"
+        case .learning: "Learning"
+        case .review: "Review"
+        case .relearning: "Relearning"
+        case .none: "No State"
         }
     }
 
@@ -207,7 +207,7 @@ struct ReviewHistoryHeaderView: View {
             return "No FSRS state"
         }
 
-        guard let stability = stability else {
+        guard let stability else {
             return stateLabel
         }
 

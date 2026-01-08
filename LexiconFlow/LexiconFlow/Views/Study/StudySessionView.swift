@@ -25,7 +25,7 @@ struct StudySessionView: View {
 
     var body: some View {
         @ViewBuilder var content: some View {
-            if let viewModel = viewModel {
+            if let viewModel {
                 if viewModel.isComplete {
                     sessionCompleteView(vm: viewModel)
                 } else if let currentCard = viewModel.currentCard {
@@ -101,7 +101,7 @@ struct StudySessionView: View {
                 if viewModel == nil {
                     viewModel = StudySessionViewModel(modelContext: modelContext, decks: decks, mode: mode)
                 }
-                if let viewModel = viewModel, viewModel.cards.isEmpty {
+                if let viewModel, viewModel.cards.isEmpty {
                     viewModel.loadCards()
                 }
             }

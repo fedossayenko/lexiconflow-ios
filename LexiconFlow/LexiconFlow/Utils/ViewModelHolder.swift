@@ -39,7 +39,7 @@ final class ViewModelHolder<T: ObservableObject>: ObservableObject {
     @Published var value: T? {
         didSet {
             // When value changes, observe its objectWillChange
-            if let value = value {
+            if let value {
                 setupObservation(for: value)
             }
         }
@@ -52,7 +52,7 @@ final class ViewModelHolder<T: ObservableObject>: ObservableObject {
     /// - Parameter value: Optional ObservableObject to wrap
     init(_ value: T? = nil) {
         self.value = value
-        if let value = value {
+        if let value {
             setupObservation(for: value)
         }
     }

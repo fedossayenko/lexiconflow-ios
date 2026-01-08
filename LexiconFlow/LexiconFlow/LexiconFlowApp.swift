@@ -61,7 +61,7 @@ struct LexiconFlowApp: App {
             FlashcardReview.self,
             StudySession.self,
             DailyStats.self,
-            GeneratedSentence.self,
+            GeneratedSentence.self
         ])
 
         // Attempt 1: Try persistent SQLite storage (primary)

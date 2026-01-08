@@ -72,7 +72,7 @@ struct AddFlashcardView: View {
                 }
 
                 Section {
-                    if let imageData = imageData, let image = UIImage(data: imageData) {
+                    if let imageData, let image = UIImage(data: imageData) {
                         HStack {
                             Image(uiImage: image)
                                 .resizable()
@@ -140,7 +140,7 @@ struct AddFlashcardView: View {
             }
             .onChange(of: selectedImage) { _, newItem in
                 Task {
-                    guard let newItem = newItem else { return }
+                    guard let newItem else { return }
                     do {
                         let data = try await newItem.loadTransferable(type: Data.self)
                         imageData = data

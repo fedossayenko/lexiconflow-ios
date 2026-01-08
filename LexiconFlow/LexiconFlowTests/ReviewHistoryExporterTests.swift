@@ -16,7 +16,7 @@ import Testing
 struct ReviewHistoryExporterTests {
     /// Get a fresh isolated context for testing
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     // MARK: - CSV Export Tests

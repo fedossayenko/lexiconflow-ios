@@ -26,7 +26,7 @@ struct StatisticsDashboardE2ETests {
     // MARK: - Test Fixtures
 
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     private func createDeck(context: ModelContext, name: String = "Test Deck") -> Deck {
@@ -210,8 +210,8 @@ struct StatisticsDashboardE2ETests {
 
         // Verify retention rate calculation
         let retentionData = statsViewModel.retentionData!
-        let expectedSuccessCount = ratings.filter { $0 >= 1 }.count
-        let expectedFailedCount = ratings.filter { $0 == 0 }.count
+        let expectedSuccessCount = ratings.count(where: { $0 >= 1 })
+        let expectedFailedCount = ratings.count(where: { $0 == 0 })
         let expectedRate = Double(expectedSuccessCount) / Double(ratings.count)
 
         #expect(retentionData.totalCount == 20, "Should have 20 total reviews")

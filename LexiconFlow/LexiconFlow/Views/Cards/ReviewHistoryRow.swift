@@ -84,11 +84,11 @@ struct ReviewHistoryRow: View {
     /// SwiftUI Color for rating
     private var ratingColor: Color {
         switch review.rating {
-        case 0: return .red
-        case 1: return .orange
-        case 2: return .blue
-        case 3: return .green
-        default: return .blue
+        case 0: .red
+        case 1: .orange
+        case 2: .blue
+        case 3: .green
+        default: .blue
         }
     }
 
@@ -112,13 +112,13 @@ struct ReviewHistoryRow: View {
     private func stateChangeColor(for text: String) -> Color {
         switch text {
         case "First Review":
-            return .purple
+            .purple
         case "Graduated":
-            return .green
+            .green
         case "Relearning":
-            return .orange
+            .orange
         default:
-            return .gray
+            .gray
         }
     }
 

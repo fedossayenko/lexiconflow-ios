@@ -47,7 +47,7 @@ struct PerformanceTests {
     // MARK: - Test Helpers
 
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     /// Measure execution time of a block
@@ -125,11 +125,10 @@ struct PerformanceTests {
             // Skip some days to create realistic streak patterns
             if Double.random(in: 0 ... 1) > 0.7 { // 30% chance of studying
                 let modeEnum = [StudyMode.scheduled, .learning, .cram].randomElement() ?? .scheduled
-                let modeString: String
-                switch modeEnum {
-                case .scheduled: modeString = "scheduled"
-                case .learning: modeString = "learning"
-                case .cram: modeString = "cram"
+                let modeString = switch modeEnum {
+                case .scheduled: "scheduled"
+                case .learning: "learning"
+                case .cram: "cram"
                 }
 
                 let session = StudySession(

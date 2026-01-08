@@ -239,7 +239,7 @@ struct FSRSDistributionChart: View {
     private var stabilityChartData: [(label: String, count: Int)] {
         let orderedBuckets = [
             "0-1 days", "1-3 days", "3-7 days", "1-2 weeks", "2-4 weeks",
-            "1-3 months", "3-6 months", "6-12 months", "1+ years",
+            "1-3 months", "3-6 months", "6-12 months", "1+ years"
         ]
 
         return orderedBuckets.map { label in
@@ -250,7 +250,7 @@ struct FSRSDistributionChart: View {
     /// Difficulty distribution data sorted by bucket order
     private var difficultyChartData: [(label: String, count: Int)] {
         let orderedBuckets = [
-            "0-2 (Very Easy)", "2-4 (Easy)", "4-6 (Medium)", "6-8 (Hard)", "8-10 (Very Hard)",
+            "0-2 (Very Easy)", "2-4 (Easy)", "4-6 (Medium)", "6-8 (Hard)", "8-10 (Very Hard)"
         ]
 
         return orderedBuckets.map { label in
@@ -287,7 +287,7 @@ struct FSRSDistributionChart: View {
             "1-3 months": "1-3mo",
             "3-6 months": "3-6mo",
             "6-12 months": "6-12mo",
-            "1+ years": "1+yr",
+            "1+ years": "1+yr"
         ]
 
         return shortMappings[label] ?? label
@@ -299,9 +299,9 @@ struct FSRSDistributionChart: View {
     /// Shows just the descriptive category for cleaner visual.
     private func shortenedDifficultyLabel(_ label: String) -> String {
         if label.contains("Very Easy") { return "V. Easy" }
-        if label.contains("Easy") && !label.contains("Very") { return "Easy" }
+        if label.contains("Easy"), !label.contains("Very") { return "Easy" }
         if label.contains("Medium") { return "Medium" }
-        if label.contains("Hard") && !label.contains("Very") { return "Hard" }
+        if label.contains("Hard"), !label.contains("Very") { return "Hard" }
         if label.contains("Very Hard") { return "V. Hard" }
         return label
     }
@@ -339,14 +339,14 @@ struct FSRSDistributionChart: View {
             "1-3 months": 18,
             "3-6 months": 10,
             "6-12 months": 6,
-            "1+ years": 3,
+            "1+ years": 3
         ],
         difficultyDistribution: [
             "0-2 (Very Easy)": 15,
             "2-4 (Easy)": 25,
             "4-6 (Medium)": 30,
             "6-8 (Hard)": 20,
-            "8-10 (Very Hard)": 10,
+            "8-10 (Very Hard)": 10
         ],
         totalCards: 97,
         reviewedCards: 97
@@ -372,14 +372,14 @@ struct FSRSDistributionChart: View {
             "1-3 months": 25,
             "3-6 months": 30,
             "6-12 months": 20,
-            "1+ years": 15,
+            "1+ years": 15
         ],
         difficultyDistribution: [
             "0-2 (Very Easy)": 5,
             "2-4 (Easy)": 15,
             "4-6 (Medium)": 40,
             "6-8 (Hard)": 30,
-            "8-10 (Very Hard)": 10,
+            "8-10 (Very Hard)": 10
         ],
         totalCards: 130,
         reviewedCards: 130
@@ -405,14 +405,14 @@ struct FSRSDistributionChart: View {
             "1-3 months": 15,
             "3-6 months": 10,
             "6-12 months": 5,
-            "1+ years": 2,
+            "1+ years": 2
         ],
         difficultyDistribution: [
             "0-2 (Very Easy)": 20,
             "2-4 (Easy)": 30,
             "4-6 (Medium)": 35,
             "6-8 (Hard)": 12,
-            "8-10 (Very Hard)": 3,
+            "8-10 (Very Hard)": 3
         ],
         totalCards: 117,
         reviewedCards: 117
@@ -439,14 +439,14 @@ struct FSRSDistributionChart: View {
             "1-3 months": 30,
             "3-6 months": 15,
             "6-12 months": 8,
-            "1+ years": 5,
+            "1+ years": 5
         ],
         difficultyDistribution: [
             "0-2 (Very Easy)": 45,
             "2-4 (Easy)": 35,
             "4-6 (Medium)": 15,
             "6-8 (Hard)": 4,
-            "8-10 (Very Hard)": 1,
+            "8-10 (Very Hard)": 1
         ],
         totalCards: 109,
         reviewedCards: 109

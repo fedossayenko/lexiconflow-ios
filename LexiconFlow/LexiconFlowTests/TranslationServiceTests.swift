@@ -509,7 +509,7 @@ struct TranslationServiceTests {
         let cards = [
             Flashcard(word: "café", definition: "a coffee shop"),
             Flashcard(word: "naïve", definition: "innocent"),
-            Flashcard(word: "résumé", definition: "a document"),
+            Flashcard(word: "résumé", definition: "a document")
         ]
 
         for card in cards {
@@ -561,7 +561,7 @@ struct TranslationServiceTests {
         let cards = [
             Flashcard(word: "test1", definition: "definition 1"),
             Flashcard(word: "test2", definition: "definition 2"),
-            Flashcard(word: "test3", definition: "definition 3"),
+            Flashcard(word: "test3", definition: "definition 3")
         ]
 
         for card in cards {
@@ -656,7 +656,7 @@ struct TranslationServiceTests {
             Flashcard(word: "valid", definition: "a valid word"),
             Flashcard(word: "", definition: "empty word"), // Invalid
             Flashcard(word: "another", definition: "another valid word"),
-            Flashcard(word: "", definition: "another empty"), // Invalid
+            Flashcard(word: "", definition: "another empty") // Invalid
         ]
 
         for card in cards {

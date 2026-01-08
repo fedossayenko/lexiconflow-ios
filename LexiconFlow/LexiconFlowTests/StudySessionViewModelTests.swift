@@ -27,7 +27,7 @@ struct StudySessionViewModelTests {
     // MARK: - Test Fixtures
 
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     private func createTestDeck(context: ModelContext, name: String = "Test Deck") -> Deck {
@@ -497,7 +497,7 @@ struct StudySessionViewModelTests {
             }
 
             for await time in group {
-                if let time = time {
+                if let time {
                     completionTimes.append(time)
                 }
             }

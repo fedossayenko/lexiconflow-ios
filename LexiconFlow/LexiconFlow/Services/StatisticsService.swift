@@ -116,18 +116,18 @@ enum StatisticsTimeRange: String, Sendable, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .sevenDays: return "7 days"
-        case .thirtyDays: return "30 days"
-        case .allTime: return "All time"
+        case .sevenDays: "7 days"
+        case .thirtyDays: "30 days"
+        case .allTime: "All time"
         }
     }
 
     /// Accessibility-friendly label for VoiceOver
     var accessibilityLabel: String {
         switch self {
-        case .sevenDays: return "Last 7 days"
-        case .thirtyDays: return "Last 30 days"
-        case .allTime: return "All time"
+        case .sevenDays: "Last 7 days"
+        case .thirtyDays: "Last 30 days"
+        case .allTime: "All time"
         }
     }
 }
@@ -160,7 +160,7 @@ final class StatisticsService {
             ("1-3 months", 90.0),
             ("3-6 months", 180.0),
             ("6-12 months", 365.0),
-            ("1+ years", Double.infinity),
+            ("1+ years", Double.infinity)
         ]
     }
 
@@ -171,7 +171,7 @@ final class StatisticsService {
             ("2-4 (Easy)", 4.0),
             ("4-6 (Medium)", 6.0),
             ("6-8 (Hard)", 8.0),
-            ("8-10 (Very Hard)", 10.0),
+            ("8-10 (Very Hard)", 10.0)
         ]
     }
 
@@ -288,7 +288,7 @@ final class StatisticsService {
         let trendData = dailyReviews
             .sorted { $0.key < $1.key }
             .map { day, reviews -> (Date, Double) in
-                let successful = reviews.filter { $0.rating >= 1 }.count
+                let successful = reviews.count(where: { $0.rating >= 1 })
                 let rate = Double(successful) / Double(reviews.count)
                 return (day, rate)
             }
@@ -674,10 +674,10 @@ final class StatisticsService {
                 let totalReviews = daySessions.reduce(0) { $0 + $1.cardsReviewed }
 
                 // Calculate retention rate for the day
-                let allReviews = daySessions.flatMap { $0.reviewsLog }
+                let allReviews = daySessions.flatMap(\.reviewsLog)
                 let retentionRate: Double?
                 if !allReviews.isEmpty {
-                    let successful = allReviews.filter { $0.rating >= 1 }.count
+                    let successful = allReviews.count(where: { $0.rating >= 1 })
                     retentionRate = Double(successful) / Double(allReviews.count)
                 } else {
                     retentionRate = nil

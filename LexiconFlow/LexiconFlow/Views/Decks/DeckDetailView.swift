@@ -249,15 +249,15 @@ struct DeckDetailView: View {
                 failedWords: result.errors.map { error in
                     switch error {
                     case let .unsupportedLanguagePair(source, _):
-                        return source
+                        source
                     case let .languagePackNotAvailable(source, _):
-                        return source
+                        source
                     case let .languagePackDownloadFailed(language):
-                        return language
+                        language
                     case let .translationFailed(reason):
-                        return reason
+                        reason
                     case .emptyInput:
-                        return "empty input"
+                        "empty input"
                     }
                 }
             )
@@ -272,7 +272,7 @@ struct DeckDetailView: View {
                 translatedCount: 0,
                 skippedCount: 0,
                 failedCount: cards.count,
-                failedWords: cards.map { $0.word }
+                failedWords: cards.map(\.word)
             )
 
             Analytics.trackError("translation_save_failed", error: error)
@@ -290,7 +290,7 @@ struct DeckDetailView: View {
         translationResult = TranslationResult(
             translatedCount: 0,
             skippedCount: 0,
-            failedCount: deck.cards.filter { $0.translation == nil }.count,
+            failedCount: deck.cards.count(where: { $0.translation == nil }),
             failedWords: []
         )
 
@@ -306,7 +306,7 @@ struct DeckDetailView: View {
         translationResult = TranslationResult(
             translatedCount: 0,
             skippedCount: 0,
-            failedCount: deck.cards.filter { $0.translation == nil }.count,
+            failedCount: deck.cards.count(where: { $0.translation == nil }),
             failedWords: []
         )
 

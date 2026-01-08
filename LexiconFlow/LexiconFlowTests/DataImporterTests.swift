@@ -47,7 +47,7 @@ actor BatchCounter {
 @MainActor
 struct DataImporterTests {
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     // MARK: - Basic Import Tests
@@ -87,7 +87,7 @@ struct DataImporterTests {
         let cards = [
             FlashcardData(word: "word1", definition: "def1"),
             FlashcardData(word: "word2", definition: "def2"),
-            FlashcardData(word: "word3", definition: "def3"),
+            FlashcardData(word: "word3", definition: "def3")
         ]
 
         let result = await importer.importCards(cards)
@@ -124,7 +124,7 @@ struct DataImporterTests {
         let cards = [
             FlashcardData(word: "duplicate", definition: "First"),
             FlashcardData(word: "duplicate", definition: "Second"),
-            FlashcardData(word: "unique", definition: "Only one"),
+            FlashcardData(word: "unique", definition: "Only one")
         ]
 
         // Import first time - all 3 imported (duplicate check happens once per batch)
@@ -150,7 +150,7 @@ struct DataImporterTests {
         let cards = [
             FlashcardData(word: "Test", definition: "Capitalized"),
             FlashcardData(word: "test", definition: "Lowercase"),
-            FlashcardData(word: "TEST", definition: "Uppercase"),
+            FlashcardData(word: "TEST", definition: "Uppercase")
         ]
 
         let result = await importer.importCards(cards)
@@ -244,7 +244,7 @@ struct DataImporterTests {
 
         let cards = [
             FlashcardData(word: "card1", definition: "def1"),
-            FlashcardData(word: "card2", definition: "def2"),
+            FlashcardData(word: "card2", definition: "def2")
         ]
 
         let result = await importer.importCards(cards, into: deck)
@@ -267,7 +267,7 @@ struct DataImporterTests {
         let importer = DataImporter(modelContext: context)
 
         let cards = [
-            FlashcardData(word: "test", definition: "def"),
+            FlashcardData(word: "test", definition: "def")
         ]
 
         let result = await importer.importCards(cards)
@@ -297,7 +297,7 @@ struct DataImporterTests {
                 definition: "def",
                 phonetic: "/tɛst/",
                 imageData: imageData
-            ),
+            )
         ]
 
         let result = await importer.importCards(cards)

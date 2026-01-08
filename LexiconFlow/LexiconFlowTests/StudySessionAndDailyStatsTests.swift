@@ -18,7 +18,7 @@ struct StudySessionAndDailyStatsTests {
     /// Get a fresh isolated context for testing
     /// Caller should call clearAll() before use to ensure test isolation
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     // MARK: - StudySession Creation Tests

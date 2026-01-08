@@ -17,7 +17,7 @@ extension TimeoutError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .timedOut(seconds):
-            return "Operation timed out after \(seconds) seconds"
+            "Operation timed out after \(seconds) seconds"
         }
     }
 }

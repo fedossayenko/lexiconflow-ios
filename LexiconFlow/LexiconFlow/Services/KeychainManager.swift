@@ -41,7 +41,7 @@ enum KeychainManager {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: "zai_api_key",
-            kSecValueData as String: data,
+            kSecValueData as String: data
         ]
 
         // Delete existing key first (update operation)
@@ -69,7 +69,7 @@ enum KeychainManager {
             kSecAttrService as String: service,
             kSecAttrAccount as String: "zai_api_key",
             kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
+            kSecMatchLimit as String: kSecMatchLimitOne
         ]
 
         var result: AnyObject?
@@ -103,7 +103,7 @@ enum KeychainManager {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: "zai_api_key",
+            kSecAttrAccount as String: "zai_api_key"
         ]
 
         let status = SecItemDelete(query as CFDictionary)
@@ -155,7 +155,7 @@ enum KeychainManager {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
-            kSecValueData as String: data,
+            kSecValueData as String: data
         ]
 
         SecItemDelete(query as CFDictionary)
@@ -179,7 +179,7 @@ enum KeychainManager {
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
             kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
+            kSecMatchLimit as String: kSecMatchLimitOne
         ]
 
         var result: AnyObject?
@@ -207,7 +207,7 @@ enum KeychainManager {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
+            kSecAttrAccount as String: account
         ]
 
         let status = SecItemDelete(query as CFDictionary)
@@ -228,11 +228,11 @@ enum KeychainManager {
         var errorDescription: String? {
             switch self {
             case .emptyKey:
-                return "Cannot store empty key"
+                "Cannot store empty key"
             case .invalidData:
-                return "Invalid data format in Keychain"
+                "Invalid data format in Keychain"
             case let .unhandledError(status):
-                return "Keychain operation failed with OSStatus: \(status)"
+                "Keychain operation failed with OSStatus: \(status)"
             }
         }
     }

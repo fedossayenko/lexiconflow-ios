@@ -224,7 +224,7 @@ final class SentenceGenerationViewModel: ObservableObject {
 
     /// Clean up expired sentences
     func cleanupExpiredSentences(for card: Flashcard) {
-        let expired = card.generatedSentences.filter { $0.isExpired }
+        let expired = card.generatedSentences.filter(\.isExpired)
         for sentence in expired {
             modelContext.delete(sentence)
         }

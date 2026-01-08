@@ -152,7 +152,7 @@ struct DeckSelectionView: View {
     }
 
     private func selectAll() {
-        selectedDeckIDs = Set(decks.map { $0.id })
+        selectedDeckIDs = Set(decks.map(\.id))
     }
 
     private func deselectAll() {
@@ -179,7 +179,7 @@ struct DeckSelectionView: View {
         isLoading = true
         defer { isLoading = false }
 
-        guard let scheduler = scheduler else {
+        guard let scheduler else {
             errorMessage = "Failed to initialize scheduler"
             return
         }

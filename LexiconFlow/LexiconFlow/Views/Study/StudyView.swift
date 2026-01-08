@@ -148,7 +148,7 @@ struct StudyView: View {
 
                 LazyVGrid(columns: [
                     GridItem(.flexible()),
-                    GridItem(.flexible()),
+                    GridItem(.flexible())
                 ], spacing: 8) {
                     ForEach(selectedDecks.prefix(4), id: \.id) { deck in
                         HStack(spacing: 6) {
@@ -184,44 +184,44 @@ struct StudyView: View {
     private var countTitle: String {
         switch studyMode {
         case .learning:
-            return "\(newCount) new"
+            "\(newCount) new"
         case .scheduled:
-            return "\(dueCount) due"
+            "\(dueCount) due"
         case .cram:
-            return "\(totalCount) total"
+            "\(totalCount) total"
         }
     }
 
     private var countSubtitle: String {
         switch studyMode {
         case .learning:
-            return "cards to learn"
+            "cards to learn"
         case .scheduled:
-            return "cards for review"
+            "cards for review"
         case .cram:
-            return "cards to practice"
+            "cards to practice"
         }
     }
 
     private var countIcon: String {
         switch studyMode {
         case .learning:
-            return "plus.circle.fill"
+            "plus.circle.fill"
         case .scheduled:
-            return "calendar.badge.clock"
+            "calendar.badge.clock"
         case .cram:
-            return "repeat"
+            "repeat"
         }
     }
 
     private var countColor: Color {
         switch studyMode {
         case .learning:
-            return .green
+            .green
         case .scheduled:
-            return dueCount > 0 ? .orange : .gray
+            dueCount > 0 ? .orange : .gray
         case .cram:
-            return .purple
+            .purple
         }
     }
 
@@ -240,7 +240,7 @@ struct StudyView: View {
         selectedDecks = decks.filter { selectedIDs.contains($0.id) }
 
         // Validate that selected decks still exist
-        let validDeckIDs = Set(selectedDecks.map { $0.id })
+        let validDeckIDs = Set(selectedDecks.map(\.id))
         if validDeckIDs != selectedIDs {
             Self.logger.warning("Some selected decks no longer exist, updating selection")
             AppSettings.selectedDeckIDs = validDeckIDs

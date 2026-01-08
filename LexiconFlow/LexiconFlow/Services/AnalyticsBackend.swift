@@ -167,12 +167,12 @@ final class MockAnalyticsBackend: AnalyticsBackend, @unchecked Sendable {
 
     /// Get count of recorded events
     func eventCount(for name: String) -> Int {
-        events.filter { event in
+        events.count(where: { event in
             if case let .event(eventName, _) = event {
                 return eventName == name
             }
             return false
-        }.count
+        })
     }
 }
 
@@ -189,21 +189,21 @@ enum AnalyticsEvent: Equatable, Sendable {
     static func == (lhs: AnalyticsEvent, rhs: AnalyticsEvent) -> Bool {
         switch (lhs, rhs) {
         case let (.event(lName, lMeta), .event(rName, rMeta)):
-            return lName == rName && lMeta == rMeta
+            lName == rName && lMeta == rMeta
         case let (.error(lName, lMeta), .error(rName, rMeta)):
-            return lName == rName && lMeta == rMeta
+            lName == rName && lMeta == rMeta
         case let (.issue(lName, lMeta), .issue(rName, rMeta)):
-            return lName == rName && lMeta == rMeta
+            lName == rName && lMeta == rMeta
         case let (.setUserId(lId), .setUserId(rId)):
-            return lId == rId
+            lId == rId
         case let (.performance(lName, lDur, lMeta), .performance(rName, rDur, rMeta)):
-            return lName == rName && lDur == rDur && lMeta == rMeta
+            lName == rName && lDur == rDur && lMeta == rMeta
         case (.setUserProperties, .setUserProperties):
             // For properties, just check that both are the same type
             // Exact comparison of [String: Any] is complex
-            return true
+            true
         default:
-            return false
+            false
         }
     }
 }

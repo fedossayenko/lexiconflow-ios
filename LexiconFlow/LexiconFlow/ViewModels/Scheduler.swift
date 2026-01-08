@@ -135,7 +135,7 @@ final class Scheduler {
                     return nil
                 }
                 // Filter by deck in-memory
-                if let deckID = deckID, card.deck?.id != deckID {
+                if let deckID, card.deck?.id != deckID {
                     return nil
                 }
                 return card
@@ -179,7 +179,7 @@ final class Scheduler {
                     return nil
                 }
                 // Filter by deck in-memory
-                if let deckID = deckID, card.deck?.id != deckID {
+                if let deckID, card.deck?.id != deckID {
                     return nil
                 }
                 return card
@@ -260,10 +260,10 @@ final class Scheduler {
             let states = try modelContext.fetch(stateDescriptor)
 
             // Filter by deck in-memory (avoid multi-level optional in predicate)
-            return states.filter { state in
+            return states.count(where: { state in
                 guard let card = state.card else { return false }
                 return card.deck?.id == deckID
-            }.count
+            })
         } catch {
             Analytics.trackError("due_card_count_deck", error: error)
             logger.error("Error counting due cards for deck: \(error)")
@@ -289,10 +289,10 @@ final class Scheduler {
             let states = try modelContext.fetch(stateDescriptor)
 
             // Filter by deck in-memory (avoid multi-level optional in predicate)
-            return states.filter { state in
+            return states.count(where: { state in
                 guard let card = state.card else { return false }
                 return card.deck?.id == deckID
-            }.count
+            })
         } catch {
             Analytics.trackError("new_card_count_deck", error: error)
             logger.error("Error counting new cards for deck: \(error)")
@@ -315,10 +315,10 @@ final class Scheduler {
             let states = try modelContext.fetch(stateDescriptor)
 
             // Filter by deck in-memory
-            return states.filter { state in
+            return states.count(where: { state in
                 guard let card = state.card else { return false }
                 return card.deck?.id == deckID
-            }.count
+            })
         } catch {
             Analytics.trackError("total_card_count_deck", error: error)
             logger.error("Error counting total cards for deck: \(error)")
@@ -351,7 +351,7 @@ final class Scheduler {
                     return nil
                 }
                 // Filter by deck in-memory
-                if let deckID = deckID, card.deck?.id != deckID {
+                if let deckID, card.deck?.id != deckID {
                     return nil
                 }
                 return card
@@ -378,7 +378,7 @@ final class Scheduler {
         let now = Date()
 
         // Extract deck IDs for in-memory filtering
-        let deckIDs = Set(decks.map { $0.id })
+        let deckIDs = Set(decks.map(\.id))
 
         // Query FSRSState at DB level for due cards (simple predicate)
         let statePredicate = #Predicate<FSRSState> { state in
@@ -421,7 +421,7 @@ final class Scheduler {
     /// - Returns: Array of new flashcards, sorted by creation date ascending (oldest first)
     private func fetchNewCards(for decks: [Deck], limit: Int) -> [Flashcard] {
         // Extract deck IDs for in-memory filtering
-        let deckIDs = Set(decks.map { $0.id })
+        let deckIDs = Set(decks.map(\.id))
 
         // Query FSRSState at DB level for new cards (simple predicate)
         let stateDescriptor = FetchDescriptor<FSRSState>(
@@ -466,7 +466,7 @@ final class Scheduler {
     ///   - limit: Maximum number of cards to return
     /// - Returns: Array of flashcards for cram practice
     private func fetchCramCards(for decks: [Deck], limit: Int) -> [Flashcard] {
-        let deckIDs = Set(decks.map { $0.id })
+        let deckIDs = Set(decks.map(\.id))
 
         // Query all cards (no state filter for cram mode)
         let stateDescriptor = FetchDescriptor<FSRSState>()
@@ -506,7 +506,7 @@ final class Scheduler {
         guard !decks.isEmpty else { return 0 }
 
         let now = Date()
-        let deckIDs = Set(decks.map { $0.id })
+        let deckIDs = Set(decks.map(\.id))
 
         let stateDescriptor = FetchDescriptor<FSRSState>(
             predicate: #Predicate<FSRSState> { state in
@@ -516,11 +516,11 @@ final class Scheduler {
 
         do {
             let states = try modelContext.fetch(stateDescriptor)
-            return states.filter { state in
+            return states.count(where: { state in
                 guard let card = state.card else { return false }
                 guard let deckID = card.deck?.id else { return false }
                 return deckIDs.contains(deckID)
-            }.count
+            })
         } catch {
             Analytics.trackError("due_card_count_multi", error: error)
             logger.error("Error counting due cards for multiple decks: \(error)")
@@ -535,7 +535,7 @@ final class Scheduler {
     func newCardCount(for decks: [Deck]) -> Int {
         guard !decks.isEmpty else { return 0 }
 
-        let deckIDs = Set(decks.map { $0.id })
+        let deckIDs = Set(decks.map(\.id))
 
         let stateDescriptor = FetchDescriptor<FSRSState>(
             predicate: #Predicate<FSRSState> { state in
@@ -545,11 +545,11 @@ final class Scheduler {
 
         do {
             let states = try modelContext.fetch(stateDescriptor)
-            return states.filter { state in
+            return states.count(where: { state in
                 guard let card = state.card else { return false }
                 guard let deckID = card.deck?.id else { return false }
                 return deckIDs.contains(deckID)
-            }.count
+            })
         } catch {
             Analytics.trackError("new_card_count_multi", error: error)
             logger.error("Error counting new cards for multiple decks: \(error)")
@@ -564,7 +564,7 @@ final class Scheduler {
     func totalCardCount(for decks: [Deck]) -> Int {
         guard !decks.isEmpty else { return 0 }
 
-        let deckIDs = Set(decks.map { $0.id })
+        let deckIDs = Set(decks.map(\.id))
 
         let stateDescriptor = FetchDescriptor<FSRSState>()
 
@@ -572,11 +572,11 @@ final class Scheduler {
             let states = try modelContext.fetch(stateDescriptor)
 
             // Filter by deck in-memory
-            return states.filter { state in
+            return states.count(where: { state in
                 guard let card = state.card else { return false }
                 guard let deckID = card.deck?.id else { return false }
                 return deckIDs.contains(deckID)
-            }.count
+            })
         } catch {
             Analytics.trackError("total_card_count_multi", error: error)
             logger.error("Error counting total cards for multiple decks: \(error)")
@@ -639,7 +639,7 @@ final class Scheduler {
             } catch {
                 Analytics.trackError("save_cram_review", error: error, metadata: [
                     "rating": "\(rating)",
-                    "card": flashcard.word,
+                    "card": flashcard.word
                 ])
                 logger.error("Failed to save cram review: \(error)")
                 // In production: show user alert
@@ -677,14 +677,14 @@ final class Scheduler {
                 "rating": "\(rating)",
                 "state": result.stateEnum,
                 "stability": String(format: "%.2f", result.stability),
-                "difficulty": String(format: "%.2f", result.difficulty),
+                "difficulty": String(format: "%.2f", result.difficulty)
             ])
 
             return log
         } catch {
             Analytics.trackError("process_review", error: error, metadata: [
                 "rating": "\(rating)",
-                "card": flashcard.word,
+                "card": flashcard.word
             ])
             logger.error("Error processing review: \(error)")
             return nil
@@ -736,7 +736,7 @@ final class Scheduler {
     /// - Parameter flashcard: The flashcard to preview
     /// - Returns: Dictionary mapping ratings to due dates
     func previewRatings(for flashcard: Flashcard) async -> [Int: Date] {
-        return await FSRSWrapper.shared.previewRatings(flashcard: flashcard)
+        await FSRSWrapper.shared.previewRatings(flashcard: flashcard)
     }
 
     /// Reset a flashcard to new state (forgetting)
@@ -764,13 +764,13 @@ final class Scheduler {
             try modelContext.save()
 
             Analytics.trackEvent("card_reset", metadata: [
-                "card": flashcard.word,
+                "card": flashcard.word
             ])
 
             return true
         } catch {
             Analytics.trackError("reset_card", error: error, metadata: [
-                "card": flashcard.word,
+                "card": flashcard.word
             ])
             logger.error("Failed to save reset: \(error)")
             return false

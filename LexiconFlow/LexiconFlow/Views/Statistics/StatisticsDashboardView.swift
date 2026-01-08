@@ -164,7 +164,7 @@ struct StatisticsDashboardView: View {
         // Grid Layout for Secondary Metrics
         LazyVGrid(columns: [
             GridItem(.flexible(), spacing: 16),
-            GridItem(.flexible(), spacing: 16),
+            GridItem(.flexible(), spacing: 16)
         ], spacing: 16) {
             // Total Study Time
             if let streakData = viewModel.streakData {
@@ -214,7 +214,7 @@ struct StatisticsDashboardView: View {
     }
 
     private func cardsMetricCard(totalCards: Int, reviewedCards: Int) -> some View {
-        return MetricCard(
+        MetricCard(
             title: "Cards",
             value: "\(reviewedCards)",
             subtitle: "of \(totalCards) reviewed",
@@ -318,7 +318,7 @@ private func makePreviewContainer() -> some View {
         configurations: config
     )
 
-    if let container = container {
+    if let container {
         NavigationStack {
             StatisticsDashboardView()
         }

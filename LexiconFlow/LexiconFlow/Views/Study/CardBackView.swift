@@ -110,7 +110,7 @@ struct CardBackView: View {
             }
 
             // Show more button
-            if sentences.count > 2 && !showAllSentences {
+            if sentences.count > 2, !showAllSentences {
                 Button("Show \(sentences.count - 2) more sentences") {
                     withAnimation {
                         showAllSentences = true
@@ -207,9 +207,9 @@ struct ReadOnlySentenceRow: View {
 
     private func sourceLabel(for source: SentenceSource) -> String {
         switch source {
-        case .aiGenerated: return "AI"
-        case .staticFallback: return "Offline"
-        case .userCreated: return "Custom"
+        case .aiGenerated: "AI"
+        case .staticFallback: "Offline"
+        case .userCreated: "Custom"
         }
     }
 }
@@ -225,7 +225,7 @@ struct ReadOnlySentenceRow: View {
     ))
 
     return Group {
-        if let sentence = sentence {
+        if let sentence {
             ReadOnlySentenceRow(sentence: sentence)
         } else {
             Text("Preview error: Invalid sentence data")

@@ -23,10 +23,10 @@ enum Theme {
     /// - Invalid/Unknown: Gray - represents neutrality
     static func cefrColor(for level: String) -> Color {
         switch level.uppercased() {
-        case "A1", "A2": return .green
-        case "B1", "B2": return .blue
-        case "C1", "C2": return .purple
-        default: return .gray
+        case "A1", "A2": .green
+        case "B1", "B2": .blue
+        case "C1", "C2": .purple
+        default: .gray
         }
     }
 
@@ -41,10 +41,10 @@ enum Theme {
     /// - Invalid: 0.15 - minimal for unknown
     static func cefrBadgeOpacity(for level: String) -> Double {
         switch level.uppercased() {
-        case "A1", "A2": return 0.2
-        case "B1", "B2": return 0.3
-        case "C1", "C2": return 0.4
-        default: return 0.15
+        case "A1", "A2": 0.2
+        case "B1", "B2": 0.3
+        case "C1", "C2": 0.4
+        default: 0.15
         }
     }
 
@@ -57,13 +57,11 @@ enum Theme {
     /// - Returns: A tuple of (color, opacity) for badge styling
     static func cefrBadgeStyle(for level: String, style: BadgeStyle = .standard) -> (color: Color, opacity: Double) {
         let color = cefrColor(for: level)
-        let opacity: Double
-
-        switch style {
+        let opacity: Double = switch style {
         case .compact:
-            opacity = cefrBadgeOpacity(for: level) * 0.8 // Slightly lighter for compact
+            cefrBadgeOpacity(for: level) * 0.8 // Slightly lighter for compact
         case .standard:
-            opacity = cefrBadgeOpacity(for: level)
+            cefrBadgeOpacity(for: level)
         }
 
         return (color, opacity)

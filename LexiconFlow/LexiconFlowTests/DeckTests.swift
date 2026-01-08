@@ -16,7 +16,7 @@ import Testing
 struct DeckTests {
     /// Get a fresh isolated context for testing
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     // MARK: - Deck Creation Tests
@@ -248,7 +248,7 @@ struct DeckTests {
         try context.save()
 
         let allDecks = try context.fetch(FetchDescriptor<Deck>())
-        let emptyDecks = allDecks.filter { $0.cards.isEmpty }
+        let emptyDecks = allDecks.filter(\.cards.isEmpty)
 
         #expect(emptyDecks.count == 1)
         #expect(emptyDecks.first?.name == "Empty")

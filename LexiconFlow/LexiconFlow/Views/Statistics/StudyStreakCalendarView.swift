@@ -280,12 +280,12 @@ struct StudyStreakCalendarView: View {
     /// Get color for activity level
     private func colorForLevel(_ level: Int) -> Color {
         switch level {
-        case 0: return Color(.systemGray6)
-        case 1: return Color.green.opacity(0.3)
-        case 2: return Color.green.opacity(0.5)
-        case 3: return Color.green.opacity(0.7)
-        case 4: return Color.green
-        default: return Color(.systemGray6)
+        case 0: Color(.systemGray6)
+        case 1: Color.green.opacity(0.3)
+        case 2: Color.green.opacity(0.5)
+        case 3: Color.green.opacity(0.7)
+        case 4: Color.green
+        default: Color(.systemGray6)
         }
     }
 
@@ -368,12 +368,12 @@ private struct DayCell: View {
     /// Color for activity level
     private func colorForLevel(_ level: Int) -> Color {
         switch level {
-        case 0: return Color(.systemGray6)
-        case 1: return Color.green.opacity(0.3)
-        case 2: return Color.green.opacity(0.5)
-        case 3: return Color.green.opacity(0.7)
-        case 4: return Color.green
-        default: return Color(.systemGray6)
+        case 0: Color(.systemGray6)
+        case 1: Color.green.opacity(0.3)
+        case 2: Color.green.opacity(0.5)
+        case 3: Color.green.opacity(0.7)
+        case 4: Color.green
+        default: Color(.systemGray6)
         }
     }
 
@@ -393,14 +393,14 @@ private struct DayCell: View {
 
     /// Accessibility hint for day cell
     private var accessibilityHint: String {
-        if isToday && isInStreak {
-            return "Today, part of current streak"
+        if isToday, isInStreak {
+            "Today, part of current streak"
         } else if isToday {
-            return "Today"
+            "Today"
         } else if isInStreak {
-            return "Part of current streak"
+            "Part of current streak"
         } else {
-            return ""
+            ""
         }
     }
 }

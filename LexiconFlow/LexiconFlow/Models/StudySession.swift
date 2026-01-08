@@ -66,10 +66,10 @@ final class StudySession {
     var mode: StudyMode {
         get {
             switch modeEnum {
-            case "scheduled": return .scheduled
-            case "learning": return .learning
-            case "cram": return .cram
-            default: return .scheduled
+            case "scheduled": .scheduled
+            case "learning": .learning
+            case "cram": .cram
+            default: .scheduled
             }
         }
         set {
@@ -137,11 +137,10 @@ final class StudySession {
         startTime: Date = Date(),
         mode: StudyMode = .scheduled
     ) {
-        let modeString: String
-        switch mode {
-        case .scheduled: modeString = "scheduled"
-        case .learning: modeString = "learning"
-        case .cram: modeString = "cram"
+        let modeString = switch mode {
+        case .scheduled: "scheduled"
+        case .learning: "learning"
+        case .cram: "cram"
         }
 
         self.init(

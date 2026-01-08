@@ -30,7 +30,7 @@ struct AppSettingsDeckSelectionTests {
             UUID(),
             UUID(),
             UUID(),
-            UUID(),
+            UUID()
         ]
 
         // Set the IDs
@@ -244,7 +244,7 @@ struct AppSettingsDeckSelectionTests {
         AppSettings.selectedDeckIDs = [
             UUID(),
             UUID(),
-            UUID(),
+            UUID()
         ]
 
         #expect(AppSettings.selectedDeckCount == 3, "Count should be 3")

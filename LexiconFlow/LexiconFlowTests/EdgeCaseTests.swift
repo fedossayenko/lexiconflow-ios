@@ -274,7 +274,7 @@ struct EdgeCaseTests {
             "'; DROP TABLE cards; --",
             "' OR '1'='1",
             "admin'--",
-            "' UNION SELECT * FROM users--",
+            "' UNION SELECT * FROM users--"
         ]
 
         for input in maliciousInputs {
@@ -306,7 +306,7 @@ struct EdgeCaseTests {
             "<script>alert('xss')</script>",
             "<img src=x onerror=alert('xss')>",
             "javascript:alert('xss')",
-            "<svg onload=alert('xss')>",
+            "<svg onload=alert('xss')>"
         ]
 
         for payload in xssPayloads {
@@ -338,7 +338,7 @@ struct EdgeCaseTests {
             "../../../etc/passwd",
             "..\\..\\..\\windows\\system32",
             "/etc/passwd",
-            "C:\\Windows\\System32\\config\\sam",
+            "C:\\Windows\\System32\\config\\sam"
         ]
 
         for payload in pathTraversalPayloads {
@@ -371,7 +371,7 @@ struct EdgeCaseTests {
             "; ls -la",
             "$(whoami)",
             "`cat /etc/passwd`",
-            "| cat /etc/hosts",
+            "| cat /etc/hosts"
         ]
 
         for payload in commandPayloads {
@@ -496,7 +496,7 @@ struct EdgeCaseTests {
                 Character(Unicode.Scalar(0x00)), // NUL
                 Character(Unicode.Scalar(0x09)), // TAB
                 Character(Unicode.Scalar(0x0A)), // LF
-                Character(Unicode.Scalar(0x0D)), // CR
+                Character(Unicode.Scalar(0x0D)) // CR
             ]
         )
 
@@ -769,7 +769,7 @@ struct DeckCentricEdgeCases {
         #expect(decks.count == 100, "Should have 100 decks")
 
         // Test selection with many decks
-        let deckIDs = Set(decks.prefix(50).map { $0.id })
+        let deckIDs = Set(decks.prefix(50).map(\.id))
         AppSettings.selectedDeckIDs = deckIDs
 
         #expect(AppSettings.selectedDeckCount == 50, "Should select 50 decks")

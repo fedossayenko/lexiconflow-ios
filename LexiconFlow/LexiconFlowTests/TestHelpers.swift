@@ -76,7 +76,7 @@ enum TestContainers {
             FlashcardReview.self,
             GeneratedSentence.self,
             StudySession.self,
-            DailyStats.self,
+            DailyStats.self
         ])
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
 
@@ -98,6 +98,6 @@ enum TestContainers {
     /// Creates a fresh context for a test
     /// Caller should call clearAll() before use to ensure isolation
     static func freshContext() -> ModelContext {
-        return ModelContext(shared)
+        ModelContext(shared)
     }
 }

@@ -191,7 +191,7 @@ class MockSentenceGenerator: SentenceGenerationProtocol {
                 SentenceGenerationResponse.GeneratedSentenceItem(
                     sentence: "Mock sentence for '\(word)': \(definition).",
                     cefrLevel: cefrLevel ?? "A2"
-                ),
+                )
             ]
         )
     }
@@ -288,7 +288,7 @@ class MockSentenceGenerator: SentenceGenerationProtocol {
     /// - Parameter word: The word to check
     /// - Returns: Count of requests for this word
     func requestCount(for word: String) -> Int {
-        requestedWords.filter { $0 == word }.count
+        requestedWords.count(where: { $0 == word })
     }
 }
 
@@ -302,18 +302,18 @@ extension MockSentenceGenerator {
             "ephemeral": SentenceGenerationResponse(items: [
                 SentenceGenerationResponse.GeneratedSentenceItem(sentence: "The ephemeral beauty of sunset colors fades quickly.", cefrLevel: "B2"),
                 SentenceGenerationResponse.GeneratedSentenceItem(sentence: "An ephemeral moment in time.", cefrLevel: "B1"),
-                SentenceGenerationResponse.GeneratedSentenceItem(sentence: "Ephemeral pleasures are short-lived.", cefrLevel: "A2"),
+                SentenceGenerationResponse.GeneratedSentenceItem(sentence: "Ephemeral pleasures are short-lived.", cefrLevel: "A2")
             ]),
             "test": SentenceGenerationResponse(items: [
                 SentenceGenerationResponse.GeneratedSentenceItem(sentence: "This is a test sentence.", cefrLevel: "A1"),
                 SentenceGenerationResponse.GeneratedSentenceItem(sentence: "Testing the system.", cefrLevel: "A1"),
-                SentenceGenerationResponse.GeneratedSentenceItem(sentence: "A test of emergency systems.", cefrLevel: "A2"),
+                SentenceGenerationResponse.GeneratedSentenceItem(sentence: "A test of emergency systems.", cefrLevel: "A2")
             ]),
             "hello": SentenceGenerationResponse(items: [
                 SentenceGenerationResponse.GeneratedSentenceItem(sentence: "Hello, how are you today?", cefrLevel: "A1"),
                 SentenceGenerationResponse.GeneratedSentenceItem(sentence: "She said hello to her neighbor.", cefrLevel: "A1"),
-                SentenceGenerationResponse.GeneratedSentenceItem(sentence: "A warm hello greeted everyone.", cefrLevel: "A2"),
-            ]),
+                SentenceGenerationResponse.GeneratedSentenceItem(sentence: "A warm hello greeted everyone.", cefrLevel: "A2")
+            ])
         ]
     }
 

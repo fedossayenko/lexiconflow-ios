@@ -153,7 +153,7 @@ struct OnDeviceTranslationValidationTests {
                 targetLanguage: "ru",
                 expectedTranslation: "книга",
                 tolerance: 0.7
-            ),
+            )
         ]
     }
 
@@ -214,7 +214,7 @@ struct OnDeviceTranslationValidationTests {
                 targetLanguage: "es",
                 expectedTranslation: "libro",
                 tolerance: 0.7
-            ),
+            )
         ]
     }
 
@@ -275,7 +275,7 @@ struct OnDeviceTranslationValidationTests {
                 targetLanguage: "fr",
                 expectedTranslation: "livre",
                 tolerance: 0.7
-            ),
+            )
         ]
     }
 
@@ -336,7 +336,7 @@ struct OnDeviceTranslationValidationTests {
                 targetLanguage: "de",
                 expectedTranslation: "buch",
                 tolerance: 0.7
-            ),
+            )
         ]
     }
 
@@ -383,7 +383,7 @@ struct OnDeviceTranslationValidationTests {
                 targetLanguage: "ja",
                 expectedTranslation: "本",
                 tolerance: 0.7
-            ),
+            )
         ]
     }
 
@@ -588,7 +588,7 @@ struct OnDeviceTranslationValidationTests {
             ("привет", "hello"),
             ("спасибо", "thank you"),
             ("вода", "water"),
-            ("книга", "book"),
+            ("книга", "book")
         ]
 
         var passCount = 0
@@ -624,7 +624,7 @@ struct OnDeviceTranslationValidationTests {
             ("hola", "hello"),
             ("gracias", "thank you"),
             ("agua", "water"),
-            ("libro", "book"),
+            ("libro", "book")
         ]
 
         var passCount = 0
@@ -660,7 +660,7 @@ struct OnDeviceTranslationValidationTests {
             ("bonjour", "hello"),
             ("merci", "thank you"),
             ("eau", "water"),
-            ("livre", "book"),
+            ("livre", "book")
         ]
 
         var passCount = 0
@@ -696,7 +696,7 @@ struct OnDeviceTranslationValidationTests {
             ("hallo", "hello"),
             ("danke", "thank you"),
             ("wasser", "water"),
-            ("buch", "book"),
+            ("buch", "book")
         ]
 
         var passCount = 0
@@ -732,7 +732,7 @@ struct OnDeviceTranslationValidationTests {
             ("こんにちは", "hello"),
             ("ありがとう", "thank you"),
             ("水", "water"),
-            ("本", "book"),
+            ("本", "book")
         ]
 
         var passCount = 0
@@ -781,7 +781,7 @@ struct OnDeviceTranslationValidationTests {
             "en-es", "es-en",
             "en-fr", "fr-en",
             "en-de", "de-en",
-            "en-ja", "ja-en",
+            "en-ja", "ja-en"
         ])
 
         let requiredPairs = Set([
@@ -789,7 +789,7 @@ struct OnDeviceTranslationValidationTests {
             "en-es", "es-en",
             "en-fr", "fr-en",
             "en-de", "de-en",
-            "en-ja", "ja-en",
+            "en-ja", "ja-en"
         ])
 
         #expect(testedLanguagePairs == requiredPairs, "All required language pairs should be tested")
@@ -809,7 +809,7 @@ struct OnDeviceTranslationValidationTests {
         let testWords = [
             ("hello", "hola"),
             ("thank you", "gracias"),
-            ("water", "agua"),
+            ("water", "agua")
         ]
 
         var successCount = 0
@@ -915,7 +915,7 @@ struct OnDeviceTranslationValidationTests {
             "water",
             "book",
             "yes",
-            "no",
+            "no"
         ]
 
         var progressUpdates: [OnDeviceTranslationService.BatchTranslationProgress] = []
@@ -1069,7 +1069,7 @@ struct OnDeviceTranslationValidationTests {
         let testWords = [
             ("hello", "hola"),
             ("water", "agua"),
-            ("book", "libro"),
+            ("book", "libro")
         ]
 
         var successCount = 0
@@ -1137,7 +1137,7 @@ struct OnDeviceTranslationValidationTests {
             "goodbye",
             "thank you",
             "water",
-            "book",
+            "book"
         ]
 
         var translations: [(String, String, TimeInterval)] = []
@@ -1167,7 +1167,7 @@ struct OnDeviceTranslationValidationTests {
         print("   Total translations completed: \(translations.count)")
 
         // Calculate average translation time
-        let avgDuration = translations.map { $0.2 }.reduce(0, +) / Double(translations.count)
+        let avgDuration = translations.map(\.2).reduce(0, +) / Double(translations.count)
         print("   Average translation time: \(String(format: "%.3f", avgDuration))s")
 
         // Verify translation performance is consistent with on-device processing
@@ -1222,7 +1222,7 @@ struct OnDeviceTranslationValidationTests {
         let testTexts = [
             "hello world",
             "thank you very much",
-            "how are you today",
+            "how are you today"
         ]
 
         var successCount = 0
@@ -1432,7 +1432,7 @@ struct OnDeviceTranslationValidationTests {
             "translation",
             "language",
             "learning",
-            "practice",
+            "practice"
         ]
 
         var translatedWords: [(String, String)] = []
@@ -1591,8 +1591,8 @@ struct OnDeviceTranslationValidationTests {
         print("✅ All concurrency levels tested successfully")
 
         if results.count >= 2 {
-            let minThroughput = results.map { $0.throughput }.min() ?? 0
-            let maxThroughput = results.map { $0.throughput }.max() ?? 0
+            let minThroughput = results.map(\.throughput).min() ?? 0
+            let maxThroughput = results.map(\.throughput).max() ?? 0
 
             print("   Throughput range: \(String(format: "%.2f", minThroughput)) - \(String(format: "%.2f", maxThroughput)) words/s")
         }
@@ -1835,7 +1835,7 @@ struct OnDeviceTranslationValidationTests {
             "language", "translation", "vocabulary", "learning", "study", "practice", "write",
             "read", "speak", "listen", "understand", "remember", "forget", "think", "know",
             "morning", "evening", "night", "day", "week", "month", "year", "time", "hour",
-            "minute", "second", "happy", "sad", "angry", "tired", "hungry", "thirsty", "full",
+            "minute", "second", "happy", "sad", "angry", "tired", "hungry", "thirsty", "full"
         ]
 
         var words: [String] = []
@@ -1849,9 +1849,9 @@ struct OnDeviceTranslationValidationTests {
     }
 
     /// Performance measurement helper
-    private func measurePerformance<T>(
+    private func measurePerformance(
         iterations: Int = 3,
-        operation: () async throws -> T
+        operation: () async throws -> some Any
     ) async throws -> PerformanceMeasurements {
         var durations: [TimeInterval] = []
         var successCount = 0
@@ -2023,7 +2023,7 @@ struct OnDeviceTranslationValidationTests {
             ("Temperature: 25°C", "degree symbol"),
             ("email@example.com", "email address"),
             ("File_name.txt", "underscore and dot"),
-            ("User's comment: \"Great!\"", "quotes and apostrophe"),
+            ("User's comment: \"Great!\"", "quotes and apostrophe")
         ]
 
         var successCount = 0
@@ -2255,7 +2255,7 @@ struct OnDeviceTranslationValidationTests {
             ("👨‍👩‍👧‍👦", "emoji sequence (family)"),
             ("🏳️‍🌈", "emoji with variation selector"),
             ("a\u{0301}\u{0327}", "multiple combining diacritics"),
-            ("𝔘𝔫𝔦𝔠𝔬𝔡𝔢", "mathematical bold letters"),
+            ("𝔘𝔫𝔦𝔠𝔬𝔡𝔢", "mathematical bold letters")
         ]
 
         var successCount = 0

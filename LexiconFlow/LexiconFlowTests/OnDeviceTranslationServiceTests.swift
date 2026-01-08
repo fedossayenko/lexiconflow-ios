@@ -359,7 +359,7 @@ struct OnDeviceTranslationServiceTests {
             .languagePackNotAvailable(source: "en", target: "ru"),
             .languagePackDownloadFailed(language: "ru"),
             .translationFailed(reason: "Test error"),
-            .emptyInput,
+            .emptyInput
         ]
 
         for error in errors {
@@ -375,7 +375,7 @@ struct OnDeviceTranslationServiceTests {
             .languagePackNotAvailable(source: "en", target: "ru"),
             .languagePackDownloadFailed(language: "ru"),
             .translationFailed(reason: "Test"),
-            .emptyInput,
+            .emptyInput
         ]
 
         for error in errors {
@@ -393,13 +393,13 @@ struct OnDeviceTranslationServiceTests {
     func isRetryableLogic() {
         let retryableErrors: [OnDeviceTranslationError] = [
             .languagePackDownloadFailed(language: "en"),
-            .translationFailed(reason: "Timeout"),
+            .translationFailed(reason: "Timeout")
         ]
 
         let nonRetryableErrors: [OnDeviceTranslationError] = [
             .unsupportedLanguagePair(source: "en", target: "xyz"),
             .languagePackNotAvailable(source: "en", target: "ru"),
-            .emptyInput,
+            .emptyInput
         ]
 
         for error in retryableErrors {
@@ -936,7 +936,7 @@ struct OnDeviceTranslationServiceTests {
             "", // Empty (will fail)
             "World", // Valid
             "   \t\n  ", // Whitespace (may pass or fail)
-            "Test", // Valid
+            "Test" // Valid
         ]
 
         do {
@@ -1156,7 +1156,7 @@ struct OnDeviceTranslationServiceTests {
             "Hello!",
             "World@#$",
             "Test😊🌍",
-            "Special &*() chars",
+            "Special &*() chars"
         ]
 
         do {

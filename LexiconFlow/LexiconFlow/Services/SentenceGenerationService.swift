@@ -267,7 +267,7 @@ actor SentenceGenerationService {
             temperature: 0.8,
             messages: [
                 .init(role: "system", content: systemPrompt),
-                .init(role: "user", content: userPrompt),
+                .init(role: "user", content: userPrompt)
             ]
         )
 
@@ -404,7 +404,7 @@ actor SentenceGenerationService {
 
         // Check for existing task BEFORE starting new one to prevent re-entrancy
         let existingTask = await taskStorage.get()
-        if existingTask != nil && !Task.isCancelled {
+        if existingTask != nil, !Task.isCancelled {
             logger.warning("Batch generation already in progress")
             throw SentenceGenerationError.invalidConfiguration
         }
@@ -501,7 +501,7 @@ actor SentenceGenerationService {
         total: Int,
         word: String
     ) {
-        guard let handler = handler else { return }
+        guard let handler else { return }
         let progress = BatchGenerationProgress(current: current, total: total, currentWord: word)
         Task { @MainActor in handler(progress) }
     }
@@ -638,30 +638,30 @@ actor SentenceGenerationService {
         "the": [
             "The book is on the table.",
             "I saw the movie yesterday.",
-            "The cat is sleeping on the couch.",
+            "The cat is sleeping on the couch."
         ],
         "be": [
             "I want to be a doctor.",
             "She will be here soon.",
-            "They are very happy.",
+            "They are very happy."
         ],
         "to": [
             "I need to go to the store.",
             "She wants to learn English.",
-            "We went to the park.",
+            "We went to the park."
         ],
         "of": [
             "A cup of coffee.",
             "The king of France.",
-            "One of the best.",
-        ],
+            "One of the best."
+        ]
     ]
 
     /// Default fallback sentences when word not in library
     private let defaultFallbackSentences = [
         "This is an example sentence.",
         "The word demonstrates its meaning here.",
-        "Practice makes perfect.",
+        "Practice makes perfect."
     ]
 }
 
@@ -710,22 +710,22 @@ enum SentenceGenerationError: LocalizedError {
     var recoverySuggestion: String? {
         switch self {
         case .missingAPIKey:
-            return "Add your API key in Settings > Translation > Z.ai API Configuration"
+            "Add your API key in Settings > Translation > Z.ai API Configuration"
         case .rateLimit:
-            return "Wait a few seconds, then try again"
+            "Wait a few seconds, then try again"
         case .offline:
-            return "Check your WiFi or cellular connection"
+            "Check your WiFi or cellular connection"
         default:
-            return nil
+            nil
         }
     }
 
     var isRetryable: Bool {
         switch self {
         case .rateLimit, .serverError, .offline:
-            return true
+            true
         default:
-            return false
+            false
         }
     }
 }

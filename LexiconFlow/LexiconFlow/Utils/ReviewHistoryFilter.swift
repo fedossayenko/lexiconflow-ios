@@ -26,18 +26,18 @@ enum ReviewHistoryFilter: String, CaseIterable, Sendable {
     /// User-facing display name for the filter
     var displayName: String {
         switch self {
-        case .allTime: return "All Time"
-        case .lastWeek: return "Last Week"
-        case .lastMonth: return "Last Month"
+        case .allTime: "All Time"
+        case .lastWeek: "Last Week"
+        case .lastMonth: "Last Month"
         }
     }
 
     /// System icon for the filter
     var icon: String {
         switch self {
-        case .allTime: return "clock.arrow.circlepath"
-        case .lastWeek: return "calendar.badge.clock"
-        case .lastMonth: return "calendar"
+        case .allTime: "clock.arrow.circlepath"
+        case .lastWeek: "calendar.badge.clock"
+        case .lastMonth: "calendar"
         }
     }
 

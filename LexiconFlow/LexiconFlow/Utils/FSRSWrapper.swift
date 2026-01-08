@@ -82,7 +82,7 @@ final class FSRSWrapper {
             elapsedDays: elapsedDays,
             scheduledDays: 0,
             reps: flashcard.reviewLogs.count,
-            lapses: flashcard.reviewLogs.filter { $0.rating == 0 }.count,
+            lapses: flashcard.reviewLogs.count(where: { $0.rating == 0 }),
             state: toFSCardState(fsrsState?.stateEnum),
             lastReview: lastReview
         )
@@ -91,10 +91,10 @@ final class FSRSWrapper {
     /// Convert FSRS CardState to our FlashcardState rawValue
     private func toFlashcardStateEnum(_ state: CardState) -> String {
         switch state {
-        case .new: return FlashcardState.new.rawValue
-        case .learning: return FlashcardState.learning.rawValue
-        case .review: return FlashcardState.review.rawValue
-        case .relearning: return FlashcardState.relearning.rawValue
+        case .new: FlashcardState.new.rawValue
+        case .learning: FlashcardState.learning.rawValue
+        case .review: FlashcardState.review.rawValue
+        case .relearning: FlashcardState.relearning.rawValue
         }
     }
 
@@ -102,15 +102,15 @@ final class FSRSWrapper {
     private func toFSCardState(_ stateEnum: String?) -> CardState {
         switch stateEnum {
         case "new", nil:
-            return CardState.new
+            CardState.new
         case "learning":
-            return CardState.learning
+            CardState.learning
         case "review":
-            return CardState.review
+            CardState.review
         case "relearning":
-            return CardState.relearning
+            CardState.relearning
         default:
-            return CardState.new
+            CardState.new
         }
     }
 
@@ -132,23 +132,21 @@ final class FSRSWrapper {
         now: Date = Date()
     ) throws -> FSRSReviewResult {
         // Calculate elapsed days using timezone-aware math
-        let elapsedDays: Double
-        if let lastReview = flashcard.fsrsState?.lastReviewDate {
-            elapsedDays = DateMath.elapsedDays(from: lastReview, to: now)
+        let elapsedDays: Double = if let lastReview = flashcard.fsrsState?.lastReviewDate {
+            DateMath.elapsedDays(from: lastReview, to: now)
         } else {
-            elapsedDays = 0.0
+            0.0
         }
 
         let fsrsCard = toFSCard(flashcard, elapsedDays: elapsedDays)
 
         // Convert our rating (0-3) to FSRS Rating (again=1, hard=2, good=3, easy=4)
-        let fsrsRating: Rating
-        switch rating {
-        case 0: fsrsRating = Rating.again
-        case 1: fsrsRating = Rating.hard
-        case 2: fsrsRating = Rating.good
-        case 3: fsrsRating = Rating.easy
-        default: fsrsRating = Rating.good
+        let fsrsRating = switch rating {
+        case 0: Rating.again
+        case 1: Rating.hard
+        case 2: Rating.good
+        case 3: Rating.easy
+        default: Rating.good
         }
 
         let result = try fsrs.next(card: fsrsCard, now: now, grade: fsrsRating)
@@ -189,11 +187,10 @@ final class FSRSWrapper {
         now: Date = Date()
     ) -> [Int: Date] {
         // Calculate elapsed days using cached lastReviewDate
-        let elapsedDays: Double
-        if let lastReview = flashcard.fsrsState?.lastReviewDate {
-            elapsedDays = DateMath.elapsedDays(from: lastReview, to: now)
+        let elapsedDays: Double = if let lastReview = flashcard.fsrsState?.lastReviewDate {
+            DateMath.elapsedDays(from: lastReview, to: now)
         } else {
-            elapsedDays = 0.0
+            0.0
         }
 
         let fsrsCard = toFSCard(flashcard, elapsedDays: elapsedDays)
@@ -204,7 +201,7 @@ final class FSRSWrapper {
             0: preview[.again]?.card.due ?? Date(),
             1: preview[.hard]?.card.due ?? Date(),
             2: preview[.good]?.card.due ?? Date(),
-            3: preview[.easy]?.card.due ?? Date(),
+            3: preview[.easy]?.card.due ?? Date()
         ]
     }
 
@@ -221,11 +218,10 @@ final class FSRSWrapper {
         now: Date = Date()
     ) -> FSRSReviewResult {
         // Calculate elapsed days using cached lastReviewDate
-        let elapsedDays: Double
-        if let lastReview = flashcard.fsrsState?.lastReviewDate {
-            elapsedDays = DateMath.elapsedDays(from: lastReview, to: now)
+        let elapsedDays: Double = if let lastReview = flashcard.fsrsState?.lastReviewDate {
+            DateMath.elapsedDays(from: lastReview, to: now)
         } else {
-            elapsedDays = 0.0
+            0.0
         }
 
         let fsrsCard = toFSCard(flashcard, elapsedDays: elapsedDays)

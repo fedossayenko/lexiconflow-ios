@@ -173,11 +173,11 @@ class CardGestureViewModel: ObservableObject {
     /// - Returns: Corresponding FSRS rating value
     func ratingForDirection(_ direction: SwipeDirection) -> Int {
         switch direction {
-        case .right: return 2 // Good
-        case .left: return 0 // Again
-        case .up: return 3 // Easy
-        case .down: return 1 // Hard
-        case .none: return 2 // Default to Good
+        case .right: 2 // Good
+        case .left: 0 // Again
+        case .up: 3 // Easy
+        case .down: 1 // Hard
+        case .none: 2 // Default to Good
         }
     }
 }
@@ -188,11 +188,11 @@ extension CardGestureViewModel.SwipeDirection {
     /// Converts gesture direction to haptic service direction.
     var hapticDirection: HapticService.SwipeDirection {
         switch self {
-        case .right: return .right
-        case .left: return .left
-        case .up: return .up
-        case .down: return .down
-        case .none: return .right // fallback
+        case .right: .right
+        case .left: .left
+        case .up: .up
+        case .down: .down
+        case .none: .right // fallback
         }
     }
 }

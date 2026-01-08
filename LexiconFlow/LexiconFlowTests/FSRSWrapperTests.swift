@@ -23,7 +23,7 @@ struct FSRSWrapperTests {
     // MARK: - Test Fixtures
 
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     /// Create a test flashcard with optional FSRS state (does NOT save - caller must save)

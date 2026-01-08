@@ -144,7 +144,7 @@ final class TranslationService {
             temperature: 0.1,
             messages: [
                 .init(role: "system", content: systemPrompt),
-                .init(role: "user", content: userPrompt),
+                .init(role: "user", content: userPrompt)
             ]
         )
 
@@ -420,7 +420,7 @@ final class TranslationService {
         total: Int,
         word: String
     ) {
-        guard let handler = handler else { return }
+        guard let handler else { return }
         let progress = BatchTranslationProgress(current: current, total: total, currentWord: word)
         Task { @MainActor in handler(progress) }
     }
@@ -570,7 +570,7 @@ final class TranslationService {
             temperature: 0.1,
             messages: [
                 .init(role: "system", content: systemPrompt),
-                .init(role: "user", content: userPrompt),
+                .init(role: "user", content: userPrompt)
             ]
         )
 
@@ -713,15 +713,15 @@ final class TranslationService {
         var recoverySuggestion: String? {
             switch self {
             case .missingAPIKey:
-                return "Add your API key in Settings > Translation > Z.ai API Configuration"
+                "Add your API key in Settings > Translation > Z.ai API Configuration"
             case .rateLimit:
-                return "Wait a few seconds, then try again"
+                "Wait a few seconds, then try again"
             case .offline:
-                return "Check your WiFi or cellular connection"
+                "Check your WiFi or cellular connection"
             case .invalidConfiguration:
-                return "Please contact support"
+                "Please contact support"
             default:
-                return nil
+                nil
             }
         }
 
@@ -729,9 +729,9 @@ final class TranslationService {
         var isRetryable: Bool {
             switch self {
             case .rateLimit, .serverError, .offline:
-                return true
+                true
             default:
-                return false
+                false
             }
         }
     }

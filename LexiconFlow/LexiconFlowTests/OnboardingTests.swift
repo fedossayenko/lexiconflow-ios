@@ -24,7 +24,7 @@ struct OnboardingTests {
     // MARK: - Test Fixtures
 
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     // MARK: - Sample Deck Creation Tests
@@ -60,7 +60,7 @@ struct OnboardingTests {
             (word: "Serendipity", definition: "Finding something good without looking for it", phonetic: "/ˌserənˈdipədē/"),
             (word: "Eloquent", definition: "Fluent or persuasive in speaking or writing", phonetic: "/ˈeləkwənt/"),
             (word: "Meticulous", definition: "Showing great attention to detail", phonetic: "/məˈtikyələs/"),
-            (word: "Pragmatic", definition: "Dealing with things sensibly and realistically", phonetic: "/praɡˈmadik/"),
+            (word: "Pragmatic", definition: "Dealing with things sensibly and realistically", phonetic: "/praɡˈmadik/")
         ]
 
         for cardData in sampleCards {
@@ -86,7 +86,7 @@ struct OnboardingTests {
         #expect(cards.count == 5)
 
         // Verify card words
-        let words = cards.map { $0.word }.sorted()
+        let words = cards.map(\.word).sorted()
         #expect(words == ["Eloquent", "Ephemeral", "Meticulous", "Pragmatic", "Serendipity"])
     }
 

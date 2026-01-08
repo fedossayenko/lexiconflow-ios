@@ -65,7 +65,7 @@ struct CardGestureViewModelTests {
             CGSize(width: 10, height: 5),
             CGSize(width: 5, height: 10),
             CGSize(width: 14, height: 0),
-            CGSize(width: 0, height: 14),
+            CGSize(width: 0, height: 14)
         ]
 
         for translation in translations {

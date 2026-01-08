@@ -1001,7 +1001,7 @@ final actor OnDeviceTranslationService {
         total: Int,
         word: String
     ) {
-        guard let handler = handler else { return }
+        guard let handler else { return }
         let progress = BatchTranslationProgress(current: current, total: total, currentWord: word)
         Task { @MainActor in handler(progress) }
     }
@@ -1338,19 +1338,19 @@ enum OnDeviceTranslationError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .unsupportedLanguagePair(source, target):
-            return "Translation from \(source) to \(target) is not supported on this device"
+            "Translation from \(source) to \(target) is not supported on this device"
 
         case let .languagePackNotAvailable(source, target):
-            return "Language pack not available for \(source) → \(target) translation"
+            "Language pack not available for \(source) → \(target) translation"
 
         case let .languagePackDownloadFailed(language):
-            return "Failed to download language pack for \(language)"
+            "Failed to download language pack for \(language)"
 
         case let .translationFailed(reason):
-            return "Translation failed: \(reason)"
+            "Translation failed: \(reason)"
 
         case .emptyInput:
-            return "Cannot translate empty text"
+            "Cannot translate empty text"
         }
     }
 
@@ -1368,19 +1368,19 @@ enum OnDeviceTranslationError: LocalizedError {
     var recoverySuggestion: String? {
         switch self {
         case .unsupportedLanguagePair:
-            return "Try a different language pair supported by iOS Translation"
+            "Try a different language pair supported by iOS Translation"
 
         case let .languagePackNotAvailable(source, target):
-            return "Download language packs for \(source) or \(target) in Settings > General > Translation"
+            "Download language packs for \(source) or \(target) in Settings > General > Translation"
 
         case .languagePackDownloadFailed:
-            return "Check your internet connection and try downloading again"
+            "Check your internet connection and try downloading again"
 
         case .translationFailed:
-            return "Try again or use a shorter text"
+            "Try again or use a shorter text"
 
         case .emptyInput:
-            return "Enter text to translate"
+            "Enter text to translate"
         }
     }
 
@@ -1408,9 +1408,9 @@ enum OnDeviceTranslationError: LocalizedError {
     var isRetryable: Bool {
         switch self {
         case .languagePackDownloadFailed, .translationFailed:
-            return true
+            true
         case .unsupportedLanguagePair, .languagePackNotAvailable, .emptyInput:
-            return false
+            false
         }
     }
 }

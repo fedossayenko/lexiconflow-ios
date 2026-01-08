@@ -23,7 +23,7 @@ struct SchedulerTests {
 
     /// Get a fresh isolated context for testing
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     /// Create a test deck (does NOT save - caller must save)

@@ -21,7 +21,7 @@ struct AddDeckView: View {
         "folder.fill", "star.fill", "heart.fill", "book.fill",
         "graduationcap.fill", "lightbulb.fill", "brain.fill",
         "globe", "terminal.fill", "hammer.fill", "paintbrush.fill",
-        "music.note", "camera.fill", "gamecontroller.fill",
+        "music.note", "camera.fill", "gamecontroller.fill"
     ]
 
     var body: some View {

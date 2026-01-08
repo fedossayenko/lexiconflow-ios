@@ -48,7 +48,7 @@ struct AnalyticsTests {
         // Track event with metadata
         Analytics.trackEvent("test_event_with_metadata", metadata: [
             "key1": "value1",
-            "key2": "value2",
+            "key2": "value2"
         ])
 
         // Verify event with metadata was recorded
@@ -73,7 +73,7 @@ struct AnalyticsTests {
 
         // Track error with metadata
         Analytics.trackError("test_error_with_metadata", error: testError, metadata: [
-            "context": "test_context",
+            "context": "test_context"
         ])
 
         // Verify error with metadata was recorded
@@ -99,7 +99,7 @@ struct AnalyticsTests {
         // Track performance with metadata
         Analytics.trackPerformance("test_operation_with_metadata", duration: 1.5, metadata: [
             "iterations": "100",
-            "result": "success",
+            "result": "success"
         ])
 
         // Verify performance with metadata was recorded
@@ -167,7 +167,7 @@ struct AnalyticsTests {
         Analytics.setUserProperties([
             "premium": "true",
             "study_streak": "30",
-            "decks_count": "5",
+            "decks_count": "5"
         ])
 
         // Verify user properties were recorded
@@ -201,7 +201,7 @@ struct AnalyticsTests {
             "emoji": "🎉📚",
             "quotes": "\"quoted\"",
             "newlines": "line1\nline2",
-            "unicode": "日本語",
+            "unicode": "日本語"
         ])
 
         // Verify event was recorded with special characters
@@ -216,7 +216,7 @@ struct AnalyticsTests {
         let longValue = String(repeating: "a", count: 10000)
 
         Analytics.trackEvent("long_value", metadata: [
-            "long": longValue,
+            "long": longValue
         ])
 
         // Verify event was recorded with long value
@@ -280,7 +280,7 @@ struct AnalyticsTests {
 
         Analytics.trackEvent("int_test", metadata: [
             "count": "42",
-            "index": "0",
+            "index": "0"
         ])
 
         // Verify event was recorded
@@ -294,7 +294,7 @@ struct AnalyticsTests {
 
         Analytics.trackEvent("double_test", metadata: [
             "ratio": "0.75",
-            "percentage": "99.9",
+            "percentage": "99.9"
         ])
 
         // Verify event was recorded
@@ -308,7 +308,7 @@ struct AnalyticsTests {
 
         Analytics.trackEvent("bool_test", metadata: [
             "enabled": "true",
-            "disabled": "false",
+            "disabled": "false"
         ])
 
         // Verify event was recorded
@@ -325,7 +325,7 @@ struct AnalyticsTests {
         for i in 0 ..< 10 {
             Analytics.trackEvent("event_\(i)", metadata: [
                 "index": "\(i)",
-                "doubled": "\(i * 2)",
+                "doubled": "\(i * 2)"
             ])
         }
 

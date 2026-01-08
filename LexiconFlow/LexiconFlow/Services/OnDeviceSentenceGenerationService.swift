@@ -344,7 +344,7 @@ actor OnDeviceSentenceGenerationService {
 
         // Check for existing task BEFORE starting new one to prevent re-entrancy
         let existingTask = await taskStorage.get()
-        if existingTask != nil && !Task.isCancelled {
+        if existingTask != nil, !Task.isCancelled {
             logger.warning("Batch generation already in progress")
             throw OnDeviceSentenceGenerationError.invalidConfiguration
         }
@@ -441,7 +441,7 @@ actor OnDeviceSentenceGenerationService {
         total: Int,
         word: String
     ) {
-        guard let handler = handler else { return }
+        guard let handler else { return }
         let progress = BatchGenerationProgress(current: current, total: total, currentWord: word)
         Task { @MainActor in handler(progress) }
     }
@@ -580,30 +580,30 @@ actor OnDeviceSentenceGenerationService {
         "the": [
             "The book is on the table.",
             "I saw the movie yesterday.",
-            "The cat is sleeping on the couch.",
+            "The cat is sleeping on the couch."
         ],
         "be": [
             "I want to be a doctor.",
             "She will be here soon.",
-            "They are very happy.",
+            "They are very happy."
         ],
         "to": [
             "I need to go to the store.",
             "She wants to learn English.",
-            "We went to the park.",
+            "We went to the park."
         ],
         "of": [
             "A cup of coffee.",
             "The king of France.",
-            "One of the best.",
-        ],
+            "One of the best."
+        ]
     ]
 
     /// Default fallback sentences when word not in library
     private let defaultFallbackSentences = [
         "This is an example sentence.",
         "The word demonstrates its meaning here.",
-        "Practice makes perfect.",
+        "Practice makes perfect."
     ]
 }
 
@@ -619,39 +619,39 @@ enum OnDeviceSentenceGenerationError: LocalizedError, Sendable {
     var errorDescription: String? {
         switch self {
         case .deviceNotSupported:
-            return "On-device AI requires Apple Intelligence (iPhone 15 Pro or later)"
+            "On-device AI requires Apple Intelligence (iPhone 15 Pro or later)"
         case .sessionNotInitialized:
-            return "AI session not initialized. Please try again."
+            "AI session not initialized. Please try again."
         case let .generationFailed(reason):
-            return "Sentence generation failed: \(reason)"
+            "Sentence generation failed: \(reason)"
         case .invalidConfiguration:
-            return "Invalid service configuration"
+            "Invalid service configuration"
         case .cancelled:
-            return "Generation was cancelled"
+            "Generation was cancelled"
         }
     }
 
     var recoverySuggestion: String? {
         switch self {
         case .deviceNotSupported:
-            return "Use cloud-based sentence generation in Settings, or use an iPhone 15 Pro or later"
+            "Use cloud-based sentence generation in Settings, or use an iPhone 15 Pro or later"
         case .sessionNotInitialized:
-            return "Restart the app and try again"
+            "Restart the app and try again"
         case .generationFailed:
-            return "Try again or use static fallback sentences"
+            "Try again or use static fallback sentences"
         case .invalidConfiguration:
-            return "Check your iOS version and device compatibility"
+            "Check your iOS version and device compatibility"
         case .cancelled:
-            return nil
+            nil
         }
     }
 
     var isRetryable: Bool {
         switch self {
         case .deviceNotSupported, .invalidConfiguration, .cancelled:
-            return false
+            false
         case .sessionNotInitialized, .generationFailed:
-            return true
+            true
         }
     }
 }

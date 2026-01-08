@@ -19,7 +19,7 @@ public struct RetryManagerError: Error {
 
     /// Human-readable description
     public var localizedDescription: String {
-        return "Retry operation failed with unexpected error type: \(underlyingError.localizedDescription)"
+        "Retry operation failed with unexpected error type: \(underlyingError.localizedDescription)"
     }
 
     init(_ error: any Error) {
@@ -42,7 +42,7 @@ public struct RetryManagerError: Error {
             userInfo: [
                 NSLocalizedDescriptionKey: "Type mismatch: expected \(expected), got \(actual). Check operation signature.",
                 "expectedType": expected,
-                "actualType": actual,
+                "actualType": actual
             ]
         )
         return RetryManagerError(error)

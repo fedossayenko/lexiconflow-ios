@@ -371,7 +371,7 @@ struct GeneratedSentenceTests {
         let cases: [(SentenceSource, String)] = [
             (.aiGenerated, "ai_generated"),
             (.staticFallback, "static_fallback"),
-            (.userCreated, "user_created"),
+            (.userCreated, "user_created")
         ]
 
         for (expected, rawValue) in cases {
@@ -479,7 +479,7 @@ struct GeneratedSentenceTests {
             ("Hello 世界 🌍", "unicode", true),
             ("This is a test 😊🎉", "emoji", true),
             ("这是一个测试句子", "CJK", true),
-            ("هذه جملة تجريبية", "RTL", true),
+            ("هذه جملة تجريبية", "RTL", true)
         ]
     )
     func variousTextInputs(sentenceText: String, _ description: String, shouldSucceed: Bool) throws {

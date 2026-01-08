@@ -259,7 +259,7 @@ private struct OnDeviceLanguageStatusView: View {
                 }
 
                 // Info Message
-                if sourceDownloaded && targetDownloaded {
+                if sourceDownloaded, targetDownloaded {
                     HStack(spacing: 8) {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.green)
@@ -303,7 +303,7 @@ private struct LanguageStatusRow: View {
 
             Spacer()
 
-            if !isDownloaded && !isDownloading {
+            if !isDownloaded, !isDownloading {
                 Button("Download") {
                     onTap()
                 }

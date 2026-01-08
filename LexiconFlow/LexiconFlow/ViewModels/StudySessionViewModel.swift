@@ -20,27 +20,27 @@ enum StudySessionError: LocalizedError, Sendable {
     var errorDescription: String? {
         switch self {
         case .reviewSaveFailed:
-            return "Failed to save review. Please try again."
+            "Failed to save review. Please try again."
         case let .invalidRating(rating):
-            return "Invalid rating: \(rating). Must be between 0 and 3."
+            "Invalid rating: \(rating). Must be between 0 and 3."
         }
     }
 
     var failureReason: String? {
         switch self {
         case let .reviewSaveFailed(message):
-            return "Underlying error: \(message)"
+            "Underlying error: \(message)"
         case .invalidRating:
-            return "Rating value out of valid range (0-3)"
+            "Rating value out of valid range (0-3)"
         }
     }
 
     var recoverySuggestion: String? {
         switch self {
         case .reviewSaveFailed:
-            return "Try again. If the problem persists, check your network connection and storage."
+            "Try again. If the problem persists, check your network connection and storage."
         case .invalidRating:
-            return "Only use the rating buttons provided (Again, Hard, Good, Easy)."
+            "Only use the rating buttons provided (Again, Hard, Good, Easy)."
         }
     }
 }

@@ -283,7 +283,7 @@ struct CardBackViewTests {
             ("C1", .purple),
             ("C2", .purple),
             ("X5", .gray),
-            ("", .gray),
+            ("", .gray)
         ]
 
         for (level, expectedColor) in colorMap {

@@ -61,7 +61,7 @@ enum AppSettings {
         ("th", "Thai"),
         ("tr", "Turkish"),
         ("uk", "Ukrainian"),
-        ("vi", "Vietnamese"),
+        ("vi", "Vietnamese")
     ]
 
     // Note: API key is now stored securely in Keychain, not UserDefaults
@@ -152,7 +152,7 @@ enum AppSettings {
             }
         }
         set {
-            let ids = Array(newValue.map { $0.uuidString })
+            let ids = Array(newValue.map(\.uuidString))
             do {
                 let data = try JSONEncoder().encode(ids)
                 guard let string = String(data: data, encoding: .utf8) else {
@@ -203,7 +203,7 @@ enum AppSettings {
                 "dailyGoal": 20,
                 "statisticsTimeRange": "7d",
                 "darkMode": "system",
-                "glassEffectsEnabled": true,
+                "glassEffectsEnabled": true
             ] as [String: Any]
 
             for (key, value) in defaults {
@@ -223,17 +223,17 @@ enum AppSettings {
 
         var displayName: String {
             switch self {
-            case .system: return "System"
-            case .light: return "Light"
-            case .dark: return "Dark"
+            case .system: "System"
+            case .light: "Light"
+            case .dark: "Dark"
             }
         }
 
         var icon: String {
             switch self {
-            case .system: return "iphone"
-            case .light: return "sun.max.fill"
-            case .dark: return "moon.fill"
+            case .system: "iphone"
+            case .light: "sun.max.fill"
+            case .dark: "moon.fill"
             }
         }
     }
@@ -245,15 +245,15 @@ enum AppSettings {
 
         var displayName: String {
             switch self {
-            case .learning: return "Learn New"
-            case .scheduled: return "Scheduled (FSRS)"
+            case .learning: "Learn New"
+            case .scheduled: "Scheduled (FSRS)"
             }
         }
 
         var description: String {
             switch self {
-            case .learning: return "Study new cards for the first time"
-            case .scheduled: return "Due cards based on FSRS algorithm"
+            case .learning: "Study new cards for the first time"
+            case .scheduled: "Due cards based on FSRS algorithm"
             }
         }
     }
@@ -267,7 +267,7 @@ enum AppSettings {
         var errorDescription: String? {
             switch self {
             case .utf8ConversionFailed:
-                return "Failed to convert deck IDs to/from UTF-8"
+                "Failed to convert deck IDs to/from UTF-8"
             }
         }
     }

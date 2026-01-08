@@ -46,10 +46,10 @@ extension CardRating {
     /// SwiftUI Color for this rating
     var swiftUIColor: Color {
         switch self {
-        case .again: return .red
-        case .hard: return .orange
-        case .good: return .blue
-        case .easy: return .green
+        case .again: .red
+        case .hard: .orange
+        case .good: .blue
+        case .easy: .green
         }
     }
 }

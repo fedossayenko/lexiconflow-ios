@@ -66,7 +66,7 @@ final class StatisticsViewModel: ObservableObject {
         statisticsService = StatisticsService.shared
 
         // Use provided time range or load from AppSettings
-        if let timeRange = timeRange {
+        if let timeRange {
             selectedTimeRange = timeRange
         } else {
             // Load from AppSettings (convert string to enum)
@@ -165,9 +165,9 @@ extension StatisticsViewModel {
 
     /// Whether dashboard is in empty state (no study activity)
     var isEmpty: Bool {
-        guard let retentionData = retentionData,
-              let streakData = streakData,
-              let fsrsMetrics = fsrsMetrics else { return false }
+        guard let retentionData,
+              let streakData,
+              let fsrsMetrics else { return false }
 
         // Check if all metrics are empty/zero
         return retentionData.totalCount == 0 &&

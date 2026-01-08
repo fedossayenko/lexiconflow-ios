@@ -28,7 +28,7 @@ import Testing
 struct FlashcardDetailViewModelTests {
     /// Get a fresh isolated context for testing
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     // MARK: - State Change Detection Tests

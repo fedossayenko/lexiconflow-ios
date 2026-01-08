@@ -25,7 +25,7 @@ struct StatisticsViewModelTests {
     // MARK: - Test Fixtures
 
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     private func createFlashcard(

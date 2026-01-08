@@ -83,7 +83,7 @@ struct ReviewHistoryListView: View {
             Spacer()
 
             // Export button (if callback provided)
-            if let onExport = onExport {
+            if let onExport {
                 Button(action: onExport) {
                     Image(systemName: "square.and.arrow.up")
                         .foregroundStyle(.blue)
@@ -199,7 +199,7 @@ struct ReviewHistoryListView: View {
                     scheduledDays: 5.0,
                     elapsedDays: 4.0,
                     stateChange: .firstReview
-                ),
+                )
             ]
         }
     }

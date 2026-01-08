@@ -69,7 +69,7 @@ struct AppSettingsTests {
         }
 
         // Verify common languages are present
-        let codes = languages.map { $0.code }
+        let codes = languages.map(\.code)
         #expect(codes.contains("en"))
         #expect(codes.contains("es"))
         #expect(codes.contains("fr"))
@@ -266,7 +266,7 @@ struct AppSettingsTests {
             ("en", "de"),
             ("en", "ja"),
             ("zh-Hans", "en"),
-            ("ru", "en"),
+            ("ru", "en")
         ]
 
         for combination in testCombinations {
@@ -307,13 +307,13 @@ struct AppSettingsTests {
 
     @Test("AppSettings: supportedLanguages has all required translation languages")
     func supportedLanguagesHasRequiredLanguages() throws {
-        let codes = AppSettings.supportedLanguages.map { $0.code }
+        let codes = AppSettings.supportedLanguages.map(\.code)
 
         // Verify all languages mentioned in CLAUDE.md are present
         let requiredLanguages = [
             "ar", "zh-Hans", "zh-Hant", "nl", "en", "fr", "de", "el", "he",
             "hi", "hu", "id", "it", "ja", "ko", "pl", "pt", "ru", "es",
-            "sv", "th", "tr", "uk", "vi",
+            "sv", "th", "tr", "uk", "vi"
         ]
 
         for requiredLang in requiredLanguages {
@@ -518,7 +518,7 @@ struct AppSettingsTests {
         let testUUIDs: Set<UUID> = [
             UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
             UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
-            UUID(uuidString: "00000000-0000-0000-0000-000000000003")!,
+            UUID(uuidString: "00000000-0000-0000-0000-000000000003")!
         ]
 
         AppSettings.selectedDeckIDs = testUUIDs

@@ -23,7 +23,7 @@ struct StudySessionViewTests {
             FSRSState.self,
             Flashcard.self,
             Deck.self,
-            FlashcardReview.self,
+            FlashcardReview.self
         ])
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         return try! ModelContainer(for: schema, configurations: [configuration])
@@ -150,7 +150,7 @@ struct StudySessionViewTests {
         #expect(cards.count == 10, "Should create 10 cards")
 
         // Verify all cards have unique IDs
-        let uniqueIds = Set(cards.map { $0.id })
+        let uniqueIds = Set(cards.map(\.id))
         #expect(uniqueIds.count == 10, "All cards should have unique IDs")
 
         // Verify all cards have FSRSState
