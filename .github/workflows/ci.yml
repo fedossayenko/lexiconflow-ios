@@ -8,8 +8,56 @@ on:
       - '.github/workflows/**'
 
 jobs:
-  test:
-    name: Test iOS
+  # Code Quality Checks (SwiftLint + SwiftFormat)
+  lint:
+    name: Code Quality Checks
+    runs-on: macos-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache SwiftLint
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/swiftlint
+          key: ${{ runner.os }}-swiftlint-0.55.1
+
+      - name: Cache SwiftFormat
+        uses: actions/cache@v4
+        with:
+          path: /opt/homebrew/bin/swiftformat
+          key: ${{ runner.os }}-swiftformat-0.55
+
+      - name: Install SwiftLint
+        run: |
+          if [ ! -f /usr/local/bin/swiftlint ]; then
+            curl -L https://github.com/realm/SwiftLint/releases/download/0.55.1/swiftlint-macos.tar.gz | tar xz
+            sudo mv swiftlint /usr/local/bin/
+          fi
+          swiftlint version
+
+      - name: Install SwiftFormat
+        run: |
+          if ! command -v swiftformat &> /dev/null; then
+            brew install swiftformat
+          fi
+          swiftformat --version
+
+      - name: Run SwiftLint
+        working-directory: ./LexiconFlow
+        run: |
+          swiftlint lint --strict --reporter github-actions-logging
+
+      - name: Run SwiftFormat
+        working-directory: ./LexiconFlow
+        run: |
+          swiftformat --lint .
+
+  # Build iOS
+  build:
+    name: Build iOS
     runs-on: macos-latest
     timeout-minutes: 15
 
@@ -51,7 +99,40 @@ jobs:
             -scheme LexiconFlow \
             -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1'
 
-      - name: Test
+  # Test with Coverage
+  test:
+    name: Test iOS
+    runs-on: macos-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache SPM
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Cache DerivedData
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-deriveddata-${{ hashFiles('**/*.swift') }}
+          restore-keys: |
+            ${{ runner.os }}-deriveddata-
+
+      - name: Switch Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '26.1.1'
+
+      - name: Test with Coverage
         working-directory: ./LexiconFlow
         run: |
           xcodebuild test \
@@ -59,4 +140,21 @@ jobs:
             -scheme LexiconFlow \
             -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1' \
             -only-testing:LexiconFlowTests \
-            -parallel-testing-enabled NO
+            -parallel-testing-enabled NO \
+            -enableCodeCoverage YES \
+            -resultBundlePath TestResults.xcresult
+
+      - name: Install xccov-to-lcov
+        run: brew install xccov-to-lcov
+
+      - name: Generate Coverage Report
+        run: xccov-to-lcov < TestResults.xcresult > coverage.info
+
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.info
+          flags: lexiconflow
+          name: codecov-umbrella
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
