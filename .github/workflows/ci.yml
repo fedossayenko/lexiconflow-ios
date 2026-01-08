@@ -18,23 +18,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Cache SwiftLint
+      - name: Cache Homebrew
         uses: actions/cache@v4
         with:
-          path: /usr/local/bin/swiftlint
-          key: ${{ runner.os }}-swiftlint-0.55.1
-
-      - name: Cache SwiftFormat
-        uses: actions/cache@v4
-        with:
-          path: /opt/homebrew/bin/swiftformat
-          key: ${{ runner.os }}-swiftformat-0.55
+          path: /opt/homebrew/bin
+          key: ${{ runner.os }}-homebrew-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-homebrew-
 
       - name: Install SwiftLint
         run: |
-          if [ ! -f /usr/local/bin/swiftlint ]; then
-            curl -L https://github.com/realm/SwiftLint/releases/download/0.55.1/swiftlint-macos.tar.gz | tar xz
-            sudo mv swiftlint /usr/local/bin/
+          if ! command -v swiftlint &> /dev/null; then
+            brew install swiftlint
           fi
           swiftlint version
 
