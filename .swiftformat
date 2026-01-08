@@ -8,6 +8,10 @@
 --wrap-arguments before-first
 --wrap-collections before-first
 
+# Explicit self - insert for Swift 6 strict concurrency compatibility
+# Swift 6 requires explicit self in Sendable closures, so we always insert it
+--self insert
+
 # Empty braces
 --empty-braces no-space
 

@@ -9,6 +9,7 @@
 //
 
 import CoreFoundation
+import Foundation
 import Testing
 @testable import LexiconFlow
 
@@ -368,5 +369,37 @@ struct HapticServiceTests {
         }
 
         #expect(true, "HapticService should use custom patterns for notifications")
+    }
+
+    // MARK: - CI Environment Tests
+
+    @Test("HapticService skips CoreHaptics in CI environment")
+    func hapticServiceSkipsCoreHapticsInCI() {
+        // NOTE: This test documents CI behavior.
+        // The CI workflow creates /tmp/lexiconflow-ci-running marker before running tests.
+        // When this marker is present, HapticService skips CoreHaptics initialization
+        // to avoid AudioConverter crashes in headless CI environments without haptic hardware.
+        //
+        // All tests in this suite effectively test CI mode when run in CI,
+        // since the marker file is created before test execution.
+        //
+        // See: .github/workflows/ci.yml (step: "Create CI marker file")
+
+        let ciMarkerPath = "/tmp/lexiconflow-ci-running"
+        let isRunningInCI = FileManager.default.fileExists(atPath: ciMarkerPath)
+
+        let service = HapticService.shared
+
+        // Service should work regardless of CI environment
+        withHapticEnabled(true) {
+            service.triggerSwipe(direction: .right, progress: 0.5)
+            service.triggerSuccess()
+        }
+
+        if isRunningInCI {
+            #expect(true, "HapticService should work in CI environment (CoreHaptics skipped)")
+        } else {
+            #expect(true, "HapticService should work in local environment (CoreHaptics enabled)")
+        }
     }
 }

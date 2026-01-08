@@ -151,15 +151,15 @@ final class IELTSTranslationGenerator {
 
         /// Create output word from source word with translation
         init(from source: SourceWord, translation: String) {
-            word = source.word
-            definition = source.definition
-            cefrLevel = source.cefrLevel
-            partOfSpeech = source.partOfSpeech
-            phonetic = source.phonetic
-            exampleSentence = source.exampleSentence
-            ieltsContext = source.ieltsContext
-            frequency = source.frequency
-            russianTranslation = translation
+            self.word = source.word
+            self.definition = source.definition
+            self.cefrLevel = source.cefrLevel
+            self.partOfSpeech = source.partOfSpeech
+            self.phonetic = source.phonetic
+            self.exampleSentence = source.exampleSentence
+            self.ieltsContext = source.ieltsContext
+            self.frequency = source.frequency
+            self.russianTranslation = translation
         }
     }
 
@@ -211,7 +211,7 @@ final class IELTSTranslationGenerator {
         let duration: TimeInterval
 
         var isSuccess: Bool {
-            failedCount == 0 && translatedCount > 0
+            self.failedCount == 0 && self.translatedCount > 0
         }
     }
 
@@ -223,7 +223,7 @@ final class IELTSTranslationGenerator {
         let percentage: Int
 
         var description: String {
-            "\(current)/\(total) (\(percentage)%) - \(currentWord)"
+            "\(self.current)/\(self.total) (\(self.percentage)%) - \(self.currentWord)"
         }
     }
 
@@ -291,27 +291,27 @@ final class IELTSTranslationGenerator {
         progressHandler: (@Sendable (Progress) -> Void)? = nil
     ) async throws -> TranslationResult {
         let startTime = Date()
-        logger.info("=== IELTS Translation Generation Started ===")
+        self.logger.info("=== IELTS Translation Generation Started ===")
 
         // Step 1: Read source file
-        logger.info("Step 1: Reading source vocabulary...")
+        self.logger.info("Step 1: Reading source vocabulary...")
         let sourceData = try readSourceFile()
         let totalWords = sourceData.vocabulary.count
-        logger.info("✅ Loaded \(totalWords) words from source")
+        self.logger.info("✅ Loaded \(totalWords) words from source")
 
         // Step 2: Configure translation service
-        logger.info("Step 2: Configuring translation service (en -> ru)...")
-        await translationService.setLanguages(source: "en", target: "ru")
+        self.logger.info("Step 2: Configuring translation service (en -> ru)...")
+        await self.translationService.setLanguages(source: "en", target: "ru")
 
         // Check language pack availability
         let russianPackNeeded = await translationService.needsLanguageDownload("ru")
         if russianPackNeeded {
-            logger.error("❌ Russian language pack not available")
+            self.logger.error("❌ Russian language pack not available")
             throw Error.languagePackNotAvailable
         }
 
         // Step 3: Batch translate words
-        logger.info("Step 3: Starting batch translation...")
+        self.logger.info("Step 3: Starting batch translation...")
         let wordsToTranslate = sourceData.vocabulary.map(\.word)
 
         let translationResult = try await translationService.translateBatch(
@@ -326,15 +326,16 @@ final class IELTSTranslationGenerator {
                     percentage: (batchProgress.current * 100) / batchProgress.total
                 )
                 progressHandler?(progress)
-                let progressDescription = progress.description
-                logger.info("Progress: \(progressDescription)")
+                Task { @MainActor [weak self] in
+                    self?.logger.info("Progress: \(progress.description)")
+                }
             }
         )
 
-        logger.info("✅ Translation complete: \(translationResult.successCount)/\(totalWords) succeeded")
+        self.logger.info("✅ Translation complete: \(translationResult.successCount)/\(totalWords) succeeded")
 
         // Step 4: Generate output vocabulary
-        logger.info("Step 4: Generating output vocabulary...")
+        self.logger.info("Step 4: Generating output vocabulary...")
 
         // Build word-to-translation mapping
         var translationMap: [String: String] = [:]
@@ -345,31 +346,31 @@ final class IELTSTranslationGenerator {
         // Create output words
         let outputWords = sourceData.vocabulary.compactMap { sourceWord -> OutputWord? in
             guard let translation = translationMap[sourceWord.word] else {
-                logger.warning("No translation for '\(sourceWord.word)', skipping")
+                self.logger.warning("No translation for '\(sourceWord.word)', skipping")
                 return nil
             }
             return OutputWord(from: sourceWord, translation: translation)
         }
 
         // Step 5: Create output structure
-        let outputVocabulary = createOutputVocabulary(
+        let outputVocabulary = self.createOutputVocabulary(
             sourceMetadata: sourceData.metadata,
             words: outputWords
         )
 
         // Step 6: Write output file
         let outputPath = outputPath
-        logger.info("Step 5: Writing output file...")
-        try writeOutputFile(outputVocabulary)
-        logger.info("✅ Output written to: \(outputPath)")
+        self.logger.info("Step 5: Writing output file...")
+        try self.writeOutputFile(outputVocabulary)
+        self.logger.info("✅ Output written to: \(outputPath)")
 
         let duration = Date().timeIntervalSince(startTime)
 
-        logger.info("=== Translation Generation Complete ===")
-        logger.info("✅ Translated: \(translationResult.successCount)/\(totalWords)")
-        logger.info("✅ Failed: \(translationResult.failedCount)")
-        logger.info("✅ Duration: \(String(format: "%.2f", duration))s")
-        logger.info("✅ Output: \(outputPath)")
+        self.logger.info("=== Translation Generation Complete ===")
+        self.logger.info("✅ Translated: \(translationResult.successCount)/\(totalWords)")
+        self.logger.info("✅ Failed: \(translationResult.failedCount)")
+        self.logger.info("✅ Duration: \(String(format: "%.2f", duration))s")
+        self.logger.info("✅ Output: \(outputPath)")
 
         return TranslationResult(
             translatedCount: translationResult.successCount,
@@ -387,7 +388,7 @@ final class IELTSTranslationGenerator {
     /// - Throws: Error if file not found or invalid JSON
     private func readSourceFile() throws -> SourceIELTSVocabulary {
         guard let url = Bundle.main.url(forResource: "IELTS/ielts-vocabulary-source", withExtension: "json") else {
-            logger.error("Source file not found at: \(sourcePath)")
+            self.logger.error("Source file not found at: \(self.sourcePath)")
             throw Error.sourceFileNotFound
         }
 
@@ -396,7 +397,7 @@ final class IELTSTranslationGenerator {
             let decoder = JSONDecoder()
             return try decoder.decode(SourceIELTSVocabulary.self, from: data)
         } catch {
-            logger.error("Failed to parse source JSON: \(error.localizedDescription)")
+            self.logger.error("Failed to parse source JSON: \(error.localizedDescription)")
             throw Error.invalidSourceJSON(error)
         }
     }
@@ -471,16 +472,16 @@ final class IELTSTranslationGenerator {
             let url = URL(fileURLWithPath: outputPath)
 
             // Create backup if output file exists
-            if FileManager.default.fileExists(atPath: outputPath) {
-                let backupPath = outputPath + ".backup"
-                try FileManager.default.moveItem(atPath: outputPath, toPath: backupPath)
-                logger.info("Created backup: \(backupPath)")
+            if FileManager.default.fileExists(atPath: self.outputPath) {
+                let backupPath = self.outputPath + ".backup"
+                try FileManager.default.moveItem(atPath: self.outputPath, toPath: backupPath)
+                self.logger.info("Created backup: \(backupPath)")
             }
 
             // Write output file
             try data.write(to: url)
         } catch {
-            logger.error("Failed to write output file: \(error.localizedDescription)")
+            self.logger.error("Failed to write output file: \(error.localizedDescription)")
             throw Error.outputWriteFailed(error)
         }
     }
