@@ -144,8 +144,8 @@ struct ConcurrencyStressTests {
             }
 
             for await result in group {
-                if let result = result {
-                    await results.append(result)
+                if let review = result {
+                    await results.append(review)
                 }
             }
         }
