@@ -143,7 +143,7 @@ final class Scheduler {
 
             return Array(cards.prefix(limit))
         } catch {
-            Task { await Analytics.trackError("fetch_due_cards", error: error) }
+            Analytics.trackError("fetch_due_cards", error: error)
             logger.error("Error fetching due cards: \(error)")
             return []
         }
@@ -189,7 +189,7 @@ final class Scheduler {
             let sorted = cards.sorted { $0.createdAt < $1.createdAt }
             return Array(sorted.prefix(limit))
         } catch {
-            Task { await Analytics.trackError("fetch_new_cards", error: error) }
+            Analytics.trackError("fetch_new_cards", error: error)
             logger.error("Error fetching new cards: \(error)")
             return []
         }
@@ -214,7 +214,7 @@ final class Scheduler {
         do {
             return try modelContext.fetchCount(stateDescriptor)
         } catch {
-            Task { await Analytics.trackError("due_card_count", error: error) }
+            Analytics.trackError("due_card_count", error: error)
             logger.error("Error counting due cards: \(error)")
             return 0
         }
@@ -235,7 +235,7 @@ final class Scheduler {
         do {
             return try modelContext.fetchCount(stateDescriptor)
         } catch {
-            Task { await Analytics.trackError("new_card_count", error: error) }
+            Analytics.trackError("new_card_count", error: error)
             logger.error("Error counting new cards: \(error)")
             return 0
         }
@@ -265,7 +265,7 @@ final class Scheduler {
                 return card.deck?.id == deckID
             }.count
         } catch {
-            Task { await Analytics.trackError("due_card_count_deck", error: error) }
+            Analytics.trackError("due_card_count_deck", error: error)
             logger.error("Error counting due cards for deck: \(error)")
             return 0
         }
@@ -294,7 +294,7 @@ final class Scheduler {
                 return card.deck?.id == deckID
             }.count
         } catch {
-            Task { await Analytics.trackError("new_card_count_deck", error: error) }
+            Analytics.trackError("new_card_count_deck", error: error)
             logger.error("Error counting new cards for deck: \(error)")
             return 0
         }
@@ -320,7 +320,7 @@ final class Scheduler {
                 return card.deck?.id == deckID
             }.count
         } catch {
-            Task { await Analytics.trackError("total_card_count_deck", error: error) }
+            Analytics.trackError("total_card_count_deck", error: error)
             logger.error("Error counting total cards for deck: \(error)")
             return 0
         }
@@ -360,7 +360,7 @@ final class Scheduler {
             // Randomize order for variety in cram mode
             return Array(cards.shuffled().prefix(limit))
         } catch {
-            Task { await Analytics.trackError("fetch_cram_cards", error: error) }
+            Analytics.trackError("fetch_cram_cards", error: error)
             logger.error("Error fetching cram cards: \(error)")
             return []
         }
@@ -407,7 +407,7 @@ final class Scheduler {
 
             return Array(cards.prefix(limit))
         } catch {
-            Task { await Analytics.trackError("fetch_due_cards_multi", error: error) }
+            Analytics.trackError("fetch_due_cards_multi", error: error)
             logger.error("Error fetching due cards for multiple decks: \(error)")
             return []
         }
@@ -450,7 +450,7 @@ final class Scheduler {
             let sorted = cards.sorted { $0.createdAt < $1.createdAt }
             return Array(sorted.prefix(limit))
         } catch {
-            Task { await Analytics.trackError("fetch_new_cards_multi", error: error) }
+            Analytics.trackError("fetch_new_cards_multi", error: error)
             logger.error("Error fetching new cards for multiple decks: \(error)")
             return []
         }
@@ -490,7 +490,7 @@ final class Scheduler {
             // Randomize order for variety in cram mode
             return Array(cards.shuffled().prefix(limit))
         } catch {
-            Task { await Analytics.trackError("fetch_cram_cards_multi", error: error) }
+            Analytics.trackError("fetch_cram_cards_multi", error: error)
             logger.error("Error fetching cram cards for multiple decks: \(error)")
             return []
         }
@@ -522,7 +522,7 @@ final class Scheduler {
                 return deckIDs.contains(deckID)
             }.count
         } catch {
-            Task { await Analytics.trackError("due_card_count_multi", error: error) }
+            Analytics.trackError("due_card_count_multi", error: error)
             logger.error("Error counting due cards for multiple decks: \(error)")
             return 0
         }
@@ -551,7 +551,7 @@ final class Scheduler {
                 return deckIDs.contains(deckID)
             }.count
         } catch {
-            Task { await Analytics.trackError("new_card_count_multi", error: error) }
+            Analytics.trackError("new_card_count_multi", error: error)
             logger.error("Error counting new cards for multiple decks: \(error)")
             return 0
         }
@@ -578,7 +578,7 @@ final class Scheduler {
                 return deckIDs.contains(deckID)
             }.count
         } catch {
-            Task { await Analytics.trackError("total_card_count_multi", error: error) }
+            Analytics.trackError("total_card_count_multi", error: error)
             logger.error("Error counting total cards for multiple decks: \(error)")
             return 0
         }
@@ -637,10 +637,10 @@ final class Scheduler {
                 try modelContext.save()
                 return log
             } catch {
-                Task { await Analytics.trackError("save_cram_review", error: error, metadata: [
+                Analytics.trackError("save_cram_review", error: error, metadata: [
                     "rating": "\(rating)",
                     "card": flashcard.word
-                ])}
+                ])
                 logger.error("Failed to save cram review: \(error)")
                 // In production: show user alert
                 return nil
@@ -673,7 +673,7 @@ final class Scheduler {
             // Save changes
             try modelContext.save()
 
-            await Analytics.trackEvent("card_reviewed", metadata: [
+            Analytics.trackEvent("card_reviewed", metadata: [
                 "rating": "\(rating)",
                 "state": result.stateEnum,
                 "stability": String(format: "%.2f", result.stability),
@@ -682,7 +682,7 @@ final class Scheduler {
 
             return log
         } catch {
-            await Analytics.trackError("process_review", error: error, metadata: [
+            Analytics.trackError("process_review", error: error, metadata: [
                 "rating": "\(rating)",
                 "card": flashcard.word
             ])
@@ -763,13 +763,13 @@ final class Scheduler {
 
             try modelContext.save()
 
-            await Analytics.trackEvent("card_reset", metadata: [
+            Analytics.trackEvent("card_reset", metadata: [
                 "card": flashcard.word
             ])
 
             return true
         } catch {
-            await Analytics.trackError("reset_card", error: error, metadata: [
+            Analytics.trackError("reset_card", error: error, metadata: [
                 "card": flashcard.word
             ])
             logger.error("Failed to save reset: \(error)")

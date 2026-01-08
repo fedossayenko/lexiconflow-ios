@@ -25,6 +25,7 @@ enum KeychainManager {
     ///
     /// - Parameter key: The API key to store
     /// - Throws: KeychainError if storage fails
+    @MainActor
     static func setAPIKey(_ key: String) throws {
         guard !key.isEmpty else {
             logger.warning("Attempted to store empty API key")
@@ -61,6 +62,7 @@ enum KeychainManager {
     ///
     /// - Returns: The API key if found, nil otherwise
     /// - Throws: KeychainError if retrieval fails (except not found)
+    @MainActor
     static func getAPIKey() throws -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -95,6 +97,7 @@ enum KeychainManager {
     /// Delete API key from Keychain
     ///
     /// - Throws: KeychainError if deletion fails
+    @MainActor
     static func deleteAPIKey() throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -119,6 +122,7 @@ enum KeychainManager {
     /// Check if API key exists in Keychain
     ///
     /// - Returns: true if API key exists, false otherwise
+    @MainActor
     static func hasAPIKey() -> Bool {
         do {
             return try getAPIKey() != nil
@@ -135,6 +139,7 @@ enum KeychainManager {
     ///   - value: The value to store
     ///   - account: The account identifier (key)
     /// - Throws: KeychainError if storage fails
+    @MainActor
     static func set(_ value: String, forAccount account: String) throws {
         guard !value.isEmpty else {
             throw KeychainError.emptyKey
@@ -166,6 +171,7 @@ enum KeychainManager {
     /// - Parameter account: The account identifier (key)
     /// - Returns: The value if found, nil otherwise
     /// - Throws: KeychainError if retrieval fails
+    @MainActor
     static func get(forAccount account: String) throws -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -194,6 +200,7 @@ enum KeychainManager {
     ///
     /// - Parameter account: The account identifier (key)
     /// - Throws: KeychainError if deletion fails
+    @MainActor
     static func delete(forAccount account: String) throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,

@@ -185,7 +185,7 @@ struct DeckDetailView: View {
         logger.info("Starting batch translation of \(total) cards")
 
         // Background task - non-blocking but still can update @State
-        translationTask = Task(priority: .userInitiated) {
+        translationTask = Task(priority: .userInitiated) { @MainActor in
             let startTime = Date()
 
             do {
@@ -196,11 +196,16 @@ struct DeckDetailView: View {
                     cardsToTranslate.map(\.word),
                     maxConcurrency: 5,
                     progressHandler: { progress in
-                        translationProgress = TranslationProgress(
+                        // Create local value to avoid capturing @State in Sendable closure
+                        let currentProgress = TranslationProgress(
                             current: progress.current,
                             total: progress.total,
                             currentWord: progress.currentWord
                         )
+                        // Explicit main actor dispatch for @State mutation
+                        Task { @MainActor in
+                            translationProgress = currentProgress
+                        }
                     }
                 )
                 // Apply on-device translation results
@@ -269,7 +274,7 @@ struct DeckDetailView: View {
                 failedWords: cards.map { $0.word }
             )
 
-            Task { await Analytics.trackError("translation_save_failed", error: error) }
+            Analytics.trackError("translation_save_failed", error: error)
         }
 
         // Clear state

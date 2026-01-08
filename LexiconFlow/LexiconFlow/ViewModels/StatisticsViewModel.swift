@@ -95,58 +95,44 @@ final class StatisticsViewModel: ObservableObject {
 
         logger.debug("Refreshing statistics for time range: \(self.selectedTimeRange.displayName)")
 
-        // Wrap with timeout to prevent infinite hangs
+        // Fetch all metrics concurrently without wrapper (ModelContext is non-Sendable)
         do {
-            // Fetch data with timeout - returns results tuple
-            let results: (retention: RetentionRateData, streak: StudyStreakData, fsrs: FSRSMetricsData) = try await withTimeout(seconds: 10) { [weak self] in
-                guard let self = self else {
-                    throw TimeoutError.timedOut(10) // Self was deallocated
-                }
+            async let retention = statisticsService.calculateRetentionRate(
+                context: modelContext,
+                timeRange: selectedTimeRange
+            )
 
-                // Fetch all metrics concurrently
-                async let retention = self.statisticsService.calculateRetentionRate(
-                    context: self.modelContext,
-                    timeRange: self.selectedTimeRange
-                )
+            async let streak = statisticsService.calculateStudyStreak(
+                context: modelContext,
+                timeRange: selectedTimeRange
+            )
 
-                async let streak = self.statisticsService.calculateStudyStreak(
-                    context: self.modelContext,
-                    timeRange: self.selectedTimeRange
-                )
+            async let fsrs = statisticsService.calculateFSRSMetrics(
+                context: modelContext,
+                timeRange: selectedTimeRange
+            )
 
-                async let fsrs = self.statisticsService.calculateFSRSMetrics(
-                    context: self.modelContext,
-                    timeRange: self.selectedTimeRange
-                )
+            // Await all results
+            let (retentionResult, streakResult, fsrsResult) = await (retention, streak, fsrs)
 
-                // Await all results and return as tuple
-                let (retentionResult, streakResult, fsrsResult) = await (retention, streak, fsrs)
-                return (retentionResult, streakResult, fsrsResult)
-            }
-
-            // Update published properties on main actor (outside the Sendable closure)
-            self.retentionData = results.retention
-            self.streakData = results.streak
-            self.fsrsMetrics = results.fsrs
+            // Update published properties on main actor
+            self.retentionData = retentionResult
+            self.streakData = streakResult
+            self.fsrsMetrics = fsrsResult
 
             self.logger.info("""
                 Statistics refreshed:
-                - Retention: \(results.retention.formattedPercentage)
-                - Streak: \(results.streak.currentStreak) days
-                - FSRS: \(results.fsrs.formattedStability) avg stability
+                - Retention: \(retentionResult.formattedPercentage)
+                - Streak: \(streakResult.currentStreak) days
+                - FSRS: \(fsrsResult.formattedStability) avg stability
                 """)
 
             isLoading = false
-        } catch let timeoutError as TimeoutError {
-            errorMessage = "Loading timed out. Please check your connection and try again."
-            isLoading = false
-            Task { await Analytics.trackError("statistics_refresh_timeout", error: timeoutError) }
-            logger.error("Statistics refresh timed out after 10 seconds")
         } catch {
-            // Handle errors (shouldn't happen with current implementation, but future-proof)
+            // Handle errors
             errorMessage = error.localizedDescription
             isLoading = false
-            Task { await Analytics.trackError("statistics_refresh_failed", error: error) }
+            Analytics.trackError("statistics_refresh_failed", error: error)
             logger.error("Failed to refresh statistics: \(error.localizedDescription)")
         }
     }

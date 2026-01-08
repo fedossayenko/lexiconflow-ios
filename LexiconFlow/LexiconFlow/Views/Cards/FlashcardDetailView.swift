@@ -123,12 +123,10 @@ struct FlashcardDetailView: View {
         }
         .onChange(of: currentFilter) { _, newFilter in
             // Track filter changes for analytics
-            Task {
-                await Analytics.trackEvent("review_history_filter_changed", metadata: [
-                    "filter": newFilter.rawValue,
-                    "flashcard_word": flashcard.word
-                ])
-            }
+            Analytics.trackEvent("review_history_filter_changed", metadata: [
+                "filter": newFilter.rawValue,
+                "flashcard_word": flashcard.word
+            ])
         }
     }
 
@@ -136,7 +134,7 @@ struct FlashcardDetailView: View {
     @ViewBuilder
     private func exportToolbarItem(viewModel: FlashcardDetailViewModel) -> some View {
         if let csvString = viewModel.exportCSVString,
-           let filename = viewModel.exportFilename {
+           let _ = viewModel.exportFilename {
             ShareLink(
                 item: csvString,
                 preview: SharePreview("Review History", image: Image(systemName: "square.and.arrow.up"))

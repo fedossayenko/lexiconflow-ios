@@ -74,7 +74,8 @@ actor SentenceGenerationService {
 
     private init() {}
 
-    /// Fetch API key from Keychain
+    /// Fetch API key from Keychain (must run on MainActor)
+    @MainActor
     private func getAPIKey() -> String {
         (try? KeychainManager.getAPIKey()) ?? ""
     }
@@ -214,8 +215,8 @@ actor SentenceGenerationService {
         cardCEFR: String? = nil,
         count: Int = Config.defaultSentencesPerCard
     ) async throws -> SentenceGenerationResponse {
-        // Get API key from Keychain
-        let key = getAPIKey()
+        // Get API key from Keychain (awaits MainActor)
+        let key = await getAPIKey()
         guard !key.isEmpty else {
             logger.error("Sentence generation failed: API key not configured")
             throw SentenceGenerationError.missingAPIKey
@@ -459,10 +460,10 @@ actor SentenceGenerationService {
         current: Int,
         total: Int,
         word: String
-    ) async {
+    ) {
         guard let handler = handler else { return }
         let progress = BatchGenerationProgress(current: current, total: total, currentWord: word)
-        await MainActor.run { handler(progress) }
+        Task { @MainActor in handler(progress) }
     }
 
     /// Aggregate generation results

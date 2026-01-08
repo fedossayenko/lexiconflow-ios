@@ -93,12 +93,10 @@ struct LexiconFlowApp: App {
             // Last resort: return pre-initialized empty container
             // User will see error UI but app won't crash
             logger.critical("All ModelContainer creation attempts failed: \(error.localizedDescription)")
-            Task {
-                await Analytics.trackIssue(
-                    "model_container_utter_failure",
-                    message: "Even minimal container failed, using pre-initialized empty container"
-                )
-            }
+            Analytics.trackIssue(
+                "model_container_utter_failure",
+                message: "Even minimal container failed, using pre-initialized empty container"
+            )
             // Return pre-initialized empty container - app will show error UI to user
             return emptyFallbackContainer
         }
@@ -204,7 +202,7 @@ struct LexiconFlowApp: App {
             }
         } catch {
             logger.error("Background aggregation failed: \(error.localizedDescription)")
-            Task { await Analytics.trackError("background_aggregate_daily_stats", error: error) }
+            Analytics.trackError("background_aggregate_daily_stats", error: error)
         }
     }
 }

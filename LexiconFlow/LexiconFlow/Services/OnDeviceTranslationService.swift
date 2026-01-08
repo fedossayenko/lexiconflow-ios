@@ -75,8 +75,25 @@ final actor OnDeviceTranslationService {
     /// Active translation session for managing language state
     private var translationSession: TranslationSession?
 
-    /// Background language pack download task (for parallel download + system settings fallback)
-    nonisolated(unsafe) private var downloadTask: Task<Void, Never>?
+    /// Actor-isolated storage for background language pack download task
+    private actor DownloadTaskStorage {
+        var task: Task<Void, Never>?
+
+        func set(_ task: Task<Void, Never>?) {
+            self.task = task
+        }
+
+        func get() -> Task<Void, Never>? {
+            task
+        }
+
+        func cancel() {
+            task?.cancel()
+            task = nil
+        }
+    }
+
+    private let downloadTaskStorage = DownloadTaskStorage()
 
     /// Current source language configuration (stored as BCP 47 language code)
     private var sourceLanguageCode: String = "en"
@@ -175,8 +192,8 @@ final actor OnDeviceTranslationService {
         let sourceCode = source ?? sourceLanguageCode
         let targetCode = target ?? targetLanguageCode
 
-        let sourceLang = Locale.Language(identifier: sourceCode)
-        let targetLang = Locale.Language(identifier: targetCode)
+        _ = Locale.Language(identifier: sourceCode)
+        _ = Locale.Language(identifier: targetCode)
 
         // Check if language pair is available for on-device translation
         // In iOS 26, we can't easily check without async, so we return true
@@ -399,26 +416,31 @@ final actor OnDeviceTranslationService {
     /// 3. Best of both: automatic UX + reliable manual override
     ///
     /// - Parameter language: Language identifier string to download (e.g., "en", "ru", "es")
-    nonisolated(unsafe) func requestLanguageDownloadInBackground(_ language: String) {
+    nonisolated func requestLanguageDownloadInBackground(_ language: String) {
         // Cancel any existing download attempt
-        downloadTask?.cancel()
+        Task {
+            let oldTask = await downloadTaskStorage.get()
+            oldTask?.cancel()
 
-        let lang = Locale.Language(identifier: language)
-        let languageCode = String(describing: language)
+            let lang = Locale.Language(identifier: language)
+            let languageCode = String(describing: language)
 
-        logger.info("Starting background language pack download for '\(languageCode)'")
+            logger.info("Starting background language pack download for '\(languageCode)'")
 
-        // Start new background attempt
-        downloadTask = Task {
-            do {
-                try await requestLanguageDownload(lang)
-                logger.info("Background language pack download succeeded for '\(languageCode)'")
-            } catch {
-                logger.warning("Background language pack download failed for '\(languageCode)': \(error.localizedDescription)")
-                // Silently fail - UI shows system settings button
-                // This is expected behavior: automatic download may not work,
-                // but system settings fallback provides reliable download path
+            // Start new background attempt
+            let newTask = Task {
+                do {
+                    try await requestLanguageDownload(lang)
+                    logger.info("Background language pack download succeeded for '\(languageCode)'")
+                } catch {
+                    logger.warning("Background language pack download failed for '\(languageCode)': \(error.localizedDescription)")
+                    // Silently fail - UI shows system settings button
+                    // This is expected behavior: automatic download may not work,
+                    // but system settings fallback provides reliable download path
+                }
             }
+
+            await downloadTaskStorage.set(newTask)
         }
     }
 
@@ -429,10 +451,11 @@ final actor OnDeviceTranslationService {
     /// // User navigates away from settings view
     /// service.cancelBackgroundDownload()
     /// ```
-    nonisolated(unsafe) func cancelBackgroundDownload() {
-        downloadTask?.cancel()
-        downloadTask = nil
-        logger.debug("Background language pack download cancelled")
+    nonisolated func cancelBackgroundDownload() {
+        Task {
+            await downloadTaskStorage.cancel()
+            logger.debug("Background language pack download cancelled")
+        }
     }
 
     // MARK: - Batch Translation Types
@@ -982,10 +1005,10 @@ final actor OnDeviceTranslationService {
         current: Int,
         total: Int,
         word: String
-    ) async {
+    ) {
         guard let handler = handler else { return }
         let progress = BatchTranslationProgress(current: current, total: total, currentWord: word)
-        await MainActor.run { handler(progress) }
+        Task { @MainActor in handler(progress) }
     }
 
     /// Aggregate translation results into final batch result

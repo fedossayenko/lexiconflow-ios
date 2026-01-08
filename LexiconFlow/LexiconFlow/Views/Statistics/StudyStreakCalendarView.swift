@@ -168,7 +168,7 @@ struct StudyStreakCalendarView: View {
     /// Month labels for vertical axis
     private var monthLabels: [String] {
         let calendar = Calendar.autoupdatingCurrent
-        let today = Date()
+        _ = Date()
         var labels: [String] = []
         var lastMonth = -1
 

@@ -113,7 +113,7 @@ final class StudySessionViewModel: ObservableObject {
             currentStudySession = session
             logger.info("Created study session: \(session.id)")
         } catch {
-            Task { await Analytics.trackError("create_study_session", error: error) }
+            Analytics.trackError("create_study_session", error: error)
             logger.error("Failed to create study session: \(error)")
             // Continue without session tracking - don't block study
         }
@@ -132,7 +132,7 @@ final class StudySessionViewModel: ObservableObject {
             try modelContext.save()
             logger.info("Finalized study session: \(session.id) with \(self.currentIndex) cards")
         } catch {
-            Task { await Analytics.trackError("finalize_study_session", error: error) }
+            Analytics.trackError("finalize_study_session", error: error)
             logger.error("Failed to finalize study session: \(error)")
         }
 
