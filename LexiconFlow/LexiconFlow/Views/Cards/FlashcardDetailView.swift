@@ -366,6 +366,12 @@ struct FlashcardDetailView: View {
 
 private extension Preview {
     static func makePreviewContainer() -> ModelContainer {
+        // Empty model for fallback container
+        @Model
+        final class EmptyModel {
+            init() {}
+        }
+
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         do {
             return try ModelContainer(for: Flashcard.self, configurations: config)
@@ -376,10 +382,18 @@ private extension Preview {
             do {
                 return try ModelContainer(for: Schema(), configurations: config)
             } catch {
-                // Last resort: in-memory empty container (no try! - empty init cannot fail)
+                // Last resort: empty model container (cannot fail with EmptyModel)
                 let fallbackConfig = ModelConfiguration(isStoredInMemoryOnly: true)
-                // Empty container is safe and cannot fail
-                return ModelContainer(for: Schema(), configurations: fallbackConfig)
+                // EmptyModel is minimal and should always succeed
+                do {
+                    return try ModelContainer(for: EmptyModel.self, configurations: fallbackConfig)
+                } catch {
+                    // Absolute last resort - this should never happen
+                    // If it does, there's a fundamental SwiftData issue
+                    assertionFailure("EmptyModel container creation failed: \(error)")
+                    // Return in-memory container with empty schema
+                    return try ModelContainer(for: Schema([EmptyModel.self]), configurations: fallbackConfig)
+                }
             }
         }
     }
