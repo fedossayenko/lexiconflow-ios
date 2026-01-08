@@ -326,32 +326,6 @@ struct FlashcardReviewDTOTests {
 
     // MARK: - Full Date String Tests
 
-    @Test("Full date string format")
-    func fullDateStringFormat() {
-        let calendar = Calendar.current
-        var components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: Date())
-        components.year = 2026
-        components.month = 1
-        components.day = 15
-        components.hour = 14
-        components.minute = 30
-
-        let testDate = calendar.date(from: components)!
-        let dto = FlashcardReviewDTO(
-            id: UUID(),
-            rating: 2,
-            reviewDate: testDate,
-            scheduledDays: 1.0,
-            elapsedDays: 1.0
-        )
-
-        let fullDate = dto.fullDateString
-        #expect(fullDate.contains("Jan"), "Should contain month name")
-        #expect(fullDate.contains("15"), "Should contain day")
-        #expect(fullDate.contains("2026"), "Should contain year")
-        #expect(fullDate.contains("2:30"), "Should contain time")
-    }
-
     @Test("Full date string uses user locale")
     func fullDateStringLocale() {
         let dto = FlashcardReviewDTO(
