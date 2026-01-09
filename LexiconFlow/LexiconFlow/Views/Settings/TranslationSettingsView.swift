@@ -14,6 +14,8 @@ import SwiftUI
 /// - Enable/disable automatic translation
 /// - Configure source and target languages
 /// - Download language packs for on-device translation
+import Translation
+
 @MainActor
 struct TranslationSettingsView: View {
     // MARK: - On-Device Translation State
@@ -24,6 +26,16 @@ struct TranslationSettingsView: View {
     @State private var isDownloadingLanguage = false
     @State private var downloadError: String?
     @SceneStorage("returnedFromSettings") private var returnedFromSettings = false
+
+    // MARK: - Language Pack Download Configuration
+
+    /// Configuration for triggering language pack downloads via .translationTask()
+    ///
+    /// **Important**: Language pack downloads must use SwiftUI's .translationTask() modifier
+    /// because the TranslationSession API only works within SwiftUI views. The prepareTranslation()
+    /// method, which triggers the actual system download prompt, can only be called on a session
+    /// obtained from the .translationTask() modifier.
+    @State private var downloadConfiguration: TranslationSession.Configuration?
 
     private let logger = Logger(subsystem: "com.lexiconflow.translation", category: "TranslationSettingsView")
     private let onDeviceService = OnDeviceTranslationService.shared
@@ -93,6 +105,23 @@ struct TranslationSettingsView: View {
             }
         }
         .navigationTitle("Translation Settings")
+        .translationTask(self.downloadConfiguration) { session in
+            // This closure is called when downloadConfiguration changes
+            // prepareTranslation() triggers the system download prompt for language packs
+            do {
+                try await session.prepareTranslation()
+                self.logger.info("Language pack download completed successfully")
+                // Refresh availability after download completes
+                await self.checkLanguageAvailability()
+            } catch {
+                self.logger.error("Language pack download failed: \(error.localizedDescription)")
+                self.downloadError = error.localizedDescription
+                Analytics.trackError("language_pack_download", error: error)
+            }
+            // Reset download state and configuration
+            self.isDownloadingLanguage = false
+            self.downloadConfiguration = nil
+        }
         .onAppear {
             // Check language availability on appear
             Task {
@@ -127,6 +156,11 @@ struct TranslationSettingsView: View {
     }
 
     /// Download language pack for on-device translation
+    ///
+    /// **Important**: This method creates a TranslationSession.Configuration which triggers
+    /// the download via the .translationTask() modifier. The prepareTranslation() method
+    /// called within the modifier is the only API that properly triggers the system
+    /// download prompt for language packs.
     private func downloadLanguagePack(_ languageType: LanguageType) async {
         self.isDownloadingLanguage = true
         self.downloadError = nil
@@ -135,21 +169,20 @@ struct TranslationSettingsView: View {
             ? AppSettings.translationSourceLanguage
             : AppSettings.translationTargetLanguage
 
+        let language = Locale.Language(identifier: languageCode)
+
+        // Use a temporary target language for download only
+        // The actual translation will use the user's configured target language
+        let temporaryTarget = Locale.Language(identifier: "en")
+
         self.logger.info("Requesting language pack download for '\(languageCode)'")
 
-        do {
-            try await self.onDeviceService.requestLanguageDownload(languageCode)
-            self.logger.info("Language pack download initiated for '\(languageCode)'")
-
-            // Refresh availability after download request
-            await self.checkLanguageAvailability()
-        } catch {
-            self.logger.error("Failed to download language pack: \(error.localizedDescription)")
-            self.downloadError = error.localizedDescription
-            Analytics.trackError("language_pack_download", error: error)
-        }
-
-        self.isDownloadingLanguage = false
+        // Create configuration to trigger download via .translationTask()
+        // This is the Apple-documented pattern for language pack downloads
+        self.downloadConfiguration = TranslationSession.Configuration(
+            source: language,
+            target: temporaryTarget
+        )
     }
 
     /// Open iOS System Settings to download language packs

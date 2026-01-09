@@ -83,7 +83,7 @@ final class IELTSVocabularyImporter {
     private enum ValidationLimits {
         /// Maximum file size: 10MB for JSON vocabulary files
         /// Based on typical IELTS vocabulary file size (~500KB)
-        static let maxJSONFileSize: UInt64 = 10_000_000
+        static let maxJSONFileSize: UInt64 = 10000000
     }
 
     // MARK: - Data Structures
@@ -213,7 +213,7 @@ final class IELTSVocabularyImporter {
 
         // Step 1: Load vocabulary from bundle
         guard let url = Bundle.main.url(
-            forResource: "Resources/IELTS/ielts-vocabulary-smartool",
+            forResource: "ielts-vocabulary-smartool",
             withExtension: "json"
         ) else {
             self.logger.error("Vocabulary file not found in bundle")
@@ -223,7 +223,7 @@ final class IELTSVocabularyImporter {
         self.logger.info("Loading vocabulary from: \(url.path)")
 
         // Validate file before loading
-        try validateBundleFile(url)
+        try self.validateBundleFile(url)
 
         let data = try Data(contentsOf: url)
         let vocabulary = try JSONDecoder().decode(IELTSVocabulary.self, from: data)
@@ -387,7 +387,7 @@ final class IELTSVocabularyImporter {
 
         // Load vocabulary from bundle
         guard let url = Bundle.main.url(
-            forResource: "Resources/IELTS/ielts-vocabulary-smartool",
+            forResource: "ielts-vocabulary-smartool",
             withExtension: "json"
         ) else {
             self.logger.error("Vocabulary file not found in bundle")
@@ -395,7 +395,7 @@ final class IELTSVocabularyImporter {
         }
 
         // Validate file before loading
-        try validateBundleFile(url)
+        try self.validateBundleFile(url)
 
         let data = try Data(contentsOf: url)
         let vocabulary = try JSONDecoder().decode(IELTSVocabulary.self, from: data)
@@ -483,7 +483,7 @@ final class IELTSVocabularyImporter {
     /// - Returns: true if the file exists, false otherwise
     func vocabularyFileExists() -> Bool {
         Bundle.main.url(
-            forResource: "Resources/IELTS/ielts-vocabulary-smartool",
+            forResource: "ielts-vocabulary-smartool",
             withExtension: "json"
         ) != nil
     }
@@ -494,14 +494,14 @@ final class IELTSVocabularyImporter {
     /// - Throws: IELTSImportError if loading fails
     func getVocabularyMetadata() throws -> VocabularyMetadata {
         guard let url = Bundle.main.url(
-            forResource: "Resources/IELTS/ielts-vocabulary-smartool",
+            forResource: "ielts-vocabulary-smartool",
             withExtension: "json"
         ) else {
             throw IELTSImportError.fileNotFound
         }
 
         // Validate file before loading
-        try validateBundleFile(url)
+        try self.validateBundleFile(url)
 
         let data = try Data(contentsOf: url)
         let vocabulary = try JSONDecoder().decode(IELTSVocabulary.self, from: data)

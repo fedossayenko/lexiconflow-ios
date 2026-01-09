@@ -112,8 +112,14 @@ struct GlassEffectPerformance {
     let memoryUsage: UInt64
 
     /// Whether performance meets target thresholds
+    ///
+    /// **Thresholds:**
+    /// - fps >= 60 (60 frames per second for smooth animations)
+    /// - frameTime <= 16.6ms (maximum time per frame to maintain 60fps)
+    ///
+    /// **Note:** Uses inclusive comparison (<=) because exactly 16.6ms = 60fps IS acceptable
     var isAcceptable: Bool {
-        self.fps >= 60 && self.frameTime < 16.6
+        self.fps >= 60 && self.frameTime <= 16.6
     }
 
     /// Measure performance of a view

@@ -159,6 +159,39 @@ class SpeechService {
         self.synthesizer.isPaused
     }
 
+    // MARK: - Lifecycle Management
+
+    /// Deactivates the audio session when app backgrounds
+    ///
+    /// Call this method when the app enters the background to release audio resources.
+    /// This prevents AVAudioSession error 4099 during iOS shutdown sequences.
+    func cleanup() {
+        guard self.isAudioSessionConfigured else { return }
+
+        // Stop any ongoing speech before deactivating
+        if self.synthesizer.isSpeaking {
+            self.synthesizer.stopSpeaking(at: .immediate)
+        }
+
+        do {
+            try self.audioSession.setActive(false)
+            self.isAudioSessionConfigured = false
+            self.logger.info("Audio session deactivated")
+        } catch {
+            self.logger.error("Failed to deactivate audio session: \(error.localizedDescription)")
+            Analytics.trackError("speech_audio_session_deactivate_failed", error: error)
+        }
+    }
+
+    /// Reactivates the audio session when app returns to foreground
+    ///
+    /// Call this method when the app returns from background to restore audio functionality.
+    func restartEngine() {
+        if !self.isAudioSessionConfigured {
+            self.configureAudioSession()
+        }
+    }
+
     // MARK: - Private Helpers
 
     /// Get voice for specific language code

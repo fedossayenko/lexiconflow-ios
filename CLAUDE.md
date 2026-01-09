@@ -55,17 +55,16 @@ xcodebuild test \
 **IMPORTANT:** This project uses Xcode 26's `PBXFileSystemSynchronizedRootGroup` for resource management.
 
 **Key Behavior:**
-- Source files in `Resources/` directory are copied to bundle root
-- Files maintain their relative path from the synchronized root
-- Source: `LexiconFlow/Resources/IELTS/file.json` → Bundle: `{bundle}/Resources/IELTS/file.json`
+- Source files in `Resources/` directory are copied to bundle root (NOT preserving `Resources/` subdirectory)
+- Source: `LexiconFlow/Resources/IELTS/file.json` → Bundle: `{bundle}/file.json`
 
 **When accessing bundle resources:**
 ```swift
-// ✅ CORRECT: Use full relative path from bundle root
-Bundle.main.url(forResource: "Resources/IELTS/ielts-vocabulary-smartool", withExtension: "json")
+// ✅ CORRECT: Files are at bundle root (no Resources/ prefix)
+Bundle.main.url(forResource: "ielts-vocabulary-smartool", withExtension: "json")
 
-// ❌ WRONG: Missing Resources/ prefix
-Bundle.main.url(forResource: "IELTS/ielts-vocabulary-smartool", withExtension: "json")
+// ❌ WRONG: Resources/ prefix doesn't exist in bundle
+Bundle.main.url(forResource: "Resources/IELTS/ielts-vocabulary-smartool", withExtension: "json")
 ```
 
 **Debugging bundle paths:**

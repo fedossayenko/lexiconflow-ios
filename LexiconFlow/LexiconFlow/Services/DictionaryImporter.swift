@@ -476,7 +476,7 @@ final class DictionaryImporter {
                     inQuotes.toggle()
                     i = nextIndex
                 }
-            } else if char == "," && !inQuotes {
+            } else if char == ",", !inQuotes {
                 // Field separator (only outside quotes)
                 fields.append(currentField)
                 currentField = ""
@@ -531,7 +531,7 @@ final class DictionaryImporter {
             guard index < limit else { break }
 
             let lineNumber = startIndex + index + 1
-            let fields = parseCSVLine(String(line)).map { $0.trimmingCharacters(in: .whitespaces) }
+            let fields = self.parseCSVLine(String(line)).map { $0.trimmingCharacters(in: .whitespaces) }
 
             guard fields.count > max(fieldMapping.wordFieldIndex, fieldMapping.definitionFieldIndex) else {
                 errors.append(ImportError(

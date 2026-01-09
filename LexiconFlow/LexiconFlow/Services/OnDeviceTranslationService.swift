@@ -43,8 +43,13 @@ import Translation
 /// ## Language Pack Management
 ///
 /// The service requires language packs to be downloaded before translation can occur.
-/// Use `needsLanguageDownload()` to check availability and `requestLanguageDownload()`
-/// to trigger the system download prompt.
+/// Use `needsLanguageDownload()` to check availability.
+///
+/// **Important:** Language pack downloads must be triggered from SwiftUI views
+/// using the `.translationTask()` modifier with `TranslationSession.prepareTranslation()`.
+/// See `TranslationSettingsView.swift` for the correct implementation pattern.
+///
+/// This service is actor-isolated and cannot directly trigger system download prompts.
 ///
 /// ## Batch Translation
 ///
@@ -74,26 +79,6 @@ final actor OnDeviceTranslationService {
 
     /// Active translation session for managing language state
     private var translationSession: TranslationSession?
-
-    /// Actor-isolated storage for background language pack download task
-    private actor DownloadTaskStorage {
-        var task: Task<Void, Never>?
-
-        func set(_ task: Task<Void, Never>?) {
-            self.task = task
-        }
-
-        func get() -> Task<Void, Never>? {
-            self.task
-        }
-
-        func cancel() {
-            self.task?.cancel()
-            self.task = nil
-        }
-    }
-
-    private let downloadTaskStorage = DownloadTaskStorage()
 
     /// Current source language configuration (stored as BCP 47 language code)
     private var sourceLanguageCode: String = "en"
@@ -270,10 +255,13 @@ final actor OnDeviceTranslationService {
     /// ```swift
     /// if await service.needsLanguageDownload("es") {
     ///     print("Spanish pack needs download")
-    ///     // Prompt user to download
-    ///     try await service.requestLanguageDownload("es")
+    ///     // Guide user to Translation Settings to download
+    ///     // or use SwiftUI's .translationTask() modifier
     /// }
     /// ```
+    ///
+    /// **Note:** Language pack downloads must be triggered from SwiftUI views
+    /// using `.translationTask()` modifier. See `TranslationSettingsView.swift` for example.
     ///
     /// **When to Use:**
     /// - Before attempting translation for the first time
@@ -313,144 +301,6 @@ final actor OnDeviceTranslationService {
     func needsLanguageDownload(_ language: String) async -> Bool {
         let lang = Locale.Language(identifier: language)
         return await self.needsLanguageDownload(lang)
-    }
-
-    /// Request download of a language pack for offline translation
-    ///
-    /// **Important:** This method triggers the system download prompt. The user must
-    /// confirm the download. Language packs can be large (50-200MB each).
-    ///
-    /// **Usage:**
-    /// ```swift
-    /// let spanish = Locale.Language(identifier: "es")
-    /// do {
-    ///     try await service.requestLanguageDownload(spanish)
-    ///     print("Spanish language pack download requested")
-    /// } catch {
-    ///     print("Download request failed: \(error.localizedDescription)")
-    /// }
-    /// ```
-    ///
-    /// **Error Conditions:**
-    /// - Throws `languagePackDownloadFailed` if system request fails
-    /// - No error if pack is already downloaded (method returns successfully)
-    ///
-    /// **Thread Safety:**
-    /// - Method is actor-isolated, safe to call from any context
-    /// - System prompt is displayed on main thread
-    ///
-    /// - Parameter language: `Locale.Language` object to download
-    ///
-    /// - Throws: `OnDeviceTranslationError` if download request fails
-    func requestLanguageDownload(_ language: Locale.Language) async throws {
-        // Store language code for error messages
-        let languageCode = String(describing: language)
-        self.logger.info("Requesting language pack download for '\(languageCode)'")
-
-        // FIXED: Removed early return check for isLanguageAvailable()
-        // Previously: If language appeared available, method returned early without triggering download
-        // Now: Always attempt to trigger download via TranslationSession creation
-        // The session creation will handle already-installed languages gracefully
-
-        // Create a translation session to trigger language download
-        // The system will prompt the user to download the required language pack
-        let temporaryTarget = Locale.Language(identifier: "en")
-
-        // iOS 26 API: TranslationSession takes installedSource and target directly
-        // If language is already installed, session creation succeeds without prompt
-        // If language needs download, system prompts user to download
-        let session = TranslationSession(installedSource: language, target: temporaryTarget)
-        self.logger.info("Language download request completed successfully")
-        _ = session // Mark as used to avoid warning
-    }
-
-    /// Request download of a language pack for offline translation (convenience method)
-    ///
-    /// **Usage:**
-    /// ```swift
-    /// do {
-    ///     try await service.requestLanguageDownload("es")
-    ///     print("Spanish download requested")
-    /// } catch {
-    ///     print("Download failed: \(error.localizedDescription)")
-    /// }
-    /// ```
-    ///
-    /// **Important:** See main method documentation for details on error handling.
-    ///
-    /// - Parameter language: Language identifier string to download (e.g., "en", "ru", "es")
-    ///
-    /// - Throws: `OnDeviceTranslationError` if download request fails
-    func requestLanguageDownload(_ language: String) async throws {
-        let lang = Locale.Language(identifier: language)
-        try await self.requestLanguageDownload(lang)
-    }
-
-    /// Request language pack download in background (parallel fallback approach)
-    ///
-    /// **Usage:**
-    /// ```swift
-    /// // Start background download while showing system settings button
-    /// service.requestLanguageDownloadInBackground("es")
-    ///
-    /// // UI shows both "Downloading..." and "Open System Settings" button
-    /// // If automatic download succeeds, availability updates automatically
-    /// // If automatic download fails, user can use system settings button
-    /// ```
-    ///
-    /// **Behavior:**
-    /// - Cancels any existing background download attempt
-    /// - Starts new background attempt without blocking
-    /// - Silently fails if download doesn't work (UI shows system settings fallback)
-    /// - Logs success/failure for monitoring
-    ///
-    /// **Rationale:**
-    /// This enables the parallel fallback approach where:
-    /// 1. Background download attempts automatic download
-    /// 2. System settings button is always available as reliable fallback
-    /// 3. Best of both: automatic UX + reliable manual override
-    ///
-    /// - Parameter language: Language identifier string to download (e.g., "en", "ru", "es")
-    nonisolated func requestLanguageDownloadInBackground(_ language: String) {
-        // Cancel any existing download attempt
-        Task {
-            let oldTask = await downloadTaskStorage.get()
-            oldTask?.cancel()
-
-            let lang = Locale.Language(identifier: language)
-            let languageCode = String(describing: language)
-
-            self.logger.info("Starting background language pack download for '\(languageCode)'")
-
-            // Start new background attempt
-            let newTask = Task {
-                do {
-                    try await self.requestLanguageDownload(lang)
-                    self.logger.info("Background language pack download succeeded for '\(languageCode)'")
-                } catch {
-                    self.logger.warning("Background language pack download failed for '\(languageCode)': \(error.localizedDescription)")
-                    // Silently fail - UI shows system settings button
-                    // This is expected behavior: automatic download may not work,
-                    // but system settings fallback provides reliable download path
-                }
-            }
-
-            await downloadTaskStorage.set(newTask)
-        }
-    }
-
-    /// Cancel any pending background language pack download
-    ///
-    /// **Usage:**
-    /// ```swift
-    /// // User navigates away from settings view
-    /// service.cancelBackgroundDownload()
-    /// ```
-    nonisolated func cancelBackgroundDownload() {
-        Task {
-            await self.downloadTaskStorage.cancel()
-            self.logger.debug("Background language pack download cancelled")
-        }
     }
 
     // MARK: - Batch Translation Types
