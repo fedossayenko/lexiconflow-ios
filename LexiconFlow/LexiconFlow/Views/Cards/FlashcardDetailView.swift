@@ -333,10 +333,10 @@ struct FlashcardDetailView: View {
     /// Color for FSRS state
     private func stateColor(for state: FlashcardState) -> Color {
         switch state {
-        case .new: .purple
-        case .learning: .blue
-        case .review: .green
-        case .relearning: .orange
+        case .new: Theme.Colors.stateNew
+        case .learning: Theme.Colors.stateLearning
+        case .review: Theme.Colors.stateReview
+        case .relearning: Theme.Colors.stateRelearning
         }
     }
 

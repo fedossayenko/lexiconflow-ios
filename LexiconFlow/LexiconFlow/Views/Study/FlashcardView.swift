@@ -21,6 +21,11 @@ struct FlashcardView: View {
     // MARK: - Sheet State
 
     @State private var showingDetail = false
+    @State private var showingTranslation = false
+    @State private var translationResult: QuickTranslationService.QuickTranslationResult?
+    @State private var translationError: QuickTranslationService.QuickTranslationError?
+    @State private var isTranslating = false
+    @State private var translationTask: Task<Void, Never>?
 
     // MARK: - Constants
 
@@ -192,18 +197,103 @@ struct FlashcardView: View {
         .accessibilityHint("Double tap to flip card, or swipe in any direction to rate")
         .accessibilityAddTraits(.isButton)
         .accessibilityIdentifier("flashcard")
-        .onTapGesture {
-            // Only allow tap to flip if not currently dragging
-            guard !self.isDragging else { return }
-
-            withAnimation(.easeInOut(duration: 0.3)) {
-                self.isFlipped.toggle()
-            }
-        }
+        .simultaneousGesture(
+            TapGesture(count: 1)
+                .onEnded {
+                    guard !self.isDragging else { return }
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        self.isFlipped.toggle()
+                    }
+                }
+        )
+        .simultaneousGesture(
+            TapGesture(count: 2)
+                .onEnded {
+                    guard !self.isDragging else { return }
+                    self.translationTask?.cancel()
+                    self.translationTask = Task {
+                        await self.handleDoubleTapTranslation()
+                    }
+                }
+        )
         .sheet(isPresented: self.$showingDetail) {
             FlashcardDetailView(flashcard: self.card)
+                .presentationCornerRadius(24)
+                .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: self.$showingTranslation) {
+            TranslationSheetView(
+                flashcard: self.card,
+                translationResult: self.translationResult,
+                isTranslating: self.isTranslating
+            )
+            .presentationCornerRadius(24)
+            .presentationDragIndicator(.visible)
+        }
+        .alert("Translation Error", isPresented: .constant(self.translationError != nil)) {
+            Button("OK", role: .cancel) {
+                self.translationError = nil
+            }
+            if case .languagePackMissing = self.translationError {
+                Button("Download") {
+                    Task {
+                        await self.handleLanguagePackDownload()
+                    }
+                }
+            }
+        } message: {
+            Text(self.translationError?.localizedDescription ?? "")
         }
         .id("flashcard-base")
+    }
+
+    // MARK: - Translation Handlers
+
+    /// Handle double-tap gesture for translation
+    @MainActor
+    private func handleDoubleTapTranslation() async {
+        guard let container = self.card.modelContext?.container else { return }
+
+        self.isTranslating = true
+        self.showingTranslation = true
+
+        do {
+            // Create DTO with word to translate
+            let request = QuickTranslationService.FlashcardTranslationRequest(
+                word: self.card.word,
+                flashcardID: self.card.persistentModelID
+            )
+
+            let result = try await QuickTranslationService.shared.translate(
+                request: request,
+                container: container
+            )
+
+            self.translationResult = result
+            self.isTranslating = false
+
+            // Haptic feedback: subtle for cache hit, strong for fresh translation
+            if result.isCacheHit {
+                HapticService.shared.triggerWarning()
+            } else {
+                HapticService.shared.triggerSuccess()
+            }
+        } catch {
+            self.translationError = error as? QuickTranslationService.QuickTranslationError
+            self.isTranslating = false
+            self.showingTranslation = false
+        }
+    }
+
+    /// Handle language pack download request
+    @MainActor
+    private func handleLanguagePackDownload() async {
+        do {
+            try await QuickTranslationService.shared.requestLanguagePackDownload()
+            self.translationError = nil
+        } catch {
+            self.translationError = error as? QuickTranslationService.QuickTranslationError
+        }
     }
 }
 

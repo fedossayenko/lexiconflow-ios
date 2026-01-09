@@ -135,6 +135,8 @@ struct DeckDetailView: View {
         }
         .sheet(isPresented: self.$showingAddCard) {
             AddFlashcardView(deck: self.deck)
+                .presentationCornerRadius(24)
+                .presentationDragIndicator(.visible)
         }
         .confirmationDialog(
             "Translate All Cards",

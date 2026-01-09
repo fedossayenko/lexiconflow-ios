@@ -1,6 +1,6 @@
 # Lexicon Flow iOS
 
-> **The Next-Generation Vocabulary App for iOS 26.2**
+> **The Next-Generation Vocabulary App for iOS 26.1+**
 
 ---
 
@@ -26,7 +26,7 @@ Lexicon Flow is a native iOS application for English vocabulary acquisition usin
 |---------|-------------|--------------|
 | **Algorithm** | SM-2 (rigid) | FSRS v5 (adaptive) |
 | **UI Design** | Generic/Flat | iOS 26 "Liquid Glass" |
-| **Content** | Static database | On-device AI generation |
+| **Content** | Static database | On-device AI (Foundation Models - disabled, planned Phase 3) |
 | **Audio** | Standard TTS | Neural voices (4 accents) |
 | **Translation** | Cloud APIs | On-device API |
 | **Study Modes** | Scheduled only | Scheduled + Cram |
@@ -53,13 +53,13 @@ Lexicon Flow is a native iOS application for English vocabulary acquisition usin
 | **UI Framework** | SwiftUI | Native "Liquid Glass" APIs, morphing transitions |
 | **Data Layer** | SwiftData | @Model macro, CloudKit sync, @Query integration |
 | **Algorithm** | FSRS v5 | Three-component model (S, D, R), superior to SM-2 |
-| **AI/ML** | Foundation Models | On-device LLM for sentence generation |
+| **AI/ML** | Foundation Models | On-device LLM (implemented but disabled via feature flag) |
 | **Translation** | Translation API | On-device, zero-latency translation |
 | **Audio** | AVSpeechSynthesizer | Neural TTS voices, accent selection |
 | **Haptics** | CoreHaptics | Custom vibration patterns |
 | **Widgets** | WidgetKit | Lock Screen, Live Activities |
 | **Testing** | Swift Testing | Unit + integration testing |
-| **Minimum Target** | iOS 26.0 | No legacy fallbacks |
+| **Minimum Target** | iOS 26.1 | No legacy fallbacks |
 
 ---
 
@@ -67,7 +67,7 @@ Lexicon Flow is a native iOS application for English vocabulary acquisition usin
 
 LexiconFlow uses **Swift Testing** (iOS 26+) with comprehensive test coverage:
 
-- **131 tests** across 9 test suites
+- **63+ test suites** with comprehensive coverage
 - >80% coverage target for new code
 - In-memory SwiftData for test isolation
 - CI/CD via GitHub Actions
@@ -85,7 +85,7 @@ See [TESTING.md](docs/TESTING.md) for testing guide.
 | **FSRS v5 Algorithm** | Three-component memory model (Stability, Difficulty, Retrievability) |
 | **"Liquid Glass" UI** | GlassEffectContainer with reactive refraction and morphing transitions |
 | **Gesture-Based Grading** | Swipe right/left/up/down for rating with haptic feedback |
-| **On-Device AI** | Foundation Models generate infinite example sentences |
+| **On-Device AI** | Foundation Models (infrastructure in place, disabled via feature flag) |
 | **Neural TTS** | Four accent options (US, UK, AU, IE) with premium voices |
 | **Translation API** | On-device translation with offline support |
 | **Cram Mode** | Study anytime without breaking the algorithm |
@@ -107,7 +107,7 @@ See [TESTING.md](docs/TESTING.md) for testing guide.
 ## Data Model
 
 ```
-Deck (1) ────< (N) Card (1) ────< (N) ReviewLog
+Deck (1) ────< (N) Flashcard (1) ────< (N) ReviewLog
      │                │
      │                └─── (1) FSRSState
      │
@@ -117,7 +117,7 @@ Deck (1) ────< (N) Card (1) ────< (N) ReviewLog
 ### Core Entities
 
 - **Deck**: Container for cards with name, icon, order
-- **Card**: Word with definition, phonetic, image, generated sentence
+- **Flashcard**: Word with definition, phonetic, image, generated sentence
 - **FSRSState**: Stability, difficulty, retrievability, due date, state
 - **ReviewLog**: Historical analytics for FSRS optimization
 
@@ -233,7 +233,7 @@ Instead of standard 3D flip, cards use `glassEffectTransition(.materialize)`:
 ### Prerequisites
 
 - Xcode 26.0+
-- iOS 26.0+ SDK
+- iOS 26.1+ SDK
 - macOS Sequoia+
 - Swift 6 compiler
 
@@ -375,6 +375,6 @@ This project is informed by:
 
 **Project Phase:** 🏗️ Phase 1 Foundation (Late Stage)
 
-**Target iOS:** 26.2 (Released December 12, 2025)
+**Target iOS:** 26.1 (Deployment Target)
 
 **Swift Version:** 6.0

@@ -11,7 +11,8 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    // Use centralized AppSettings instead of direct @AppStorage (CLAUDE.md pattern #4)
+    @State private var hasCompletedOnboarding: Bool = AppSettings.hasCompletedOnboarding
 
     var body: some View {
         Group {
@@ -20,6 +21,9 @@ struct ContentView: View {
             } else {
                 OnboardingView()
             }
+        }
+        .onChange(of: self.hasCompletedOnboarding) { _, newValue in
+            AppSettings.hasCompletedOnboarding = newValue
         }
     }
 }

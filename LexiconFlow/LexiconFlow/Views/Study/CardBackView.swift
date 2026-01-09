@@ -198,11 +198,11 @@ struct ReadOnlySentenceRow: View {
                 if self.sentence.isExpired {
                     Text("Expired")
                         .font(.caption2)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Theme.Colors.error)
                 } else if self.sentence.daysUntilExpiration <= 2 {
                     Text("Expires in \(self.sentence.daysUntilExpiration)d")
                         .font(.caption2)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Theme.Colors.warning)
                 }
 
                 // Favorite indicator (display only)
@@ -210,7 +210,7 @@ struct ReadOnlySentenceRow: View {
                     HStack(spacing: 4) {
                         Image(systemName: "star.fill")
                             .font(.caption2)
-                            .foregroundStyle(.yellow)
+                            .foregroundStyle(Theme.Colors.favorite)
                         Text("Favorite")
                             .font(.caption2)
                             .foregroundStyle(.secondary)

@@ -64,6 +64,8 @@ struct DeckListView: View {
             }
             .sheet(isPresented: self.$showingAddDeck) {
                 AddDeckView()
+                    .presentationCornerRadius(24)
+                    .presentationDragIndicator(.visible)
             }
         }
     }

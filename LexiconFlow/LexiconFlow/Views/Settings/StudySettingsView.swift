@@ -9,9 +9,10 @@ import SwiftData
 import SwiftUI
 
 struct StudySettingsView: View {
-    @AppStorage("studyLimit") private var studyLimit = 20
-    @AppStorage("defaultStudyMode") private var studyMode = "scheduled"
-    @AppStorage("dailyGoal") private var dailyGoal = 20
+    // Use centralized AppSettings instead of direct @AppStorage (CLAUDE.md pattern #4)
+    @State private var studyLimit: Int = AppSettings.studyLimit
+    @State private var studyMode: String = AppSettings.defaultStudyMode
+    @State private var dailyGoal: Int = AppSettings.dailyGoal
 
     @Environment(\.modelContext) private var modelContext
 
@@ -28,6 +29,9 @@ struct StudySettingsView: View {
                     }
                 }
                 .accessibilityLabel("Cards per session")
+                .onChange(of: self.studyLimit) { _, newValue in
+                    AppSettings.studyLimit = newValue
+                }
 
                 Picker("Daily Goal", selection: self.$dailyGoal) {
                     ForEach(self.goalOptions, id: \.self) { goal in
@@ -35,6 +39,9 @@ struct StudySettingsView: View {
                     }
                 }
                 .accessibilityLabel("Daily study goal")
+                .onChange(of: self.dailyGoal) { _, newValue in
+                    AppSettings.dailyGoal = newValue
+                }
             } header: {
                 Text("Session Limits")
             } footer: {
@@ -56,6 +63,9 @@ struct StudySettingsView: View {
                     }
                 }
                 .accessibilityLabel("Default study mode")
+                .onChange(of: self.studyMode) { _, newValue in
+                    AppSettings.defaultStudyMode = newValue
+                }
             } header: {
                 Text("Study Mode")
             } footer: {

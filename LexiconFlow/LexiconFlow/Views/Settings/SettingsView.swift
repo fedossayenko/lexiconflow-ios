@@ -70,10 +70,20 @@ struct SettingsView: View {
                     }
                     .accessibilityLabel("Study Settings")
 
+                    NavigationLink(destination: AISettingsView()) {
+                        Label("AI Settings", systemImage: "cpu")
+                    }
+                    .accessibilityLabel("AI Settings")
+
                     NavigationLink(destination: HapticSettingsView()) {
                         Label("Haptic Feedback", systemImage: "hand.tap")
                     }
                     .accessibilityLabel("Haptic Feedback")
+
+                    NavigationLink(destination: TTSSettingsView()) {
+                        Label("Text-to-Speech", systemImage: "speaker.wave.2")
+                    }
+                    .accessibilityLabel("Text-to-Speech Settings")
 
                     NavigationLink(destination: TranslationSettingsView()) {
                         HStack {

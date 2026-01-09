@@ -15,6 +15,7 @@ struct DataManagementView: View {
     @State private var showingImportPicker = false
     @State private var showingShareSheet = false
     @State private var showingClearAlert = false
+    @State private var showingDictionaryImport = false
     @State private var importResult: ImportResult?
     @State private var showingImportResult = false
     @State private var exportURL: URL?
@@ -62,11 +63,15 @@ struct DataManagementView: View {
                     Button("Import Data") {
                         self.showingImportPicker = true
                     }
+
+                    Button("Import Dictionary") {
+                        self.showingDictionaryImport = true
+                    }
                 }
             } header: {
                 Text("Import")
             } footer: {
-                Text("Import flashcards from a backup file")
+                Text("Import flashcards from a backup file or dictionary (CSV, JSON, TXT)")
             }
             .fileImporter(
                 isPresented: self.$showingImportPicker,
@@ -132,7 +137,14 @@ struct DataManagementView: View {
         .sheet(isPresented: self.$showingShareSheet) {
             if let url = exportURL {
                 ShareSheet(items: [url])
+                    .presentationCornerRadius(24)
+                    .presentationDragIndicator(.visible)
             }
+        }
+        .sheet(isPresented: self.$showingDictionaryImport) {
+            DictionaryImportView()
+                .presentationCornerRadius(24)
+                .presentationDragIndicator(.visible)
         }
     }
 

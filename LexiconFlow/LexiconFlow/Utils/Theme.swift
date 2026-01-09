@@ -10,6 +10,146 @@ import SwiftUI
 
 /// Centralized theme utilities for LexiconFlow
 enum Theme {
+    // MARK: - Semantic Colors
+
+    /// Card background color that adapts to color scheme
+    /// - Parameter colorScheme: The current color scheme
+    /// - Returns: Appropriate background color
+    static func cardBackground(colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? Color(white: 0.15) : .white
+    }
+
+    /// Primary text color that adapts to color scheme
+    /// - Parameter colorScheme: The current color scheme
+    /// - Returns: Appropriate text color
+    static func primaryText(colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? .white : .primary
+    }
+
+    /// Secondary text color that adapts to color scheme
+    /// - Parameter colorScheme: The current color scheme
+    /// - Returns: Appropriate secondary text color
+    static func secondaryText(colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? Color(white: 0.7) : .secondary
+    }
+
+    /// Tertiary text color that adapts to color scheme
+    /// - Parameter colorScheme: The current color scheme
+    /// - Returns: Appropriate tertiary text color
+    static func tertiaryText(colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? Color(white: 0.5) : Color(white: 0.6)
+    }
+
+    /// Glass material that adapts to color scheme
+    /// - Parameter colorScheme: The current color scheme
+    /// - Returns: Appropriate material for glass effects
+    static func glassMaterial(colorScheme: ColorScheme) -> Material {
+        colorScheme == .dark ? .thinMaterial : .ultraThinMaterial
+    }
+
+    /// Separator/divider color that adapts to color scheme
+    /// - Parameter colorScheme: The current color scheme
+    /// - Returns: Appropriate separator color
+    static func separator(colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? Color(white: 0.1) : Color(white: 0.9)
+    }
+
+    /// Background fill color for secondary containers
+    /// - Parameter colorScheme: The current color scheme
+    /// - Returns: Appropriate fill color
+    static func secondaryFill(colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? Color(white: 0.1) : Color(white: 0.95)
+    }
+
+    // MARK: - Status Colors (Adaptive)
+
+    /// Success color that adapts to color scheme
+    /// - Parameter colorScheme: The current color scheme
+    /// - Returns: Appropriate success color
+    static func success(colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? .green : .green
+    }
+
+    /// Warning color that adapts to color scheme
+    /// - Parameter colorScheme: The current color scheme
+    /// - Returns: Appropriate warning color
+    static func warning(colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? .orange : .orange
+    }
+
+    /// Error color that adapts to color scheme
+    /// - Parameter colorScheme: The current color scheme
+    /// - Returns: Appropriate error color
+    static func error(colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? .red : .red
+    }
+
+    // MARK: - Semantic Color Constants
+
+    /// Static color constants for consistent theming
+    /// These colors do not adapt to color scheme - they are semantic labels
+    /// for specific UI elements throughout the app
+    enum Colors {
+        // MARK: Status Colors
+
+        /// Error/danger color
+        static let error = Color.red
+
+        /// Warning/caution color
+        static let warning = Color.orange
+
+        /// Success/completion color
+        static let success = Color.green
+
+        /// Primary accent color
+        static let primary = Color.blue
+
+        /// Destructive action color
+        static let destructive = Color.red
+
+        // MARK: FSRS State Colors
+
+        /// New card state color
+        static let stateNew = Color.purple
+
+        /// Learning state color
+        static let stateLearning = Color.blue
+
+        /// Review state color
+        static let stateReview = Color.green
+
+        /// Relearning state color
+        static let stateRelearning = Color.orange
+
+        // MARK: Metric Colors
+
+        /// Primary metric color (e.g., retention rate)
+        static let metricPrimary = Color.blue
+
+        /// Secondary metric color (e.g., study streak)
+        static let metricSecondary = Color.orange
+
+        /// Tertiary metric color (e.g., study time)
+        static let metricTertiary = Color.green
+
+        /// Quaternary metric color (e.g., cards reviewed)
+        static let metricQuaternary = Color.purple
+
+        // MARK: UI Element Colors
+
+        /// CEFR badge color
+        static let cefrBadge = Color.orange
+
+        /// Favorite/star color
+        static let favorite = Color.yellow
+
+        /// Cached/offline indicator color
+        static let cached = Color.green
+
+        /// Fresh/new indicator color
+        static let fresh = Color.blue
+    }
+
     // MARK: - CEFR Level Colors
 
     /// Returns the color associated with a CEFR level
@@ -160,5 +300,19 @@ extension View {
     func cefrBackground(for level: String, style: Theme.BadgeStyle = .standard) -> some View {
         let style = Theme.cefrBadgeStyle(for: level, style: style)
         return background(style.color.opacity(style.opacity))
+    }
+
+    /// Applies themed card background
+    /// - Parameter colorScheme: The current color scheme
+    /// - Returns: The view with card background applied
+    func themedCardBackground(colorScheme: ColorScheme) -> some View {
+        background(Theme.cardBackground(colorScheme: colorScheme))
+    }
+
+    /// Applies themed glass material
+    /// - Parameter colorScheme: The current color scheme
+    /// - Returns: The view with glass material applied
+    func themedGlassMaterial(colorScheme: ColorScheme) -> some View {
+        background(Theme.glassMaterial(colorScheme: colorScheme))
     }
 }

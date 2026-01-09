@@ -11,6 +11,16 @@ import SwiftUI
 
 struct StudyView: View {
     private static let logger = Logger(subsystem: "com.lexiconflow.study", category: "StudyView")
+
+    // MARK: - UI Constants
+
+    /// Card count display constants
+    private enum CardCountDisplay {
+        /// Large icon font size for card count display
+        /// Balances prominence without overwhelming the screen
+        static let iconFontSize: CGFloat = 50
+    }
+
     @Environment(\.modelContext) private var modelContext
 
     @Query(sort: \Deck.order) private var decks: [Deck]
@@ -23,6 +33,7 @@ struct StudyView: View {
     @State private var isSessionActive = false
     @State private var showDeckSelection = false
     @State private var sessionCards: [Flashcard] = []
+    @State private var isRefreshing = false
 
     var body: some View {
         NavigationStack {
@@ -44,6 +55,8 @@ struct StudyView: View {
                 self.refreshState()
             }) {
                 DeckSelectionView()
+                    .presentationCornerRadius(24)
+                    .presentationDragIndicator(.visible)
             }
             .onAppear {
                 self.refreshState()
@@ -99,7 +112,7 @@ struct StudyView: View {
                 // Cards count display
                 VStack(spacing: 8) {
                     Image(systemName: self.countIcon)
-                        .font(.system(size: 50))
+                        .font(.system(size: CardCountDisplay.iconFontSize))
                         .foregroundStyle(self.countColor)
 
                     Text(self.countTitle)
@@ -128,6 +141,9 @@ struct StudyView: View {
                 Spacer()
             }
             .padding()
+        }
+        .refreshable {
+            await self.performRefresh()
         }
     }
 
@@ -252,6 +268,27 @@ struct StudyView: View {
         // Pre-fetch session cards
         let scheduler = Scheduler(modelContext: modelContext)
         self.sessionCards = scheduler.fetchCards(for: self.selectedDecks, mode: self.studyMode, limit: AppSettings.studyLimit)
+    }
+
+    /// Performs pull-to-refresh with haptic feedback
+    @MainActor
+    private func performRefresh() async {
+        self.isRefreshing = true
+
+        // Perform refresh on background thread
+        await Task.detached {
+            await MainActor.run {
+                self.refreshState()
+            }
+        }.value
+
+        // Provide haptic feedback on completion
+        if AppSettings.hapticEnabled {
+            HapticService.shared.triggerSuccess()
+        }
+
+        self.isRefreshing = false
+        Self.logger.info("Pull-to-refresh completed")
     }
 
     private func refreshCounts() {

@@ -33,7 +33,7 @@ struct StatisticsDashboardView: View {
             if let viewModel = viewModelHolder.value {
                 dashboardContent(viewModel: viewModel)
             } else {
-                ProgressView("Loading statistics...")
+                LoadingView(message: "Loading statistics...")
             }
         }
 
@@ -141,7 +141,7 @@ struct StatisticsDashboardView: View {
                 value: retentionData.formattedPercentage,
                 subtitle: "\(retentionData.successfulCount) of \(retentionData.totalCount) reviews successful",
                 icon: "chart.line.uptrend.xyaxis",
-                color: .blue
+                color: Theme.Colors.metricPrimary
             )
             .accessibilityLabel("Retention rate \(retentionData.formattedPercentage)")
             .accessibilityHint("\(retentionData.successfulCount) successful out of \(retentionData.totalCount) total reviews")
@@ -155,7 +155,7 @@ struct StatisticsDashboardView: View {
                 value: "\(streakData.currentStreak)",
                 subtitle: streakData.currentStreak == 1 ? "day" : "days",
                 icon: "flame.fill",
-                color: .orange
+                color: Theme.Colors.metricSecondary
             )
             .accessibilityLabel("Current study streak \(streakData.currentStreak) days")
             .accessibilityHint("Longest streak: \(streakData.longestStreak) days")
@@ -208,7 +208,7 @@ struct StatisticsDashboardView: View {
             value: formattedTime,
             subtitle: "Total time studied",
             icon: "clock.fill",
-            color: .green
+            color: Theme.Colors.metricTertiary
         )
         .accessibilityLabel("Total study time \(formattedTime)")
         .accessibilityAddTraits(.isStaticText)
@@ -220,7 +220,7 @@ struct StatisticsDashboardView: View {
             value: "\(reviewedCards)",
             subtitle: "of \(totalCards) reviewed",
             icon: "rectangle.stack.fill",
-            color: .purple
+            color: Theme.Colors.metricQuaternary
         )
         .accessibilityLabel("\(reviewedCards) of \(totalCards) cards reviewed")
         .accessibilityAddTraits(.isStaticText)
@@ -229,19 +229,8 @@ struct StatisticsDashboardView: View {
     // MARK: - Loading View
 
     private var loadingView: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.2)
-                .accessibilityLabel("Loading")
-
-            Text("Loading statistics...")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, minHeight: 200)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Loading statistics")
-        .accessibilityHint("Please wait while your study data is being refreshed")
+        LoadingView(message: "Loading statistics...")
+            .frame(minHeight: 200)
     }
 
     // MARK: - Empty State View
@@ -264,7 +253,7 @@ struct StatisticsDashboardView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 48))
-                .foregroundStyle(.orange)
+                .foregroundStyle(Theme.Colors.warning)
 
             Text("Failed to load statistics")
                 .font(.headline)
@@ -326,7 +315,7 @@ private func makePreviewContainer() -> some View {
         .modelContainer(container)
     } else {
         Text("Preview unavailable: ModelContainer creation failed")
-            .foregroundStyle(.red)
+            .foregroundStyle(Theme.Colors.error)
     }
 }
 

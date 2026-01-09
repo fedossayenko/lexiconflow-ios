@@ -11,7 +11,8 @@ import SwiftUI
 
 struct OnboardingView: View {
     @Environment(\.modelContext) private var modelContext
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    // Use centralized AppSettings instead of direct @AppStorage (CLAUDE.md pattern #4)
+    @State private var hasCompletedOnboarding: Bool = AppSettings.hasCompletedOnboarding
     @State private var currentPage = 0
     @State private var isCreatingSampleDeck = false
     @State private var errorMessage: String?

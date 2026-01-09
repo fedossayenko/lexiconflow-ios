@@ -8,6 +8,14 @@
 import SwiftUI
 
 struct AppearanceSettingsView: View {
+    // MARK: - UI Constants
+
+    /// Percentage display constants
+    private enum PercentageDisplay {
+        /// Multiplier to convert decimal (0.0-1.0) to percentage (0-100)
+        static let multiplier: Int = 100
+    }
+
     var body: some View {
         Form {
             // Theme Selection
@@ -41,24 +49,62 @@ struct AppearanceSettingsView: View {
                 ))
                 .accessibilityLabel("Enable glass morphism effects")
 
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "info.circle.fill")
-                            .foregroundStyle(.blue)
-                        Text("About Glass Effects")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
+                if AppSettings.glassEffectsEnabled {
+                    // Glass Effect Intensity
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Intensity")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            Spacer()
+                            Text("\(Int(AppSettings.glassEffectIntensity * Double(PercentageDisplay.multiplier)))%")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        Slider(
+                            value: Binding(
+                                get: { AppSettings.glassEffectIntensity },
+                                set: { AppSettings.glassEffectIntensity = $0 }
+                            ),
+                            in: 0 ... 1,
+                            step: 0.1
+                        )
+                        .accessibilityLabel("Glass effect intensity")
+                        .accessibilityValue("\(Int(AppSettings.glassEffectIntensity * Double(PercentageDisplay.multiplier))) percent")
                     }
+                    .padding(.vertical, 4)
 
-                    Text("Glass morphism creates translucent, frosted glass UI elements with blur effects. This feature is planned for Phase 2.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    // Gesture Sensitivity
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Gesture Sensitivity")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            Spacer()
+                            Text(String(format: "%.1fx", AppSettings.gestureSensitivity))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        Slider(
+                            value: Binding(
+                                get: { AppSettings.gestureSensitivity },
+                                set: { AppSettings.gestureSensitivity = $0 }
+                            ),
+                            in: 0.5 ... 2.0,
+                            step: 0.1
+                        )
+                        .accessibilityLabel("Gesture sensitivity")
+                        .accessibilityValue("\(String(format: "%.1f", AppSettings.gestureSensitivity))x")
+                        Text("Controls how responsive swipe gestures are")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 4)
                 }
-                .padding(.vertical, 4)
             } header: {
                 Text("Visual Effects")
             } footer: {
-                Text("Enable glass morphism effects throughout the app")
+                Text("Glass morphism creates translucent, frosted glass UI elements with blur effects. Adjust intensity and gesture sensitivity to your preference.")
             }
 
             // Preview

@@ -4,12 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Lexicon Flow** is a native iOS vocabulary acquisition app built with **Swift 6**, **SwiftUI**, **SwiftData**, and the **FSRS v5** spaced repetition algorithm. It targets iOS 26.0+ and uses "Liquid Glass" design patterns for a fluid, state-of-flow learning experience.
+**Lexicon Flow** is a native iOS vocabulary acquisition app built with **Swift 6**, **SwiftUI**, **SwiftData**, and the **FSRS v5** spaced repetition algorithm. It targets iOS 26.1+ and uses "Liquid Glass" design patterns for a fluid, state-of-flow learning experience.
 
 **Core Differentiators:**
 - FSRS v5 algorithm (adaptive, superior to SM-2)
 - iOS 26 "Liquid Glass" UI with reactive glass effects
 - On-device AI (Foundation Models) for privacy
+  > ⚠️ **NOTE**: Foundation Models integration is implemented but **disabled via feature flag** (planned for Phase 3)
 - **On-device translation** (iOS 26 Translation framework) - 100% offline, no API costs
 - Two study modes: Scheduled (respects due dates) and Cram (for practice)
 
@@ -21,7 +22,7 @@ cd LexiconFlow
 xcodebuild build \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.2'
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.1'
 ```
 
 ### Run Tests
@@ -31,7 +32,7 @@ cd LexiconFlow
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.2' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.1' \
   -only-testing:LexiconFlowTests \
   -parallel-testing-enabled NO
 
@@ -39,7 +40,7 @@ xcodebuild test \
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.2' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.1' \
   -only-testing:LexiconFlowTests/TranslationServiceTests \
   -parallel-testing-enabled NO
 ```
@@ -85,7 +86,9 @@ if let resourcePath = Bundle.main.resourcePath {
 - **Views**: SwiftUI views in `Views/` observing `@Bindable` models
 
 ### Actor-Based Concurrency
-- **FSRSWrapper**: Actor-isolated wrapper for FSRS algorithm operations (returns DTOs)
+- **FSRSWrapper**: `@MainActor`-isolated wrapper for FSRS algorithm operations (returns DTOs)
+  - Uses `@MainActor` (not `actor`) because FSRS requires access to SwiftData models and DateMath
+  - All algorithm operations run on main thread to ensure thread-safe SwiftData access
 - **Scheduler**: `@MainActor` view model that applies DTO updates to SwiftData models
 - **DTO Pattern**: Data transfer objects prevent cross-actor concurrency issues
 
@@ -97,7 +100,7 @@ SwiftData `@Model` classes handle their own concurrency internally via `ModelCon
 
 **Data Flow:**
 ```
-Actor (FSRSWrapper) → DTO (FSRSReviewResult) → MainActor (Scheduler) → SwiftData Models
+@MainActor (FSRSWrapper) → DTO (FSRSReviewResult) → @MainActor (Scheduler) → SwiftData Models
 ```
 
 **Key Principles:**
@@ -249,7 +252,7 @@ struct MyView: View {
 **Rationale**: Single source of truth, easier to test, centralized defaults.
 
 ### 5. TranslationService Batch Pattern (Cloud Translation)
-**Use actor-isolated TranslationService for concurrent batch translation**:
+**Use TranslationService for concurrent batch translation**:
 ```swift
 // Configure with API key
 try KeychainManager.setAPIKey("sk-test-...")
@@ -272,7 +275,7 @@ print("Failed: \(result.failedCount)")
 - Rate limiting with adaptive concurrency
 - Progress handler callbacks
 - Individual card failure handling
-- Actor-isolated for thread safety
+- Structured concurrency for thread safety (internal actor for task storage)
 - Requires API key (stored in Keychain)
 
 ### 5a. OnDeviceTranslationService Pattern (On-Device Translation)
@@ -664,6 +667,202 @@ class HapticService {
 
 **Rationale**: CoreHaptics enables "Liquid Glass" haptic design with custom temporal patterns, while UIKit fallback ensures compatibility.
 
+### 16. Matched Geometry Effect Pattern
+
+**Use `@Namespace` and `matchedGeometryEffect` for smooth element transitions:**
+
+```swift
+// Define namespace in parent view
+struct FlashcardMatchedView: View {
+    @Bindable var card: Flashcard
+    @Binding var isFlipped: Bool
+
+    // Namespace for matched geometry effect
+    @Namespace private var flipAnimation
+
+    var body: some View {
+        ZStack {
+            if isFlipped {
+                CardBackViewMatched(card: card, namespace: flipAnimation)
+            } else {
+                CardFrontViewMatched(card: card, namespace: flipAnimation)
+            }
+        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.75), value: isFlipped)
+    }
+}
+
+// Child views use same namespace with matching IDs
+struct CardFrontViewMatched: View {
+    let card: Flashcard
+    var namespace: Namespace.ID
+
+    var body: some View {
+        VStack {
+            Text(card.word)
+                .matchedGeometryEffect(id: "word", in: namespace)
+
+            Text(card.phonetic ?? "")
+                .matchedGeometryEffect(id: "phonetic", in: namespace)
+        }
+    }
+}
+```
+
+**Key Concepts:**
+- **Namespace**: Shared identifier space for matched elements
+- **ID**: String identifier that must match across views
+- **Animation**: Spring animation for smooth, fluid transitions
+- **State Toggle**: `@Binding` controls which view is visible
+
+**When to Use:**
+- Card flip animations (front ↔ back)
+- Element position changes (list ↔ detail)
+- Shared element transitions
+- Morphing layouts
+
+**Performance**: Transitions complete in < 300ms on iPhone 12+
+
+### 17. Progress Ring Pattern (GlassEffectUnion)
+
+**Use circular progress rings with "Liquid Glass" styling for visual feedback:**
+
+```swift
+// Apply to deck icons for due card ratio
+Image(systemName: "folder.fill")
+    .font(.system(size: 24))
+    .foregroundStyle(.blue)
+    .glassEffectUnion(
+        progress: 0.5,  // due/total ratio (0.0 to 1.0)
+        thickness: .regular,
+        iconSize: 60
+    )
+```
+
+**Color Coding:**
+- **Green (0.0-0.3)**: Low due count (good)
+- **Orange (0.3-0.7)**: Medium due count (warning)
+- **Red (0.7-1.0)**: High due count (urgent)
+
+**Animation:** Smooth spring animation (response: 0.6, damping: 0.7)
+
+**Usage in Views:**
+```swift
+// Calculate progress ratio
+let dueCount = deck.cards.filter { $0.isDue }.count
+let totalCount = deck.cards.count
+let progress = totalCount > 0 ? Double(dueCount) / Double(totalCount) : 0.0
+
+Image(systemName: deck.icon)
+    .glassEffectUnion(progress: progress, thickness: .regular)
+```
+
+### 18. Interactive Glass Effect Pattern
+
+**Use `InteractiveGlassModifier` for gesture-driven visual feedback:**
+
+```swift
+struct StudyCardView: View {
+    @State private var offset: CGSize = .zero
+    @State private var isDragging = false
+
+    var body: some View {
+        CardContent()
+            .interactive($offset) { dragOffset in
+                // Direction-based tint
+                let progress = min(max(dragOffset.width / 100, -1), 1)
+                if progress > 0 {
+                    return .tint(.green.opacity(0.3 * progress))
+                } else {
+                    return .tint(.red.opacity(0.3 * abs(progress)))
+                }
+            }
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        offset = value.translation
+                    }
+                    .onEnded { _ in
+                        withAnimation(.spring()) {
+                            offset = .zero
+                        }
+                    }
+            )
+    }
+}
+```
+
+**Visual Effects Applied:**
+1. **Directional tint**: Color overlay based on drag direction
+2. **Specular highlight**: Light refraction effect (progress > 0.1)
+3. **Edge glow**: Glowing rim effect (progress > 0.2)
+4. **Hue rotation**: Subtle color shift (5° max)
+5. **Saturation boost**: Increased vividness (20% max)
+6. **Scale swell**: 5% growth for tactile feedback
+7. **3D tilt**: Perspective rotation (5° max)
+
+**Constants (InteractiveGlassModifier.swift):**
+- `maxDragDistance: 200` - Full effect at 200pt drag
+- `specularHighlightOpacity: 0.3` - 30% brightness
+- `edgeGlowOpacityMultiplier: 0.5` - 50% intensity
+- `scaleEffectMultiplier: 0.05` - 5% swelling
+
+**Integration with CardGestureViewModel:**
+```swift
+@StateObject private var gestureViewModel = CardGestureViewModel()
+
+CardContent()
+    .interactive(
+        $gestureViewModel.translation,
+        effect: { _ in .tint(gestureViewModel.tintColor) }
+    )
+    .scaleEffect(gestureViewModel.scale)
+    .rotation3DEffect(
+        .degrees(gestureViewModel.rotation),
+        axis: (x: 0, y: 1, z: 0)
+    )
+```
+
+### 19. GlassEffectContainer Pattern
+
+**Use `GlassEffectContainer` for performance-optimized glass effects:**
+
+```swift
+// Single glass element
+GlassEffectContainer(thickness: .regular) {
+    Text("Content")
+        .padding()
+}
+
+// Multiple glass elements (optimized with .drawingGroup)
+ScrollView {
+    ForEach(0..<10) { i in
+        GlassEffectContainer(thickness: .regular) {
+            Text("Item \(i)")
+        }
+    }
+}
+```
+
+**When to Use:**
+- Multiple glass elements on screen (card stacks, deck lists)
+- Complex glass effects with multiple visual layers
+- Performance-critical views with frequent redraws
+
+**When NOT to Use:**
+- Single static glass element (optimization overhead unnecessary)
+- Very simple content (plain text with no graphics)
+
+**Thickness Levels:**
+- **Thin**: `cornerRadius: 12`, `shadowRadius: 5`, `overlayOpacity: 0.1`
+- **Regular**: `cornerRadius: 16`, `shadowRadius: 10`, `overlayOpacity: 0.2`
+- **Thick**: `cornerRadius: 20`, `shadowRadius: 15`, `overlayOpacity: 0.3`
+
+**Performance:**
+- `.drawingGroup()` caches rendering as GPU bitmap
+- Target: 60fps with < 16.6ms frame time
+- Measured with Xcode Instruments → Core Animation
+
 ## Project Structure
 
 ```
@@ -678,7 +877,7 @@ LexiconFlow/
 │   ├── Decks/              # DeckDetailView
 │   └── Settings/           # TranslationSettingsView, AppearanceSettingsView, etc.
 ├── Assets.xcassets/        # Images, colors
-└── LexiconFlowTests/       # Unit tests (24+ suites)
+└── LexiconFlowTests/       # Unit tests (63+ test suites)
 ```
 
 ## Concurrency Guidelines
@@ -692,7 +891,7 @@ LexiconFlow/
 ## Testing
 
 - **Framework**: Swift Testing (`import Testing`)
-- **Structure**: 24 test suites in `LexiconFlowTests/`:
+- **Structure**: 63 test suites in `LexiconFlowTests/` with comprehensive coverage:
   - ModelTests, SchedulerTests, DataImporterTests
   - StudySessionViewModelTests, OnboardingTests, ErrorHandlingTests
   - FSRSWrapperTests, DateMathTests, AnalyticsTests

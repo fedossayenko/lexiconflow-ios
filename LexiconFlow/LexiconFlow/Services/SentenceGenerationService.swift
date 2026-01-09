@@ -10,11 +10,14 @@ import Foundation
 import OSLog
 import SwiftData
 
-/// Service for generating AI-powered context sentences using Z.ai API
+/// Service for generating AI-powered context sentences
 ///
-/// This service extends the Z.ai API integration (already used for translation)
-/// to generate creative, context-rich sentences demonstrating word usage.
-/// Features include:
+/// **AI Sources:**
+/// - **Cloud**: Uses Z.ai API (requires API key, network connection)
+/// - **Static**: Fallback sentences for offline mode
+///
+/// **Features:**
+/// - Graceful fallback: cloud API → static sentences
 /// - Batch sentence generation with concurrency control
 /// - CEFR level appropriateness filtering
 /// - Automatic caching with 7-day TTL
@@ -201,6 +204,55 @@ actor SentenceGenerationService {
 
     /// Generate sentences for a single flashcard
     ///
+    /// **AI Source Selection:**
+    /// - Cloud API → falls back to static sentences if no API key or on error
+    ///
+    /// - Parameters:
+    ///   - cardWord: The vocabulary word
+    ///   - cardDefinition: The word's definition
+    ///   - cardTranslation: Optional translation
+    ///   - cardCEFR: Optional CEFR level
+    ///   - count: Number of sentences to generate (default: 3)
+    ///
+    /// - Returns: SentenceGenerationResponse with generated sentences
+    /// - Throws: SentenceGenerationError if all generation methods fail
+    func generateSentences(
+        cardWord: String,
+        cardDefinition: String,
+        cardTranslation: String? = nil,
+        cardCEFR: String? = nil,
+        count: Int = Config.defaultSentencesPerCard
+    ) async throws -> SentenceGenerationResponse {
+        // Try cloud API
+        do {
+            let response = try await generateSentencesCloud(
+                cardWord: cardWord,
+                cardDefinition: cardDefinition,
+                cardTranslation: cardTranslation,
+                cardCEFR: cardCEFR,
+                count: count
+            )
+            self.logger.info("Generated sentences using cloud API for '\(cardWord)'")
+            return response
+        } catch {
+            self.logger.warning("Cloud generation failed: \(error.localizedDescription)")
+
+            // Final fallback: static sentences
+            self.logger.info("Using static fallback sentences for '\(cardWord)'")
+            return self.generateStaticFallback(cardWord: cardWord, cardCEFR: cardCEFR, count: count)
+        }
+    }
+
+    /// Generate sentences using cloud API (Z.ai)
+    ///
+    /// **Prerequisites:**
+    /// - API key stored in Keychain
+    /// - Network connection
+    ///
+    /// **Fallback:**
+    /// - Throws SentenceGenerationError if unavailable
+    /// - Caller should fall back to static sentences
+    ///
     /// - Parameters:
     ///   - cardWord: The vocabulary word
     ///   - cardDefinition: The word's definition
@@ -210,7 +262,7 @@ actor SentenceGenerationService {
     ///
     /// - Returns: SentenceGenerationResponse with generated sentences
     /// - Throws: SentenceGenerationError if the request fails
-    func generateSentences(
+    private func generateSentencesCloud(
         cardWord: String,
         cardDefinition: String,
         cardTranslation: String? = nil,
@@ -607,6 +659,49 @@ actor SentenceGenerationService {
     }
 
     // MARK: - Static Fallback Sentences
+
+    /// Generate static fallback sentences for offline/error scenarios
+    ///
+    /// **Use Case:** When cloud generation fails, these provide basic examples
+    /// to prevent app from being non-functional.
+    ///
+    /// **Implementation:**
+    /// - Uses static library for common words
+    /// - Uses default sentences for unknown words
+    ///
+    /// - Parameters:
+    ///   - cardWord: The vocabulary word
+    ///   - cardCEFR: Optional CEFR level (defaults to B1 if unknown)
+    ///   - count: Number of sentences to generate
+    ///
+    /// - Returns: SentenceGenerationResponse with fallback sentences
+    private func generateStaticFallback(
+        cardWord: String,
+        cardCEFR: String?,
+        count: Int
+    ) -> SentenceGenerationResponse {
+        let cefrLevel = cardCEFR ?? "B1"
+        self.logger.debug("Generating \(count) static fallback sentences for '\(cardWord)' at \(cefrLevel) level")
+
+        // Use static fallback library for common words
+        var sentences: [SentenceGenerationResponse.GeneratedSentenceItem] = []
+        sentences.reserveCapacity(count)
+
+        let fallbacks = self.staticFallbackLibrary[cardWord.lowercased()] ?? self.defaultFallbackSentences
+
+        for i in 0 ..< count {
+            let sentenceText = fallbacks[i % fallbacks.count]
+            sentences.append(
+                SentenceGenerationResponse.GeneratedSentenceItem(
+                    sentence: sentenceText,
+                    cefrLevel: cefrLevel
+                )
+            )
+        }
+
+        self.logger.info("Generated \(sentences.count) static fallback sentences for '\(cardWord)'")
+        return SentenceGenerationResponse(items: sentences)
+    }
 
     /// Get static fallback sentences for offline mode
     func getStaticFallbackSentences(for word: String) -> [SentenceGenerationResponse.GeneratedSentenceItem] {

@@ -27,7 +27,7 @@ struct DeckRowView: View {
             // Deck icon with progress ring (UNIFIED)
             Image(systemName: self.deck.icon ?? "folder.fill")
                 .font(.system(size: 24))
-                .foregroundStyle(.blue)
+                .foregroundStyle(Theme.Colors.primary)
                 .glassEffectUnion(
                     progress: self.progressRatio,
                     thickness: .thin,
@@ -53,7 +53,7 @@ struct DeckRowView: View {
 
                         Text("\(self.dueCount) due")
                             .font(.caption)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Theme.Colors.error)
                             .fontWeight(.semibold)
                     }
                 }

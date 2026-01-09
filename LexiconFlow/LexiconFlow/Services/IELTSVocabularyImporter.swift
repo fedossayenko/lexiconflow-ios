@@ -74,6 +74,18 @@ final class IELTSVocabularyImporter {
         self.dataImporter = dataImporter ?? DataImporter(modelContext: modelContext)
     }
 
+    // MARK: - Validation Constants
+
+    /// Security validation limits for bundle resources
+    ///
+    /// **Note:** Bundle resources are trusted, but size limits prevent
+    /// accidental inclusion of oversized files during development.
+    private enum ValidationLimits {
+        /// Maximum file size: 10MB for JSON vocabulary files
+        /// Based on typical IELTS vocabulary file size (~500KB)
+        static let maxJSONFileSize: UInt64 = 10_000_000
+    }
+
     // MARK: - Data Structures
 
     /// Vocabulary entry from JSON
@@ -150,6 +162,35 @@ final class IELTSVocabularyImporter {
         }
     }
 
+    // MARK: - Validation
+
+    /// Validate bundle resource file before loading
+    ///
+    /// **Security:** Bundle resources are trusted, but we validate:
+    /// - File size (prevents accidental inclusion of oversized files)
+    ///
+    /// - Parameter url: The bundle resource URL
+    /// - Throws: IELTSImportError if validation fails
+    private func validateBundleFile(_ url: URL) throws {
+        // Check file attributes
+        let values = try url.resourceValues(forKeys: [.fileSizeKey, .isDirectoryKey])
+        guard let fileSize = values.fileSize, let isDirectory = values.isDirectory else {
+            throw IELTSImportError.importFailed("Cannot read file attributes")
+        }
+
+        // Ensure it's a file, not a directory
+        guard !isDirectory else {
+            throw IELTSImportError.importFailed("Expected file, found directory")
+        }
+
+        // Check file size
+        guard UInt64(fileSize) <= ValidationLimits.maxJSONFileSize else {
+            throw IELTSImportError.importFailed(
+                "File too large: \(fileSize) bytes (max: \(ValidationLimits.maxJSONFileSize) bytes)"
+            )
+        }
+    }
+
     // MARK: - Import Methods
 
     /// Import all IELTS vocabulary from JSON file in bundle.
@@ -180,6 +221,10 @@ final class IELTSVocabularyImporter {
         }
 
         self.logger.info("Loading vocabulary from: \(url.path)")
+
+        // Validate file before loading
+        try validateBundleFile(url)
+
         let data = try Data(contentsOf: url)
         let vocabulary = try JSONDecoder().decode(IELTSVocabulary.self, from: data)
 
@@ -349,6 +394,9 @@ final class IELTSVocabularyImporter {
             throw IELTSImportError.fileNotFound
         }
 
+        // Validate file before loading
+        try validateBundleFile(url)
+
         let data = try Data(contentsOf: url)
         let vocabulary = try JSONDecoder().decode(IELTSVocabulary.self, from: data)
 
@@ -451,6 +499,9 @@ final class IELTSVocabularyImporter {
         ) else {
             throw IELTSImportError.fileNotFound
         }
+
+        // Validate file before loading
+        try validateBundleFile(url)
 
         let data = try Data(contentsOf: url)
         let vocabulary = try JSONDecoder().decode(IELTSVocabulary.self, from: data)
