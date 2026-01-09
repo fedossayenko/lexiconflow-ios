@@ -6,7 +6,6 @@
 //  Manages state for retention rate, study streak, and FSRS metrics
 //
 
-import Combine
 import Foundation
 import OSLog
 import SwiftData
@@ -63,15 +62,15 @@ final class StatisticsViewModel: ObservableObject {
     ///   - timeRange: Initial time range selection (defaults to AppSettings)
     init(modelContext: ModelContext, timeRange: StatisticsTimeRange? = nil) {
         self.modelContext = modelContext
-        statisticsService = StatisticsService.shared
+        self.statisticsService = StatisticsService.shared
 
         // Use provided time range or load from AppSettings
         if let timeRange {
-            selectedTimeRange = timeRange
+            self.selectedTimeRange = timeRange
         } else {
             // Load from AppSettings (convert string to enum)
             let savedRange = AppSettings.statisticsTimeRange
-            selectedTimeRange = StatisticsTimeRange(rawValue: savedRange) ?? .sevenDays
+            self.selectedTimeRange = StatisticsTimeRange(rawValue: savedRange) ?? .sevenDays
         }
 
         // swiftformat:disable:next redundantSelf
@@ -91,8 +90,8 @@ final class StatisticsViewModel: ObservableObject {
     /// **Usage**: Call on view appear and after time range changes
     /// **Note**: Uses sequential await instead of async let to avoid capturing non-Sendable ModelContext
     func refresh() async {
-        isLoading = true
-        errorMessage = nil
+        self.isLoading = true
+        self.errorMessage = nil
 
         // swiftformat:disable:next redundantSelf
         logger.debug("Refreshing statistics for time range: \(self.selectedTimeRange.displayName)")
@@ -100,33 +99,33 @@ final class StatisticsViewModel: ObservableObject {
         // Fetch metrics sequentially to avoid capturing non-Sendable ModelContext in Sendable closure
         // Swift 6 strict concurrency requires this approach
         let retentionResult = await statisticsService.calculateRetentionRate(
-            context: modelContext,
-            timeRange: selectedTimeRange
+            context: self.modelContext,
+            timeRange: self.selectedTimeRange
         )
 
         let streakResult = await statisticsService.calculateStudyStreak(
-            context: modelContext,
-            timeRange: selectedTimeRange
+            context: self.modelContext,
+            timeRange: self.selectedTimeRange
         )
 
         let fsrsResult = await statisticsService.calculateFSRSMetrics(
-            context: modelContext,
-            timeRange: selectedTimeRange
+            context: self.modelContext,
+            timeRange: self.selectedTimeRange
         )
 
         // Update published properties on main actor
-        retentionData = retentionResult
-        streakData = streakResult
-        fsrsMetrics = fsrsResult
+        self.retentionData = retentionResult
+        self.streakData = streakResult
+        self.fsrsMetrics = fsrsResult
 
-        logger.info("""
+        self.logger.info("""
         Statistics refreshed:
         - Retention: \(retentionResult.formattedPercentage)
         - Streak: \(streakResult.currentStreak) days
         - FSRS: \(fsrsResult.formattedStability) avg stability
         """)
 
-        isLoading = false
+        self.isLoading = false
     }
 
     /// Change the selected time range and refresh data
@@ -135,23 +134,23 @@ final class StatisticsViewModel: ObservableObject {
     ///
     /// **Side Effect**: Updates AppSettings.statisticsTimeRange for persistence
     func changeTimeRange(_ timeRange: StatisticsTimeRange) async {
-        guard selectedTimeRange != timeRange else { return }
+        guard self.selectedTimeRange != timeRange else { return }
 
         // swiftformat:disable:next redundantSelf
         logger.info("Changing time range from \(self.selectedTimeRange.displayName) to \(timeRange.displayName)")
 
-        selectedTimeRange = timeRange
+        self.selectedTimeRange = timeRange
 
         // Persist to AppSettings
         AppSettings.statisticsTimeRange = timeRange.rawValue
 
         // Refresh data with new time range
-        await refresh()
+        await self.refresh()
     }
 
     /// Clear error message (user dismissed error)
     func clearError() {
-        errorMessage = nil
+        self.errorMessage = nil
     }
 }
 
@@ -160,7 +159,7 @@ final class StatisticsViewModel: ObservableObject {
 extension StatisticsViewModel {
     /// Whether there is any data to display
     var hasData: Bool {
-        retentionData != nil || streakData != nil || fsrsMetrics != nil
+        self.retentionData != nil || self.streakData != nil || self.fsrsMetrics != nil
     }
 
     /// Whether dashboard is in empty state (no study activity)

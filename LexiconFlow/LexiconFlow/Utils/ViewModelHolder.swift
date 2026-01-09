@@ -6,7 +6,6 @@
 //  Use this when you need @StateObject semantics with optional values
 //
 
-import Combine
 import SwiftUI
 
 /// A wrapper that holds an optional ObservableObject and properly publishes changes
@@ -40,7 +39,7 @@ final class ViewModelHolder<T: ObservableObject>: ObservableObject {
         didSet {
             // When value changes, observe its objectWillChange
             if let value {
-                setupObservation(for: value)
+                self.setupObservation(for: value)
             }
         }
     }
@@ -53,7 +52,7 @@ final class ViewModelHolder<T: ObservableObject>: ObservableObject {
     init(_ value: T? = nil) {
         self.value = value
         if let value {
-            setupObservation(for: value)
+            self.setupObservation(for: value)
         }
     }
 
@@ -66,6 +65,6 @@ final class ViewModelHolder<T: ObservableObject>: ObservableObject {
             .sink { [weak self] _ in
                 self?.objectWillChange.send()
             }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
     }
 }
