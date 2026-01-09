@@ -276,7 +276,7 @@ struct LexiconFlowApp: App {
         do {
             // Check if vocabulary file exists
             guard Bundle.main.url(
-                forResource: "Resources/IELTS/ielts-vocabulary-smartool",
+                forResource: "ielts-vocabulary-smartool",
                 withExtension: "json"
             ) != nil else {
                 logger.error("IELTS vocabulary file not found in bundle")

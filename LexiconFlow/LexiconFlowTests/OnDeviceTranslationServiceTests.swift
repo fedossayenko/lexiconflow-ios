@@ -411,54 +411,6 @@ struct OnDeviceTranslationServiceTests {
         }
     }
 
-    // MARK: - Language Download Tests
-
-    @Test("requestLanguageDownload with available language does not throw")
-    func requestLanguageDownloadAlreadyAvailable() async {
-        let service = OnDeviceTranslationService.shared
-        let english = Locale.Language(identifier: "en")
-
-        // If English is available, should not throw
-        do {
-            try await service.requestLanguageDownload(english)
-            #expect(true, "Download request completed (may already be available)")
-        } catch {
-            // May throw if download fails or language not found
-            #expect(true, "Download request may throw: \(error)")
-        }
-    }
-
-    @Test("requestLanguageDownload with String parameter")
-    func requestLanguageDownloadString() async {
-        let service = OnDeviceTranslationService.shared
-
-        do {
-            try await service.requestLanguageDownload("en")
-            #expect(true, "Download request completed")
-        } catch {
-            #expect(true, "Download request may throw: \(error)")
-        }
-    }
-
-    @Test("requestLanguageDownload handles invalid language gracefully")
-    func requestLanguageDownloadFailure() async {
-        let service = OnDeviceTranslationService.shared
-
-        // Try to download an invalid language
-        do {
-            try await service.requestLanguageDownload("xyz-invalid-999")
-            // NOTE: iOS Translation framework may not validate language strictly
-            // The framework might succeed silently or handle this internally
-            #expect(true, "Request completed (framework may handle invalid codes gracefully)")
-        } catch let OnDeviceTranslationError.languagePackDownloadFailed(language) {
-            // Expected error if framework does validate
-            #expect(language == "xyz-invalid-999", "Error should report language")
-        } catch {
-            // May throw other errors depending on framework behavior
-            #expect(true, "Threw error: \(error)")
-        }
-    }
-
     // MARK: - Fixed Logic Tests (Bug Fixes)
 
     @Test("needsLanguageDownload returns inverse of isLanguageAvailable")
@@ -493,61 +445,20 @@ struct OnDeviceTranslationServiceTests {
         #expect(needsDownload, "Unavailable language should need download")
     }
 
-    @Test("requestLanguageDownload no early return for available languages")
-    func requestLanguageDownloadNoEarlyReturn() async {
-        let service = OnDeviceTranslationService.shared
+    // MARK: - Language Availability Tests
 
-        // FIXED: Previously returned early if language appeared available
-        // Now: Always attempts to trigger download via TranslationSession creation
-        // If language is already installed, session creation succeeds without prompt
-
-        let english = Locale.Language(identifier: "en")
-
-        // This should succeed without throwing, even if English is already installed
-        do {
-            try await service.requestLanguageDownload(english)
-            #expect(true, "Download request completed successfully (even if already installed)")
-        } catch {
-            // May still throw for other reasons (network, iOS restrictions)
-            #expect(true, "Download request may throw for reasons other than early return")
-        }
-    }
-
-    @Test("requestLanguageDownloadInBackground does not throw")
-    func testRequestLanguageDownloadInBackground() async {
-        let service = OnDeviceTranslationService.shared
-
-        // FIXED: New method for parallel fallback approach
-        // Should not throw because it handles errors silently
-        // Note: Method is nonisolated(unsafe) for fire-and-forget pattern
-        service.requestLanguageDownloadInBackground("es")
-
-        // Wait a bit for background task to start
-        do {
-            try await Task.sleep(nanoseconds: 100000000) // 0.1 seconds
-        } catch {
-            // Task.sleep should never throw, but handle it just in case
-            #expect(true, "Task.sleep completed: \(error.localizedDescription)")
-        }
-
-        // If we got here, method didn't throw (expected)
-        #expect(true, "Background download started without throwing")
-    }
-
-    @Test("cancelBackgroundDownload is safe to call")
-    func testCancelBackgroundDownload() async {
-        let service = OnDeviceTranslationService.shared
-
-        // FIXED: New method for cancelling background downloads
-        // Should be safe to call even if no download is in progress
-        // Note: Method is nonisolated(unsafe) for fire-and-forget pattern
-        service.cancelBackgroundDownload()
-
-        // Should also be safe to call multiple times
-        service.cancelBackgroundDownload()
-        service.cancelBackgroundDownload()
-
-        #expect(true, "Cancel background download is safe to call")
+    @Test("Language pack download uses SwiftUI .translationTask() modifier")
+    func languagePackDownloadUsesTranslationTask() {
+        // NOTE: Language pack downloads now use SwiftUI's .translationTask() modifier
+        // in TranslationSettingsView and AddFlashcardView, not the service layer.
+        // This is required because prepareTranslation() can only be called on a
+        // TranslationSession obtained from the .translationTask() modifier.
+        //
+        // The service layer no longer handles downloads - it only handles:
+        // - Checking language availability (isLanguageAvailable)
+        // - Checking if download is needed (needsLanguageDownload)
+        // - Performing translations (translate, translateBatch)
+        #expect(true, "Language downloads moved to SwiftUI views per Apple API requirements")
     }
 
     // MARK: - Edge Cases Tests

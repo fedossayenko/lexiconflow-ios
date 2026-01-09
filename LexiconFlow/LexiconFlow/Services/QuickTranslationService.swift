@@ -294,21 +294,6 @@ actor QuickTranslationService {
         )
     }
 
-    /// Request language pack download for configured languages
-    ///
-    /// **Usage:** Call this when QuickTranslationError.languagePackMissing is thrown
-    ///
-    /// **Throws:** Propagates errors from OnDeviceTranslationService
-    func requestLanguagePackDownload() async throws {
-        let source = await AppSettings.translationSourceLanguage
-        let target = await AppSettings.translationTargetLanguage
-
-        Self.logger.info("Requesting language pack download for \(source) → \(target)")
-
-        // Try to download target language (most likely missing)
-        try await OnDeviceTranslationService.shared.requestLanguageDownload(target)
-    }
-
     /// Check if language packs are available for quick translation
     ///
     /// **Returns:** `true` if both source and target language packs are downloaded

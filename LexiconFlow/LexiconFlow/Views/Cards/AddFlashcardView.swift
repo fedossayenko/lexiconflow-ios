@@ -9,6 +9,7 @@ import OSLog
 import PhotosUI
 import SwiftData
 import SwiftUI
+import Translation
 
 struct AddFlashcardView: View {
     @Environment(\.modelContext) private var modelContext
@@ -31,6 +32,14 @@ struct AddFlashcardView: View {
     @State private var missingLanguage: String?
     @State private var errorMessage: String?
     @State private var saveTask: Task<Void, Never>?
+
+    // MARK: - Language Pack Download Configuration
+
+    /// Configuration for triggering language pack downloads via .translationTask()
+    ///
+    /// **Important**: Language pack downloads must use SwiftUI's .translationTask() modifier
+    /// because the TranslationSession API only works within SwiftUI views.
+    @State private var downloadConfiguration: TranslationSession.Configuration?
 
     private let logger = Logger(subsystem: "com.lexiconflow.flashcard", category: "AddFlashcardView")
 
@@ -179,6 +188,32 @@ struct AddFlashcardView: View {
                     Text("Language pack download required")
                 }
             }
+        }
+        .translationTask(self.downloadConfiguration) { session in
+            // This closure is called when downloadConfiguration changes
+            // prepareTranslation() triggers the system download prompt for language packs
+            do {
+                try await session.prepareTranslation()
+                self.logger.info("Language pack download completed successfully")
+
+                // Show success message and clear error
+                self.errorMessage = "Language pack downloaded. You can now save the card."
+                try? await Task.sleep(nanoseconds: 2000000000)
+                self.errorMessage = nil
+
+            } catch {
+                self.logger.error("Language pack download failed: \(error.localizedDescription)")
+                Analytics.trackError("language_pack_download_failed", error: error)
+                self.errorMessage = "Failed to download language pack: \(error.localizedDescription)"
+
+                // Auto-dismiss after 3 seconds
+                try? await Task.sleep(nanoseconds: 3000000000)
+                self.errorMessage = nil
+            }
+
+            // Reset state
+            self.missingLanguage = nil
+            self.downloadConfiguration = nil
         }
     }
 
@@ -338,32 +373,23 @@ struct AddFlashcardView: View {
     }
 
     /// Download a missing language pack
+    ///
+    /// **Important**: This creates a TranslationSession.Configuration to trigger download
+    /// via the .translationTask() modifier. The prepareTranslation() method is the only
+    /// API that properly triggers the system download prompt for language packs.
     @MainActor
     private func downloadLanguagePack(_ languageCode: String) async {
         self.logger.info("Requesting language pack download for: \(languageCode)")
 
-        do {
-            try await OnDeviceTranslationService.shared.requestLanguageDownload(languageCode)
+        let language = Locale.Language(identifier: languageCode)
+        let target = Locale.Language(identifier: AppSettings.translationSourceLanguage)
 
-            // Success - retry translation
-            self.logger.info("Language pack download initiated successfully")
-
-            // Show success message
-            self.errorMessage = "Language pack downloaded. You can now save the card."
-            try? await Task.sleep(nanoseconds: 2000000000)
-            self.errorMessage = nil
-
-        } catch {
-            self.logger.error("Language pack download failed: \(error.localizedDescription)")
-            Analytics.trackError("language_pack_download_failed", error: error)
-            self.errorMessage = "Failed to download language pack: \(error.localizedDescription)"
-
-            // Auto-dismiss after 3 seconds
-            try? await Task.sleep(nanoseconds: 3000000000)
-            self.errorMessage = nil
-        }
-
-        self.missingLanguage = nil
+        // Create configuration to trigger download via .translationTask()
+        // This is the Apple-documented pattern for language pack downloads
+        self.downloadConfiguration = TranslationSession.Configuration(
+            source: language,
+            target: target
+        )
     }
 }
 
