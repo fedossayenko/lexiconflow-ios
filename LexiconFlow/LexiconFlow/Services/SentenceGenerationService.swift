@@ -13,12 +13,11 @@ import SwiftData
 /// Service for generating AI-powered context sentences
 ///
 /// **AI Sources:**
-/// - **On-Device**: Uses Apple's Foundation Models framework (iOS 26+, private, offline-capable)
 /// - **Cloud**: Uses Z.ai API (requires API key, network connection)
+/// - **Static**: Fallback sentences for offline mode
 ///
 /// **Features:**
-/// - Automatic AI source selection based on AppSettings.aiSourcePreference
-/// - Graceful fallback: on-device → cloud → static sentences
+/// - Graceful fallback: cloud API → static sentences
 /// - Batch sentence generation with concurrency control
 /// - CEFR level appropriateness filtering
 /// - Automatic caching with 7-day TTL
@@ -206,9 +205,7 @@ actor SentenceGenerationService {
     /// Generate sentences for a single flashcard
     ///
     /// **AI Source Selection:**
-    /// - Uses `AppSettings.aiSourcePreference` to determine source
-    /// - On-device (Foundation Models) → falls back to cloud API → falls back to static
-    /// - Cloud API → falls back to static sentences if no API key
+    /// - Cloud API → falls back to static sentences if no API key or on error
     ///
     /// - Parameters:
     ///   - cardWord: The vocabulary word
@@ -226,35 +223,6 @@ actor SentenceGenerationService {
         cardCEFR: String? = nil,
         count: Int = Config.defaultSentencesPerCard
     ) async throws -> SentenceGenerationResponse {
-        let aiSource = await MainActor.run { AppSettings.aiSourcePreference }
-        let sourceName = await MainActor.run { aiSource.displayName }
-        self.logger.debug("AI source preference: \(sourceName)")
-
-        // Try on-device generation first if preferred
-        if aiSource == .onDevice {
-            do {
-                let response = try await generateSentencesOnDevice(
-                    cardWord: cardWord,
-                    cardDefinition: cardDefinition,
-                    cardTranslation: cardTranslation,
-                    cardCEFR: cardCEFR,
-                    count: count
-                )
-                self.logger.info("Generated sentences using on-device AI for '\(cardWord)'")
-                return response
-            } catch let error as FoundationModelsError {
-                self.logger.warning("On-device generation failed: \(error.localizedDescription)")
-
-                // Fall back to cloud API if on-device fails (except for invalid input)
-                if error.isRetryable {
-                    self.logger.info("Falling back to cloud API for '\(cardWord)'")
-                } else {
-                    // Non-retryable errors (invalid input, unsupported language) - don't fall back
-                    throw SentenceGenerationError.clientError(statusCode: 400, message: error.localizedDescription)
-                }
-            }
-        }
-
         // Try cloud API
         do {
             let response = try await generateSentencesCloud(
@@ -273,68 +241,6 @@ actor SentenceGenerationService {
             self.logger.info("Using static fallback sentences for '\(cardWord)'")
             return self.generateStaticFallback(cardWord: cardWord, cardCEFR: cardCEFR, count: count)
         }
-    }
-
-    /// Generate sentences using on-device Foundation Models
-    ///
-    /// **Prerequisites:**
-    /// - iOS 26.0 or later
-    /// - Device supports Foundation Models
-    ///
-    /// **Fallback:**
-    /// - Throws `FoundationModelsError` if unavailable
-    /// - Caller should fall back to cloud API or static sentences
-    ///
-    /// - Parameters:
-    ///   - cardWord: The vocabulary word
-    ///   - cardDefinition: The word's definition (not used by Foundation Models)
-    ///   - cardTranslation: Optional translation (not used by Foundation Models)
-    ///   - cardCEFR: Optional CEFR level
-    ///   - count: Number of sentences to generate (default: 3)
-    ///
-    /// - Returns: SentenceGenerationResponse with generated sentences
-    /// - Throws: FoundationModelsError if generation fails
-    private func generateSentencesOnDevice(
-        cardWord: String,
-        cardDefinition: String,
-        cardTranslation _: String? = nil,
-        cardCEFR: String? = nil,
-        count: Int = Config.defaultSentencesPerCard
-    ) async throws -> SentenceGenerationResponse {
-        let service = FoundationModelsService.shared
-        let cefrLevel = cardCEFR ?? self.estimateCEFRLevel(cardDefinition)
-
-        // Check availability
-        guard await service.isAvailable() else {
-            self.logger.error("Foundation Models not available")
-            throw FoundationModelsError.notAvailable
-        }
-
-        // Initialize session if needed
-        do {
-            try await service.initialize()
-        } catch {
-            self.logger.error("Failed to initialize Foundation Models session: \(error)")
-            throw error
-        }
-
-        // Generate sentences
-        let sentences = try await service.generateSentences(
-            for: cardWord,
-            cefrLevel: cefrLevel,
-            count: count,
-            language: "en"
-        )
-
-        // Convert to SentenceGenerationResponse format
-        let items = sentences.map { sentence in
-            SentenceGenerationResponse.GeneratedSentenceItem(
-                sentence: sentence,
-                cefrLevel: cefrLevel
-            )
-        }
-
-        return SentenceGenerationResponse(items: items)
     }
 
     /// Generate sentences using cloud API (Z.ai)
@@ -756,12 +662,11 @@ actor SentenceGenerationService {
 
     /// Generate static fallback sentences for offline/error scenarios
     ///
-    /// **Use Case:** When both on-device and cloud generation fail,
-    /// these provide basic examples to prevent app from being non-functional.
+    /// **Use Case:** When cloud generation fails, these provide basic examples
+    /// to prevent app from being non-functional.
     ///
     /// **Implementation:**
-    /// - Uses FoundationModelsService.fallbackSentence for better CEFR alignment
-    /// - Falls back to static library for common words
+    /// - Uses static library for common words
     /// - Uses default sentences for unknown words
     ///
     /// - Parameters:
@@ -778,15 +683,14 @@ actor SentenceGenerationService {
         let cefrLevel = cardCEFR ?? "B1"
         self.logger.debug("Generating \(count) static fallback sentences for '\(cardWord)' at \(cefrLevel) level")
 
-        // Use FoundationModelsService's CEFR-aware fallback sentences
+        // Use static fallback library for common words
         var sentences: [SentenceGenerationResponse.GeneratedSentenceItem] = []
         sentences.reserveCapacity(count)
 
-        for _ in 0 ..< count {
-            let sentenceText = FoundationModelsService.fallbackSentence(
-                for: cardWord,
-                cefrLevel: cefrLevel
-            )
+        let fallbacks = self.staticFallbackLibrary[cardWord.lowercased()] ?? self.defaultFallbackSentences
+
+        for i in 0 ..< count {
+            let sentenceText = fallbacks[i % fallbacks.count]
             sentences.append(
                 SentenceGenerationResponse.GeneratedSentenceItem(
                     sentence: sentenceText,

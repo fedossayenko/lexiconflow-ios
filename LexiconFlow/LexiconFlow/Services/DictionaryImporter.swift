@@ -2,7 +2,7 @@
 //  DictionaryImporter.swift
 //  LexiconFlow
 //
-//  Dictionary import service supporting CSV, JSON, TXT, and Anki formats
+//  Dictionary import service supporting CSV, JSON, and TXT formats
 //
 
 import Foundation
@@ -39,14 +39,12 @@ final class DictionaryImporter {
         case csv = "Comma-Separated Values (CSV)"
         case json = "JavaScript Object Notation (JSON)"
         case txt = "Plain Text (TXT)"
-        case anki = "Anki Deck (APKG)"
 
         var fileExtensions: [String] {
             switch self {
             case .csv: ["csv"]
             case .json: ["json"]
             case .txt: ["txt", "text"]
-            case .anki: ["apkg"]
             }
         }
 
@@ -55,7 +53,6 @@ final class DictionaryImporter {
             case .csv: .commaSeparatedText
             case .json: .json
             case .txt: .plainText
-            case .anki: nil // Custom format
             }
         }
     }
@@ -356,9 +353,6 @@ final class DictionaryImporter {
             return try await self.parseJSON(url, limit: limit)
         case .txt:
             return try await self.parseTXT(url, fieldMapping: fieldMapping, limit: limit)
-        case .anki:
-            self.logger.warning("Anki format not yet supported")
-            return []
         }
     }
 
@@ -448,6 +442,57 @@ final class DictionaryImporter {
 
     // MARK: - Parsers
 
+    /// Parse CSV line with support for quoted fields
+    ///
+    /// **Handles:**
+    /// - Quoted fields: `"Hello, world"` → `Hello, world`
+    /// - Escaped quotes: `"Hello ""world"""` → `Hello "world"`
+    /// - Empty fields: `word,,definition` → `[word, "", definition]`
+    ///
+    /// **Example:**
+    /// ```swift
+    /// parseCSVLine('"Hello, world",definition,test') // ["Hello, world", "definition", "test"]
+    /// ```
+    ///
+    /// - Parameter line: The CSV line to parse
+    /// - Returns: Array of field values
+    private func parseCSVLine(_ line: String) -> [String] {
+        var fields: [String] = []
+        var currentField = ""
+        var inQuotes = false
+        var i = line.startIndex
+
+        while i < line.endIndex {
+            let char = line[i]
+
+            if char == "\"" {
+                // Check for escaped quote ("")
+                let nextIndex = line.index(after: i)
+                if nextIndex < line.endIndex, line[nextIndex] == "\"" {
+                    currentField.append("\"")
+                    i = line.index(after: nextIndex)
+                } else {
+                    // Toggle quote mode
+                    inQuotes.toggle()
+                    i = nextIndex
+                }
+            } else if char == "," && !inQuotes {
+                // Field separator (only outside quotes)
+                fields.append(currentField)
+                currentField = ""
+                i = line.index(after: i)
+            } else {
+                currentField.append(char)
+                i = line.index(after: i)
+            }
+        }
+
+        // Add last field
+        fields.append(currentField)
+
+        return fields
+    }
+
     /// Parse CSV file with field mapping
     private func parseCSV(
         _ url: URL,
@@ -463,7 +508,7 @@ final class DictionaryImporter {
                 lineNumber: 0,
                 fieldName: nil,
                 reason: "Unable to read file: \(error.localizedDescription)",
-                isRetryable: (error as NSError).code == NSFileReadOutOfMemoryError
+                isRetryable: false
             )
         }
 
@@ -486,7 +531,7 @@ final class DictionaryImporter {
             guard index < limit else { break }
 
             let lineNumber = startIndex + index + 1
-            let fields = line.split(separator: ",", omittingEmptySubsequences: false).map { $0.trimmingCharacters(in: .whitespaces) }
+            let fields = parseCSVLine(String(line)).map { $0.trimmingCharacters(in: .whitespaces) }
 
             guard fields.count > max(fieldMapping.wordFieldIndex, fieldMapping.definitionFieldIndex) else {
                 errors.append(ImportError(
@@ -596,7 +641,7 @@ final class DictionaryImporter {
                 lineNumber: 0,
                 fieldName: nil,
                 reason: "Unable to read file: \(error.localizedDescription)",
-                isRetryable: (error as NSError).code == NSFileReadOutOfMemoryError
+                isRetryable: false
             )
         }
 
@@ -750,7 +795,7 @@ extension DictionaryImporter {
                 lineNumber: 0,
                 fieldName: nil,
                 reason: "Unable to read file: \(error.localizedDescription)",
-                isRetryable: (error as NSError).code == NSFileReadOutOfMemoryError
+                isRetryable: false
             )
         }
 

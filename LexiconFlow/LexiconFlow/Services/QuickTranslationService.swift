@@ -41,7 +41,10 @@ actor QuickTranslationService {
     static let shared = QuickTranslationService()
 
     /// Logger for debugging and monitoring
-    private let logger = Logger(subsystem: "com.lexiconflow.translation", category: "QuickTranslation")
+    ///
+    /// **Note:** Static logger allows access from nonisolated helper functions
+    /// without crossing actor boundaries.
+    private static let logger = Logger(subsystem: "com.lexiconflow.translation", category: "QuickTranslation")
 
     /// Translation cache TTL (30 days)
     private enum CacheConstants {
@@ -150,7 +153,7 @@ actor QuickTranslationService {
     // MARK: - Initialization
 
     private init() {
-        self.logger.info("QuickTranslationService initialized with 30-day cache TTL")
+        Self.logger.info("QuickTranslationService initialized with 30-day cache TTL")
     }
 
     // MARK: - Public API
@@ -184,10 +187,13 @@ actor QuickTranslationService {
         request: FlashcardTranslationRequest,
         container: ModelContainer
     ) async throws -> QuickTranslationResult {
+        // Check for cancellation at entry point
+        try Task.checkCancellation()
+
         // Input validation
         let word = request.word.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !word.isEmpty else {
-            self.logger.warning("Translation attempted with empty word")
+            Self.logger.warning("Translation attempted with empty word")
             throw QuickTranslationError.emptyWord
         }
 
@@ -195,7 +201,10 @@ actor QuickTranslationService {
         let sourceLanguage = await AppSettings.translationSourceLanguage
         let targetLanguage = await AppSettings.translationTargetLanguage
 
-        self.logger.debug("Translating '\(word)' from \(sourceLanguage) to \(targetLanguage)")
+        Self.logger.debug("Translating '\(word)' from \(sourceLanguage) to \(targetLanguage)")
+
+        // Check for cancellation before expensive operations
+        try Task.checkCancellation()
 
         // Step 1: Check cache (on MainActor for SwiftData safety)
         let cachedResult = await MainActor.run {
@@ -217,11 +226,14 @@ actor QuickTranslationService {
         }
 
         if let cachedResult {
-            self.logger.info("Cache HIT for '\(word)'")
+            Self.logger.info("Cache HIT for '\(word)'")
             return cachedResult
         }
 
-        self.logger.info("Cache MISS for '\(word)', performing fresh translation")
+        Self.logger.info("Cache MISS for '\(word)', performing fresh translation")
+
+        // Check for cancellation before expensive translation
+        try Task.checkCancellation()
 
         // Step 2: Fresh translation
         let translatedText: String
@@ -235,26 +247,26 @@ actor QuickTranslationService {
             // Map OnDeviceTranslationError to QuickTranslationError
             switch error {
             case .languagePackNotAvailable:
-                self.logger.error("Language pack not available")
+                Self.logger.error("Language pack not available")
                 throw QuickTranslationError.languagePackMissing(
                     source: sourceLanguage,
                     target: targetLanguage
                 )
             case .unsupportedLanguagePair:
-                self.logger.error("Unsupported language pair")
+                Self.logger.error("Unsupported language pair")
                 throw QuickTranslationError.languagePackMissing(
                     source: sourceLanguage,
                     target: targetLanguage
                 )
             case .translationFailed:
-                self.logger.error("Translation failed: \(error.localizedDescription)")
+                Self.logger.error("Translation failed: \(error.localizedDescription)")
                 throw QuickTranslationError.translationFailed(reason: error.localizedDescription)
             case .languagePackDownloadFailed, .emptyInput:
-                self.logger.error("Translation error: \(error.localizedDescription)")
+                Self.logger.error("Translation error: \(error.localizedDescription)")
                 throw QuickTranslationError.translationFailed(reason: error.localizedDescription)
             }
         } catch {
-            self.logger.error("Unexpected translation error: \(error.localizedDescription)")
+            Self.logger.error("Unexpected translation error: \(error.localizedDescription)")
             throw QuickTranslationError.translationFailed(reason: error.localizedDescription)
         }
 
@@ -291,7 +303,7 @@ actor QuickTranslationService {
         let source = await AppSettings.translationSourceLanguage
         let target = await AppSettings.translationTargetLanguage
 
-        self.logger.info("Requesting language pack download for \(source) → \(target)")
+        Self.logger.info("Requesting language pack download for \(source) → \(target)")
 
         // Try to download target language (most likely missing)
         try await OnDeviceTranslationService.shared.requestLanguageDownload(target)
@@ -335,10 +347,10 @@ actor QuickTranslationService {
 
                 if !expiredTranslations.isEmpty {
                     try context.save()
-                    self.logger.info("Cleared \(expiredTranslations.count) expired translations from cache")
+                    Self.logger.info("Cleared \(expiredTranslations.count) expired translations from cache")
                 }
             } catch {
-                self.logger.error("Failed to clear expired cache: \(error.localizedDescription)")
+                Self.logger.error("Failed to clear expired cache: \(error.localizedDescription)")
                 Task {
                     await Analytics.trackError("quick_translation_cache_cleanup_failed", error: error)
                 }
@@ -375,7 +387,7 @@ actor QuickTranslationService {
             let results = try modelContext.fetch(fetchDescriptor)
             return results.first // Return most recent valid entry
         } catch {
-            self.logger.error("Failed to fetch cached translation: \(error.localizedDescription)")
+            Self.logger.error("Failed to fetch cached translation: \(error.localizedDescription)")
             return nil
         }
     }
@@ -403,7 +415,7 @@ actor QuickTranslationService {
 
             // 2. Enforce cache size limit
             if currentCount >= CacheConstants.maxCacheSize {
-                self.logger.info("Cache full (\(currentCount)/\(CacheConstants.maxCacheSize)), evicting oldest entries")
+                Self.logger.info("Cache full (\(currentCount)/\(CacheConstants.maxCacheSize)), evicting oldest entries")
 
                 // Fetch oldest entries (LRU eviction)
                 let deleteDescriptor = FetchDescriptor<CachedTranslation>(
@@ -418,7 +430,7 @@ actor QuickTranslationService {
                 }
 
                 try modelContext.save()
-                self.logger.info("Evicted \(deleteCount) oldest cache entries")
+                Self.logger.info("Evicted \(deleteCount) oldest cache entries")
             }
 
             // 3. Insert new entry
@@ -433,9 +445,9 @@ actor QuickTranslationService {
             modelContext.insert(cachedTranslation)
             try modelContext.save()
 
-            self.logger.info("Saved translation to cache: '\(word)' → '\(translatedText)' (size: \(currentCount + 1)/\(CacheConstants.maxCacheSize))")
+            Self.logger.info("Saved translation to cache: '\(word)' → '\(translatedText)' (size: \(currentCount + 1)/\(CacheConstants.maxCacheSize))")
         } catch {
-            self.logger.error("Failed to save translation to cache: \(error.localizedDescription)")
+            Self.logger.error("Failed to save translation to cache: \(error.localizedDescription)")
             await Analytics.trackError("quick_translation_cache_save_failed", error: error)
         }
     }

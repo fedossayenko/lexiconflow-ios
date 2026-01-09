@@ -18,13 +18,16 @@ This document outlines the technical architecture for Lexicon Flow, a native iOS
 | **Concurrency** | Swift Concurrency | Swift 6 | async/await, Actor isolation, MainActor |
 | **Algorithm** | FSRS | v5 | Three-component model (S, D, R), superior to SM-2 |
 | **AI/ML** | Foundation Models | iOS 26 | On-device LLM for sentence generation |
+> ⚠️ **STATUS: Infrastructure in place, feature disabled** |
+| | | | Foundation Models integration is implemented but **disabled via feature flag**. |
+| | | | Planned for Phase 3 rollout per ROADMAP.md. |
 | **Translation** | Translation API | iOS 26 | On-device, zero-latency translation |
 | **Audio** | AVSpeechSynthesizer | iOS 26 | Neural TTS voices, accent selection |
 | **Haptics** | CoreHaptics | iOS 26 | Custom vibration patterns |
 | **Navigation** | NavigationStack + Custom | iOS 26 | Hybrid for optimal fluidity |
 | **Widgets** | WidgetKit | iOS 26 | Lock Screen, Live Activities |
 | **Testing** | Swift Testing | Xcode 26 | Unit + integration testing |
-| **Minimum Target** | iOS | 26.0 | No legacy fallbacks needed |
+| **Minimum Target** | iOS | 26.1 | No legacy fallbacks needed |
 
 ---
 
@@ -39,7 +42,7 @@ Lexicon Flow adopts Swift 6's strict concurrency checking to ensure thread safet
 actor SRSScheduler {
     private var fsrs: FSRS
 
-    func schedule(card: Card, rating: Rating) async -> SchedulingResult {
+    func schedule(card: Flashcard, rating: Rating) async -> SchedulingResult {
         // FSRS calculations run on actor's executor
         return fsrs.review(card: card.fsrsState, rating: rating)
     }
@@ -59,7 +62,7 @@ actor DataImporter {
 
         var count = 0
         for dto in cards {
-            let card = Card(
+            let card = Flashcard(
                 word: dto.word,
                 definition: dto.definition,
                 phonetic: dto.phonetic
@@ -86,7 +89,7 @@ actor DataImporter {
 ### Entity Relationship Diagram
 
 ```
-Deck (1) ────< (N) Card (1) ────< (N) ReviewLog
+Deck (1) ────< (N) Flashcard (1) ────< (N) ReviewLog
      │                │
      │                └─── (1) FSRSState
      │
@@ -107,8 +110,8 @@ final class Deck {
     var createdAt: Date
     var order: Int
 
-    @Relationship(deleteRule: .nullify, inverse: \Card.deck)
-    var cards: [Card] = []
+    @Relationship(deleteRule: .nullify, inverse: \Flashcard.deck)
+    var cards: [Flashcard] = []
 
     init(name: String, icon: String? = nil) {
         self.id = UUID()
@@ -120,7 +123,7 @@ final class Deck {
 }
 
 @Model
-final class Card {
+final class Flashcard {
     var id: UUID
     var word: String
     var definition: String
@@ -180,8 +183,8 @@ final class ReviewLog {
     var elapsedDays: Int
     var state: CardState
 
-    @Relationship(inverse: \Card.reviewLogs)
-    var card: Card?
+    @Relationship(inverse: \Flashcard.reviewLogs)
+    var card: Flashcard?
 
     init(
         rating: Rating,
@@ -341,7 +344,7 @@ class Scheduler {
     private let fsrs = FSRS()
     private let actor: SRSScheduler
 
-    func review(card: Card, rating: Rating) async -> SchedulingResult {
+    func review(card: Flashcard, rating: Rating) async -> SchedulingResult {
         // Convert our Card to FSRS Card
         var fsrsCard = Card(
             stability: card.fsrsState.stability,
@@ -371,13 +374,13 @@ class Scheduler {
     }
 
     // Query for due cards
-    func fetchDueCards(in context: ModelContext) -> [Card] {
+    func fetchDueCards(in context: ModelContext) -> [Flashcard] {
         let now = Date()
-        let predicate = #Predicate<Card> { card in
+        let predicate = #Predicate<Flashcard> { card in
             card.fsrsState.dueDate <= now
         }
 
-        let descriptor = FetchDescriptor<Card>(
+        let descriptor = FetchDescriptor<Flashcard>(
             predicate: predicate,
             sortBy: [SortDescriptor(\.fsrsState.dueDate)]
         )
@@ -397,7 +400,7 @@ class Scheduler {
 
 ```swift
 struct FlashcardView: View {
-    @Bindable var card: Card
+    @Bindable var card: Flashcard
     @State private var offset: CGSize = .zero
     @State private var isFlipped = false
     @Namespace private var namespace
@@ -487,6 +490,11 @@ struct DeckGridView: View {
 
 ## AI Integration
 
+> ⚠️ **STATUS: Infrastructure in place, feature disabled**
+>
+> Foundation Models integration is implemented but **disabled via feature flag**.
+> Planned for Phase 3 rollout per ROADMAP.md.
+
 ### Foundation Models Framework
 
 #### Sentence Generation
@@ -518,7 +526,7 @@ class SentenceGenerator {
 
 ```swift
 @Model
-final class Card {
+final class Flashcard {
     // ... existing properties
 
     var generatedSentence: String?
@@ -956,7 +964,7 @@ if count % 500 == 0 {
 ### 4. Predicate Queries
 
 ```swift
-let predicate = #Predicate<Card> { card in
+let predicate = #Predicate<Flashcard> { card in
     card.fsrsState.dueDate <= now && card.fsrsState.state == .review
 }
 ```
@@ -991,7 +999,7 @@ LexiconFlow/
 │   ├── LexiconFlowApp.swift
 │   └── AppDelegate.swift
 ├── Models/
-│   ├── Card.swift
+│   ├── Flashcard.swift
 │   ├── Deck.swift
 │   ├── ReviewLog.swift
 │   └── FSRSState.swift
@@ -1040,5 +1048,5 @@ dependencies: [
 
 **Document Version**: 1.0
 **Last Updated**: January 2026
-**iOS Target**: 26.0
+**iOS Target**: 26.1
 **Swift Version**: 6.0

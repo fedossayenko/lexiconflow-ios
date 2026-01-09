@@ -4,12 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Lexicon Flow** is a native iOS vocabulary acquisition app built with **Swift 6**, **SwiftUI**, **SwiftData**, and the **FSRS v5** spaced repetition algorithm. It targets iOS 26.0+ and uses "Liquid Glass" design patterns for a fluid, state-of-flow learning experience.
+**Lexicon Flow** is a native iOS vocabulary acquisition app built with **Swift 6**, **SwiftUI**, **SwiftData**, and the **FSRS v5** spaced repetition algorithm. It targets iOS 26.1+ and uses "Liquid Glass" design patterns for a fluid, state-of-flow learning experience.
 
 **Core Differentiators:**
 - FSRS v5 algorithm (adaptive, superior to SM-2)
 - iOS 26 "Liquid Glass" UI with reactive glass effects
 - On-device AI (Foundation Models) for privacy
+  > ⚠️ **NOTE**: Foundation Models integration is implemented but **disabled via feature flag** (planned for Phase 3)
 - **On-device translation** (iOS 26 Translation framework) - 100% offline, no API costs
 - Two study modes: Scheduled (respects due dates) and Cram (for practice)
 
@@ -21,7 +22,7 @@ cd LexiconFlow
 xcodebuild build \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.2'
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.1'
 ```
 
 ### Run Tests
@@ -31,7 +32,7 @@ cd LexiconFlow
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.2' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.1' \
   -only-testing:LexiconFlowTests \
   -parallel-testing-enabled NO
 
@@ -39,7 +40,7 @@ xcodebuild test \
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.2' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.1' \
   -only-testing:LexiconFlowTests/TranslationServiceTests \
   -parallel-testing-enabled NO
 ```
@@ -876,7 +877,7 @@ LexiconFlow/
 │   ├── Decks/              # DeckDetailView
 │   └── Settings/           # TranslationSettingsView, AppearanceSettingsView, etc.
 ├── Assets.xcassets/        # Images, colors
-└── LexiconFlowTests/       # Unit tests (24+ suites)
+└── LexiconFlowTests/       # Unit tests (63+ test suites)
 ```
 
 ## Concurrency Guidelines
@@ -890,7 +891,7 @@ LexiconFlow/
 ## Testing
 
 - **Framework**: Swift Testing (`import Testing`)
-- **Structure**: 24 test suites in `LexiconFlowTests/`:
+- **Structure**: 63 test suites in `LexiconFlowTests/` with comprehensive coverage:
   - ModelTests, SchedulerTests, DataImporterTests
   - StudySessionViewModelTests, OnboardingTests, ErrorHandlingTests
   - FSRSWrapperTests, DateMathTests, AnalyticsTests

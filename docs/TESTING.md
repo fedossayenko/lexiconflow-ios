@@ -27,11 +27,10 @@ LexiconFlowTests/
 ```
 
 **Current Coverage** (as of January 2026):
-- Total tests: **370+**
-- Test suites: **24**
+- **63+ test suites** with comprehensive coverage
 - Target: >80% for new code
 
-### Test Suites (24 total)
+### Test Suites (63 total)
 
 | Test Suite | Focus | Test Count |
 |------------|-------|------------|
@@ -232,7 +231,7 @@ cd LexiconFlow
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.2' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.1' \
   -only-testing:LexiconFlowTests
 ```
 
@@ -242,7 +241,7 @@ xcodebuild test \
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.2' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.1' \
   -only-testing:LexiconFlowTests/ModelTests
 ```
 
@@ -252,7 +251,7 @@ xcodebuild test \
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.2' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.1' \
   -only-testing:LexiconFlowTests/ModelTests/testFlashcardCreation
 ```
 
@@ -426,7 +425,7 @@ private func createTestFlashcard(
 Tests run automatically on:
 - Pull requests to `main` or `develop`
 - Workflow: `.github/workflows/ci.yml`
-- Platform: macOS latest, iPhone 17 simulator, iOS 26.2
+- Platform: macOS latest, iPhone 17 simulator, iOS 26.1
 
 ## Writing New Tests
 

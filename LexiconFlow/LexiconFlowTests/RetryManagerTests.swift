@@ -156,7 +156,7 @@ struct RetryManagerTests {
             logger: self.logger
         )
 
-        #expect(attemptCount == 2, "Should attempt maxRetries times")
+        #expect(attemptCount == 3, "Should execute once + retry maxRetries times (1 + 2 = 3)")
 
         switch result {
         case .success:
@@ -185,7 +185,7 @@ struct RetryManagerTests {
             logger: self.logger
         )
 
-        #expect(attemptCount == 5, "Should retry all 5 times since isRetryable returns true")
+        #expect(attemptCount == 6, "Should execute once + retry 5 times since isRetryable returns true")
 
         switch result {
         case .success:
@@ -217,7 +217,7 @@ struct RetryManagerTests {
             logger: self.logger
         )
 
-        #expect(attemptCount == 5, "Should retry all 5 times since isRetryable returns true for all errors")
+        #expect(attemptCount == 6, "Should execute once + retry 5 times since isRetryable returns true for all errors")
 
         switch result {
         case .success:
@@ -430,7 +430,7 @@ struct RetryManagerTests {
             }
         }
 
-        var serverErrors = [3] // Simulate 503 error once, then succeed
+        var serverErrors = [503] // Simulate 503 error once, then succeed
         var attemptCount = 0
 
         let result = await RetryManager.executeWithRetry(

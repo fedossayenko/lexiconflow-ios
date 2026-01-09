@@ -17,6 +17,7 @@ import Testing
 @testable import LexiconFlow
 
 /// Test suite for ModelContainer fallback behavior
+@MainActor
 struct ModelContainerFallbackTests {
     // MARK: - Persistent Container Tests
 
@@ -99,7 +100,7 @@ struct ModelContainerFallbackTests {
         // Test with EmptyModel as last resort
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
 
-        let container = try ModelContainer(for: EmptyModel.self, configurations: [configuration])
+        let container = try ModelContainer(for: EmptyModel.self, configurations: configuration)
 
         // Verify empty container is created
         #expect(true, "Empty fallback container should be created")

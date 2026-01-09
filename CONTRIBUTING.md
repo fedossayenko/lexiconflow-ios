@@ -7,7 +7,7 @@ Thank you for your interest in contributing to LexiconFlow! This document provid
 ### Prerequisites
 
 - Xcode 26.0+
-- iOS 26.0+ SDK
+- iOS 26.1+ SDK
 - macOS Sequoia+
 - Swift 6 compiler
 
