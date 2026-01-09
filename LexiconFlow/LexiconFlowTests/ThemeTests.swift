@@ -5,8 +5,8 @@
 //  Tests for Theme utilities and CEFR color coding
 //
 
-import Testing
 import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for Theme utilities
@@ -18,7 +18,6 @@ import SwiftUI
 /// - Animation and spacing constants
 /// - View extension methods
 struct ThemeTests {
-
     // MARK: - CEFR Color Tests
 
     @Test("Return green for A1 level")
@@ -149,7 +148,6 @@ struct ThemeTests {
         #expect(style.opacity == 0.2, "Standard A1 should have 0.2 opacity")
     }
 
-
     // MARK: - Animation Constants Tests
 
     @Test("Have defined animation duration")
@@ -161,7 +159,6 @@ struct ThemeTests {
     func quickAnimationDuration() {
         #expect(Theme.quickAnimationDuration == 0.15, "Quick animation duration should be 0.15s")
     }
-
 
     // MARK: - Spacing Constants Tests
 
@@ -190,7 +187,6 @@ struct ThemeTests {
         #expect(Theme.spacingXLarge == 24, "Extra large spacing should be 24pt")
     }
 
-
     // MARK: - Corner Radius Tests
 
     @Test("Have defined small corner radius")
@@ -207,7 +203,6 @@ struct ThemeTests {
     func cornerRadiusLarge() {
         #expect(Theme.cornerRadiusLarge == 16, "Large corner radius should be 16pt")
     }
-
 
     // MARK: - View Extension Tests
 

@@ -5,8 +5,8 @@
 //  Shows study options for a specific deck
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct DeckStudyDetailView: View {
     @Environment(\.modelContext) private var modelContext
@@ -21,19 +21,19 @@ struct DeckStudyDetailView: View {
 
     var body: some View {
         Group {
-            if isSessionActive, let mode = selectedMode {
-                StudySessionView(mode: mode, decks: [deck], onComplete: sessionComplete)
+            if self.isSessionActive, let mode = selectedMode {
+                StudySessionView(mode: mode, decks: [self.deck], onComplete: self.sessionComplete)
             } else {
-                studyOptionsView
+                self.studyOptionsView
             }
         }
         .onAppear {
-            refreshStats()
+            self.refreshStats()
         }
-        .alert("Error", isPresented: .constant(errorMessage != nil)) {
-            Button("OK") { errorMessage = nil }
+        .alert("Error", isPresented: .constant(self.errorMessage != nil)) {
+            Button("OK") { self.errorMessage = nil }
         } message: {
-            Text(errorMessage ?? "")
+            Text(self.errorMessage ?? "")
         }
     }
 
@@ -41,38 +41,38 @@ struct DeckStudyDetailView: View {
         ScrollView {
             VStack(spacing: 20) {
                 // Deck header
-                deckHeader
+                self.deckHeader
 
                 // Learn New (always available)
-                learnNewSection
+                self.learnNewSection
 
                 // Scheduled (only if has due cards)
-                if stats.dueCount > 0 {
-                    scheduledSection
+                if self.stats.dueCount > 0 {
+                    self.scheduledSection
                 }
 
                 Spacer()
             }
             .padding()
         }
-        .navigationTitle(deck.name)
+        .navigationTitle(self.deck.name)
         .navigationBarTitleDisplayMode(.inline)
     }
 
     private var deckHeader: some View {
         HStack(spacing: 16) {
-            Image(systemName: deck.icon ?? "folder.fill")
+            Image(systemName: self.deck.icon ?? "folder.fill")
                 .font(.system(size: 40))
                 .foregroundStyle(.blue)
                 .frame(width: 60, height: 60)
                 .background(.ultraThinMaterial, in: .circle)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(deck.name)
+                Text(self.deck.name)
                     .font(.title2)
                     .fontWeight(.bold)
 
-                Text("\(stats.totalCount) cards total")
+                Text("\(self.stats.totalCount) cards total")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -84,22 +84,22 @@ struct DeckStudyDetailView: View {
     }
 
     private var learnNewSection: some View {
-        studyModeCard(
+        self.studyModeCard(
             icon: "plus.circle.fill",
             title: "Learn New",
-            description: "\(stats.newCount) new cards to learn",
+            description: "\(self.stats.newCount) new cards to learn",
             color: .green,
-            action: { startSession(.learning) }
+            action: { self.startSession(.learning) }
         )
     }
 
     private var scheduledSection: some View {
-        studyModeCard(
+        self.studyModeCard(
             icon: "calendar.badge.clock",
             title: "Scheduled",
-            description: "\(stats.dueCount) cards due for review",
+            description: "\(self.stats.dueCount) cards due for review",
             color: .orange,
-            action: { startSession(.scheduled) }
+            action: { self.startSession(.scheduled) }
         )
     }
 
@@ -136,29 +136,29 @@ struct DeckStudyDetailView: View {
 
     private func refreshStats() {
         let scheduler = Scheduler(modelContext: modelContext)
-        stats.newCount = scheduler.newCardCount(for: deck)
-        stats.dueCount = scheduler.dueCardCount(for: deck)
-        stats.totalCount = scheduler.totalCardCount(for: deck)
+        self.stats.newCount = scheduler.newCardCount(for: self.deck)
+        self.stats.dueCount = scheduler.dueCardCount(for: self.deck)
+        self.stats.totalCount = scheduler.totalCardCount(for: self.deck)
     }
 
     private func startSession(_ mode: StudyMode) {
         // Validate cards available
         let scheduler = Scheduler(modelContext: modelContext)
-        let availableCount = scheduler.fetchCards(for: deck, mode: mode, limit: 1).count
+        let availableCount = scheduler.fetchCards(for: self.deck, mode: mode, limit: 1).count
 
         guard availableCount > 0 else {
-            errorMessage = "No cards available for this mode"
+            self.errorMessage = "No cards available for this mode"
             return
         }
 
-        selectedMode = mode
-        isSessionActive = true
+        self.selectedMode = mode
+        self.isSessionActive = true
     }
 
     private func sessionComplete() {
-        isSessionActive = false
-        selectedMode = nil
-        refreshStats()
+        self.isSessionActive = false
+        self.selectedMode = nil
+        self.refreshStats()
     }
 }
 

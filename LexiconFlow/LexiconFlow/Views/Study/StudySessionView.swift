@@ -5,8 +5,8 @@
 //  Displays current card and handles rating input
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct StudySessionView: View {
     @State private var viewModel: StudySessionViewModel?
@@ -25,7 +25,7 @@ struct StudySessionView: View {
 
     var body: some View {
         @ViewBuilder var content: some View {
-            if let viewModel = viewModel {
+            if let viewModel {
                 if viewModel.isComplete {
                     sessionCompleteView(vm: viewModel)
                 } else if let currentCard = viewModel.currentCard {
@@ -51,8 +51,8 @@ struct StudySessionView: View {
                             }
                         }
                         .frame(maxHeight: .infinity)
-                        .id(currentCard.persistentModelID)  // View identity tied to card
-                        .opacity(viewModel.isComplete ? 0 : 1)  // Hide when complete
+                        .id(currentCard.persistentModelID) // View identity tied to card
+                        .opacity(viewModel.isComplete ? 0 : 1) // Hide when complete
 
                         // Rating buttons (show after flip)
                         if isFlipped {
@@ -92,22 +92,22 @@ struct StudySessionView: View {
         }
 
         return content
-            .alert("Error", isPresented: $showError) {
+            .alert("Error", isPresented: self.$showError) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text(viewModel?.lastError?.localizedDescription ?? "An unknown error occurred")
+                Text(self.viewModel?.lastError?.localizedDescription ?? "An unknown error occurred")
             }
             .task {
                 if viewModel == nil {
-                    viewModel = StudySessionViewModel(modelContext: modelContext, decks: decks, mode: mode)
+                    viewModel = StudySessionViewModel(modelContext: self.modelContext, decks: self.decks, mode: self.mode)
                 }
-                if let viewModel = viewModel, viewModel.cards.isEmpty {
+                if let viewModel, viewModel.cards.isEmpty {
                     viewModel.loadCards()
                 }
             }
-            .onChange(of: viewModel?.lastError != nil) { _, hasError in
+            .onChange(of: self.viewModel?.lastError != nil) { _, hasError in
                 if hasError {
-                    showError = true
+                    self.showError = true
                 }
             }
     }
@@ -125,7 +125,7 @@ struct StudySessionView: View {
                 .foregroundStyle(.secondary)
 
             Button("Done") {
-                onComplete()
+                self.onComplete()
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)

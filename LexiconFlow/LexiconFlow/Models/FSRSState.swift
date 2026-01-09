@@ -6,8 +6,8 @@
 //  Encapsulates the mathematical state of the Free Spaced Repetition Scheduler
 //
 
-import SwiftData
 import Foundation
+import SwiftData
 
 /// FSRS algorithm state for tracking memory retention
 ///
@@ -61,17 +61,18 @@ final class FSRSState {
 
     /// Computed property for type-safe state enum access
     var state: FlashcardState {
-        get { FlashcardState(rawValue: stateEnum) ?? .new }
-        set { stateEnum = newValue.rawValue }
+        get { FlashcardState(rawValue: self.stateEnum) ?? .new }
+        set { self.stateEnum = newValue.rawValue }
     }
 
     /// Initialize with default values for a new card
-    init(stability: Double = 0.0,
-         difficulty: Double = 5.0,
-         retrievability: Double = 0.9,
-         dueDate: Date = Date(),
-         stateEnum: String = FlashcardState.new.rawValue) {
-
+    init(
+        stability: Double = 0.0,
+        difficulty: Double = 5.0,
+        retrievability: Double = 0.9,
+        dueDate: Date = Date(),
+        stateEnum: String = FlashcardState.new.rawValue
+    ) {
         self.stability = stability
         self.difficulty = difficulty
         self.retrievability = retrievability
@@ -80,16 +81,20 @@ final class FSRSState {
     }
 
     /// Initialize with FlashcardState enum
-    convenience init(stability: Double = 0.0,
-                     difficulty: Double = 5.0,
-                     retrievability: Double = 0.9,
-                     dueDate: Date = Date(),
-                     state: FlashcardState = .new) {
-        self.init(stability: stability,
-                  difficulty: difficulty,
-                  retrievability: retrievability,
-                  dueDate: dueDate,
-                  stateEnum: state.rawValue)
+    convenience init(
+        stability: Double = 0.0,
+        difficulty: Double = 5.0,
+        retrievability: Double = 0.9,
+        dueDate: Date = Date(),
+        state: FlashcardState = .new
+    ) {
+        self.init(
+            stability: stability,
+            difficulty: difficulty,
+            retrievability: retrievability,
+            dueDate: dueDate,
+            stateEnum: state.rawValue
+        )
     }
 }
 

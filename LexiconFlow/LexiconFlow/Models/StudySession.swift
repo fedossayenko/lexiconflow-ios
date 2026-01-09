@@ -5,8 +5,8 @@
 //  Study session tracking for analytics and progress monitoring
 //
 
-import SwiftData
 import Foundation
+import SwiftData
 
 /// A record of a complete study session
 ///
@@ -65,18 +65,18 @@ final class StudySession {
     /// Type-safe access to study mode enum
     var mode: StudyMode {
         get {
-            switch modeEnum {
-            case "scheduled": return .scheduled
-            case "learning": return .learning
-            case "cram": return .cram
-            default: return .scheduled
+            switch self.modeEnum {
+            case "scheduled": .scheduled
+            case "learning": .learning
+            case "cram": .cram
+            default: .scheduled
             }
         }
         set {
             switch newValue {
-            case .scheduled: modeEnum = "scheduled"
-            case .learning: modeEnum = "learning"
-            case .cram: modeEnum = "cram"
+            case .scheduled: self.modeEnum = "scheduled"
+            case .learning: self.modeEnum = "learning"
+            case .cram: self.modeEnum = "cram"
             }
         }
     }
@@ -85,7 +85,7 @@ final class StudySession {
     /// - Returns 0 if session hasn't ended yet
     var durationSeconds: TimeInterval {
         guard let end = endTime else { return 0 }
-        return end.timeIntervalSince(startTime)
+        return end.timeIntervalSince(self.startTime)
     }
 
     /// Human-readable duration (e.g., "5m 23s")
@@ -105,7 +105,7 @@ final class StudySession {
 
     /// Whether this session is currently active
     var isActive: Bool {
-        endTime == nil
+        self.endTime == nil
     }
 
     // MARK: - Initialization
@@ -118,12 +118,13 @@ final class StudySession {
     ///   - endTime: When session ended (nil for active sessions)
     ///   - cardsReviewed: Number of cards reviewed
     ///   - modeEnum: Study mode as string ("scheduled", "learning", or "cram")
-    init(id: UUID = UUID(),
-         startTime: Date = Date(),
-         endTime: Date? = nil,
-         cardsReviewed: Int = 0,
-         modeEnum: String = "scheduled") {
-
+    init(
+        id: UUID = UUID(),
+        startTime: Date = Date(),
+        endTime: Date? = nil,
+        cardsReviewed: Int = 0,
+        modeEnum: String = "scheduled"
+    ) {
         self.id = id
         self.startTime = startTime
         self.endTime = endTime
@@ -132,19 +133,22 @@ final class StudySession {
     }
 
     /// Initialize with StudyMode enum
-    convenience init(startTime: Date = Date(),
-                     mode: StudyMode = .scheduled) {
-        let modeString: String
-        switch mode {
-        case .scheduled: modeString = "scheduled"
-        case .learning: modeString = "learning"
-        case .cram: modeString = "cram"
+    convenience init(
+        startTime: Date = Date(),
+        mode: StudyMode = .scheduled
+    ) {
+        let modeString = switch mode {
+        case .scheduled: "scheduled"
+        case .learning: "learning"
+        case .cram: "cram"
         }
 
-        self.init(id: UUID(),
-                  startTime: startTime,
-                  endTime: nil,
-                  cardsReviewed: 0,
-                  modeEnum: modeString)
+        self.init(
+            id: UUID(),
+            startTime: startTime,
+            endTime: nil,
+            cardsReviewed: 0,
+            modeEnum: modeString
+        )
     }
 }

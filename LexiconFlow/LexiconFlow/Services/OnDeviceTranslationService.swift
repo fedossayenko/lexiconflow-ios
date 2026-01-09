@@ -84,12 +84,12 @@ final actor OnDeviceTranslationService {
         }
 
         func get() -> Task<Void, Never>? {
-            task
+            self.task
         }
 
         func cancel() {
-            task?.cancel()
-            task = nil
+            self.task?.cancel()
+            self.task = nil
         }
     }
 
@@ -103,17 +103,17 @@ final actor OnDeviceTranslationService {
 
     /// Helper to get Locale.Language from language code
     private var sourceLanguage: Locale.Language {
-        Locale.Language(identifier: sourceLanguageCode)
+        Locale.Language(identifier: self.sourceLanguageCode)
     }
 
     /// Helper to get Locale.Language from language code
     private var targetLanguage: Locale.Language {
-        Locale.Language(identifier: targetLanguageCode)
+        Locale.Language(identifier: self.targetLanguageCode)
     }
 
     /// Private initializer for singleton pattern
     private init() {
-        logger.info("OnDeviceTranslationService initialized")
+        self.logger.info("OnDeviceTranslationService initialized")
     }
 
     // MARK: - Language Configuration
@@ -137,23 +137,23 @@ final actor OnDeviceTranslationService {
     ///   - source: Source language code (e.g., "en", "es", "zh")
     ///   - target: Target language code (e.g., "ru", "fr", "de")
     func setLanguages(source: String, target: String) {
-        sourceLanguageCode = source
-        targetLanguageCode = target
-        logger.info("Languages configured: \(source) -> \(target)")
+        self.sourceLanguageCode = source
+        self.targetLanguageCode = target
+        self.logger.info("Languages configured: \(source) -> \(target)")
     }
 
     /// Get current source language identifier
     ///
     /// **Returns:** Language code string (e.g., "en", "es", "ru")
     var currentSourceLanguage: String {
-        sourceLanguageCode
+        self.sourceLanguageCode
     }
 
     /// Get current target language identifier
     ///
     /// **Returns:** Language code string (e.g., "en", "es", "ru")
     var currentTargetLanguage: String {
-        targetLanguageCode
+        self.targetLanguageCode
     }
 
     // MARK: - Language Support Detection
@@ -189,8 +189,8 @@ final actor OnDeviceTranslationService {
         from source: String? = nil,
         to target: String? = nil
     ) -> Bool {
-        let sourceCode = source ?? sourceLanguageCode
-        let targetCode = target ?? targetLanguageCode
+        let sourceCode = source ?? self.sourceLanguageCode
+        let targetCode = target ?? self.targetLanguageCode
 
         _ = Locale.Language(identifier: sourceCode)
         _ = Locale.Language(identifier: targetCode)
@@ -199,7 +199,7 @@ final actor OnDeviceTranslationService {
         // In iOS 26, we can't easily check without async, so we return true
         // and let the actual translation fail if not supported
         // The actual check will happen during translate() which is async
-        logger.debug("Language pair support check: \(sourceCode) -> \(targetCode)")
+        self.logger.debug("Language pair support check: \(sourceCode) -> \(targetCode)")
         return true
     }
 
@@ -220,7 +220,7 @@ final actor OnDeviceTranslationService {
     func availableLanguages() async -> [Locale.Language] {
         let availability = LanguageAvailability()
         let languages = await availability.supportedLanguages
-        logger.debug("Available on-device languages: \(languages.count) total")
+        self.logger.debug("Available on-device languages: \(languages.count) total")
         return languages
     }
 
@@ -244,7 +244,7 @@ final actor OnDeviceTranslationService {
         let availability = LanguageAvailability()
         let supportedLanguages = await availability.supportedLanguages
         let isAvailable = supportedLanguages.contains(language)
-        logger.debug("Language available: \(isAvailable)")
+        self.logger.debug("Language available: \(isAvailable)")
         return isAvailable
     }
 
@@ -261,7 +261,7 @@ final actor OnDeviceTranslationService {
     /// - Returns: `true` if the language is available for on-device translation
     func isLanguageAvailable(_ language: String) async -> Bool {
         let lang = Locale.Language(identifier: language)
-        return await isLanguageAvailable(lang)
+        return await self.isLanguageAvailable(lang)
     }
 
     /// Check if a language pack needs to be downloaded
@@ -289,9 +289,9 @@ final actor OnDeviceTranslationService {
         let needsDownload = !isAvailable
 
         if needsDownload {
-            logger.info("Language pack needs download: not currently available")
+            self.logger.info("Language pack needs download: not currently available")
         } else {
-            logger.debug("Language pack already installed: no download needed")
+            self.logger.debug("Language pack already installed: no download needed")
         }
 
         return needsDownload
@@ -312,7 +312,7 @@ final actor OnDeviceTranslationService {
     /// - Returns: `true` if the language pack needs download, `false` if already installed
     func needsLanguageDownload(_ language: String) async -> Bool {
         let lang = Locale.Language(identifier: language)
-        return await needsLanguageDownload(lang)
+        return await self.needsLanguageDownload(lang)
     }
 
     /// Request download of a language pack for offline translation
@@ -345,7 +345,7 @@ final actor OnDeviceTranslationService {
     func requestLanguageDownload(_ language: Locale.Language) async throws {
         // Store language code for error messages
         let languageCode = String(describing: language)
-        logger.info("Requesting language pack download for '\(languageCode)'")
+        self.logger.info("Requesting language pack download for '\(languageCode)'")
 
         // FIXED: Removed early return check for isLanguageAvailable()
         // Previously: If language appeared available, method returned early without triggering download
@@ -360,7 +360,7 @@ final actor OnDeviceTranslationService {
         // If language is already installed, session creation succeeds without prompt
         // If language needs download, system prompts user to download
         let session = TranslationSession(installedSource: language, target: temporaryTarget)
-        logger.info("Language download request completed successfully")
+        self.logger.info("Language download request completed successfully")
         _ = session // Mark as used to avoid warning
     }
 
@@ -383,7 +383,7 @@ final actor OnDeviceTranslationService {
     /// - Throws: `OnDeviceTranslationError` if download request fails
     func requestLanguageDownload(_ language: String) async throws {
         let lang = Locale.Language(identifier: language)
-        try await requestLanguageDownload(lang)
+        try await self.requestLanguageDownload(lang)
     }
 
     /// Request language pack download in background (parallel fallback approach)
@@ -420,15 +420,15 @@ final actor OnDeviceTranslationService {
             let lang = Locale.Language(identifier: language)
             let languageCode = String(describing: language)
 
-            logger.info("Starting background language pack download for '\(languageCode)'")
+            self.logger.info("Starting background language pack download for '\(languageCode)'")
 
             // Start new background attempt
             let newTask = Task {
                 do {
-                    try await requestLanguageDownload(lang)
-                    logger.info("Background language pack download succeeded for '\(languageCode)'")
+                    try await self.requestLanguageDownload(lang)
+                    self.logger.info("Background language pack download succeeded for '\(languageCode)'")
                 } catch {
-                    logger.warning("Background language pack download failed for '\(languageCode)': \(error.localizedDescription)")
+                    self.logger.warning("Background language pack download failed for '\(languageCode)': \(error.localizedDescription)")
                     // Silently fail - UI shows system settings button
                     // This is expected behavior: automatic download may not work,
                     // but system settings fallback provides reliable download path
@@ -448,8 +448,8 @@ final actor OnDeviceTranslationService {
     /// ```
     nonisolated func cancelBackgroundDownload() {
         Task {
-            await downloadTaskStorage.cancel()
-            logger.debug("Background language pack download cancelled")
+            await self.downloadTaskStorage.cancel()
+            self.logger.debug("Background language pack download cancelled")
         }
     }
 
@@ -501,11 +501,11 @@ final actor OnDeviceTranslationService {
     /// - `translatedText`: Translated text in target language
     /// - `sourceLanguage`: Source language code (e.g., "en")
     /// - `targetLanguage`: Target language code (e.g., "es")
-    public struct SuccessfulTranslation: Sendable {
-        public let sourceText: String
-        public let translatedText: String
-        public let sourceLanguage: String
-        public let targetLanguage: String
+    struct SuccessfulTranslation: Sendable {
+        let sourceText: String
+        let translatedText: String
+        let sourceLanguage: String
+        let targetLanguage: String
     }
 
     /// Overall result of a batch translation operation
@@ -537,12 +537,12 @@ final actor OnDeviceTranslationService {
     /// - `errors`: Array of errors from failed translations
     /// - `successfulTranslations`: Array of successful translation results
     /// - `isSuccess`: Computed property, `true` if no failures
-    public struct BatchTranslationResult: Sendable {
-        public let successCount: Int
-        public let failedCount: Int
-        public let totalDuration: TimeInterval
-        public let errors: [OnDeviceTranslationError]
-        public let successfulTranslations: [SuccessfulTranslation]
+    struct BatchTranslationResult: Sendable {
+        let successCount: Int
+        let failedCount: Int
+        let totalDuration: TimeInterval
+        let errors: [OnDeviceTranslationError]
+        let successfulTranslations: [SuccessfulTranslation]
 
         /// Returns `true` if all translations succeeded
         ///
@@ -550,8 +550,8 @@ final actor OnDeviceTranslationService {
         /// - Empty batch returns `false` (0 successes)
         /// - Any failure returns `false`
         /// - All successes returns `true`
-        public var isSuccess: Bool {
-            failedCount == 0 && successCount > 0
+        var isSuccess: Bool {
+            self.failedCount == 0 && self.successCount > 0
         }
     }
 
@@ -578,10 +578,10 @@ final actor OnDeviceTranslationService {
     /// - `current`: Number of completed translations (1-indexed)
     /// - `total`: Total number of translations to perform
     /// - `currentWord`: The most recently translated text
-    public struct BatchTranslationProgress: Sendable {
-        public let current: Int
-        public let total: Int
-        public let currentWord: String
+    struct BatchTranslationProgress: Sendable {
+        let current: Int
+        let total: Int
+        let currentWord: String
     }
 
     // MARK: - Cancellation
@@ -638,7 +638,7 @@ final actor OnDeviceTranslationService {
         ///
         /// - Returns: Optional Task currently being executed
         func get() -> Task<BatchTranslationResult, Error>? {
-            task
+            self.task
         }
 
         /// Cancel the active task and clear storage
@@ -660,8 +660,8 @@ final actor OnDeviceTranslationService {
         /// - Actor isolation prevents data races
         /// - Cancel operation is atomic
         func cancel() {
-            task?.cancel()
-            task = nil
+            self.task?.cancel()
+            self.task = nil
         }
     }
 
@@ -692,8 +692,8 @@ final actor OnDeviceTranslationService {
     /// - Actor-isolated TaskStorage prevents data races
     func cancelBatchTranslation() {
         Task {
-            await taskStorage.cancel()
-            logger.info("Batch translation cancelled")
+            await self.taskStorage.cancel()
+            self.logger.info("Batch translation cancelled")
         }
     }
 
@@ -768,7 +768,7 @@ final actor OnDeviceTranslationService {
     ) async throws -> BatchTranslationResult {
         // Handle empty input gracefully
         guard !texts.isEmpty else {
-            logger.warning("Batch translation called with empty array")
+            self.logger.warning("Batch translation called with empty array")
             return BatchTranslationResult(
                 successCount: 0,
                 failedCount: 0,
@@ -778,12 +778,12 @@ final actor OnDeviceTranslationService {
             )
         }
 
-        logger.info("Starting batch translation: \(texts.count) texts, max concurrency: \(maxConcurrency)")
+        self.logger.info("Starting batch translation: \(texts.count) texts, max concurrency: \(maxConcurrency)")
 
         // Create active task for cancellation support
         // Task is stored in TaskStorage actor for thread-safe cancellation
         let task = Task<BatchTranslationResult, Error> {
-            try await performBatchTranslation(
+            try await self.performBatchTranslation(
                 texts,
                 maxConcurrency: maxConcurrency,
                 progressHandler: progressHandler
@@ -800,7 +800,7 @@ final actor OnDeviceTranslationService {
             return try await currentTask.value
         } catch is CancellationError {
             // Handle cancellation gracefully
-            logger.info("Batch translation cancelled")
+            self.logger.info("Batch translation cancelled")
             return BatchTranslationResult(
                 successCount: 0,
                 failedCount: texts.count,
@@ -867,7 +867,7 @@ final actor OnDeviceTranslationService {
                     if let result = try await group.next() {
                         results.append(result)
                         completedCount += 1
-                        reportProgress(
+                        self.reportProgress(
                             handler: progressHandler,
                             current: completedCount,
                             total: texts.count,
@@ -888,7 +888,7 @@ final actor OnDeviceTranslationService {
             for try await result in group {
                 results.append(result)
                 completedCount += 1
-                reportProgress(
+                self.reportProgress(
                     handler: progressHandler,
                     current: completedCount,
                     total: texts.count,
@@ -898,8 +898,8 @@ final actor OnDeviceTranslationService {
 
             // Aggregate and return results
             let duration = Date().timeIntervalSince(startTime)
-            let batchResult = aggregateResults(results, duration: duration, texts: texts)
-            logBatchCompletion(batchResult)
+            let batchResult = self.aggregateResults(results, duration: duration, texts: texts)
+            self.logBatchCompletion(batchResult)
             return batchResult
         }
     }
@@ -936,7 +936,7 @@ final actor OnDeviceTranslationService {
             let translatedText = try await translate(text: text)
             let duration = Date().timeIntervalSince(startTime)
 
-            logger.debug("Translation succeeded: '\(text.prefix(30))'")
+            self.logger.debug("Translation succeeded: '\(text.prefix(30))'")
 
             return BatchTranslationTaskResult(
                 text: text,
@@ -956,7 +956,7 @@ final actor OnDeviceTranslationService {
             // Catch any other errors and wrap them
             let duration = Date().timeIntervalSince(startTime)
             let wrappedError = OnDeviceTranslationError.translationFailed(reason: error.localizedDescription)
-            logger.error("Translation failed with unexpected error: '\(text.prefix(30))' - \(error.localizedDescription)")
+            self.logger.error("Translation failed with unexpected error: '\(text.prefix(30))' - \(error.localizedDescription)")
 
             return BatchTranslationTaskResult(
                 text: text,
@@ -1001,7 +1001,7 @@ final actor OnDeviceTranslationService {
         total: Int,
         word: String
     ) {
-        guard let handler = handler else { return }
+        guard let handler else { return }
         let progress = BatchTranslationProgress(current: current, total: total, currentWord: word)
         Task { @MainActor in handler(progress) }
     }
@@ -1047,29 +1047,29 @@ final actor OnDeviceTranslationService {
     private func aggregateResults(
         _ results: [BatchTranslationTaskResult],
         duration: TimeInterval,
-        texts: [String]
+        texts _: [String]
     ) -> BatchTranslationResult {
         // Separate successes and failures using Result pattern matching
         let successes = results.filter { if case .success = $0.result { true } else { false } }
         let failures = results.filter { if case .failure = $0.result { true } else { false } }
 
         // Extract errors from failed results for user feedback
-        let errors = failures.compactMap { (result) -> OnDeviceTranslationError? in
-            guard case .failure(let error) = result.result else { return nil }
+        let errors = failures.compactMap { result -> OnDeviceTranslationError? in
+            guard case let .failure(error) = result.result else { return nil }
             return error
         }
 
         // Build successful translation objects with full context
         // These can be used to update UI with translation results
         let successfulTranslations: [SuccessfulTranslation] = successes.compactMap { result in
-            guard case .success(let translatedText) = result.result else {
+            guard case let .success(translatedText) = result.result else {
                 return nil
             }
             return SuccessfulTranslation(
                 sourceText: result.text,
                 translatedText: translatedText,
-                sourceLanguage: sourceLanguageCode,
-                targetLanguage: targetLanguageCode
+                sourceLanguage: self.sourceLanguageCode,
+                targetLanguage: self.targetLanguageCode
             )
         }
 
@@ -1106,12 +1106,12 @@ final actor OnDeviceTranslationService {
     ///
     /// - Parameter result: The completed batch translation result
     private func logBatchCompletion(_ result: BatchTranslationResult) {
-        logger.info("""
-            Batch translation complete:
-            - Success: \(result.successCount)
-            - Failed: \(result.failedCount)
-            - Duration: \(String(format: "%.2f", result.totalDuration))s
-            """)
+        self.logger.info("""
+        Batch translation complete:
+        - Success: \(result.successCount)
+        - Failed: \(result.failedCount)
+        - Duration: \(String(format: "%.2f", result.totalDuration))s
+        """)
     }
 
     // MARK: - Single Translation
@@ -1172,22 +1172,22 @@ final actor OnDeviceTranslationService {
     ) async throws -> String {
         // Input validation
         guard !text.isEmpty else {
-            logger.warning("Translation attempted with empty text")
+            self.logger.warning("Translation attempted with empty text")
             throw OnDeviceTranslationError.emptyInput
         }
 
-        let sourceCode = source ?? sourceLanguageCode
-        let targetCode = target ?? targetLanguageCode
+        let sourceCode = source ?? self.sourceLanguageCode
+        let targetCode = target ?? self.targetLanguageCode
 
         let sourceLang = Locale.Language(identifier: sourceCode)
         let targetLang = Locale.Language(identifier: targetCode)
 
-        logger.debug("Translating text from '\(sourceCode)' to '\(targetCode)'")
+        self.logger.debug("Translating text from '\(sourceCode)' to '\(targetCode)'")
 
         // Check language support before attempting translation
         // This prevents unnecessary framework calls for unsupported pairs
-        guard isLanguagePairSupported(from: sourceCode, to: targetCode) else {
-            logger.error("Language pair not supported: \(sourceCode) -> \(targetCode)")
+        guard self.isLanguagePairSupported(from: sourceCode, to: targetCode) else {
+            self.logger.error("Language pair not supported: \(sourceCode) -> \(targetCode)")
             throw OnDeviceTranslationError.unsupportedLanguagePair(
                 source: sourceCode,
                 target: targetCode
@@ -1199,7 +1199,7 @@ final actor OnDeviceTranslationService {
         let sourceNeedsDownload = await needsLanguageDownload(sourceCode)
         let targetNeedsDownload = await needsLanguageDownload(targetCode)
         if sourceNeedsDownload || targetNeedsDownload {
-            logger.error("Language pack not available for translation")
+            self.logger.error("Language pack not available for translation")
             throw OnDeviceTranslationError.languagePackNotAvailable(
                 source: sourceCode,
                 target: targetCode
@@ -1218,7 +1218,7 @@ final actor OnDeviceTranslationService {
             let response = try await session.translate(text)
             let translatedText = response.targetText
 
-            logger.info("Translation successful: '\(text.prefix(50))' -> '\(translatedText.prefix(50))'")
+            self.logger.info("Translation successful: '\(text.prefix(50))' -> '\(translatedText.prefix(50))'")
 
             return translatedText
 
@@ -1227,7 +1227,7 @@ final actor OnDeviceTranslationService {
             throw error
         } catch {
             // Wrap framework errors in our error type for consistency
-            logger.error("Translation failed: \(error.localizedDescription)")
+            self.logger.error("Translation failed: \(error.localizedDescription)")
             throw OnDeviceTranslationError.translationFailed(reason: error.localizedDescription)
         }
     }
@@ -1337,20 +1337,20 @@ enum OnDeviceTranslationError: LocalizedError {
     /// ```
     var errorDescription: String? {
         switch self {
-        case .unsupportedLanguagePair(let source, let target):
-            return "Translation from \(source) to \(target) is not supported on this device"
+        case let .unsupportedLanguagePair(source, target):
+            "Translation from \(source) to \(target) is not supported on this device"
 
-        case .languagePackNotAvailable(let source, let target):
-            return "Language pack not available for \(source) → \(target) translation"
+        case let .languagePackNotAvailable(source, target):
+            "Language pack not available for \(source) → \(target) translation"
 
-        case .languagePackDownloadFailed(let language):
-            return "Failed to download language pack for \(language)"
+        case let .languagePackDownloadFailed(language):
+            "Failed to download language pack for \(language)"
 
-        case .translationFailed(let reason):
-            return "Translation failed: \(reason)"
+        case let .translationFailed(reason):
+            "Translation failed: \(reason)"
 
         case .emptyInput:
-            return "Cannot translate empty text"
+            "Cannot translate empty text"
         }
     }
 
@@ -1368,19 +1368,19 @@ enum OnDeviceTranslationError: LocalizedError {
     var recoverySuggestion: String? {
         switch self {
         case .unsupportedLanguagePair:
-            return "Try a different language pair supported by iOS Translation"
+            "Try a different language pair supported by iOS Translation"
 
-        case .languagePackNotAvailable(let source, let target):
-            return "Download language packs for \(source) or \(target) in Settings > General > Translation"
+        case let .languagePackNotAvailable(source, target):
+            "Download language packs for \(source) or \(target) in Settings > General > Translation"
 
         case .languagePackDownloadFailed:
-            return "Check your internet connection and try downloading again"
+            "Check your internet connection and try downloading again"
 
         case .translationFailed:
-            return "Try again or use a shorter text"
+            "Try again or use a shorter text"
 
         case .emptyInput:
-            return "Enter text to translate"
+            "Enter text to translate"
         }
     }
 
@@ -1408,9 +1408,9 @@ enum OnDeviceTranslationError: LocalizedError {
     var isRetryable: Bool {
         switch self {
         case .languagePackDownloadFailed, .translationFailed:
-            return true
+            true
         case .unsupportedLanguagePair, .languagePackNotAvailable, .emptyInput:
-            return false
+            false
         }
     }
 }

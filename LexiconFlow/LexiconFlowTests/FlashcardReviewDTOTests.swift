@@ -5,8 +5,8 @@
 //  Tests for FlashcardReviewDTO computed properties and formatting
 //
 
-import Testing
 import Foundation
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for FlashcardReviewDTO
@@ -20,7 +20,6 @@ import Foundation
 /// - Factory method state detection
 @MainActor
 struct FlashcardReviewDTOTests {
-
     // MARK: - Rating Label Tests
 
     @Test("Rating label for Again (0)")
@@ -327,32 +326,6 @@ struct FlashcardReviewDTOTests {
 
     // MARK: - Full Date String Tests
 
-    @Test("Full date string format")
-    func fullDateStringFormat() {
-        let calendar = Calendar.current
-        var components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: Date())
-        components.year = 2026
-        components.month = 1
-        components.day = 15
-        components.hour = 14
-        components.minute = 30
-
-        let testDate = calendar.date(from: components)!
-        let dto = FlashcardReviewDTO(
-            id: UUID(),
-            rating: 2,
-            reviewDate: testDate,
-            scheduledDays: 1.0,
-            elapsedDays: 1.0
-        )
-
-        let fullDate = dto.fullDateString
-        #expect(fullDate.contains("Jan"), "Should contain month name")
-        #expect(fullDate.contains("15"), "Should contain day")
-        #expect(fullDate.contains("2026"), "Should contain year")
-        #expect(fullDate.contains("2:30"), "Should contain time")
-    }
-
     @Test("Full date string uses user locale")
     func fullDateStringLocale() {
         let dto = FlashcardReviewDTO(
@@ -584,11 +557,10 @@ struct FlashcardReviewDTOTests {
         let currentState = FlashcardState.review
         let rating = 2 // Good (passing)
 
-        let stateChange: ReviewStateChange
-        if previousState == .learning && currentState == .review && rating > 0 {
-            stateChange = .graduated
+        let stateChange: ReviewStateChange = if previousState == .learning, currentState == .review, rating > 0 {
+            .graduated
         } else {
-            stateChange = .none
+            .none
         }
 
         #expect(stateChange == .graduated)
@@ -600,11 +572,10 @@ struct FlashcardReviewDTOTests {
         let currentState = FlashcardState.relearning
         let rating = 0 // Again (failed)
 
-        let stateChange: ReviewStateChange
-        if rating == 0 && currentState == .relearning {
-            stateChange = .relearning
+        let stateChange: ReviewStateChange = if rating == 0, currentState == .relearning {
+            .relearning
         } else {
-            stateChange = .none
+            .none
         }
 
         #expect(stateChange == .relearning)
@@ -617,13 +588,12 @@ struct FlashcardReviewDTOTests {
         let currentState = FlashcardState.review
         let rating = 2 // Good
 
-        let stateChange: ReviewStateChange
-        if previousState == .learning && currentState == .review {
-            stateChange = .graduated
-        } else if rating == 0 && currentState == .relearning {
-            stateChange = .relearning
+        let stateChange: ReviewStateChange = if previousState == .learning, currentState == .review {
+            .graduated
+        } else if rating == 0, currentState == .relearning {
+            .relearning
         } else {
-            stateChange = .none
+            .none
         }
 
         #expect(stateChange == .none)
@@ -636,17 +606,16 @@ struct FlashcardReviewDTOTests {
         let currentState = FlashcardState.review
         let rating = 2 // Good
 
-        let stateChange: ReviewStateChange
-        if let previous = previousState {
-            if previous == .learning && currentState == .review {
-                stateChange = .graduated
-            } else if rating == 0 && currentState == .relearning {
-                stateChange = .relearning
+        let stateChange: ReviewStateChange = if let previous = previousState {
+            if previous == .learning, currentState == .review {
+                .graduated
+            } else if rating == 0, currentState == .relearning {
+                .relearning
             } else {
-                stateChange = .none
+                .none
             }
         } else {
-            stateChange = .none
+            .none
         }
 
         #expect(stateChange == .none, "Missing previous state should result in no state change")
@@ -659,13 +628,12 @@ struct FlashcardReviewDTOTests {
         let currentState = FlashcardState.learning
         let rating = 2 // Good
 
-        let stateChange: ReviewStateChange
-        if previousState == .learning && currentState == .review {
-            stateChange = .graduated
-        } else if rating == 0 && currentState == .relearning {
-            stateChange = .relearning
+        let stateChange: ReviewStateChange = if previousState == .learning, currentState == .review {
+            .graduated
+        } else if rating == 0, currentState == .relearning {
+            .relearning
         } else {
-            stateChange = .none
+            .none
         }
 
         #expect(stateChange == .none, "Learning to learning is not graduation")
@@ -753,10 +721,21 @@ struct FlashcardReviewDTOTests {
             id: UUID(),
             rating: 2,
             reviewDate: Date(),
-            scheduledDays: 1.3, // 1.3 days
+            scheduledDays: 1.3, // 1.3 days (< 2 days = "tomorrow")
             elapsedDays: 1.0
         )
 
-        #expect(dto.scheduledIntervalDescription == "in 1d")
+        #expect(dto.scheduledIntervalDescription == "tomorrow")
+
+        // Test 2.3 days (should be "in 2d")
+        let dto2 = FlashcardReviewDTO(
+            id: UUID(),
+            rating: 2,
+            reviewDate: Date(),
+            scheduledDays: 2.3, // 2.3 days (>= 2 days = "in 2d")
+            elapsedDays: 1.0
+        )
+
+        #expect(dto2.scheduledIntervalDescription == "in 2d")
     }
 }

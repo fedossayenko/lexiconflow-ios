@@ -7,8 +7,8 @@
 //
 
 import Foundation
-import SwiftData
 import OSLog
+import SwiftData
 
 /// Batch data import service with progress tracking
 ///
@@ -84,7 +84,7 @@ final class DataImporter {
                 result.errors.append(contentsOf: batchStats.errors)
 
                 // Commit after each batch
-                try modelContext.save()
+                try self.modelContext.save()
 
                 // Report progress
                 let progress = ImportProgress(
@@ -96,14 +96,20 @@ final class DataImporter {
                 progressHandler?(progress)
 
                 // Analytics for performance monitoring
-                await Analytics.trackPerformance(
-                    "import_batch_\(batchNumber)",
-                    duration: Date().timeIntervalSince(startTime),
-                    metadata: [
-                        "batch_size": "\(batch.count)",
-                        "total_processed": "\(result.importedCount)"
-                    ]
-                )
+                // FIX: Capture current values explicitly to avoid mutable capture
+                let currentImportedCount = result.importedCount
+                let batchCount = batch.count
+
+                Task {
+                    Analytics.trackPerformance(
+                        "import_batch_\(batchNumber)",
+                        duration: Date().timeIntervalSince(startTime),
+                        metadata: [
+                            "batch_size": "\(batchCount)",
+                            "total_processed": "\(currentImportedCount)"
+                        ]
+                    )
+                }
 
             } catch {
                 Self.logger.error("❌ Batch \(batchNumber) failed: \(error)")
@@ -115,14 +121,16 @@ final class DataImporter {
                     )
                 )
 
-                await Analytics.trackError(
-                    "import_batch_failed",
-                    error: error,
-                    metadata: [
-                        "batch_number": "\(batchNumber)",
-                        "batch_size": "\(batch.count)"
-                    ]
-                )
+                Task {
+                    Analytics.trackError(
+                        "import_batch_failed",
+                        error: error,
+                        metadata: [
+                            "batch_number": "\(batchNumber)",
+                            "batch_size": "\(batch.count)"
+                        ]
+                    )
+                }
             }
         }
 
@@ -130,19 +138,21 @@ final class DataImporter {
         result.duration = duration
 
         Self.logger.info("""
-            Import complete:
-            - Imported: \(result.importedCount)
-            - Skipped: \(result.skippedCount)
-            - Errors: \(result.errors.count)
-            - Duration: \(String(format: "%.2f", duration))s
-            """)
+        Import complete:
+        - Imported: \(result.importedCount)
+        - Skipped: \(result.skippedCount)
+        - Errors: \(result.errors.count)
+        - Duration: \(String(format: "%.2f", duration))s
+        """)
 
-        await Analytics.trackEvent("data_import_complete", metadata: [
-            "imported_count": "\(result.importedCount)",
-            "skipped_count": "\(result.skippedCount)",
-            "error_count": "\(result.errors.count)",
-            "duration_seconds": String(format: "%.2f", duration)
-        ])
+        Task {
+            Analytics.trackEvent("data_import_complete", metadata: [
+                "imported_count": "\(result.importedCount)",
+                "skipped_count": "\(result.skippedCount)",
+                "error_count": "\(result.errors.count)",
+                "duration_seconds": String(format: "%.2f", duration)
+            ])
+        }
 
         return result
     }
@@ -165,7 +175,7 @@ final class DataImporter {
         // PERFORMANCE: Fetch existing cards ONCE per batch, not per card
         // This changes from O(n²) to O(n) complexity
         let allCards = try modelContext.fetch(FetchDescriptor<Flashcard>())
-        let existingWords = Set(allCards.map { $0.word })
+        let existingWords = Set(allCards.map(\.word))
 
         for cardData in cards {
             // O(1) duplicate check using Set
@@ -182,8 +192,23 @@ final class DataImporter {
                 imageData: cardData.imageData
             )
 
+            // Set CEFR level if provided
+            if let cefrLevel = cardData.cefrLevel {
+                do {
+                    try flashcard.setCEFRLevel(cefrLevel)
+                } catch {
+                    // Log but continue - don't fail entire batch for invalid CEFR level
+                    Self.logger.warning("⚠️ Invalid CEFR level '\(cefrLevel)' for word '\(cardData.word)': \(error)")
+                }
+            }
+
+            // Set translation if provided
+            if let translation = cardData.russianTranslation {
+                flashcard.translation = translation
+            }
+
             // Associate with deck if provided
-            if let deck = deck {
+            if let deck {
                 flashcard.deck = deck
             }
 
@@ -195,18 +220,17 @@ final class DataImporter {
                 dueDate: Date(),
                 stateEnum: FlashcardState.new.rawValue
             )
-            modelContext.insert(state)
+            self.modelContext.insert(state)
             flashcard.fsrsState = state
 
             // Insert flashcard
-            modelContext.insert(flashcard)
+            self.modelContext.insert(flashcard)
 
             stats.success += 1
         }
 
         return stats
     }
-
 }
 
 // MARK: - Supporting Types
@@ -217,17 +241,23 @@ struct FlashcardData: Sendable {
     let definition: String
     let phonetic: String?
     let imageData: Data?
+    let cefrLevel: String? // CEFR level (A1, A2, B1, B2, C1, C2)
+    let russianTranslation: String? // Russian translation of the word
 
     init(
         word: String,
         definition: String,
         phonetic: String? = nil,
-        imageData: Data? = nil
+        imageData: Data? = nil,
+        cefrLevel: String? = nil,
+        russianTranslation: String? = nil
     ) {
         self.word = word
         self.definition = definition
         self.phonetic = phonetic
         self.imageData = imageData
+        self.cefrLevel = cefrLevel
+        self.russianTranslation = russianTranslation
     }
 }
 
@@ -247,13 +277,13 @@ struct ImportProgress: Sendable {
 
     /// Progress as percentage (0-100)
     var percentage: Int {
-        guard total > 0 else { return 0 }
-        return (current * 100) / total
+        guard self.total > 0 else { return 0 }
+        return (self.current * 100) / self.total
     }
 
     /// Human-readable progress string
     var description: String {
-        "\(current)/\(total) (\(percentage)%) - Batch \(batchNumber)/\(totalBatches)"
+        "\(self.current)/\(self.total) (\(self.percentage)%) - Batch \(self.batchNumber)/\(self.totalBatches)"
     }
 }
 
@@ -273,7 +303,7 @@ struct ImportResult: Sendable {
 
     /// Whether import was completely successful
     var isSuccess: Bool {
-        errors.isEmpty && importedCount > 0
+        self.errors.isEmpty && self.importedCount > 0
     }
 }
 

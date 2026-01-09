@@ -5,9 +5,9 @@
 //  Created by Fedir Saienko on 4.01.26.
 //
 
-import SwiftUI
-import SwiftData
 import OSLog
+import SwiftData
+import SwiftUI
 
 /// Empty model for minimal fallback container when all storage attempts fail
 @Model
@@ -21,16 +21,14 @@ struct LexiconFlowApp: App {
     /// This is used when even runtime container creation fails
     private static let emptyFallbackContainer: ModelContainer = {
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
-        let schema = Schema([EmptyModel.self])
         do {
-            return try ModelContainer(for: schema, configurations: [configuration])
+            return try ModelContainer(for: EmptyModel.self, configurations: configuration)
         } catch {
-            // If this fails during static initialization, the app cannot launch on this device
-            // This is a catastrophic failure indicating SwiftData is completely broken
-            // Use assertionFailure instead of fatalError to prevent production crash
-            assertionFailure("SwiftData is completely non-functional on this device: \(error)")
-            // Return empty container as last resort - use the schema we already defined
-            return try! ModelContainer(for: schema, configurations: [configuration])
+            // If this fails during static initialization, SwiftData is completely broken
+            // Use assertionFailure for debugging, but return empty container to prevent crash
+            assertionFailure("SwiftData failed to create empty fallback container: \(error)")
+            // Return truly empty container as last resort - app will launch but show error UI
+            return try! ModelContainer(for: EmptyModel.self, configurations: configuration)
         }
     }()
 
@@ -106,19 +104,20 @@ struct LexiconFlowApp: App {
         WindowGroup {
             ContentView()
                 .task {
-                    await ensureDefaultDeckExists()
+                    await self.ensureDefaultDeckExists()
+                    await self.ensureIELTSVocabularyExists()
                 }
         }
-        .modelContainer(sharedModelContainer)
-        .onChange(of: scenePhase) { oldPhase, newPhase in
-            handleScenePhaseChange(from: oldPhase, to: newPhase)
+        .modelContainer(self.sharedModelContainer)
+        .onChange(of: self.scenePhase) { oldPhase, newPhase in
+            self.handleScenePhaseChange(from: oldPhase, to: newPhase)
         }
     }
 
     /// Ensures a default deck exists for new users
     @MainActor
     private func ensureDefaultDeckExists() async {
-        let context = sharedModelContainer.mainContext
+        let context = self.sharedModelContainer.mainContext
         let descriptor = FetchDescriptor<Deck>()
         let existingDecks: [Deck]
         do {
@@ -150,6 +149,86 @@ struct LexiconFlowApp: App {
         }
     }
 
+    /// Ensures IELTS vocabulary decks exist on first launch
+    ///
+    /// **Workflow**:
+    /// 1. Check if pre-population flag is true (early return)
+    /// 2. Check if IELTS decks already exist (handles re-install)
+    /// 3. Import vocabulary automatically if needed
+    /// 4. Set flag after successful import
+    /// 5. Track success/failure with Analytics
+    ///
+    /// **Idempotent**: Safe to call multiple times, only imports once
+    /// **Background**: Runs async to avoid blocking app launch
+    /// **Graceful Degradation**: Logs errors but doesn't crash app
+    @MainActor
+    private func ensureIELTSVocabularyExists() async {
+        // Don't import if already completed
+        guard !AppSettings.hasPrepopulatedIELTS else {
+            Logger(subsystem: "com.lexiconflow.app", category: "LexiconFlowApp")
+                .debug("IELTS vocabulary already pre-populated, skipping")
+            return
+        }
+
+        let context = self.sharedModelContainer.mainContext
+        let logger = Logger(subsystem: "com.lexiconflow.app", category: "LexiconFlowApp")
+
+        // Check if IELTS decks already exist (handles re-install scenario)
+        let deckManager = IELTSDeckManager(modelContext: context)
+        let levels = ["A1", "A2", "B1", "B2", "C1", "C2"]
+        let existingDecks = levels.filter { level in
+            deckManager.deckExists(for: level)
+        }
+
+        if !existingDecks.isEmpty {
+            logger.info("Found \(existingDecks.count) existing IELTS decks, marking as pre-populated")
+            AppSettings.hasPrepopulatedIELTS = true
+            return
+        }
+
+        logger.info("Starting automatic IELTS vocabulary pre-population")
+
+        do {
+            // Check if vocabulary file exists
+            guard Bundle.main.url(
+                forResource: "IELTS/ielts-vocabulary-smartool",
+                withExtension: "json"
+            ) != nil else {
+                logger.error("IELTS vocabulary file not found in bundle")
+                Analytics.trackError("ielts_file_missing", error: IELTSImportError.fileNotFound)
+                return // Don't set flag - will retry on next launch
+            }
+
+            // Import vocabulary in background
+            let importer = IELTSVocabularyImporter(modelContext: context)
+            let result = try await importer.importAllVocabulary()
+
+            // Mark as completed
+            AppSettings.hasPrepopulatedIELTS = true
+
+            logger.info("""
+            ✅ IELTS vocabulary pre-population complete:
+            - Imported: \(result.importedCount)
+            - Failed: \(result.failedCount)
+            - Duration: \(String(format: "%.2f", result.duration))s
+            """)
+
+            Analytics.trackEvent("ielts_auto_import_complete", metadata: [
+                "imported_count": "\(result.importedCount)",
+                "failed_count": "\(result.failedCount)",
+                "duration_seconds": String(format: "%.2f", result.duration)
+            ])
+
+        } catch {
+            logger.error("❌ IELTS vocabulary pre-population failed: \(error.localizedDescription)")
+
+            Analytics.trackError("ielts_auto_import_failed", error: error)
+
+            // Don't set flag - will retry on next launch
+            // App remains functional with default deck
+        }
+    }
+
     /// Handles app lifecycle phase changes.
     private func handleScenePhaseChange(from oldPhase: ScenePhase, to newPhase: ScenePhase) {
         switch newPhase {
@@ -160,9 +239,9 @@ struct LexiconFlowApp: App {
             // Aggregate DailyStats from completed StudySession records
             // This runs in the background to prepare pre-aggregated statistics for dashboard
             // Cancel any existing aggregation task before starting a new one
-            aggregationTask?.cancel()
-            aggregationTask = Task {
-                await aggregateDailyStatsInBackground()
+            self.aggregationTask?.cancel()
+            self.aggregationTask = Task {
+                await self.aggregateDailyStatsInBackground()
             }
         case .active:
             // Restart haptic engine when app returns to foreground

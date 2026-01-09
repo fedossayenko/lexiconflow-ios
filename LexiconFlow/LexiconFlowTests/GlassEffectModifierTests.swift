@@ -5,8 +5,8 @@
 //  Tests for GlassEffectModifier and GlassThickness
 //
 
-import Testing
 import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for GlassEffectModifier and GlassThickness
@@ -18,7 +18,6 @@ import SwiftUI
 /// - Visual rendering properties
 @MainActor
 struct GlassEffectModifierTests {
-
     // MARK: - GlassThickness Material Tests
 
     @Test("Thin glass uses ultraThinMaterial")

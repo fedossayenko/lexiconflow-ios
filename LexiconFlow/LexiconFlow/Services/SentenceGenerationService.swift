@@ -86,7 +86,7 @@ actor SentenceGenerationService {
     func setLanguages(source: String, target: String) {
         self.sourceLanguage = source
         self.targetLanguage = target
-        logger.info("Languages set: \(source) -> \(target)")
+        self.logger.info("Languages set: \(source) -> \(target)")
     }
 
     // MARK: - Sentence Generation Types
@@ -131,7 +131,7 @@ actor SentenceGenerationService {
         let successfulGenerations: [SuccessfulGeneration]
 
         var isSuccess: Bool {
-            failedCount == 0 && successCount > 0
+            self.failedCount == 0 && self.successCount > 0
         }
     }
 
@@ -178,12 +178,12 @@ actor SentenceGenerationService {
         }
 
         func get() -> Task<SentenceBatchResult, Error>? {
-            task
+            self.task
         }
 
         func cancel() {
-            task?.cancel()
-            task = nil
+            self.task?.cancel()
+            self.task = nil
         }
     }
 
@@ -192,8 +192,8 @@ actor SentenceGenerationService {
     /// Cancel any ongoing batch generation
     func cancelBatchGeneration() {
         Task {
-            await taskStorage.cancel()
-            logger.info("Batch generation cancelled")
+            await self.taskStorage.cancel()
+            self.logger.info("Batch generation cancelled")
         }
     }
 
@@ -220,7 +220,7 @@ actor SentenceGenerationService {
         // Get API key from Keychain (awaits MainActor)
         let key = await getAPIKey()
         guard !key.isEmpty else {
-            logger.error("Sentence generation failed: API key not configured")
+            self.logger.error("Sentence generation failed: API key not configured")
             throw SentenceGenerationError.missingAPIKey
         }
 
@@ -271,7 +271,9 @@ actor SentenceGenerationService {
             ]
         )
 
+        // swiftformat:disable:next redundantSelf
         guard let url = URL(string: self.baseURL) else {
+            // swiftformat:disable:next redundantSelf
             logger.error("Invalid base URL: \(self.baseURL)")
             throw SentenceGenerationError.invalidConfiguration
         }
@@ -282,13 +284,13 @@ actor SentenceGenerationService {
         urlRequest.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         urlRequest.httpBody = try JSONEncoder().encode(request)
 
-        logger.debug("Sending sentence generation request for '\(cardWord)'")
+        self.logger.debug("Sending sentence generation request for '\(cardWord)'")
 
         let (data, urlResponse) = try await URLSession.shared.data(for: urlRequest)
 
         guard let httpResponse = urlResponse as? HTTPURLResponse else {
             let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
-            logger.error("Generation API error: Invalid HTTP response - \(String(errorBody.prefix(200)))")
+            self.logger.error("Generation API error: Invalid HTTP response - \(String(errorBody.prefix(200)))")
             throw SentenceGenerationError.apiFailed
         }
 
@@ -297,19 +299,19 @@ actor SentenceGenerationService {
 
             switch httpResponse.statusCode {
             case 401:
-                logger.error("Generation failed: Invalid credentials (401)")
+                self.logger.error("Generation failed: Invalid credentials (401)")
                 throw SentenceGenerationError.clientError(statusCode: 401, message: "Invalid API key")
             case 429:
-                logger.warning("Rate limit hit for '\(cardWord)'")
+                self.logger.warning("Rate limit hit for '\(cardWord)'")
                 throw SentenceGenerationError.rateLimit
-            case 400...499:
-                logger.error("Client error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
+            case 400 ... 499:
+                self.logger.error("Client error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
                 throw SentenceGenerationError.clientError(statusCode: httpResponse.statusCode, message: errorBody)
-            case 500...599:
-                logger.error("Server error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
+            case 500 ... 599:
+                self.logger.error("Server error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
                 throw SentenceGenerationError.serverError(statusCode: httpResponse.statusCode, message: errorBody)
             default:
-                logger.error("Unexpected HTTP status: \(httpResponse.statusCode)")
+                self.logger.error("Unexpected HTTP status: \(httpResponse.statusCode)")
                 throw SentenceGenerationError.apiFailed
             }
         }
@@ -319,7 +321,7 @@ actor SentenceGenerationService {
 
         // Extract and decode JSON synchronously without Logger to avoid @MainActor isolation
         let response = try decodeJSONResponseSynchronously(from: content)
-        logger.info("Successfully generated \(response.items.count) sentences for '\(cardWord)'")
+        self.logger.info("Successfully generated \(response.items.count) sentences for '\(cardWord)'")
         return response
     }
 
@@ -333,8 +335,8 @@ actor SentenceGenerationService {
         // Try ```json code blocks (preferred format)
         if let jsonStart = trimmed.range(of: "```json", options: .caseInsensitive) {
             let afterStart = jsonStart.upperBound
-            if let jsonEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
-                let json = String(trimmed[afterStart..<jsonEnd.lowerBound])
+            if let jsonEnd = trimmed.range(of: "```", range: afterStart ..< trimmed.endIndex) {
+                let json = String(trimmed[afterStart ..< jsonEnd.lowerBound])
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 if let data = json.data(using: .utf8) {
                     return try JSONDecoder().decode(SentenceGenerationResponse.self, from: data)
@@ -345,8 +347,8 @@ actor SentenceGenerationService {
         // Try ``` code blocks (without json specifier)
         if let codeStart = trimmed.range(of: "```", options: .caseInsensitive) {
             let afterStart = codeStart.upperBound
-            if let codeEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
-                let json = String(trimmed[afterStart..<codeEnd.lowerBound])
+            if let codeEnd = trimmed.range(of: "```", range: afterStart ..< trimmed.endIndex) {
+                let json = String(trimmed[afterStart ..< codeEnd.lowerBound])
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 if let data = json.data(using: .utf8) {
                     return try JSONDecoder().decode(SentenceGenerationResponse.self, from: data)
@@ -356,8 +358,9 @@ actor SentenceGenerationService {
 
         // Try { to } brace delimiters (fallback for unstructured text)
         if let firstBrace = trimmed.firstIndex(of: "{"),
-           let lastBrace = trimmed.lastIndex(of: "}") {
-            let json = String(trimmed[firstBrace...lastBrace])
+           let lastBrace = trimmed.lastIndex(of: "}")
+        {
+            let json = String(trimmed[firstBrace ... lastBrace])
             if let data = json.data(using: .utf8) {
                 return try JSONDecoder().decode(SentenceGenerationResponse.self, from: data)
             }
@@ -389,7 +392,7 @@ actor SentenceGenerationService {
         progressHandler: (@Sendable (BatchGenerationProgress) -> Void)? = nil
     ) async throws -> SentenceBatchResult {
         guard !cards.isEmpty else {
-            logger.warning("Batch generation called with empty array")
+            self.logger.warning("Batch generation called with empty array")
             return SentenceBatchResult(
                 successCount: 0,
                 failedCount: 0,
@@ -401,15 +404,15 @@ actor SentenceGenerationService {
 
         // Check for existing task BEFORE starting new one to prevent re-entrancy
         let existingTask = await taskStorage.get()
-        if existingTask != nil && !Task.isCancelled {
-            logger.warning("Batch generation already in progress")
+        if existingTask != nil, !Task.isCancelled {
+            self.logger.warning("Batch generation already in progress")
             throw SentenceGenerationError.invalidConfiguration
         }
 
-        logger.info("Starting batch generation: \(cards.count) cards, \(sentencesPerCard) sentences/card")
+        self.logger.info("Starting batch generation: \(cards.count) cards, \(sentencesPerCard) sentences/card")
 
         let task = Task<SentenceBatchResult, Error> {
-            try await performBatchGeneration(
+            try await self.performBatchGeneration(
                 cards,
                 sentencesPerCard: sentencesPerCard,
                 maxConcurrency: maxConcurrency,
@@ -422,7 +425,7 @@ actor SentenceGenerationService {
         do {
             return try await task.value
         } catch is CancellationError {
-            logger.info("Batch generation cancelled")
+            self.logger.info("Batch generation cancelled")
             return SentenceBatchResult(
                 successCount: 0,
                 failedCount: cards.count,
@@ -452,7 +455,7 @@ actor SentenceGenerationService {
                     if let result = try await group.next() {
                         results.append(result)
                         completedCount += 1
-                        reportProgress(
+                        self.reportProgress(
                             handler: progressHandler,
                             current: completedCount,
                             total: cards.count,
@@ -476,7 +479,7 @@ actor SentenceGenerationService {
             for try await result in group {
                 results.append(result)
                 completedCount += 1
-                reportProgress(
+                self.reportProgress(
                     handler: progressHandler,
                     current: completedCount,
                     total: cards.count,
@@ -485,8 +488,8 @@ actor SentenceGenerationService {
             }
 
             let duration = Date().timeIntervalSince(startTime)
-            let batchResult = aggregateResults(results, duration: duration)
-            logBatchCompletion(batchResult)
+            let batchResult = self.aggregateResults(results, duration: duration)
+            self.logBatchCompletion(batchResult)
             return batchResult
         }
     }
@@ -498,7 +501,7 @@ actor SentenceGenerationService {
         total: Int,
         word: String
     ) {
-        guard let handler = handler else { return }
+        guard let handler else { return }
         let progress = BatchGenerationProgress(current: current, total: total, currentWord: word)
         Task { @MainActor in handler(progress) }
     }
@@ -510,13 +513,13 @@ actor SentenceGenerationService {
     ) -> SentenceBatchResult {
         let successes = results.filter { if case .success = $0.result { true } else { false } }
         let failures = results.filter { if case .failure = $0.result { true } else { false } }
-        let errors = failures.compactMap { (result) -> SentenceGenerationError? in
-            guard case .failure(let error) = result.result else { return nil }
+        let errors = failures.compactMap { result -> SentenceGenerationError? in
+            guard case let .failure(error) = result.result else { return nil }
             return error
         }
 
         let successfulGenerations: [SuccessfulGeneration] = successes.compactMap { result in
-            guard case .success(let response) = result.result else { return nil }
+            guard case let .success(response) = result.result else { return nil }
             return SuccessfulGeneration(
                 cardId: result.cardId,
                 cardWord: result.cardWord,
@@ -526,8 +529,8 @@ actor SentenceGenerationService {
                         cefrLevel: $0.cefrLevel
                     )
                 },
-                sourceLanguage: sourceLanguage,
-                targetLanguage: targetLanguage
+                sourceLanguage: self.sourceLanguage,
+                targetLanguage: self.targetLanguage
             )
         }
 
@@ -542,12 +545,12 @@ actor SentenceGenerationService {
 
     /// Log batch completion
     private func logBatchCompletion(_ result: SentenceBatchResult) {
-        logger.info("""
-            Batch generation complete:
-            - Success: \(result.successCount)
-            - Failed: \(result.failedCount)
-            - Duration: \(String(format: "%.2f", result.totalDuration))s
-            """)
+        self.logger.info("""
+        Batch generation complete:
+        - Success: \(result.successCount)
+        - Failed: \(result.failedCount)
+        - Duration: \(String(format: "%.2f", result.totalDuration))s
+        """)
     }
 
     /// Perform generation with exponential backoff retry
@@ -578,22 +581,22 @@ actor SentenceGenerationService {
                 error.isRetryable
             },
             logContext: "Sentence generation for '\(cardWord)'",
-            logger: logger
+            logger: self.logger
         )
 
         let duration = Date().timeIntervalSince(startTime)
 
         switch result {
-        case .success(let response):
-            logger.debug("Generation succeeded: \(cardWord)")
+        case let .success(response):
+            self.logger.debug("Generation succeeded: \(cardWord)")
             return SentenceGenerationResult(
                 cardId: cardId,
                 cardWord: cardWord,
                 result: .success(response),
                 duration: duration
             )
-        case .failure(let error):
-            logger.error("Generation failed: \(cardWord) - \(error.localizedDescription)")
+        case let .failure(error):
+            self.logger.error("Generation failed: \(cardWord) - \(error.localizedDescription)")
             return SentenceGenerationResult(
                 cardId: cardId,
                 cardWord: cardWord,
@@ -607,12 +610,12 @@ actor SentenceGenerationService {
 
     /// Get static fallback sentences for offline mode
     func getStaticFallbackSentences(for word: String) -> [SentenceGenerationResponse.GeneratedSentenceItem] {
-        let fallbacks = staticFallbackLibrary[word.lowercased()] ?? defaultFallbackSentences
+        let fallbacks = self.staticFallbackLibrary[word.lowercased()] ?? self.defaultFallbackSentences
 
         return fallbacks.map { sentence in
             SentenceGenerationResponse.GeneratedSentenceItem(
                 sentence: sentence,
-                cefrLevel: estimateCEFRLevel(sentence)
+                cefrLevel: self.estimateCEFRLevel(sentence)
             )
         }
     }
@@ -622,10 +625,10 @@ actor SentenceGenerationService {
         let wordCount = sentence.split(separator: " ").count
 
         switch wordCount {
-        case 0...CEFRThresholds.a1Max: return "A1"
-        case (CEFRThresholds.a1Max + 1)...CEFRThresholds.a2Max: return "A2"
-        case (CEFRThresholds.a2Max + 1)...CEFRThresholds.b1Max: return "B1"
-        case (CEFRThresholds.b1Max + 1)...CEFRThresholds.b2Max: return "B2"
+        case 0 ... CEFRThresholds.a1Max: return "A1"
+        case (CEFRThresholds.a1Max + 1) ... CEFRThresholds.a2Max: return "A2"
+        case (CEFRThresholds.a2Max + 1) ... CEFRThresholds.b1Max: return "B1"
+        case (CEFRThresholds.b1Max + 1) ... CEFRThresholds.b2Max: return "B2"
         default: return "C1"
         }
     }
@@ -683,16 +686,16 @@ enum SentenceGenerationError: LocalizedError {
             return "Invalid service configuration"
         case .rateLimit:
             return "API rate limit exceeded. Please wait a moment and try again."
-        case .clientError(let code, let message):
+        case let .clientError(code, message):
             if let msg = message {
                 return "Request failed (HTTP \(code)): \(msg)"
             }
             return "Request failed (HTTP \(code))"
-        case .serverError(let code, _):
+        case let .serverError(code, _):
             return "Server is experiencing issues (HTTP \(code)). Please try again later."
         case .apiFailed:
             return "Sentence generation API request failed"
-        case .invalidResponse(let reason):
+        case let .invalidResponse(reason):
             if let r = reason {
                 return "Invalid response from generation API: \(r)"
             }
@@ -707,22 +710,22 @@ enum SentenceGenerationError: LocalizedError {
     var recoverySuggestion: String? {
         switch self {
         case .missingAPIKey:
-            return "Add your API key in Settings > Translation > Z.ai API Configuration"
+            "Add your API key in Settings > Translation > Z.ai API Configuration"
         case .rateLimit:
-            return "Wait a few seconds, then try again"
+            "Wait a few seconds, then try again"
         case .offline:
-            return "Check your WiFi or cellular connection"
+            "Check your WiFi or cellular connection"
         default:
-            return nil
+            nil
         }
     }
 
     var isRetryable: Bool {
         switch self {
         case .rateLimit, .serverError, .offline:
-            return true
+            true
         default:
-            return false
+            false
         }
     }
 }

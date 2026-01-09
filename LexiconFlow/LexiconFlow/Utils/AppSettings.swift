@@ -5,8 +5,8 @@
 //  Centralized app settings using @AppStorage for consistent key management
 //
 
-import SwiftUI
 import OSLog
+import SwiftUI
 
 /// Centralized app settings to prevent scattered @AppStorage keys
 ///
@@ -15,6 +15,7 @@ import OSLog
 @MainActor
 enum AppSettings {
     private static let logger = Logger(subsystem: "com.lexiconflow.settings", category: "AppSettings")
+
     // MARK: - Translation Settings
 
     /// Whether automatic translation is enabled
@@ -85,6 +86,12 @@ enum AppSettings {
     /// Daily study goal in number of cards
     @AppStorage("dailyGoal") static var dailyGoal: Int = 20
 
+    // MARK: - Data Import Settings
+
+    /// Whether IELTS vocabulary has been pre-populated
+    /// Used to ensure one-time automatic import on first launch
+    @AppStorage("hasPrepopulatedIELTS") static var hasPrepopulatedIELTS: Bool = false
+
     // MARK: - Statistics Settings (NEW)
 
     /// Selected time range for statistics dashboard ("7d", "30d", "all")
@@ -151,7 +158,7 @@ enum AppSettings {
             }
         }
         set {
-            let ids = Array(newValue.map { $0.uuidString })
+            let ids = Array(newValue.map(\.uuidString))
             do {
                 let data = try JSONEncoder().encode(ids)
                 guard let string = String(data: data, encoding: .utf8) else {
@@ -188,71 +195,71 @@ enum AppSettings {
     // MARK: - Test Support
 
     #if DEBUG
-    /// Reset all settings to defaults (for testing)
-    static func resetToDefaults() {
-        let defaults = [
-            "translationEnabled": true,
-            "translationSourceLanguage": "en",
-            "translationTargetLanguage": "ru",
-            "sentenceGenerationEnabled": false,
-            "hapticEnabled": true,
-            "audioEnabled": true,
-            "studyLimit": 20,
-            "defaultStudyMode": "scheduled",
-            "dailyGoal": 20,
-            "statisticsTimeRange": "7d",
-            "darkMode": "system",
-            "glassEffectsEnabled": true
-        ] as [String: Any]
+        /// Reset all settings to defaults (for testing)
+        static func resetToDefaults() {
+            let defaults = [
+                "translationEnabled": true,
+                "translationSourceLanguage": "en",
+                "translationTargetLanguage": "ru",
+                "sentenceGenerationEnabled": false,
+                "hapticEnabled": true,
+                "audioEnabled": true,
+                "studyLimit": 20,
+                "defaultStudyMode": "scheduled",
+                "dailyGoal": 20,
+                "statisticsTimeRange": "7d",
+                "darkMode": "system",
+                "glassEffectsEnabled": true
+            ] as [String: Any]
 
-        for (key, value) in defaults {
-            UserDefaults.standard.set(value, forKey: key)
+            for (key, value) in defaults {
+                UserDefaults.standard.set(value, forKey: key)
+            }
+            UserDefaults.standard.synchronize()
         }
-        UserDefaults.standard.synchronize()
-    }
     #endif
 
     // MARK: - Types
 
     /// Dark mode preference options
     enum DarkModePreference: String, CaseIterable, Sendable {
-        case system = "system"
-        case light = "light"
-        case dark = "dark"
+        case system
+        case light
+        case dark
 
         var displayName: String {
             switch self {
-            case .system: return "System"
-            case .light: return "Light"
-            case .dark: return "Dark"
+            case .system: "System"
+            case .light: "Light"
+            case .dark: "Dark"
             }
         }
 
         var icon: String {
             switch self {
-            case .system: return "iphone"
-            case .light: return "sun.max.fill"
-            case .dark: return "moon.fill"
+            case .system: "iphone"
+            case .light: "sun.max.fill"
+            case .dark: "moon.fill"
             }
         }
     }
 
     /// Study mode options
     enum StudyModeOption: String, CaseIterable, Sendable {
-        case learning = "learning"
-        case scheduled = "scheduled"
+        case learning
+        case scheduled
 
         var displayName: String {
             switch self {
-            case .learning: return "Learn New"
-            case .scheduled: return "Scheduled (FSRS)"
+            case .learning: "Learn New"
+            case .scheduled: "Scheduled (FSRS)"
             }
         }
 
         var description: String {
             switch self {
-            case .learning: return "Study new cards for the first time"
-            case .scheduled: return "Due cards based on FSRS algorithm"
+            case .learning: "Study new cards for the first time"
+            case .scheduled: "Due cards based on FSRS algorithm"
             }
         }
     }
@@ -266,7 +273,7 @@ enum AppSettings {
         var errorDescription: String? {
             switch self {
             case .utf8ConversionFailed:
-                return "Failed to convert deck IDs to/from UTF-8"
+                "Failed to convert deck IDs to/from UTF-8"
             }
         }
     }

@@ -6,15 +6,14 @@
 //  Tests: encoding/decoding, invalid UUIDs, malformed JSON, concurrency
 //
 
-import Testing
 import Foundation
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for AppSettings deck selection JSON parsing
 @MainActor
 @Suite("AppSettings Deck Selection Tests")
 struct AppSettingsDeckSelectionTests {
-
     /// Helper to reset deck selection before each test
     private func resetDeckSelection() {
         AppSettings.selectedDeckIDs = []
@@ -24,7 +23,7 @@ struct AppSettingsDeckSelectionTests {
 
     @Test("Encoding and decoding preserves all deck IDs")
     func roundTripEncoding() throws {
-        resetDeckSelection()
+        self.resetDeckSelection()
 
         let originalIDs: Set<UUID> = [
             UUID(),
@@ -47,7 +46,7 @@ struct AppSettingsDeckSelectionTests {
 
     @Test("Empty array encodes and decodes correctly")
     func emptyArrayHandling() throws {
-        resetDeckSelection()
+        self.resetDeckSelection()
 
         // Set empty set
         AppSettings.selectedDeckIDs = []
@@ -60,7 +59,7 @@ struct AppSettingsDeckSelectionTests {
 
     @Test("Single deck ID encodes correctly")
     func singleDeckID() throws {
-        resetDeckSelection()
+        self.resetDeckSelection()
 
         let singleID = UUID()
         AppSettings.selectedDeckIDs = [singleID]
@@ -75,7 +74,7 @@ struct AppSettingsDeckSelectionTests {
 
     @Test("Invalid UUID strings are filtered out")
     func filtersInvalidUUIDs() throws {
-        resetDeckSelection()
+        self.resetDeckSelection()
 
         // Create valid UUIDs
         let validID1 = UUID()
@@ -105,7 +104,7 @@ struct AppSettingsDeckSelectionTests {
 
     @Test("Completely invalid JSON returns empty set")
     func completelyInvalidJSON() throws {
-        resetDeckSelection()
+        self.resetDeckSelection()
 
         // Set completely invalid JSON
         AppSettings.selectedDeckIDsData = "this is not json {]"
@@ -118,7 +117,7 @@ struct AppSettingsDeckSelectionTests {
 
     @Test("Malformed JSON array returns empty set")
     func malformedJSONArray() throws {
-        resetDeckSelection()
+        self.resetDeckSelection()
 
         // Set malformed JSON (missing closing bracket)
         AppSettings.selectedDeckIDsData = "[\"550e8400-e29b-41d4-a716-446655440000\""
@@ -130,7 +129,7 @@ struct AppSettingsDeckSelectionTests {
 
     @Test("Non-array JSON returns empty set")
     func nonArrayJSON() throws {
-        resetDeckSelection()
+        self.resetDeckSelection()
 
         // Set JSON object instead of array
         AppSettings.selectedDeckIDsData = "{\"key\": \"value\"}"
@@ -142,7 +141,7 @@ struct AppSettingsDeckSelectionTests {
 
     @Test("JSON with non-string elements returns empty set")
     func nonStringElements() throws {
-        resetDeckSelection()
+        self.resetDeckSelection()
 
         // Set JSON array with numbers instead of strings
         AppSettings.selectedDeckIDsData = "[123, 456, 789]"
@@ -156,10 +155,10 @@ struct AppSettingsDeckSelectionTests {
 
     @Test("Very long deck ID list is handled correctly")
     func veryLongDeckIDList() throws {
-        resetDeckSelection()
+        self.resetDeckSelection()
 
         // Create 100 deck IDs
-        let manyIDs = Set((0..<100).map { _ in UUID() })
+        let manyIDs = Set((0 ..< 100).map { _ in UUID() })
         AppSettings.selectedDeckIDs = manyIDs
 
         let retrieved = AppSettings.selectedDeckIDs
@@ -170,7 +169,7 @@ struct AppSettingsDeckSelectionTests {
 
     @Test("Duplicate UUIDs are handled correctly")
     func duplicateUUIDs() throws {
-        resetDeckSelection()
+        self.resetDeckSelection()
 
         let singleID = UUID()
 
@@ -192,7 +191,7 @@ struct AppSettingsDeckSelectionTests {
 
     @Test("Whitespace in JSON is handled correctly")
     func whitespaceInJSON() throws {
-        resetDeckSelection()
+        self.resetDeckSelection()
 
         let validID = UUID()
 
@@ -209,7 +208,7 @@ struct AppSettingsDeckSelectionTests {
 
     @Test("Changes persist through UserDefaults")
     func persistsThroughUserDefaults() throws {
-        resetDeckSelection()
+        self.resetDeckSelection()
 
         let originalIDs: Set<UUID> = [UUID(), UUID()]
         AppSettings.selectedDeckIDs = originalIDs
@@ -224,7 +223,7 @@ struct AppSettingsDeckSelectionTests {
 
     @Test("hasSelectedDecks is true when decks are selected")
     func hasSelectedDecksTrue() throws {
-        resetDeckSelection()
+        self.resetDeckSelection()
 
         AppSettings.selectedDeckIDs = [UUID()]
 
@@ -233,14 +232,14 @@ struct AppSettingsDeckSelectionTests {
 
     @Test("hasSelectedDecks is false when no decks selected")
     func hasSelectedDecksFalse() throws {
-        resetDeckSelection()
+        self.resetDeckSelection()
 
         #expect(!AppSettings.hasSelectedDecks, "hasSelectedDecks should be false")
     }
 
     @Test("selectedDeckCount returns correct count")
     func selectedDeckCount() throws {
-        resetDeckSelection()
+        self.resetDeckSelection()
 
         AppSettings.selectedDeckIDs = [
             UUID(),
@@ -255,14 +254,14 @@ struct AppSettingsDeckSelectionTests {
 
     @Test("Concurrent reads are thread-safe")
     func concurrentReads() async throws {
-        resetDeckSelection()
+        self.resetDeckSelection()
 
-        let ids = Set((0..<10).map { _ in UUID() })
+        let ids = Set((0 ..< 10).map { _ in UUID() })
         AppSettings.selectedDeckIDs = ids
 
         // Perform concurrent reads from MainActor
         await withTaskGroup(of: Set<UUID>.self) { group in
-            for _ in 0..<10 {
+            for _ in 0 ..< 10 {
                 group.addTask { @MainActor in
                     return AppSettings.selectedDeckIDs
                 }
@@ -282,11 +281,11 @@ struct AppSettingsDeckSelectionTests {
 
     @Test("Concurrent writes are serialised correctly")
     func concurrentWrites() async throws {
-        resetDeckSelection()
+        self.resetDeckSelection()
 
         // Perform concurrent writes to MainActor-isolated property
         await withTaskGroup(of: Void.self) { group in
-            for _ in 0..<10 {
+            for _ in 0 ..< 10 {
                 group.addTask { @MainActor in
                     let id = UUID()
                     AppSettings.selectedDeckIDs = [id]
@@ -302,7 +301,7 @@ struct AppSettingsDeckSelectionTests {
 
     @Test("UUIDs with different versions are handled correctly")
     func differentUUIDVersions() throws {
-        resetDeckSelection()
+        self.resetDeckSelection()
 
         // Create UUIDs with different versions (all valid)
         let uuid1 = UUID(uuidString: "00000000-0000-1000-8000-000000000001")! // v1

@@ -14,8 +14,8 @@
 //  Tests are designed to pass gracefully when framework is unavailable.
 //
 
-import Testing
 import Foundation
+import Testing
 import Translation
 @testable import LexiconFlow
 
@@ -30,11 +30,10 @@ import Translation
 /// - Edge cases
 @MainActor
 struct OnDeviceTranslationServiceTests {
-
     // MARK: - Singleton Tests
 
     @Test("OnDeviceTranslationService singleton is consistent")
-    func testSingletonConsistency() {
+    func singletonConsistency() {
         let service1 = OnDeviceTranslationService.shared
         let service2 = OnDeviceTranslationService.shared
 
@@ -44,7 +43,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("OnDeviceTranslationService actor is isolated")
-    func testActorIsolation() async {
+    func actorIsolation() async {
         let service = OnDeviceTranslationService.shared
 
         // Verify we can call actor-isolated methods
@@ -73,7 +72,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("setLanguages with same source and target")
-    func testSetLanguagesSameLanguage() async {
+    func setLanguagesSameLanguage() async {
         let service = OnDeviceTranslationService.shared
 
         // This should not crash - even if it's an unusual use case
@@ -87,7 +86,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("setLanguages with uncommon language codes")
-    func testSetLanguagesUncommonCodes() async {
+    func setLanguagesUncommonCodes() async {
         let service = OnDeviceTranslationService.shared
 
         // Test with valid but less common language codes
@@ -103,7 +102,7 @@ struct OnDeviceTranslationServiceTests {
     // MARK: - Language Support Detection Tests
 
     @Test("availableLanguages returns non-empty array")
-    func testAvailableLanguagesNonEmpty() async {
+    func availableLanguagesNonEmpty() async {
         let service = OnDeviceTranslationService.shared
         let languages = await service.availableLanguages()
 
@@ -113,7 +112,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("availableLanguages contains Locale.Language objects")
-    func testAvailableLanguagesTypes() async {
+    func availableLanguagesTypes() async {
         let service = OnDeviceTranslationService.shared
         let languages = await service.availableLanguages()
 
@@ -125,7 +124,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("isLanguageAvailable with Locale.Language")
-    func testIsLanguageAvailableWithLocale() async {
+    func isLanguageAvailableWithLocale() async {
         let service = OnDeviceTranslationService.shared
         let english = Locale.Language(identifier: "en")
 
@@ -137,7 +136,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("isLanguageAvailable with String")
-    func testIsLanguageAvailableWithString() async {
+    func isLanguageAvailableWithString() async {
         let service = OnDeviceTranslationService.shared
 
         let isAvailable = await service.isLanguageAvailable("en")
@@ -147,7 +146,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("isLanguageAvailable with invalid language code")
-    func testIsLanguageAvailableInvalidCode() async {
+    func isLanguageAvailableInvalidCode() async {
         let service = OnDeviceTranslationService.shared
 
         let isAvailable = await service.isLanguageAvailable("xyz-invalid")
@@ -157,7 +156,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("isLanguagePairSupported with configured languages")
-    func testIsLanguagePairSupportedConfigured() async {
+    func isLanguagePairSupportedConfigured() async {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "ru")
 
@@ -168,7 +167,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("isLanguagePairSupported with explicit languages")
-    func testIsLanguagePairSupportedExplicit() async {
+    func isLanguagePairSupportedExplicit() async {
         let service = OnDeviceTranslationService.shared
 
         let isSupported = await service.isLanguagePairSupported(from: "en", to: "es")
@@ -178,7 +177,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("isLanguagePairSupported with invalid pair")
-    func testIsLanguagePairSupportedInvalid() async {
+    func isLanguagePairSupportedInvalid() async {
         let service = OnDeviceTranslationService.shared
 
         let isSupported = await service.isLanguagePairSupported(from: "xyz", to: "abc")
@@ -190,7 +189,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("needsLanguageDownload with Locale.Language")
-    func testNeedsLanguageDownloadLocale() async {
+    func needsLanguageDownloadLocale() async {
         let service = OnDeviceTranslationService.shared
         let english = Locale.Language(identifier: "en")
 
@@ -201,7 +200,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("needsLanguageDownload with String")
-    func testNeedsLanguageDownloadString() async {
+    func needsLanguageDownloadString() async {
         let service = OnDeviceTranslationService.shared
 
         let needsDownload = await service.needsLanguageDownload("en")
@@ -211,7 +210,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("needsLanguageDownload with invalid language")
-    func testNeedsLanguageDownloadInvalid() async {
+    func needsLanguageDownloadInvalid() async {
         let service = OnDeviceTranslationService.shared
 
         let needsDownload = await service.needsLanguageDownload("xyz-invalid")
@@ -223,7 +222,7 @@ struct OnDeviceTranslationServiceTests {
     // MARK: - Translation Error Tests
 
     @Test("translate throws error for empty input")
-    func testTranslateEmptyInput() async {
+    func translateEmptyInput() async {
         let service = OnDeviceTranslationService.shared
 
         do {
@@ -238,7 +237,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translate throws error for whitespace-only input")
-    func testTranslateWhitespaceInput() async {
+    func translateWhitespaceInput() async {
         let service = OnDeviceTranslationService.shared
 
         do {
@@ -254,13 +253,13 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translate throws error for unsupported language pair")
-    func testTranslateUnsupportedPair() async {
+    func translateUnsupportedPair() async {
         let service = OnDeviceTranslationService.shared
 
         do {
             _ = try await service.translate(text: "hello", from: "xyz-invalid", to: "abc-invalid")
             #expect(Bool(false), "Should have thrown error for unsupported pair")
-        } catch OnDeviceTranslationError.unsupportedLanguagePair(let source, let target) {
+        } catch let OnDeviceTranslationError.unsupportedLanguagePair(source, target) {
             // Expected error (if validation is implemented)
             #expect(source == "xyz-invalid", "Error should report source language")
             #expect(target == "abc-invalid", "Error should report target language")
@@ -272,7 +271,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("OnDeviceTranslationError.unsupportedLanguagePair has correct properties")
-    func testUnsupportedLanguagePairError() {
+    func unsupportedLanguagePairError() {
         let error = OnDeviceTranslationError.unsupportedLanguagePair(
             source: "en",
             target: "xyz"
@@ -288,7 +287,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("OnDeviceTranslationError.languagePackNotAvailable has correct properties")
-    func testLanguagePackNotAvailableError() {
+    func languagePackNotAvailableError() {
         let error = OnDeviceTranslationError.languagePackNotAvailable(
             source: "en",
             target: "ru"
@@ -306,7 +305,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("OnDeviceTranslationError.languagePackDownloadFailed has correct properties")
-    func testLanguagePackDownloadFailedError() {
+    func languagePackDownloadFailedError() {
         let error = OnDeviceTranslationError.languagePackDownloadFailed(
             language: "ru"
         )
@@ -323,7 +322,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("OnDeviceTranslationError.translationFailed has correct properties")
-    func testTranslationFailedError() {
+    func translationFailedError() {
         let error = OnDeviceTranslationError.translationFailed(
             reason: "Network timeout"
         )
@@ -337,7 +336,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("OnDeviceTranslationError.emptyInput has correct properties")
-    func testEmptyInputError() {
+    func emptyInputError() {
         let error = OnDeviceTranslationError.emptyInput
 
         #expect(error.errorDescription != nil, "Should have error description")
@@ -354,7 +353,7 @@ struct OnDeviceTranslationServiceTests {
     // MARK: - Error Localization Tests
 
     @Test("All errors provide user-friendly descriptions")
-    func testAllErrorsHaveDescriptions() {
+    func allErrorsHaveDescriptions() {
         let errors: [OnDeviceTranslationError] = [
             .unsupportedLanguagePair(source: "en", target: "xyz"),
             .languagePackNotAvailable(source: "en", target: "ru"),
@@ -370,7 +369,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("Error descriptions are non-empty")
-    func testErrorDescriptionsNotEmpty() {
+    func errorDescriptionsNotEmpty() {
         let errors: [OnDeviceTranslationError] = [
             .unsupportedLanguagePair(source: "en", target: "ru"),
             .languagePackNotAvailable(source: "en", target: "ru"),
@@ -391,7 +390,7 @@ struct OnDeviceTranslationServiceTests {
     // MARK: - Retry Logic Tests
 
     @Test("isRetryable is correct for all error types")
-    func testIsRetryableLogic() {
+    func isRetryableLogic() {
         let retryableErrors: [OnDeviceTranslationError] = [
             .languagePackDownloadFailed(language: "en"),
             .translationFailed(reason: "Timeout")
@@ -415,7 +414,7 @@ struct OnDeviceTranslationServiceTests {
     // MARK: - Language Download Tests
 
     @Test("requestLanguageDownload with available language does not throw")
-    func testRequestLanguageDownloadAlreadyAvailable() async {
+    func requestLanguageDownloadAlreadyAvailable() async {
         let service = OnDeviceTranslationService.shared
         let english = Locale.Language(identifier: "en")
 
@@ -430,7 +429,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("requestLanguageDownload with String parameter")
-    func testRequestLanguageDownloadString() async {
+    func requestLanguageDownloadString() async {
         let service = OnDeviceTranslationService.shared
 
         do {
@@ -442,7 +441,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("requestLanguageDownload handles invalid language gracefully")
-    func testRequestLanguageDownloadFailure() async {
+    func requestLanguageDownloadFailure() async {
         let service = OnDeviceTranslationService.shared
 
         // Try to download an invalid language
@@ -451,7 +450,7 @@ struct OnDeviceTranslationServiceTests {
             // NOTE: iOS Translation framework may not validate language strictly
             // The framework might succeed silently or handle this internally
             #expect(true, "Request completed (framework may handle invalid codes gracefully)")
-        } catch OnDeviceTranslationError.languagePackDownloadFailed(let language) {
+        } catch let OnDeviceTranslationError.languagePackDownloadFailed(language) {
             // Expected error if framework does validate
             #expect(language == "xyz-invalid-999", "Error should report language")
         } catch {
@@ -463,7 +462,7 @@ struct OnDeviceTranslationServiceTests {
     // MARK: - Fixed Logic Tests (Bug Fixes)
 
     @Test("needsLanguageDownload returns inverse of isLanguageAvailable")
-    func testNeedsLanguageDownloadInverseLogic() async {
+    func needsLanguageDownloadInverseLogic() async {
         let service = OnDeviceTranslationService.shared
 
         // Test with a language that's likely installed (English)
@@ -481,7 +480,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("needsLanguageDownload with unavailable language returns true")
-    func testNeedsLanguageDownloadWhenNotAvailable() async {
+    func needsLanguageDownloadWhenNotAvailable() async {
         let service = OnDeviceTranslationService.shared
 
         // Use an obscure language code that won't be installed
@@ -495,7 +494,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("requestLanguageDownload no early return for available languages")
-    func testRequestLanguageDownloadNoEarlyReturn() async {
+    func requestLanguageDownloadNoEarlyReturn() async {
         let service = OnDeviceTranslationService.shared
 
         // FIXED: Previously returned early if language appeared available
@@ -525,7 +524,7 @@ struct OnDeviceTranslationServiceTests {
 
         // Wait a bit for background task to start
         do {
-            try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+            try await Task.sleep(nanoseconds: 100000000) // 0.1 seconds
         } catch {
             // Task.sleep should never throw, but handle it just in case
             #expect(true, "Task.sleep completed: \(error.localizedDescription)")
@@ -554,7 +553,7 @@ struct OnDeviceTranslationServiceTests {
     // MARK: - Edge Cases Tests
 
     @Test("translate with very long text")
-    func testTranslateVeryLongText() async {
+    func translateVeryLongText() async {
         let service = OnDeviceTranslationService.shared
 
         let longText = String(repeating: "hello ", count: 1000) // ~6000 characters
@@ -569,7 +568,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translate with emoji")
-    func testTranslateEmoji() async {
+    func translateEmoji() async {
         let service = OnDeviceTranslationService.shared
 
         do {
@@ -582,7 +581,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translate with special characters")
-    func testTranslateSpecialCharacters() async {
+    func translateSpecialCharacters() async {
         let service = OnDeviceTranslationService.shared
 
         let specialText = "Hello! @#$%^&*()_+-=[]{}|;':\",./<>?"
@@ -596,7 +595,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translate with RTL language (Arabic)")
-    func testTranslateRTL() async {
+    func translateRTL() async {
         let service = OnDeviceTranslationService.shared
 
         do {
@@ -608,7 +607,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translate with CJK characters")
-    func testTranslateCJK() async {
+    func translateCJK() async {
         let service = OnDeviceTranslationService.shared
 
         do {
@@ -620,7 +619,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translate with numbers and punctuation")
-    func testTranslateNumbersAndPunctuation() async {
+    func translateNumbersAndPunctuation() async {
         let service = OnDeviceTranslationService.shared
 
         do {
@@ -636,7 +635,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translate with mixed language input")
-    func testTranslateMixedLanguage() async {
+    func translateMixedLanguage() async {
         let service = OnDeviceTranslationService.shared
 
         do {
@@ -653,7 +652,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translate preserves line breaks")
-    func testTranslateLineBreaks() async {
+    func translateLineBreaks() async {
         let service = OnDeviceTranslationService.shared
 
         let multiLineText = """
@@ -673,11 +672,11 @@ struct OnDeviceTranslationServiceTests {
     // MARK: - Concurrency Tests
 
     @Test("Concurrent translate calls do not crash")
-    func testConcurrentTranslation() async {
+    func concurrentTranslation() async {
         let service = OnDeviceTranslationService.shared
 
         await withTaskGroup(of: Void.self) { group in
-            for i in 0..<5 {
+            for i in 0 ..< 5 {
                 group.addTask {
                     do {
                         _ = try await service.translate(
@@ -697,7 +696,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("Concurrent language availability checks")
-    func testConcurrentAvailabilityChecks() async {
+    func concurrentAvailabilityChecks() async {
         let service = OnDeviceTranslationService.shared
 
         await withTaskGroup(of: Bool.self) { group in
@@ -717,7 +716,7 @@ struct OnDeviceTranslationServiceTests {
     // MARK: - Integration Tests
 
     @Test("Full translation workflow: check -> download -> translate")
-    func testFullTranslationWorkflow() async {
+    func fullTranslationWorkflow() async {
         let service = OnDeviceTranslationService.shared
 
         // Step 1: Check language availability
@@ -739,7 +738,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("Service handles rapid language switching")
-    func testRapidLanguageSwitching() async {
+    func rapidLanguageSwitching() async {
         let service = OnDeviceTranslationService.shared
 
         // Rapidly switch languages
@@ -758,11 +757,11 @@ struct OnDeviceTranslationServiceTests {
     // MARK: - Performance Tests
 
     @Test("Language availability check performance")
-    func testAvailabilityCheckPerformance() async {
+    func availabilityCheckPerformance() async {
         let service = OnDeviceTranslationService.shared
 
         let start = Date()
-        for _ in 0..<100 {
+        for _ in 0 ..< 100 {
             _ = await service.isLanguageAvailable("en")
         }
         let duration = Date().timeIntervalSince(start)
@@ -772,11 +771,11 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("Language pair support check performance")
-    func testSupportCheckPerformance() async {
+    func supportCheckPerformance() async {
         let service = OnDeviceTranslationService.shared
 
         let start = Date()
-        for _ in 0..<100 {
+        for _ in 0 ..< 100 {
             _ = await service.isLanguagePairSupported(from: "en", to: "es")
         }
         let duration = Date().timeIntervalSince(start)
@@ -788,7 +787,7 @@ struct OnDeviceTranslationServiceTests {
     // MARK: - Batch Translation Tests
 
     @Test("translateBatch with empty array returns empty result")
-    func testTranslateBatchEmptyArray() async {
+    func translateBatchEmptyArray() async {
         let service = OnDeviceTranslationService.shared
 
         let result = try? await service.translateBatch([])
@@ -800,7 +799,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translateBatch with single item")
-    func testTranslateBatchSingleItem() async {
+    func translateBatchSingleItem() async {
         let service = OnDeviceTranslationService.shared
 
         do {
@@ -815,7 +814,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translateBatch respects maxConcurrency parameter")
-    func testTranslateBatchMaxConcurrency() async {
+    func translateBatchMaxConcurrency() async {
         let service = OnDeviceTranslationService.shared
 
         let texts = Array(repeating: "Hello", count: 10)
@@ -830,7 +829,7 @@ struct OnDeviceTranslationServiceTests {
             let result = try await service.translateBatch(
                 texts,
                 maxConcurrency: maxConcurrency
-            ) { progress in
+            ) { _ in
                 lock.lock()
                 currentActiveTasks += 1
                 if currentActiveTasks > maxActiveTasks {
@@ -852,7 +851,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translateBatch progress handler receives correct structure")
-    func testTranslateBatchProgressReporting() async {
+    func translateBatchProgressReporting() async {
         let service = OnDeviceTranslationService.shared
 
         let texts = ["Hello", "World", "Test"]
@@ -879,7 +878,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translateBatch progress handler is optional")
-    func testTranslateBatchWithoutProgressHandler() async {
+    func translateBatchWithoutProgressHandler() async {
         let service = OnDeviceTranslationService.shared
 
         let texts = ["Hello", "World"]
@@ -896,7 +895,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translateBatch cancellation works without crash")
-    func testTranslateBatchCancellation() async {
+    func translateBatchCancellation() async {
         let service = OnDeviceTranslationService.shared
 
         // Create a large batch that will take time
@@ -907,15 +906,17 @@ struct OnDeviceTranslationServiceTests {
         }
 
         // Cancel quickly after starting
-        try? await Task.sleep(nanoseconds: 10_000_000) // 0.01 seconds
+        try? await Task.sleep(nanoseconds: 10000000) // 0.01 seconds
         await service.cancelBatchTranslation()
 
         do {
             let result = try await task.value
 
             // If cancellation worked, should have failed count > 0
-            #expect(result.failedCount > 0 || result.successCount > 0,
-                   "Cancellation should return result")
+            #expect(
+                result.failedCount > 0 || result.successCount > 0,
+                "Cancellation should return result"
+            )
 
             // Test passes if we get here without crashing
             #expect(true, "Cancellation completed without crash")
@@ -926,16 +927,16 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translateBatch partial failures handled correctly")
-    func testTranslateBatchPartialFailures() async {
+    func translateBatchPartialFailures() async {
         let service = OnDeviceTranslationService.shared
 
         // Mix of valid and potentially problematic inputs
         let texts = [
-            "Hello",           // Valid
-            "",                // Empty (will fail)
-            "World",           // Valid
-            "   \t\n  ",       // Whitespace (may pass or fail)
-            "Test"             // Valid
+            "Hello", // Valid
+            "", // Empty (will fail)
+            "World", // Valid
+            "   \t\n  ", // Whitespace (may pass or fail)
+            "Test" // Valid
         ]
 
         do {
@@ -943,8 +944,10 @@ struct OnDeviceTranslationServiceTests {
 
             // Should process all items
             let totalProcessed = result.successCount + result.failedCount
-            #expect(totalProcessed == texts.count,
-                   "Should process all \(texts.count) items, got \(totalProcessed)")
+            #expect(
+                totalProcessed == texts.count,
+                "Should process all \(texts.count) items, got \(totalProcessed)"
+            )
 
             // Should have some failures due to empty input
             #expect(result.failedCount >= 1, "Should have at least 1 failure")
@@ -954,8 +957,10 @@ struct OnDeviceTranslationServiceTests {
 
             // Verify error details
             if result.failedCount > 0 {
-                #expect(!result.errors.isEmpty,
-                       "Failed count should match errors array length")
+                #expect(
+                    !result.errors.isEmpty,
+                    "Failed count should match errors array length"
+                )
             }
         } catch {
             // May throw if all items fail
@@ -964,7 +969,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translateBatch result structure is correct")
-    func testTranslateBatchResultStructure() async {
+    func translateBatchResultStructure() async {
         let service = OnDeviceTranslationService.shared
 
         let texts = ["Hello", "World"]
@@ -979,31 +984,47 @@ struct OnDeviceTranslationServiceTests {
 
             // Verify successful translations array
             if result.successCount > 0 {
-                #expect(result.successfulTranslations.count == result.successCount,
-                       "Successful translations count should match successCount")
+                #expect(
+                    result.successfulTranslations.count == result.successCount,
+                    "Successful translations count should match successCount"
+                )
 
                 for translation in result.successfulTranslations {
-                    #expect(!translation.sourceText.isEmpty,
-                           "Source text should not be empty")
-                    #expect(!translation.translatedText.isEmpty,
-                           "Translated text should not be empty")
-                    #expect(!translation.sourceLanguage.isEmpty,
-                           "Source language should not be empty")
-                    #expect(!translation.targetLanguage.isEmpty,
-                           "Target language should not be empty")
+                    #expect(
+                        !translation.sourceText.isEmpty,
+                        "Source text should not be empty"
+                    )
+                    #expect(
+                        !translation.translatedText.isEmpty,
+                        "Translated text should not be empty"
+                    )
+                    #expect(
+                        !translation.sourceLanguage.isEmpty,
+                        "Source language should not be empty"
+                    )
+                    #expect(
+                        !translation.targetLanguage.isEmpty,
+                        "Target language should not be empty"
+                    )
                 }
             } else {
-                #expect(result.successfulTranslations.isEmpty,
-                       "Should have no successful translations if count is 0")
+                #expect(
+                    result.successfulTranslations.isEmpty,
+                    "Should have no successful translations if count is 0"
+                )
             }
 
             // Verify errors array
             if result.failedCount > 0 {
-                #expect(result.errors.count == result.failedCount,
-                       "Errors count should match failedCount")
+                #expect(
+                    result.errors.count == result.failedCount,
+                    "Errors count should match failedCount"
+                )
             } else {
-                #expect(result.errors.isEmpty,
-                       "Should have no errors if failedCount is 0")
+                #expect(
+                    result.errors.isEmpty,
+                    "Should have no errors if failedCount is 0"
+                )
             }
         } catch {
             // May fail due to language availability
@@ -1012,19 +1033,21 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translateBatch with large batch")
-    func testTranslateBatchLargeBatch() async {
+    func translateBatchLargeBatch() async {
         let service = OnDeviceTranslationService.shared
 
         // Test with 100+ items as per acceptance criteria
-        let texts = (1...100).map { "Word \($0)" }
+        let texts = (1 ... 100).map { "Word \($0)" }
 
         do {
             let result = try await service.translateBatch(texts, maxConcurrency: 5)
 
             // Should process all items
             let totalProcessed = result.successCount + result.failedCount
-            #expect(totalProcessed == 100,
-                   "Should process all 100 items, got \(totalProcessed)")
+            #expect(
+                totalProcessed == 100,
+                "Should process all 100 items, got \(totalProcessed)"
+            )
 
             // Verify duration is reasonable
             #expect(result.totalDuration >= 0, "Duration should be non-negative")
@@ -1035,7 +1058,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translateBatch consecutive batches work correctly")
-    func testTranslateBatchConsecutiveBatches() async {
+    func translateBatchConsecutiveBatches() async {
         let service = OnDeviceTranslationService.shared
 
         let batch1 = ["Hello", "World"]
@@ -1046,10 +1069,14 @@ struct OnDeviceTranslationServiceTests {
             let result2 = try await service.translateBatch(batch2)
 
             // Both batches should complete
-            #expect(result1.successCount + result1.failedCount == 2,
-                   "First batch should process 2 items")
-            #expect(result2.successCount + result2.failedCount == 2,
-                   "Second batch should process 2 items")
+            #expect(
+                result1.successCount + result1.failedCount == 2,
+                "First batch should process 2 items"
+            )
+            #expect(
+                result2.successCount + result2.failedCount == 2,
+                "Second batch should process 2 items"
+            )
         } catch {
             // May fail due to language availability
             #expect(true, "Consecutive batches may fail: \(error)")
@@ -1057,7 +1084,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translateBatch with different maxConcurrency values")
-    func testTranslateBatchDifferentConcurrency() async {
+    func translateBatchDifferentConcurrency() async {
         let service = OnDeviceTranslationService.shared
 
         let texts = ["One", "Two", "Three", "Four", "Five"]
@@ -1070,10 +1097,14 @@ struct OnDeviceTranslationServiceTests {
             let result2 = try await service.translateBatch(texts, maxConcurrency: 10)
 
             // Both should process all items
-            #expect(result1.successCount + result1.failedCount == texts.count,
-                   "Should process all items with concurrency 1")
-            #expect(result2.successCount + result2.failedCount == texts.count,
-                   "Should process all items with concurrency 10")
+            #expect(
+                result1.successCount + result1.failedCount == texts.count,
+                "Should process all items with concurrency 1"
+            )
+            #expect(
+                result2.successCount + result2.failedCount == texts.count,
+                "Should process all items with concurrency 10"
+            )
         } catch {
             // May fail due to language availability
             #expect(true, "Different concurrency values may fail: \(error)")
@@ -1081,7 +1112,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translateBatch cancellation allows new batch")
-    func testTranslateBatchCancellationThenNewBatch() async {
+    func translateBatchCancellationThenNewBatch() async {
         let service = OnDeviceTranslationService.shared
 
         let batch1 = Array(repeating: "Hello", count: 20)
@@ -1093,7 +1124,7 @@ struct OnDeviceTranslationServiceTests {
         }
 
         // Cancel and start new batch
-        try? await Task.sleep(nanoseconds: 5_000_000) // 0.005 seconds
+        try? await Task.sleep(nanoseconds: 5000000) // 0.005 seconds
         await service.cancelBatchTranslation()
 
         // Start new batch immediately after cancellation
@@ -1101,8 +1132,10 @@ struct OnDeviceTranslationServiceTests {
             let result2 = try await service.translateBatch(batch2)
 
             // New batch should work
-            #expect(result2.successCount + result2.failedCount == 1,
-                   "New batch should process 1 item")
+            #expect(
+                result2.successCount + result2.failedCount == 1,
+                "New batch should process 1 item"
+            )
 
             // Test passes if we get here without crashing
             #expect(true, "New batch after cancellation works")
@@ -1116,7 +1149,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translateBatch handles special characters in batch")
-    func testTranslateBatchSpecialCharacters() async {
+    func translateBatchSpecialCharacters() async {
         let service = OnDeviceTranslationService.shared
 
         let texts = [
@@ -1131,8 +1164,10 @@ struct OnDeviceTranslationServiceTests {
 
             // Should process all items
             let totalProcessed = result.successCount + result.failedCount
-            #expect(totalProcessed == texts.count,
-                   "Should process all \(texts.count) items")
+            #expect(
+                totalProcessed == texts.count,
+                "Should process all \(texts.count) items"
+            )
         } catch {
             // May fail due to language availability
             #expect(true, "Special characters batch may fail: \(error)")
@@ -1140,7 +1175,7 @@ struct OnDeviceTranslationServiceTests {
     }
 
     @Test("translateBatch progress updates are sequential")
-    func testTranslateBatchProgressSequential() async {
+    func translateBatchProgressSequential() async {
         let service = OnDeviceTranslationService.shared
 
         let texts = ["A", "B", "C", "D", "E"]
@@ -1152,9 +1187,11 @@ struct OnDeviceTranslationServiceTests {
             }
 
             // Progress should be monotonically increasing
-            for i in 1..<progressValues.count {
-                #expect(progressValues[i] >= progressValues[i-1],
-                       "Progress should be sequential: \(progressValues)")
+            for i in 1 ..< progressValues.count {
+                #expect(
+                    progressValues[i] >= progressValues[i - 1],
+                    "Progress should be sequential: \(progressValues)"
+                )
             }
         } catch {
             // May fail due to language availability

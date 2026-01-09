@@ -13,7 +13,7 @@ struct RatingButtonsView: View {
     var body: some View {
         HStack(spacing: 12) {
             ForEach(CardRating.allCases.reversed(), id: \.self) { rating in
-                Button(action: { onRating(rating) }) {
+                Button(action: { self.onRating(rating) }) {
                     VStack(spacing: 6) {
                         Image(systemName: rating.iconName)
                             .font(.title2)
@@ -46,10 +46,10 @@ extension CardRating {
     /// SwiftUI Color for this rating
     var swiftUIColor: Color {
         switch self {
-        case .again: return .red
-        case .hard: return .orange
-        case .good: return .blue
-        case .easy: return .green
+        case .again: .red
+        case .hard: .orange
+        case .good: .blue
+        case .easy: .green
         }
     }
 }

@@ -5,8 +5,8 @@
 //  Container for organizing cards into thematic groups
 //
 
-import SwiftData
 import Foundation
+import SwiftData
 
 /// A deck containing related vocabulary cards
 ///
@@ -56,12 +56,13 @@ final class Deck {
     ///   - icon: SF Symbol name (optional)
     ///   - createdAt: Creation timestamp (defaults to now)
     ///   - order: Display order (defaults to 0)
-    init(id: UUID = UUID(),
-         name: String,
-         icon: String? = nil,
-         createdAt: Date = Date(),
-         order: Int = 0) {
-
+    init(
+        id: UUID = UUID(),
+        name: String,
+        icon: String? = nil,
+        createdAt: Date = Date(),
+        order: Int = 0
+    ) {
         self.id = id
         self.name = name
         self.icon = icon

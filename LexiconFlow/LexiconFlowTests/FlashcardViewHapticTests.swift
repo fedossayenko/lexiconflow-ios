@@ -11,17 +11,16 @@
 //  Actual haptic output cannot be verified in unit tests.
 //
 
-import Testing
 import Foundation
+import Testing
 @testable import LexiconFlow
 
 @MainActor
 struct FlashcardViewHapticTests {
-
     // MARK: - Haptic Throttling Tests
 
     @Test("Haptic throttle interval is defined correctly")
-    func testHapticThrottleIntervalDefined() {
+    func hapticThrottleIntervalDefined() {
         // Verify that FlashcardView defines hapticThrottleInterval
         // Expected: 0.08 seconds (max 12.5 haptics/second)
         let expectedInterval: TimeInterval = 0.08
@@ -30,7 +29,7 @@ struct FlashcardViewHapticTests {
     }
 
     @Test("Haptic throttle interval prevents spam")
-    func testHapticThrottlePreventsSpam() {
+    func hapticThrottlePreventsSpam() {
         // Simulate rapid swipe updates (e.g., 60fps = 16.67ms per frame)
         let frameInterval: TimeInterval = 0.0167 // ~60fps
         let throttleInterval: TimeInterval = 0.08
@@ -39,30 +38,32 @@ struct FlashcardViewHapticTests {
         let framesPerHaptic = Int(throttleInterval / frameInterval)
 
         // Should trigger haptic every ~5 frames
-        #expect(framesPerHaptic == 4 || framesPerHaptic == 5,
-               "Throttle interval should allow ~4-5 frames between haptics")
+        #expect(
+            framesPerHaptic == 4 || framesPerHaptic == 5,
+            "Throttle interval should allow ~4-5 frames between haptics"
+        )
     }
 
     @Test("Haptic progress threshold is enforced")
-    func testHapticProgressThreshold() {
+    func hapticProgressThreshold() {
         // Verify that haptics only trigger when progress > 0.3
         let threshold: CGFloat = 0.3
 
         // Below threshold
-        #expect(0.0 <= threshold, "Zero progress should be below threshold")
-        #expect(0.2 <= threshold, "0.2 progress should be below threshold")
-        #expect(0.3 <= threshold, "0.3 progress should be at threshold")
+        #expect(threshold >= 0.0, "Zero progress should be below threshold")
+        #expect(threshold >= 0.2, "0.2 progress should be below threshold")
+        #expect(threshold >= 0.3, "0.3 progress should be at threshold")
 
         // Above threshold
-        #expect(0.4 > threshold, "0.4 progress should be above threshold")
-        #expect(0.5 > threshold, "0.5 progress should be above threshold")
-        #expect(1.0 > threshold, "1.0 progress should be above threshold")
+        #expect(threshold < 0.4, "0.4 progress should be above threshold")
+        #expect(threshold < 0.5, "0.5 progress should be above threshold")
+        #expect(threshold < 1.0, "1.0 progress should be above threshold")
     }
 
     // MARK: - Direction Mapping Tests
 
     @Test("Haptic direction mapping exists for all swipe directions")
-    func testHapticDirectionMapping() {
+    func hapticDirectionMapping() {
         // Verify that CardGestureViewModel.SwipeDirection maps to HapticService.SwipeDirection
         // This test verifies the extension exists and compiles correctly
 
@@ -80,7 +81,7 @@ struct FlashcardViewHapticTests {
     }
 
     @Test("Haptic direction mapping is consistent")
-    func testHapticDirectionMappingConsistency() {
+    func hapticDirectionMappingConsistency() {
         // Verify that direction mapping is consistent
         let rightMapping = CardGestureViewModel.SwipeDirection.right.hapticDirection
         let leftMapping = CardGestureViewModel.SwipeDirection.left.hapticDirection
@@ -96,7 +97,7 @@ struct FlashcardViewHapticTests {
     // MARK: - Rating-Specific Haptic Tests
 
     @Test("Completion haptics use correct patterns")
-    func testCompletionHapticPatterns() {
+    func completionHapticPatterns() {
         // Verify that rating 2 (Good) and rating 3 (Easy) trigger success haptic
         // Verify that rating 0 (Again) and rating 1 (Hard) trigger warning haptic
 
@@ -108,7 +109,7 @@ struct FlashcardViewHapticTests {
     }
 
     @Test("Swipe haptics use direction-specific patterns")
-    func testSwipeDirectionSpecificPatterns() {
+    func swipeDirectionSpecificPatterns() {
         // Verify that each swipe direction uses a different haptic pattern
         #expect(true, "Right swipe (Good) should use medium intensity haptic")
         #expect(true, "Left swipe (Again) should use light intensity haptic")
@@ -119,21 +120,21 @@ struct FlashcardViewHapticTests {
     // MARK: - Integration Tests
 
     @Test("FlashcardView uses HapticService for swipe feedback")
-    func testFlashcardViewUsesHapticServiceForSwipes() {
+    func flashcardViewUsesHapticServiceForSwipes() {
         // Verify that FlashcardView calls HapticService.shared.triggerSwipe
         // during drag gesture updates
         #expect(true, "FlashcardView should call HapticService.shared.triggerSwipe on gesture change")
     }
 
     @Test("FlashcardView uses HapticService for completion feedback")
-    func testFlashcardViewUsesHapticServiceForCompletion() {
+    func flashcardViewUsesHapticServiceForCompletion() {
         // Verify that FlashcardView calls HapticService.shared.triggerSuccess
         // or triggerWarning on gesture completion based on rating
         #expect(true, "FlashcardView should call HapticService completion methods on gesture end")
     }
 
     @Test("HapticService is called with correct parameters")
-    func testHapticServiceParameters() {
+    func hapticServiceParameters() {
         // Verify that HapticService is called with:
         // - Correct direction (from CardGestureViewModel.SwipeDirection)
         // - Progress value (0-1 range based on drag distance)
@@ -143,32 +144,34 @@ struct FlashcardViewHapticTests {
     // MARK: - Edge Cases
 
     @Test("Haptics respect AppSettings.hapticEnabled")
-    func testHapticsRespectAppSettings() {
+    func hapticsRespectAppSettings() {
         // Verify that when AppSettings.hapticEnabled is false,
         // no haptics are triggered during swipes
         #expect(true, "All haptic calls should respect AppSettings.hapticEnabled")
     }
 
     @Test("Throttling works regardless of hapticEnabled setting")
-    func testThrottlingIndependentOfHapticEnabled() {
+    func throttlingIndependentOfHapticEnabled() {
         // Verify that throttling logic is evaluated before hapticEnabled check
         #expect(true, "Throttling should be independent of hapticEnabled setting")
     }
 
     @Test("Last haptic time is tracked correctly")
-    func testLastHapticTimeTracking() {
+    func lastHapticTimeTracking() {
         // Verify that lastHapticTime is updated after each haptic
         #expect(true, "Last haptic time should be tracked for throttling")
     }
 
     @Test("Rapid swipes don't cause excessive haptic calls")
-    func testRapidSwipesThrottled() {
+    func rapidSwipesThrottled() {
         // Simulate rapid swipe updates at 60fps
         // Verify that haptics are throttled to ~12.5/second max
         let updatesPerSecond = 60
         let maxHapticsPerSecond = 12.5
 
-        #expect(maxHapticsPerSecond < Double(updatesPerSecond),
-               "Haptics should be throttled below frame rate")
+        #expect(
+            maxHapticsPerSecond < Double(updatesPerSecond),
+            "Haptics should be throttled below frame rate"
+        )
     }
 }

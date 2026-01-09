@@ -16,7 +16,8 @@ struct SettingsView: View {
         let urlString = "https://github.com/open-spaced-repetition/fsrs.js"
         guard let url = URL(string: urlString) else {
             assertionFailure("Failed to create FSRS URL")
-            return URL(string: "file://")! // Last resort - always valid
+            // Fallback to home directory (always valid)
+            return URL(fileURLWithPath: NSHomeDirectory())
         }
         return url
     }()
@@ -27,7 +28,21 @@ struct SettingsView: View {
         let urlString = "https://github.com/fedossayenko/lexiconflow-ios"
         guard let url = URL(string: urlString) else {
             assertionFailure("Failed to create repo URL")
-            return URL(string: "file://")! // Last resort - always valid
+            // Fallback to home directory (always valid)
+            return URL(fileURLWithPath: NSHomeDirectory())
+        }
+        return url
+    }()
+
+    /// URL for SMARTool dataset (CC-BY 4.0 license)
+    /// DOI: https://doi.org/10.18710/QNAPNE
+    /// Citation: Janda, Laura A. and Francis M. Tyers. 2021
+    private static let smartoolURL: URL = {
+        let urlString = "https://doi.org/10.18710/QNAPNE"
+        guard let url = URL(string: urlString) else {
+            assertionFailure("Failed to create SMARTool URL")
+            // Fallback to home directory (always valid)
+            return URL(fileURLWithPath: NSHomeDirectory())
         }
         return url
     }()
@@ -36,6 +51,7 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 // MARK: - Study Section
+
                 Section("Study") {
                     NavigationLink(destination: DeckSelectionView()) {
                         HStack {
@@ -73,6 +89,7 @@ struct SettingsView: View {
                 }
 
                 // MARK: - Data Section
+
                 Section("Data") {
                     NavigationLink(destination: DataManagementView()) {
                         Label("Data Management", systemImage: "tray.full")
@@ -81,6 +98,7 @@ struct SettingsView: View {
                 }
 
                 // MARK: - Appearance Section
+
                 Section("Appearance") {
                     NavigationLink(destination: AppearanceSettingsView()) {
                         Label("Appearance", systemImage: "paintbrush")
@@ -89,6 +107,7 @@ struct SettingsView: View {
                 }
 
                 // MARK: - About Section
+
                 Section("About") {
                     HStack {
                         Label("Version", systemImage: "info.circle")
@@ -131,6 +150,18 @@ struct SettingsView: View {
                         }
                     }
                     .accessibilityLabel("View GitHub repository")
+
+                    Link(destination: Self.smartoolURL) {
+                        HStack {
+                            Label("SMARTool Dataset", systemImage: "arrow.up.right.square")
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .accessibilityLabel("View SMARTool dataset license and attribution")
                 }
             }
             .navigationTitle("Settings")

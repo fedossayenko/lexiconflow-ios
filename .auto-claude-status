@@ -3,8 +3,13 @@
   "spec": "003-on-device-translation-service",
   "state": "complete",
   "subtasks": {
+<<<<<<< HEAD
     "completed": 0,
     "total": 20,
+=======
+    "completed": 1,
+    "total": 24,
+>>>>>>> 096f483 (auto-claude: phase_1_research_2 - Organize collected vocabulary by CEFR levels (A1-C2))
     "in_progress": 1,
     "failed": 0
   },
@@ -18,8 +23,16 @@
     "max": 1
   },
   "session": {
+<<<<<<< HEAD
     "number": 20,
     "started_at": "2026-01-06T20:57:11.994120"
   },
   "last_update": "2026-01-07T12:00:00.000000"
 }
+=======
+    "number": 3,
+    "started_at": "2026-01-08T02:45:56.107778"
+  },
+  "last_update": "2026-01-08T02:52:29.907451"
+}
+>>>>>>> 096f483 (auto-claude: phase_1_research_2 - Organize collected vocabulary by CEFR levels (A1-C2))

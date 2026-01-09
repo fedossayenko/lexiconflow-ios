@@ -6,14 +6,13 @@
 //  and session lifecycle.
 //
 
-import Testing
 import SwiftData
 import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 @MainActor
 struct StudyViewTests {
-
     // MARK: - Test Container Setup
 
     private func createTestContainer() -> ModelContainer {
@@ -42,7 +41,7 @@ struct StudyViewTests {
     // MARK: - StudyMode Enum Tests
 
     @Test("StudyMode scheduled case exists")
-    func testScheduledModeExists() {
+    func scheduledModeExists() {
         // Verify the scheduled mode can be instantiated
         let mode = StudyMode.scheduled
         #expect(mode == .scheduled, "Scheduled mode should be equal to .scheduled")
@@ -51,8 +50,8 @@ struct StudyViewTests {
     // MARK: - Due Count Tests
 
     @Test("Scheduled mode counts only due cards")
-    func testScheduledModeCount() async throws {
-        let container = createTestContainer()
+    func scheduledModeCount() async throws {
+        let container = self.createTestContainer()
         let context = container.mainContext
         let scheduler = Scheduler(modelContext: context)
 
@@ -62,16 +61,16 @@ struct StudyViewTests {
         let tomorrow = now.addingTimeInterval(86400) // Tomorrow
 
         // Due card (yesterday)
-        createTestCard(in: context, word: "Due1", dueDate: yesterday, state: .review)
+        self.createTestCard(in: context, word: "Due1", dueDate: yesterday, state: .review)
 
         // Due card (today)
-        createTestCard(in: context, word: "Due2", dueDate: now, state: .review)
+        self.createTestCard(in: context, word: "Due2", dueDate: now, state: .review)
 
         // Not due card (tomorrow)
-        createTestCard(in: context, word: "NotDue", dueDate: tomorrow, state: .review)
+        self.createTestCard(in: context, word: "NotDue", dueDate: tomorrow, state: .review)
 
         // New card (should not be counted)
-        createTestCard(in: context, word: "New", dueDate: nil, state: .new)
+        self.createTestCard(in: context, word: "New", dueDate: nil, state: .new)
 
         try context.save()
 
@@ -81,8 +80,8 @@ struct StudyViewTests {
     }
 
     @Test("Empty database returns zero count")
-    func testEmptyDatabaseCount() async throws {
-        let container = createTestContainer()
+    func emptyDatabaseCount() async throws {
+        let container = self.createTestContainer()
         let context = container.mainContext
         let scheduler = Scheduler(modelContext: context)
 
@@ -95,14 +94,14 @@ struct StudyViewTests {
     // MARK: - Mode Switching Tests
 
     @Test("Mode switching triggers due count refresh")
-    func testModeSwitchRefreshesCount() async throws {
-        let container = createTestContainer()
+    func modeSwitchRefreshesCount() async throws {
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create some cards
         let now = Date()
-        createTestCard(in: context, word: "Due1", dueDate: now, state: .review)
-        createTestCard(in: context, word: "New", state: .new)
+        self.createTestCard(in: context, word: "Due1", dueDate: now, state: .review)
+        self.createTestCard(in: context, word: "New", state: .new)
 
         try context.save()
 
@@ -122,7 +121,7 @@ struct StudyViewTests {
     // MARK: - Session Lifecycle Tests
 
     @Test("Session start creates StudySessionView")
-    func testSessionStart() {
+    func sessionStart() {
         // Verify StudySessionView can be created with mode
         let sessionView = StudySessionView(mode: .scheduled) {}
         // Verify the mode is stored correctly
@@ -130,13 +129,13 @@ struct StudyViewTests {
     }
 
     @Test("Session completion refreshes due count")
-    func testSessionCompletionRefresh() async throws {
-        let container = createTestContainer()
+    func sessionCompletionRefresh() async throws {
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create a due card
         let now = Date()
-        createTestCard(in: context, word: "Due1", dueDate: now, state: .review)
+        self.createTestCard(in: context, word: "Due1", dueDate: now, state: .review)
 
         try context.save()
 
@@ -148,7 +147,8 @@ struct StudyViewTests {
 
         // After "completing" a review (simulated by changing due date)
         if let card = try context.fetch(FetchDescriptor<Flashcard>()).first,
-           let fsrsState = card.fsrsState {
+           let fsrsState = card.fsrsState
+        {
             fsrsState.dueDate = Date().addingTimeInterval(86400) // Move to tomorrow
             try context.save()
         }
@@ -161,14 +161,14 @@ struct StudyViewTests {
     // MARK: - Edge Cases
 
     @Test("All new cards returns zero for scheduled mode")
-    func testAllNewCardsScheduled() async throws {
-        let container = createTestContainer()
+    func allNewCardsScheduled() async throws {
+        let container = self.createTestContainer()
         let context = container.mainContext
         let scheduler = Scheduler(modelContext: context)
 
         // Create only new cards
-        createTestCard(in: context, word: "New1", state: .new)
-        createTestCard(in: context, word: "New2", state: .new)
+        self.createTestCard(in: context, word: "New1", state: .new)
+        self.createTestCard(in: context, word: "New2", state: .new)
 
         try context.save()
 
@@ -178,18 +178,18 @@ struct StudyViewTests {
     }
 
     @Test("Mixed state cards counted correctly")
-    func testMixedStateCards() async throws {
-        let container = createTestContainer()
+    func mixedStateCards() async throws {
+        let container = self.createTestContainer()
         let context = container.mainContext
         let scheduler = Scheduler(modelContext: context)
 
         let now = Date()
 
         // Mix of states and due dates
-        createTestCard(in: context, word: "New", state: .new)
-        createTestCard(in: context, word: "Learning", state: .learning)  // Learning cards are always due
-        createTestCard(in: context, word: "ReviewDue", dueDate: now, state: .review)
-        createTestCard(in: context, word: "ReviewFuture", dueDate: now.addingTimeInterval(86400), state: .review)
+        self.createTestCard(in: context, word: "New", state: .new)
+        self.createTestCard(in: context, word: "Learning", state: .learning) // Learning cards are always due
+        self.createTestCard(in: context, word: "ReviewDue", dueDate: now, state: .review)
+        self.createTestCard(in: context, word: "ReviewFuture", dueDate: now.addingTimeInterval(86400), state: .review)
 
         try context.save()
 
@@ -202,8 +202,8 @@ struct StudyViewTests {
     // MARK: - Error Handling Tests
 
     @Test("Fetch error is handled gracefully")
-    func testFetchErrorHandling() async throws {
-        let container = createTestContainer()
+    func fetchErrorHandling() async throws {
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create a scenario that could cause errors
@@ -223,13 +223,13 @@ struct StudyViewTests {
     // MARK: - String Literal Tests
 
     @Test("String literal 'new' used in predicates")
-    func testStringLiteralInPredicate() async throws {
-        let container = createTestContainer()
+    func stringLiteralInPredicate() async throws {
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create new and non-new cards
-        createTestCard(in: context, word: "New", state: .new)
-        createTestCard(in: context, word: "Review", state: .review)
+        self.createTestCard(in: context, word: "New", state: .new)
+        self.createTestCard(in: context, word: "Review", state: .review)
 
         try context.save()
 

@@ -39,7 +39,7 @@ struct ReviewHistoryListView: View {
         onExport: (() -> Void)? = nil
     ) {
         self.reviews = reviews
-        self._selectedFilter = selectedFilter
+        _selectedFilter = selectedFilter
         self.onFilterChange = onFilterChange
         self.onExport = onExport
     }
@@ -47,13 +47,13 @@ struct ReviewHistoryListView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Filter picker header
-            filterPickerHeader
+            self.filterPickerHeader
 
             // Review list or empty state
-            if reviews.isEmpty {
-                emptyStateView
+            if self.reviews.isEmpty {
+                self.emptyStateView
             } else {
-                reviewList
+                self.reviewList
             }
         }
     }
@@ -64,15 +64,15 @@ struct ReviewHistoryListView: View {
     private var filterPickerHeader: some View {
         HStack {
             // Filter picker
-            Picker("Time Range", selection: $selectedFilter) {
+            Picker("Time Range", selection: self.$selectedFilter) {
                 ForEach(ReviewHistoryFilter.allCases, id: \.self) { filter in
                     Label(filter.displayName, systemImage: filter.icon)
                         .tag(filter)
                 }
             }
             .pickerStyle(.segmented)
-            .onChange(of: selectedFilter) { _, newValue in
-                onFilterChange(newValue)
+            .onChange(of: self.selectedFilter) { _, newValue in
+                self.onFilterChange(newValue)
 
                 // Haptic feedback for filter change
                 if AppSettings.hapticEnabled {
@@ -83,7 +83,7 @@ struct ReviewHistoryListView: View {
             Spacer()
 
             // Export button (if callback provided)
-            if let onExport = onExport {
+            if let onExport {
                 Button(action: onExport) {
                     Image(systemName: "square.and.arrow.up")
                         .foregroundStyle(.blue)
@@ -108,7 +108,7 @@ struct ReviewHistoryListView: View {
     private var reviewList: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
-                ForEach(reviews) { review in
+                ForEach(self.reviews) { review in
                     ReviewHistoryRow(review: review)
                 }
             }
@@ -125,11 +125,11 @@ struct ReviewHistoryListView: View {
         ContentUnavailableView {
             Label("No Reviews", systemImage: "calendar.badge.exclamationmark")
         } description: {
-            Text("No reviews found for \(selectedFilter.displayName.lowercased())")
+            Text("No reviews found for \(self.selectedFilter.displayName.lowercased())")
         } actions: {
             Button("Show All Time") {
-                selectedFilter = .allTime
-                onFilterChange(.allTime)
+                self.selectedFilter = .allTime
+                self.onFilterChange(.allTime)
             }
             .buttonStyle(.borderedProminent)
             .accessibilityLabel("Show All Time reviews")
@@ -151,7 +151,7 @@ struct ReviewHistoryListView: View {
                     reviews: sampleReviews,
                     selectedFilter: $selectedFilter,
                     onFilterChange: { _ in },
-                    onExport: { }
+                    onExport: {}
                 )
                 .navigationTitle("Review History")
             }

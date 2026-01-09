@@ -6,27 +6,26 @@
 //  Covers: Creation, relationships, computed properties, validation
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for StudySession and DailyStats models
 /// Uses shared container for performance - each test clears context before use
 @MainActor
 struct StudySessionAndDailyStatsTests {
-
     /// Get a fresh isolated context for testing
     /// Caller should call clearAll() before use to ensure test isolation
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     // MARK: - StudySession Creation Tests
 
     @Test("StudySession creation with required fields")
     func studySessionCreation() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let startTime = Date()
@@ -50,7 +49,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("StudySession creation with convenience initializer")
     func studySessionConvenienceInit() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let startTime = Date()
@@ -67,7 +66,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("StudySession with all study modes")
     func studySessionAllModes() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let scheduledSession = StudySession(startTime: Date(), mode: .scheduled)
@@ -90,7 +89,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("StudySession mode computed property getter")
     func studySessionModeGetter() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let session = StudySession(
@@ -109,7 +108,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("StudySession mode computed property setter")
     func studySessionModeSetter() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let session = StudySession(startTime: Date(), mode: .scheduled)
@@ -127,7 +126,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("StudySession with completed session")
     func studySessionCompleted() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let startTime = Date().addingTimeInterval(-600) // 10 minutes ago
@@ -152,7 +151,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("StudySession durationSeconds for completed session")
     func studySessionDurationSeconds() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let startTime = Date().addingTimeInterval(-323) // 5m 23s ago
@@ -173,7 +172,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("StudySession durationSeconds for active session")
     func studySessionDurationSecondsActive() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let session = StudySession(startTime: Date(), mode: .scheduled)
@@ -186,7 +185,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("StudySession durationFormatted - seconds only")
     func studySessionDurationFormattedSeconds() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let startTime = Date().addingTimeInterval(-23)
@@ -207,7 +206,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("StudySession durationFormatted - minutes only")
     func studySessionDurationFormattedMinutes() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let startTime = Date().addingTimeInterval(-300) // 5 minutes
@@ -228,7 +227,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("StudySession durationFormatted - minutes and seconds")
     func studySessionDurationFormattedMinutesAndSeconds() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let startTime = Date().addingTimeInterval(-323) // 5m 23s
@@ -249,7 +248,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("StudySession isActive computed property")
     func studySessionIsActive() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let activeSession = StudySession(startTime: Date(), mode: .scheduled)
@@ -273,7 +272,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("StudySession-reviewsLog relationship")
     func studySessionReviewsLogRelationship() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let session = StudySession(startTime: Date(), mode: .scheduled)
@@ -308,7 +307,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("StudySession-deck relationship")
     func studySessionDeckRelationship() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let deck = Deck(name: "Spanish", icon: "🇪🇸")
@@ -326,7 +325,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("StudySession with no deck")
     func studySessionNoDeck() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let session = StudySession(startTime: Date(), mode: .scheduled)
@@ -338,7 +337,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("StudySession-dailyStats relationship")
     func studySessionDailyStatsRelationship() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let normalizedDate = Calendar.autoupdatingCurrent.startOfDay(for: Date())
@@ -362,7 +361,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("StudySession with no dailyStats")
     func studySessionNoDailyStats() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let session = StudySession(startTime: Date(), mode: .scheduled)
@@ -376,7 +375,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("Deleting study session nullifies reviews")
     func deleteStudySessionNullifiesReviews() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let session = StudySession(startTime: Date(), mode: .scheduled)
@@ -413,7 +412,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("Deleting study session nullifies dailyStats")
     func deleteStudySessionNullifiesDailyStats() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let normalizedDate = Calendar.autoupdatingCurrent.startOfDay(for: Date())
@@ -448,7 +447,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("DailyStats creation with required fields")
     func dailyStatsCreation() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let date = Calendar.autoupdatingCurrent.startOfDay(for: Date())
@@ -472,7 +471,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("DailyStats creation with minimal fields")
     func dailyStatsCreationMinimal() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let date = Calendar.autoupdatingCurrent.startOfDay(for: Date())
@@ -494,7 +493,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("DailyStats creation with convenience initializer")
     func dailyStatsConvenienceInit() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let stats = DailyStats(
@@ -518,7 +517,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("DailyStats studyTimeFormatted - seconds only")
     func dailyStatsStudyTimeFormattedSeconds() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let stats = DailyStats(
@@ -535,7 +534,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("DailyStats studyTimeFormatted - minutes only")
     func dailyStatsStudyTimeFormattedMinutes() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let stats = DailyStats(
@@ -552,7 +551,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("DailyStats studyTimeFormatted - minutes and seconds")
     func dailyStatsStudyTimeFormattedMinutesAndSeconds() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let stats = DailyStats(
@@ -569,7 +568,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("DailyStats studyTimeFormatted - hours only")
     func dailyStatsStudyTimeFormattedHours() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let stats = DailyStats(
@@ -586,7 +585,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("DailyStats studyTimeFormatted - hours and minutes")
     func dailyStatsStudyTimeFormattedHoursAndMinutes() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let stats = DailyStats(
@@ -603,7 +602,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("DailyStats studyTimeFormatted - hours, minutes, seconds")
     func dailyStatsStudyTimeFormattedFull() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let stats = DailyStats(
@@ -620,7 +619,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("DailyStats retentionRateFormatted")
     func dailyStatsRetentionRateFormatted() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let stats = DailyStats(
@@ -638,7 +637,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("DailyStats retentionRateFormatted when nil")
     func dailyStatsRetentionRateFormattedNil() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let stats = DailyStats(
@@ -656,7 +655,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("DailyStats hasActivity with various combinations")
     func dailyStatsHasActivity() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Activity from cardsLearned
@@ -707,7 +706,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("DailyStats-studySessions relationship")
     func dailyStatsStudySessionsRelationship() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let normalizedDate = Calendar.autoupdatingCurrent.startOfDay(for: Date())
@@ -734,7 +733,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("DailyStats with no study sessions")
     func dailyStatsNoStudySessions() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let stats = DailyStats(
@@ -753,7 +752,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("Deleting dailyStats nullifies study sessions")
     func deleteDailyStatsNullifiesStudySessions() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let normalizedDate = Calendar.autoupdatingCurrent.startOfDay(for: Date())
@@ -788,7 +787,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("Full integration: Session, Reviews, DailyStats, Deck")
     func fullIntegration() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create deck
@@ -825,7 +824,7 @@ struct StudySessionAndDailyStatsTests {
         context.insert(flashcard)
 
         // Create reviews
-        for i in 0..<10 {
+        for i in 0 ..< 10 {
             let review = FlashcardReview(
                 rating: i % 4,
                 scheduledDays: Double(i),
@@ -849,7 +848,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("Multiple sessions per day aggregation")
     func multipleSessionsPerDay() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let normalizedDate = Calendar.autoupdatingCurrent.startOfDay(for: Date())
@@ -862,7 +861,7 @@ struct StudySessionAndDailyStatsTests {
         context.insert(dailyStats)
 
         // Create multiple sessions for the same day
-        for i in 1...3 {
+        for i in 1 ... 3 {
             let session = StudySession(
                 id: UUID(),
                 startTime: Date().addingTimeInterval(-Double(i * 300)),
@@ -885,7 +884,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("StudySession with zero cards reviewed is valid")
     func studySessionZeroCardsReviewed() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let session = StudySession(
@@ -905,7 +904,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("DailyStats with zero values is valid")
     func dailyStatsZeroValues() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let stats = DailyStats(
@@ -924,7 +923,7 @@ struct StudySessionAndDailyStatsTests {
 
     @Test("DailyStats retentionRate boundary values")
     func dailyStatsRetentionRateBoundaries() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let statsPerfect = DailyStats(

@@ -5,9 +5,9 @@
 //  Tests for error handling in views
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for Error Handling
@@ -19,11 +19,10 @@ import SwiftData
 /// - DeckRowView dueCount updates reactively (Issue 8 fix)
 @MainActor
 struct ErrorHandlingTests {
-
     // MARK: - Test Fixtures
 
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     private func createTestDeck(context: ModelContext, name: String = "Test Deck") -> Deck {
@@ -36,7 +35,7 @@ struct ErrorHandlingTests {
 
     @Test("AddDeckView save failure shows error")
     func addDeckSaveFailureShowsError() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create a deck
@@ -64,9 +63,9 @@ struct ErrorHandlingTests {
 
     @Test("AddFlashcardView save failure shows error")
     func addFlashcardSaveFailureShowsError() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
-        let deck = createTestDeck(context: context)
+        let deck = self.createTestDeck(context: context)
 
         // Create a flashcard
         let card = Flashcard(
@@ -133,22 +132,23 @@ struct ErrorHandlingTests {
 
     @Test("DeckRowView dueCount updates with query")
     func deckRowViewDueCountUpdatesWithQuery() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create a deck
-        let deck = createTestDeck(context: context, name: "Test Deck")
+        let deck = self.createTestDeck(context: context, name: "Test Deck")
         try context.save()
 
         // Initially, no cards, so due count should be 0
         let states = try context.fetch(FetchDescriptor<FSRSState>())
-        let initialDueCount = states.filter { state in
+        let initialDueCount = states.count(where: { state in
             guard let card = state.card,
-                  card.deck?.id == deck.id else {
+                  card.deck?.id == deck.id
+            else {
                 return false
             }
             return state.dueDate <= Date() && state.stateEnum != FlashcardState.new.rawValue
-        }.count
+        })
         #expect(initialDueCount == 0)
 
         // Add a due card
@@ -171,13 +171,14 @@ struct ErrorHandlingTests {
 
         // Fetch states again and calculate due count
         let updatedStates = try context.fetch(FetchDescriptor<FSRSState>())
-        let newDueCount = updatedStates.filter { state in
+        let newDueCount = updatedStates.count(where: { state in
             guard let cardState = state.card,
-                  cardState.deck?.id == deck.id else {
+                  cardState.deck?.id == deck.id
+            else {
                 return false
             }
             return state.dueDate <= Date() && state.stateEnum != FlashcardState.new.rawValue
-        }.count
+        })
 
         // Due count should now be 1
         #expect(newDueCount == 1)
@@ -185,11 +186,11 @@ struct ErrorHandlingTests {
 
     @Test("DeckRowView dueCount excludes new cards")
     func deckRowViewDueCountExcludesNewCards() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create a deck
-        let deck = createTestDeck(context: context, name: "Test Deck")
+        let deck = self.createTestDeck(context: context, name: "Test Deck")
         try context.save()
 
         // Add a new card (not due)
@@ -212,13 +213,14 @@ struct ErrorHandlingTests {
 
         // Due count should still be 0 (new cards excluded)
         let states = try context.fetch(FetchDescriptor<FSRSState>())
-        let dueCount = states.filter { state in
+        let dueCount = states.count(where: { state in
             guard let cardState = state.card,
-                  cardState.deck?.id == deck.id else {
+                  cardState.deck?.id == deck.id
+            else {
                 return false
             }
             return state.dueDate <= Date() && state.stateEnum != FlashcardState.new.rawValue
-        }.count
+        })
 
         #expect(dueCount == 0)
     }

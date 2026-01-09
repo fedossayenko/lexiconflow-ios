@@ -19,7 +19,7 @@ public struct RetryManagerError: Error {
 
     /// Human-readable description
     public var localizedDescription: String {
-        return "Retry operation failed with unexpected error type: \(underlyingError.localizedDescription)"
+        "Retry operation failed with unexpected error type: \(self.underlyingError.localizedDescription)"
     }
 
     init(_ error: any Error) {
@@ -77,7 +77,6 @@ public struct RetryManagerError: Error {
 /// )
 /// ```
 enum RetryManager {
-
     /// Execute an operation with retry and exponential backoff
     ///
     /// - Parameters:
@@ -129,7 +128,7 @@ enum RetryManager {
                 attempt += 1
                 if attempt < maxRetries {
                     logger.info("\(logContext): Retrying in \(delay)s (attempt \(attempt + 1)/\(maxRetries))")
-                    try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                    try? await Task.sleep(nanoseconds: UInt64(delay * 1000000000))
                     delay *= 2
                 } else {
                     logger.error("\(logContext): Failed after \(maxRetries) retries")
@@ -137,14 +136,14 @@ enum RetryManager {
                 }
             } catch {
                 // Unknown error type that doesn't match ErrorType
-                // This is a programming error - operation should throw ErrorType
+                // This could be CancellationError or other system errors
                 logger.error("\(logContext): Operation threw unexpected error type - \(error.localizedDescription)")
                 // Store as last error (will be handled below)
                 // Since we can't convert to ErrorType, we'll need to handle this case
                 attempt += 1
                 if attempt < maxRetries {
                     logger.info("\(logContext): Retrying in \(delay)s (attempt \(attempt + 1)/\(maxRetries))")
-                    try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                    try? await Task.sleep(nanoseconds: UInt64(delay * 1000000000))
                     delay *= 2
                 }
             }

@@ -14,14 +14,13 @@
 //  Full UI behavior testing requires UI tests with XCUItest.
 //
 
-import Testing
 import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for all Settings views
 @MainActor
 struct SettingsViewsTests {
-
     // MARK: - TranslationSettingsView Tests
 
     @Test("TranslationSettingsView can be created")

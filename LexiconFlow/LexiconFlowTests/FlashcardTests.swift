@@ -6,25 +6,24 @@
 //  Covers: Flashcard creation, relationships, external storage, cascade delete
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for Flashcard model
 @MainActor
 struct FlashcardTests {
-
     /// Get a fresh isolated context for testing
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     // MARK: - Flashcard Creation Tests
 
     @Test("Flashcard creation with all fields")
     func flashcardCreationWithAllFields() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let imageData = Data("test image data".utf8)
@@ -49,7 +48,7 @@ struct FlashcardTests {
 
     @Test("Flashcard creation with minimal fields")
     func flashcardCreationWithMinimalFields() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(
@@ -69,7 +68,7 @@ struct FlashcardTests {
 
     @Test("Flashcard has unique UUID")
     func flashcardUniqueUUID() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let card1 = Flashcard(word: "test1", definition: "def1")
@@ -86,7 +85,7 @@ struct FlashcardTests {
 
     @Test("Flashcard createdAt is set automatically")
     func flashcardCreatedAt() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let beforeCreation = Date()
@@ -105,7 +104,7 @@ struct FlashcardTests {
 
     @Test("Flashcard image data with external storage")
     func flashcardImageExternalStorage() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create large image data to trigger external storage
@@ -128,7 +127,7 @@ struct FlashcardTests {
 
     @Test("Flashcard with no image data")
     func flashcardNoImageData() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(
@@ -146,7 +145,7 @@ struct FlashcardTests {
 
     @Test("Flashcard translation fields are persisted")
     func flashcardTranslationFields() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(
@@ -169,7 +168,7 @@ struct FlashcardTests {
 
     @Test("Flashcard-deck relationship")
     func flashcardDeckRelationship() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let deck = Deck(name: "Spanish", icon: "🇪🇸")
@@ -187,7 +186,7 @@ struct FlashcardTests {
 
     @Test("Flashcard with no deck")
     func flashcardNoDeck() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "orphan", definition: "no deck")
@@ -201,7 +200,7 @@ struct FlashcardTests {
 
     @Test("Flashcard-FSRSState relationship")
     func flashcardFSRSStateRelationship() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -227,7 +226,7 @@ struct FlashcardTests {
 
     @Test("Flashcard with no FSRSState")
     func flashcardNoFSRSState() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "new", definition: "new card")
@@ -239,10 +238,9 @@ struct FlashcardTests {
 
     // MARK: - Flashcard-ReviewLogs Relationship Tests
 
-
     @Test("Flashcard with no review logs")
     func flashcardNoReviewLogs() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "new", definition: "new card")
@@ -256,7 +254,7 @@ struct FlashcardTests {
 
     @Test("Cascade delete: deleting flashcard deletes FSRSState")
     func deleteFlashcardDeletesFSRSState() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -285,7 +283,7 @@ struct FlashcardTests {
 
     @Test("Cascade delete: deleting flashcard deletes review logs")
     func deleteFlashcardDeletesReviewLogs() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -312,7 +310,7 @@ struct FlashcardTests {
 
     @Test("Cascade delete: deleting flashcard with full relationships")
     func deleteFlashcardWithFullRelationships() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let deck = Deck(name: "Test", icon: "📚")
@@ -352,10 +350,10 @@ struct FlashcardTests {
         let reviews = try context.fetch(FetchDescriptor<FlashcardReview>())
         let decks = try context.fetch(FetchDescriptor<Deck>())
 
-        #expect(cards.count == 0)  // Flashcard deleted
-        #expect(states.count == 0)  // FSRSState deleted (cascade)
+        #expect(cards.count == 0) // Flashcard deleted
+        #expect(states.count == 0) // FSRSState deleted (cascade)
         #expect(reviews.count == 0) // Reviews deleted (cascade)
-        #expect(decks.count == 1)   // Deck preserved (nullify)
+        #expect(decks.count == 1) // Deck preserved (nullify)
         #expect(decks.first?.cards.isEmpty == true) // Card removed from deck
     }
 
@@ -363,7 +361,7 @@ struct FlashcardTests {
 
     @Test("Query: fetch flashcards by word")
     func fetchFlashcardsByWord() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         context.insert(Flashcard(word: "hello", definition: "greeting"))
@@ -381,7 +379,7 @@ struct FlashcardTests {
 
     @Test("Query: fetch flashcards with translation")
     func fetchFlashcardsWithTranslation() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let card1 = Flashcard(word: "hello", definition: "greeting")
@@ -402,7 +400,7 @@ struct FlashcardTests {
 
     @Test("Query: fetch flashcards by deck")
     func fetchFlashcardsByDeck() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let deck1 = Deck(name: "Deck 1", icon: "1️⃣")
@@ -434,7 +432,7 @@ struct FlashcardTests {
 
     @Test("Flashcard with emoji in word")
     func flashcardWithEmoji() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "👋", definition: "waving hand")
@@ -446,7 +444,7 @@ struct FlashcardTests {
 
     @Test("Flashcard with CJK characters")
     func flashcardWithCJK() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "こんにちは", definition: "hello")
@@ -458,7 +456,7 @@ struct FlashcardTests {
 
     @Test("Flashcard with RTL script")
     func flashcardWithRTL() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "مرحبا", definition: "hello")
@@ -470,7 +468,7 @@ struct FlashcardTests {
 
     @Test("Flashcard with very long word")
     func flashcardWithLongWord() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let longWord = String(repeating: "a", count: 1000)

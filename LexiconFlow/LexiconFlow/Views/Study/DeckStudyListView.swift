@@ -5,8 +5,8 @@
 //  Deck-centric study view: Lists all decks with study statistics
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct DeckStudyListView: View {
     @Environment(\.modelContext) private var modelContext
@@ -18,20 +18,20 @@ struct DeckStudyListView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if decks.isEmpty {
-                    emptyStateView
+                if self.decks.isEmpty {
+                    self.emptyStateView
                 } else {
-                    deckList
+                    self.deckList
                 }
             }
             .navigationTitle("Decks")
             .task {
-                isLoading = true
-                await refreshDeckStats()
-                isLoading = false
+                self.isLoading = true
+                await self.refreshDeckStats()
+                self.isLoading = false
             }
             .overlay {
-                if isLoading {
+                if self.isLoading {
                     ProgressView("Loading statistics...")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(.ultraThinMaterial)
@@ -56,11 +56,11 @@ struct DeckStudyListView: View {
     private var deckList: some View {
         ScrollView {
             LazyVStack(spacing: 16) {
-                ForEach(decks) { deck in
+                ForEach(self.decks) { deck in
                     NavigationLink(value: deck) {
                         DeckStudyRow(
                             deck: deck,
-                            stats: deckStats[deck.id] ?? DeckStudyStats()
+                            stats: self.deckStats[deck.id] ?? DeckStudyStats()
                         )
                     }
                     .buttonStyle(.plain)
@@ -76,12 +76,12 @@ struct DeckStudyListView: View {
     private func refreshDeckStats() async {
         let scheduler = Scheduler(modelContext: modelContext)
 
-        for deck in decks {
+        for deck in self.decks {
             let newCount = scheduler.newCardCount(for: deck)
             let dueCount = scheduler.dueCardCount(for: deck)
             let totalCount = scheduler.totalCardCount(for: deck)
 
-            deckStats[deck.id] = DeckStudyStats(
+            self.deckStats[deck.id] = DeckStudyStats(
                 newCount: newCount,
                 dueCount: dueCount,
                 totalCount: totalCount
@@ -99,7 +99,7 @@ struct DeckStudyRow: View {
     var body: some View {
         HStack(spacing: 16) {
             // Deck icon
-            Image(systemName: deck.icon ?? "folder.fill")
+            Image(systemName: self.deck.icon ?? "folder.fill")
                 .font(.system(size: 32))
                 .foregroundStyle(.blue)
                 .frame(width: 50, height: 50)
@@ -107,25 +107,25 @@ struct DeckStudyRow: View {
 
             // Deck info
             VStack(alignment: .leading, spacing: 4) {
-                Text(deck.name)
+                Text(self.deck.name)
                     .font(.headline)
                     .foregroundStyle(.primary)
 
                 HStack(spacing: 12) {
-                    Label("\(stats.newCount) new", systemImage: "plus.circle.fill")
+                    Label("\(self.stats.newCount) new", systemImage: "plus.circle.fill")
                         .font(.caption)
                         .foregroundStyle(.green)
 
-                    Label("\(stats.dueCount) due", systemImage: "clock.fill")
+                    Label("\(self.stats.dueCount) due", systemImage: "clock.fill")
                         .font(.caption)
-                        .foregroundStyle(stats.dueCount > 0 ? .orange : .secondary)
+                        .foregroundStyle(self.stats.dueCount > 0 ? .orange : .secondary)
                 }
             }
 
             Spacer()
 
             // Total count badge
-            Text("\(stats.totalCount)")
+            Text("\(self.stats.totalCount)")
                 .font(.title2)
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
@@ -134,9 +134,9 @@ struct DeckStudyRow: View {
         .background(.ultraThinMaterial, in: .rect(cornerRadius: 12))
         .contentShape(.rect(cornerRadius: 12))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Deck: \(deck.name)")
+        .accessibilityLabel("Deck: \(self.deck.name)")
         .accessibilityHint("Tap to view deck details")
-        .accessibilityValue("\(stats.totalCount) cards, \(stats.newCount) new, \(stats.dueCount) due")
+        .accessibilityValue("\(self.stats.totalCount) cards, \(self.stats.newCount) new, \(self.stats.dueCount) due")
     }
 }
 

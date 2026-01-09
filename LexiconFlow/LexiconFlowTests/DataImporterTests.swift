@@ -5,9 +5,9 @@
 //  Tests for batch data import functionality
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Thread-safe collector for progress updates in Swift 6
@@ -15,11 +15,11 @@ actor ProgressCollector {
     private var updates: [ImportProgress] = []
 
     func add(_ progress: ImportProgress) {
-        updates.append(progress)
+        self.updates.append(progress)
     }
 
     var allUpdates: [ImportProgress] {
-        updates
+        self.updates
     }
 }
 
@@ -28,11 +28,11 @@ actor BatchCounter {
     private var value: Int = 0
 
     func increment() {
-        value += 1
+        self.value += 1
     }
 
     var count: Int {
-        value
+        self.value
     }
 }
 
@@ -46,16 +46,15 @@ actor BatchCounter {
 /// - Relationship integrity (deck associations, FSRS state)
 @MainActor
 struct DataImporterTests {
-
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     // MARK: - Basic Import Tests
 
     @Test("Import single card successfully")
     func importSingleCard() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
@@ -81,14 +80,14 @@ struct DataImporterTests {
 
     @Test("Import multiple cards in batch")
     func importMultipleCards() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         let cards = [
             FlashcardData(word: "word1", definition: "def1"),
             FlashcardData(word: "word2", definition: "def2"),
-            FlashcardData(word: "word3", definition: "def3"),
+            FlashcardData(word: "word3", definition: "def3")
         ]
 
         let result = await importer.importCards(cards)
@@ -102,7 +101,7 @@ struct DataImporterTests {
 
     @Test("Import empty array returns success")
     func importEmptyArray() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
@@ -118,14 +117,14 @@ struct DataImporterTests {
 
     @Test("Skip duplicate cards by default")
     func skipDuplicateCards() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         let cards = [
             FlashcardData(word: "duplicate", definition: "First"),
             FlashcardData(word: "duplicate", definition: "Second"),
-            FlashcardData(word: "unique", definition: "Only one"),
+            FlashcardData(word: "unique", definition: "Only one")
         ]
 
         // Import first time - all 3 imported (duplicate check happens once per batch)
@@ -144,14 +143,14 @@ struct DataImporterTests {
 
     @Test("Duplicate detection is case-sensitive")
     func duplicateDetectionCaseSensitive() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         let cards = [
             FlashcardData(word: "Test", definition: "Capitalized"),
             FlashcardData(word: "test", definition: "Lowercase"),
-            FlashcardData(word: "TEST", definition: "Uppercase"),
+            FlashcardData(word: "TEST", definition: "Uppercase")
         ]
 
         let result = await importer.importCards(cards)
@@ -167,13 +166,13 @@ struct DataImporterTests {
 
     @Test("Progress handler called for each batch")
     func progressHandlerCalled() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         // Create 10 cards to ensure multiple batches
         var cards: [FlashcardData] = []
-        for i in 0..<10 {
+        for i in 0 ..< 10 {
             cards.append(FlashcardData(word: "word\(i)", definition: "def\(i)"))
         }
 
@@ -187,7 +186,7 @@ struct DataImporterTests {
         )
 
         // Small delay to ensure all tasks complete
-        try await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+        try await Task.sleep(nanoseconds: 100000000) // 0.1s
 
         let progressUpdates = await progressCollector.allUpdates
 
@@ -202,12 +201,12 @@ struct DataImporterTests {
 
     @Test("Progress percentage calculated correctly")
     func progressPercentageCalculation() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         var cards: [FlashcardData] = []
-        for i in 0..<10 {
+        for i in 0 ..< 10 {
             cards.append(FlashcardData(word: "word\(i)", definition: "def\(i)"))
         }
 
@@ -221,7 +220,7 @@ struct DataImporterTests {
         )
 
         // Small delay to ensure all tasks complete
-        try await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+        try await Task.sleep(nanoseconds: 100000000) // 0.1s
 
         let progressUpdates = await progressCollector.allUpdates
 
@@ -234,7 +233,7 @@ struct DataImporterTests {
 
     @Test("Cards associated with deck correctly")
     func deckAssociation() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
@@ -245,7 +244,7 @@ struct DataImporterTests {
 
         let cards = [
             FlashcardData(word: "card1", definition: "def1"),
-            FlashcardData(word: "card2", definition: "def2"),
+            FlashcardData(word: "card2", definition: "def2")
         ]
 
         let result = await importer.importCards(cards, into: deck)
@@ -263,7 +262,7 @@ struct DataImporterTests {
 
     @Test("FSRS state created for imported cards")
     func fsrsStateCreated() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
@@ -286,7 +285,7 @@ struct DataImporterTests {
 
     @Test("Image data stored correctly")
     func imageDataStorage() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
@@ -316,12 +315,12 @@ struct DataImporterTests {
 
     @Test("Custom batch size respected")
     func customBatchSize() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         var cards: [FlashcardData] = []
-        for i in 0..<15 {
+        for i in 0 ..< 15 {
             cards.append(FlashcardData(word: "word\(i)", definition: "def\(i)"))
         }
 
@@ -337,7 +336,7 @@ struct DataImporterTests {
         )
 
         // Small delay to ensure all tasks complete
-        try await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+        try await Task.sleep(nanoseconds: 100000000) // 0.1s
 
         // 15 cards / batch size 7 = 3 batches (7, 7, 1)
         let batchCount = await batchCollector.count
@@ -346,12 +345,12 @@ struct DataImporterTests {
 
     @Test("Large batch size imports all at once")
     func largeBatchSize() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         var cards: [FlashcardData] = []
-        for i in 0..<50 {
+        for i in 0 ..< 50 {
             cards.append(FlashcardData(word: "word\(i)", definition: "def\(i)"))
         }
 
@@ -365,7 +364,7 @@ struct DataImporterTests {
         )
 
         // Small delay to ensure all tasks complete
-        try await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+        try await Task.sleep(nanoseconds: 100000000) // 0.1s
 
         let batchCount = await batchCollector.count
         #expect(batchCount == 1, "Should have 1 batch with large batch size")
@@ -375,12 +374,12 @@ struct DataImporterTests {
 
     @Test("Import 20 cards quickly")
     func importPerformance() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         var cards: [FlashcardData] = []
-        for i in 0..<20 {
+        for i in 0 ..< 20 {
             cards.append(FlashcardData(word: "word\(i)", definition: "def\(i)"))
         }
 
@@ -392,13 +391,13 @@ struct DataImporterTests {
 
     @Test("Duplicate check is O(n) not O(n²)")
     func duplicateCheckPerformance() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
         // Import 20 cards first
         var initialCards: [FlashcardData] = []
-        for i in 0..<20 {
+        for i in 0 ..< 20 {
             initialCards.append(FlashcardData(word: "word\(i)", definition: "def\(i)"))
         }
         _ = await importer.importCards(initialCards)

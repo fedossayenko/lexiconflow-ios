@@ -9,14 +9,13 @@
 //  Full UI behavior testing requires UI tests or snapshot tests.
 //
 
-import Testing
-import SwiftUI
 import SwiftData
+import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 @MainActor
 struct FlashcardDetailViewTests {
-
     // MARK: - Test Fixtures
 
     private func createTestFlashcard(
@@ -40,7 +39,7 @@ struct FlashcardDetailViewTests {
         scheduledDays: Double,
         elapsedDays: Double
     ) -> FlashcardReview {
-        return FlashcardReview(
+        FlashcardReview(
             rating: rating,
             reviewDate: Date().addingTimeInterval(-TimeInterval(daysAgo * 24 * 60 * 60)),
             scheduledDays: scheduledDays,
@@ -55,7 +54,7 @@ struct FlashcardDetailViewTests {
         elapsedDays: Double,
         stateChange: ReviewStateChange = .none
     ) -> FlashcardReviewDTO {
-        return FlashcardReviewDTO(
+        FlashcardReviewDTO(
             id: UUID(),
             rating: rating,
             reviewDate: Date().addingTimeInterval(-TimeInterval(daysAgo * 24 * 60 * 60)),
@@ -69,7 +68,7 @@ struct FlashcardDetailViewTests {
 
     @Test("ReviewHistoryRow renders with first review")
     func reviewHistoryRowWithFirstReview() {
-        let dto = createTestDTO(
+        let dto = self.createTestDTO(
             rating: 2, // Good
             daysAgo: 1,
             scheduledDays: 3.0,
@@ -86,7 +85,7 @@ struct FlashcardDetailViewTests {
 
     @Test("ReviewHistoryRow renders with graduated state change")
     func reviewHistoryRowWithGraduated() {
-        let dto = createTestDTO(
+        let dto = self.createTestDTO(
             rating: 3, // Easy
             daysAgo: 5,
             scheduledDays: 7.0,
@@ -103,7 +102,7 @@ struct FlashcardDetailViewTests {
 
     @Test("ReviewHistoryRow renders with relearning state change")
     func reviewHistoryRowWithRelearning() {
-        let dto = createTestDTO(
+        let dto = self.createTestDTO(
             rating: 0, // Again
             daysAgo: 1,
             scheduledDays: 1.0,
@@ -120,7 +119,7 @@ struct FlashcardDetailViewTests {
 
     @Test("ReviewHistoryRow renders with normal review (no state change)")
     func reviewHistoryRowWithNoStateChange() {
-        let dto = createTestDTO(
+        let dto = self.createTestDTO(
             rating: 2, // Good
             daysAgo: 10,
             scheduledDays: 14.0,
@@ -138,10 +137,10 @@ struct FlashcardDetailViewTests {
     @Test("ReviewHistoryRow rating colors")
     func reviewHistoryRowRatingColors() {
         // Test all rating colors
-        let againDTO = createTestDTO(rating: 0, daysAgo: 1, scheduledDays: 1.0, elapsedDays: 1.0)
-        let hardDTO = createTestDTO(rating: 1, daysAgo: 1, scheduledDays: 1.0, elapsedDays: 1.0)
-        let goodDTO = createTestDTO(rating: 2, daysAgo: 1, scheduledDays: 1.0, elapsedDays: 1.0)
-        let easyDTO = createTestDTO(rating: 3, daysAgo: 1, scheduledDays: 1.0, elapsedDays: 1.0)
+        let againDTO = self.createTestDTO(rating: 0, daysAgo: 1, scheduledDays: 1.0, elapsedDays: 1.0)
+        let hardDTO = self.createTestDTO(rating: 1, daysAgo: 1, scheduledDays: 1.0, elapsedDays: 1.0)
+        let goodDTO = self.createTestDTO(rating: 2, daysAgo: 1, scheduledDays: 1.0, elapsedDays: 1.0)
+        let easyDTO = self.createTestDTO(rating: 3, daysAgo: 1, scheduledDays: 1.0, elapsedDays: 1.0)
 
         // Verify rating labels
         #expect(againDTO.ratingLabel == "Again", "Rating 0 should be Again")
@@ -158,10 +157,10 @@ struct FlashcardDetailViewTests {
 
     @Test("ReviewHistoryRow date formatting")
     func reviewHistoryRowDateFormatting() {
-        let nowDTO = createTestDTO(rating: 2, daysAgo: 0, scheduledDays: 1.0, elapsedDays: 0.0)
-        let hoursDTO = createTestDTO(rating: 2, daysAgo: 0, scheduledDays: 1.0, elapsedDays: 0.1)
-        let daysDTO = createTestDTO(rating: 2, daysAgo: 2, scheduledDays: 3.0, elapsedDays: 2.0)
-        let weeksDTO = createTestDTO(rating: 2, daysAgo: 14, scheduledDays: 21.0, elapsedDays: 14.0)
+        let nowDTO = self.createTestDTO(rating: 2, daysAgo: 0, scheduledDays: 1.0, elapsedDays: 0.0)
+        let hoursDTO = self.createTestDTO(rating: 2, daysAgo: 0, scheduledDays: 1.0, elapsedDays: 0.1)
+        let daysDTO = self.createTestDTO(rating: 2, daysAgo: 2, scheduledDays: 3.0, elapsedDays: 2.0)
+        let weeksDTO = self.createTestDTO(rating: 2, daysAgo: 14, scheduledDays: 21.0, elapsedDays: 14.0)
 
         // Verify relative date strings
         #expect(!nowDTO.relativeDateString.isEmpty, "Should have relative date string")
@@ -317,7 +316,7 @@ struct FlashcardDetailViewTests {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
-        let card = createTestFlashcard()
+        let card = self.createTestFlashcard()
         context.insert(card)
         try context.save()
 
@@ -333,7 +332,7 @@ struct FlashcardDetailViewTests {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
-        let card = createTestFlashcard(
+        let card = self.createTestFlashcard(
             word: "Ephemeral",
             definition: "Lasting for a very short time",
             phonetic: "/əˈfem(ə)rəl/",
@@ -353,7 +352,7 @@ struct FlashcardDetailViewTests {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
-        let card = createTestFlashcard(
+        let card = self.createTestFlashcard(
             word: "Ephemeral",
             definition: "Lasting for a very short time",
             phonetic: nil
@@ -381,12 +380,12 @@ struct FlashcardDetailViewTests {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
-        let card = createTestFlashcard()
+        let card = self.createTestFlashcard()
         context.insert(card)
 
         // Add reviews
-        let review1 = createTestReview(rating: 2, daysAgo: 1, scheduledDays: 3.0, elapsedDays: 1.0)
-        let review2 = createTestReview(rating: 3, daysAgo: 5, scheduledDays: 7.0, elapsedDays: 5.0)
+        let review1 = self.createTestReview(rating: 2, daysAgo: 1, scheduledDays: 3.0, elapsedDays: 1.0)
+        let review2 = self.createTestReview(rating: 3, daysAgo: 5, scheduledDays: 7.0, elapsedDays: 5.0)
         review1.card = card
         review2.card = card
         context.insert(review1)
@@ -418,7 +417,7 @@ struct FlashcardDetailViewTests {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
-        let card = createTestFlashcard(word: "Serendipity")
+        let card = self.createTestFlashcard(word: "Serendipity")
         context.insert(card)
         try context.save()
 
@@ -433,7 +432,7 @@ struct FlashcardDetailViewTests {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
-        let card = createTestFlashcard()
+        let card = self.createTestFlashcard()
         context.insert(card)
 
         // Add FSRS state
@@ -463,7 +462,7 @@ struct FlashcardDetailViewTests {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
-        let card = createTestFlashcard()
+        let card = self.createTestFlashcard()
         context.insert(card)
         try context.save()
 
@@ -478,7 +477,7 @@ struct FlashcardDetailViewTests {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
-        let card = createTestFlashcard()
+        let card = self.createTestFlashcard()
         context.insert(card)
         try context.save()
 
@@ -514,7 +513,7 @@ struct FlashcardDetailViewTests {
 
     @Test("ReviewHistoryRow has accessibility label")
     func reviewHistoryRowAccessibilityLabel() {
-        let dto = createTestDTO(
+        let dto = self.createTestDTO(
             rating: 2,
             daysAgo: 1,
             scheduledDays: 3.0,
@@ -539,7 +538,7 @@ struct FlashcardDetailViewTests {
             reviews: reviews,
             selectedFilter: $selectedFilter,
             onFilterChange: { _ in },
-            onExport: { }
+            onExport: {}
         )
 
         // Verify accessibility labels can be set
@@ -551,7 +550,7 @@ struct FlashcardDetailViewTests {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
-        let card = createTestFlashcard(
+        let card = self.createTestFlashcard(
             word: "Test",
             definition: "Test definition",
             phonetic: "/test/"
@@ -573,7 +572,7 @@ struct FlashcardDetailViewTests {
         try context.clearAll()
 
         let longWord = String(repeating: "a", count: 100)
-        let card = createTestFlashcard(word: longWord)
+        let card = self.createTestFlashcard(word: longWord)
         context.insert(card)
         try context.save()
 
@@ -609,8 +608,8 @@ struct FlashcardDetailViewTests {
         var reviews: [FlashcardReviewDTO] = []
 
         // Create 100 reviews
-        for i in 0..<100 {
-            reviews.append(createTestDTO(
+        for i in 0 ..< 100 {
+            reviews.append(self.createTestDTO(
                 rating: i % 4,
                 daysAgo: i,
                 scheduledDays: Double(i + 1),
@@ -650,7 +649,7 @@ struct FlashcardDetailViewTests {
     @Test("ReviewHistoryRow with boundary values")
     func reviewHistoryRowWithBoundaryValues() {
         // Test edge case: zero scheduled days
-        let zeroScheduledDTO = createTestDTO(
+        let zeroScheduledDTO = self.createTestDTO(
             rating: 2,
             daysAgo: 0,
             scheduledDays: 0.0,
@@ -658,7 +657,7 @@ struct FlashcardDetailViewTests {
         )
 
         // Test edge case: very large scheduled days
-        let largeScheduledDTO = createTestDTO(
+        let largeScheduledDTO = self.createTestDTO(
             rating: 2,
             daysAgo: 100,
             scheduledDays: 365.0,

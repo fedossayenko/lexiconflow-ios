@@ -5,8 +5,8 @@
 //  Pre-aggregated daily statistics for dashboard performance
 //
 
-import SwiftData
 import Foundation
+import SwiftData
 
 /// Pre-aggregated statistics for a single calendar day
 ///
@@ -80,7 +80,7 @@ final class DailyStats {
         let remainingSeconds = seconds % 60
 
         if hours > 0 {
-            if minutes == 0 && remainingSeconds == 0 {
+            if minutes == 0, remainingSeconds == 0 {
                 return "\(hours)h"
             } else if remainingSeconds == 0 {
                 return "\(hours)h \(minutes)m"
@@ -106,7 +106,7 @@ final class DailyStats {
 
     /// Whether this day has any study activity
     var hasActivity: Bool {
-        studyTimeSeconds > 0 || cardsLearned > 0 || retentionRate != nil
+        self.studyTimeSeconds > 0 || self.cardsLearned > 0 || self.retentionRate != nil
     }
 
     // MARK: - Initialization
@@ -119,12 +119,13 @@ final class DailyStats {
     ///   - cardsLearned: Number of new cards learned
     ///   - studyTimeSeconds: Total study time in seconds
     ///   - retentionRate: Retention rate (0.0-1.0, nil if no reviews)
-    init(id: UUID = UUID(),
-         date: Date,
-         cardsLearned: Int = 0,
-         studyTimeSeconds: TimeInterval = 0,
-         retentionRate: Double? = nil) {
-
+    init(
+        id: UUID = UUID(),
+        date: Date,
+        cardsLearned: Int = 0,
+        studyTimeSeconds: TimeInterval = 0,
+        retentionRate: Double? = nil
+    ) {
         self.id = id
         self.date = date
         self.cardsLearned = cardsLearned
@@ -133,15 +134,19 @@ final class DailyStats {
     }
 
     /// Initialize with normalized date (midnight in current timezone)
-    convenience init(cardsLearned: Int = 0,
-                     studyTimeSeconds: TimeInterval = 0,
-                     retentionRate: Double? = nil) {
+    convenience init(
+        cardsLearned: Int = 0,
+        studyTimeSeconds: TimeInterval = 0,
+        retentionRate: Double? = nil
+    ) {
         let normalizedDate = Calendar.autoupdatingCurrent.startOfDay(for: Date())
 
-        self.init(id: UUID(),
-                  date: normalizedDate,
-                  cardsLearned: cardsLearned,
-                  studyTimeSeconds: studyTimeSeconds,
-                  retentionRate: retentionRate)
+        self.init(
+            id: UUID(),
+            date: normalizedDate,
+            cardsLearned: cardsLearned,
+            studyTimeSeconds: studyTimeSeconds,
+            retentionRate: retentionRate
+        )
     }
 }

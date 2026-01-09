@@ -1,0 +1,50 @@
+name: Dead Code Detection
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday at midnight UTC
+  workflow_dispatch:      # Allow manual trigger
+
+jobs:
+  scan:
+    name: Scan for Dead Code
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Periphery
+        uses: actions/cache@v4
+        with:
+          path: /opt/homebrew/bin/periphery
+          key: ${{ runner.os }}-periphery-2.3
+
+      - name: Install Periphery
+        run: |
+          if ! command -v periphery &> /dev/null; then
+            brew install peripheryapp/periphery/periphery
+          fi
+          periphery version
+
+      - name: Cache SPM
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Build Project (for Index Store)
+        working-directory: ./LexiconFlow
+        run: |
+          xcodebuild build \
+            -project LexiconFlow.xcodeproj \
+            -scheme LexiconFlow \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1'
+
+      - name: Scan for Dead Code
+        run: ./scripts/scan-dead-code.sh

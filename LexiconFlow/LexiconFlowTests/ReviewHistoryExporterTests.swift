@@ -6,25 +6,24 @@
 //  Covers: CSV format validation, special character escaping, error handling
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for ReviewHistoryExporter
 @MainActor
 struct ReviewHistoryExporterTests {
-
     /// Get a fresh isolated context for testing
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     // MARK: - CSV Export Tests
 
     @Test("Export single review as CSV")
     func exportSingleReview() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "A test word")
@@ -62,7 +61,7 @@ struct ReviewHistoryExporterTests {
 
     @Test("Export multiple reviews as CSV")
     func exportMultipleReviews() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "hola", definition: "Hello in Spanish")
@@ -82,7 +81,7 @@ struct ReviewHistoryExporterTests {
             reviews.append(review)
 
             // Small delay to ensure different timestamps
-            try await Task.sleep(nanoseconds: 10_000_000)
+            try await Task.sleep(nanoseconds: 10000000)
         }
 
         try context.save()
@@ -101,7 +100,7 @@ struct ReviewHistoryExporterTests {
 
     @Test("Export with empty review array throws error")
     func exportEmptyReviews() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -120,7 +119,7 @@ struct ReviewHistoryExporterTests {
 
     @Test("Escape commas in field values")
     func escapeCommas() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(
@@ -149,7 +148,7 @@ struct ReviewHistoryExporterTests {
 
     @Test("Escape quotes in field values")
     func escapeQuotes() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(
@@ -176,7 +175,7 @@ struct ReviewHistoryExporterTests {
 
     @Test("Escape newlines in field values")
     func escapeNewlines() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(
@@ -203,7 +202,7 @@ struct ReviewHistoryExporterTests {
 
     @Test("Handle mixed special characters")
     func mixedSpecialCharacters() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(
@@ -233,7 +232,7 @@ struct ReviewHistoryExporterTests {
 
     @Test("Handle Unicode characters in word")
     func unicodeCharacters() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(
@@ -260,7 +259,7 @@ struct ReviewHistoryExporterTests {
 
     @Test("Handle emoji characters")
     func emojiCharacters() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(
@@ -288,7 +287,7 @@ struct ReviewHistoryExporterTests {
 
     @Test("Handle RTL languages")
     func rightToLeftLanguages() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(
@@ -317,7 +316,7 @@ struct ReviewHistoryExporterTests {
 
     @Test("Export DTOs with state changes")
     func exportDTOsStateChanges() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -351,7 +350,7 @@ struct ReviewHistoryExporterTests {
 
     @Test("Export DTOs with first review")
     func exportDTOsFirstReview() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -385,7 +384,7 @@ struct ReviewHistoryExporterTests {
 
     @Test("Export DTOs with relearning state")
     func exportDTOsRelearning() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -421,7 +420,7 @@ struct ReviewHistoryExporterTests {
 
     @Test("Generate filename for normal word")
     func generateNormalFilename() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -437,7 +436,7 @@ struct ReviewHistoryExporterTests {
 
     @Test("Generate filename sanitizes spaces")
     func sanitizeSpacesInFilename() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "hello world", definition: "test")
@@ -453,7 +452,7 @@ struct ReviewHistoryExporterTests {
 
     @Test("Generate filename sanitizes special characters")
     func sanitizeSpecialCharsInFilename() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test/word", definition: "test")
@@ -469,7 +468,7 @@ struct ReviewHistoryExporterTests {
 
     @Test("Generate filename limits length")
     func limitFilenameLength() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let longWord = String(repeating: "a", count: 100)
@@ -489,7 +488,7 @@ struct ReviewHistoryExporterTests {
 
     @Test("Date formatting uses ISO 8601")
     func dateFormatting() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -517,7 +516,7 @@ struct ReviewHistoryExporterTests {
 
     @Test("All rating labels are exported")
     func allRatingLabels() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -535,7 +534,7 @@ struct ReviewHistoryExporterTests {
             context.insert(review)
             reviews.append(review)
 
-            try await Task.sleep(nanoseconds: 10_000_000)
+            try await Task.sleep(nanoseconds: 10000000)
         }
 
         try context.save()
@@ -553,7 +552,7 @@ struct ReviewHistoryExporterTests {
 
     @Test("Export performance with 100 reviews")
     func exportPerformance() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -562,7 +561,7 @@ struct ReviewHistoryExporterTests {
         var reviews: [FlashcardReview] = []
 
         // Create 100 reviews
-        for _ in 0..<100 {
+        for _ in 0 ..< 100 {
             let review = FlashcardReview(
                 rating: 2,
                 scheduledDays: 1.0,
@@ -620,7 +619,7 @@ struct ReviewHistoryExporterTests {
 
     @Test("CSV follows RFC 4180 format")
     func csvFormatValidation() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")

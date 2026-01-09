@@ -5,8 +5,8 @@
 //  Main statistics dashboard showing retention rate, study streak, and FSRS metrics
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct StatisticsDashboardView: View {
     // MARK: - State
@@ -38,22 +38,22 @@ struct StatisticsDashboardView: View {
 
         return content
             .task {
-                await initializeViewModel()
+                await self.initializeViewModel()
             }
-            .alert("Error", isPresented: $showError) {
+            .alert("Error", isPresented: self.$showError) {
                 Button("OK", role: .cancel) {
-                    viewModelHolder.value?.clearError()
+                    self.viewModelHolder.value?.clearError()
                 }
                 .accessibilityLabel("Dismiss error")
             } message: {
-                Text(viewModelHolder.value?.errorMessage ?? "An unknown error occurred")
+                Text(self.viewModelHolder.value?.errorMessage ?? "An unknown error occurred")
             }
-            .onChange(of: viewModelHolder.value?.errorMessage != nil) { _, hasError in
+            .onChange(of: self.viewModelHolder.value?.errorMessage != nil) { _, hasError in
                 if hasError {
-                    showError = true
+                    self.showError = true
                 }
             }
-            .accessibilityHint(accessibilityAnnouncement)
+            .accessibilityHint(self.accessibilityAnnouncement)
     }
 
     // MARK: - Dashboard Content
@@ -67,33 +67,37 @@ struct StatisticsDashboardView: View {
                 Section {
                     EmptyView()
                 } header: {
-                    dashboardHeader(viewModel: viewModel)
+                    self.dashboardHeader(viewModel: viewModel)
                 }
 
                 // MARK: - Error State (highest priority check)
 
                 if viewModel.errorMessage != nil {
-                    errorView
+                    self.errorView
                 }
+
                 // MARK: - Loading State
 
                 else if viewModel.isLoading {
-                    loadingView
+                    self.loadingView
                 }
+
                 // MARK: - Empty State
 
                 else if viewModel.isEmpty {
-                    emptyStateView
+                    self.emptyStateView
                 }
+
                 // MARK: - Metrics Display
 
                 else if viewModel.hasData {
-                    metricsContent(viewModel: viewModel)
+                    self.metricsContent(viewModel: viewModel)
                 }
+
                 // MARK: - Fallback (should never reach)
 
                 else {
-                    loadingView
+                    self.loadingView
                 }
             }
             .padding()
@@ -165,12 +169,12 @@ struct StatisticsDashboardView: View {
             // Total Study Time
             if let streakData = viewModel.streakData {
                 let totalStudyTime = streakData.calendarData.values.reduce(0, +)
-                studyTimeMetricCard(totalSeconds: totalStudyTime)
+                self.studyTimeMetricCard(totalSeconds: totalStudyTime)
             }
 
             // Cards Analyzed
             if let fsrsMetrics = viewModel.fsrsMetrics {
-                cardsMetricCard(totalCards: fsrsMetrics.totalCards, reviewedCards: fsrsMetrics.reviewedCards)
+                self.cardsMetricCard(totalCards: fsrsMetrics.totalCards, reviewedCards: fsrsMetrics.reviewedCards)
             }
         }
 
@@ -210,7 +214,7 @@ struct StatisticsDashboardView: View {
     }
 
     private func cardsMetricCard(totalCards: Int, reviewedCards: Int) -> some View {
-        return MetricCard(
+        MetricCard(
             title: "Cards",
             value: "\(reviewedCards)",
             subtitle: "of \(totalCards) reviewed",
@@ -273,7 +277,7 @@ struct StatisticsDashboardView: View {
 
             Button("Retry") {
                 Task {
-                    await viewModelHolder.value?.refresh()
+                    await self.viewModelHolder.value?.refresh()
                 }
             }
             .buttonStyle(.borderedProminent)
@@ -292,15 +296,15 @@ struct StatisticsDashboardView: View {
     /// **Why lazy initialization?**: Prevents app crashes if ModelContainer fails.
     /// Follows iOS 26 best practices for view initialization.
     private func initializeViewModel() async {
-        guard viewModelHolder.value == nil else { return }
+        guard self.viewModelHolder.value == nil else { return }
 
         // Initialize on MainActor (ViewModel is @MainActor)
         await MainActor.run {
-            viewModelHolder.value = StatisticsViewModel(modelContext: modelContext)
+            self.viewModelHolder.value = StatisticsViewModel(modelContext: self.modelContext)
         }
 
         // Initial data refresh
-        await viewModelHolder.value?.refresh()
+        await self.viewModelHolder.value?.refresh()
     }
 }
 
@@ -314,7 +318,7 @@ private func makePreviewContainer() -> some View {
         configurations: config
     )
 
-    if let container = container {
+    if let container {
         NavigationStack {
             StatisticsDashboardView()
         }

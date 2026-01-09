@@ -14,15 +14,14 @@
 //  execute or propagate malicious input.
 //
 
-import Testing
-import SwiftData
 import Foundation
+import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for edge cases and security
 @MainActor
 struct EdgeCaseTests {
-
     // MARK: - Test Fixtures
 
     private func createTestContainer() -> ModelContainer {
@@ -56,7 +55,7 @@ struct EdgeCaseTests {
 
     @Test("Empty word is stored as-is")
     func emptyWordIsStored() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(word: "", definition: "definition", in: context)
@@ -66,7 +65,7 @@ struct EdgeCaseTests {
 
     @Test("Empty definition is stored as-is")
     func emptyDefinitionIsStored() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(word: "test", definition: "", in: context)
@@ -76,7 +75,7 @@ struct EdgeCaseTests {
 
     @Test("Both empty word and definition")
     func bothWordAndDefinitionEmpty() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(word: "", definition: "", in: context)
@@ -87,7 +86,7 @@ struct EdgeCaseTests {
 
     @Test("Whitespace-only word is preserved")
     func whitespaceOnlyWord() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(word: "   \t  \n  ", definition: "def", in: context)
@@ -97,7 +96,7 @@ struct EdgeCaseTests {
 
     @Test("Very long word (1000 characters)")
     func veryLongWord() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let longWord = String(repeating: "a", count: 1000)
@@ -108,7 +107,7 @@ struct EdgeCaseTests {
 
     @Test("Very long definition (10000 characters)")
     func veryLongDefinition() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create exactly 10000 characters
@@ -122,7 +121,7 @@ struct EdgeCaseTests {
 
     @Test("Emoji in word and definition")
     func emojiInWordAndDefinition() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(
@@ -137,7 +136,7 @@ struct EdgeCaseTests {
 
     @Test("Multiple emojis in sequence")
     func multipleEmojis() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(
@@ -151,7 +150,7 @@ struct EdgeCaseTests {
 
     @Test("RTL language: Arabic")
     func arabicText() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(
@@ -166,7 +165,7 @@ struct EdgeCaseTests {
 
     @Test("RTL language: Hebrew")
     func hebrewText() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(
@@ -181,7 +180,7 @@ struct EdgeCaseTests {
 
     @Test("CJK language: Chinese (Simplified)")
     func chineseSimplified() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(
@@ -196,7 +195,7 @@ struct EdgeCaseTests {
 
     @Test("CJK language: Japanese Kanji")
     func japaneseKanji() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(
@@ -211,7 +210,7 @@ struct EdgeCaseTests {
 
     @Test("CJK language: Korean Hangul")
     func koreanHangul() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(
@@ -226,7 +225,7 @@ struct EdgeCaseTests {
 
     @Test("Combining diacritical marks")
     func combiningDiacritics() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Using combining marks: e + combining acute = é
@@ -239,7 +238,7 @@ struct EdgeCaseTests {
 
     @Test("Zero-width joiners and non-joiners")
     func zeroWidthCharacters() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Zero-width joiner (ZWJ) and non-joiner (ZWNJ)
@@ -252,7 +251,7 @@ struct EdgeCaseTests {
 
     @Test("Mixed scripts in single word")
     func mixedScripts() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(
@@ -268,7 +267,7 @@ struct EdgeCaseTests {
 
     @Test("SQL injection attempt in word")
     func sqlInjectionInWord() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let maliciousInputs = [
@@ -287,7 +286,7 @@ struct EdgeCaseTests {
 
     @Test("SQL injection attempt in definition")
     func sqlInjectionInDefinition() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let maliciousInput = "'); DELETE FROM flashcards; --"
@@ -300,7 +299,7 @@ struct EdgeCaseTests {
 
     @Test("XSS attempt in word")
     func xssAttemptInWord() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let xssPayloads = [
@@ -319,7 +318,7 @@ struct EdgeCaseTests {
 
     @Test("JSON injection attempt")
     func jsonInjectionAttempt() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let jsonInjection = "{\"items\":[{\"malformed\":true}]}"
@@ -332,7 +331,7 @@ struct EdgeCaseTests {
 
     @Test("Path traversal attempt")
     func pathTraversalAttempt() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let pathTraversalPayloads = [
@@ -351,7 +350,7 @@ struct EdgeCaseTests {
 
     @Test("API key pattern in word")
     func apiKeyPatternInWord() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Word containing API key pattern (should be treated as text, not extracted)
@@ -365,7 +364,7 @@ struct EdgeCaseTests {
 
     @Test("Command injection attempt")
     func commandInjectionAttempt() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let commandPayloads = [
@@ -386,7 +385,7 @@ struct EdgeCaseTests {
 
     @Test("Quotes and backslashes")
     func quotesAndBackslashes() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(
@@ -403,7 +402,7 @@ struct EdgeCaseTests {
 
     @Test("Newlines and tabs in definition")
     func newlinesAndTabs() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(
@@ -418,7 +417,7 @@ struct EdgeCaseTests {
 
     @Test("Null bytes in string")
     func nullBytesInString() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Swift strings can contain null bytes
@@ -431,7 +430,7 @@ struct EdgeCaseTests {
 
     @Test("Mathematical symbols")
     func mathematicalSymbols() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(
@@ -445,7 +444,7 @@ struct EdgeCaseTests {
 
     @Test("Currency symbols")
     func currencySymbols() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(
@@ -459,7 +458,7 @@ struct EdgeCaseTests {
 
     @Test("Arrow symbols")
     func arrowSymbols() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(
@@ -473,7 +472,7 @@ struct EdgeCaseTests {
 
     @Test("Box drawing characters")
     func boxDrawingCharacters() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(
@@ -487,16 +486,17 @@ struct EdgeCaseTests {
 
     @Test("Control characters")
     func controlCharacters() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Common control characters
         let controlChars = String(
-            [Character(Unicode.Scalar(0x1B)), // ESC
-             Character(Unicode.Scalar(0x00)), // NUL
-             Character(Unicode.Scalar(0x09)), // TAB
-             Character(Unicode.Scalar(0x0A)), // LF
-             Character(Unicode.Scalar(0x0D))  // CR
+            [
+                Character(Unicode.Scalar(0x1B)), // ESC
+                Character(Unicode.Scalar(0x00)), // NUL
+                Character(Unicode.Scalar(0x09)), // TAB
+                Character(Unicode.Scalar(0x0A)), // LF
+                Character(Unicode.Scalar(0x0D)) // CR
             ]
         )
 
@@ -509,7 +509,7 @@ struct EdgeCaseTests {
 
     @Test("Phonetic with IPA symbols")
     func phoneticWithIPA() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(
@@ -524,7 +524,7 @@ struct EdgeCaseTests {
 
     @Test("Phonetic with tone marks")
     func phoneticWithToneMarks() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Pinyin with tone marks
@@ -540,7 +540,7 @@ struct EdgeCaseTests {
 
     @Test("Phonetic with special characters")
     func phoneticWithSpecialChars() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(
@@ -557,7 +557,7 @@ struct EdgeCaseTests {
 
     @Test("Flashcard without FSRSState")
     func flashcardWithoutFSRSState() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create flashcard without FSRSState (edge case)
@@ -571,7 +571,7 @@ struct EdgeCaseTests {
 
     @Test("Multiple flashcards with same word")
     func multipleFlashcardsSameWord() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let card1 = try createFlashcard(word: "same", definition: "def1", in: context)
@@ -584,7 +584,7 @@ struct EdgeCaseTests {
 
     @Test("Flashcard with all optional fields populated")
     func flashcardAllFieldsPopulated() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try createFlashcard(
@@ -608,19 +608,19 @@ struct EdgeCaseTests {
 
     @Test("Handle extremely long word (1M characters)")
     func extremelyLongWord() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // 1 million characters (extreme case)
-        let extremeWord = String(repeating: "x", count: 1_000_000)
+        let extremeWord = String(repeating: "x", count: 1000000)
         let flashcard = try createFlashcard(word: extremeWord, definition: "def", in: context)
 
-        #expect(flashcard.word.count == 1_000_000, "1M char word should be stored")
+        #expect(flashcard.word.count == 1000000, "1M char word should be stored")
     }
 
     @Test("Handle all unicode characters")
     func allUnicodeCharacters() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Sample from various Unicode ranges
@@ -632,13 +632,13 @@ struct EdgeCaseTests {
 
     @Test("Handle rapidly changing values")
     func rapidlyChangingValues() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Rapid updates to same flashcard
         let flashcard = try createFlashcard(word: "initial", definition: "initial", in: context)
 
-        for i in 0..<10 {
+        for i in 0 ..< 10 {
             flashcard.word = "update\(i)"
             flashcard.definition = "changed \(i) times"
         }
@@ -655,7 +655,6 @@ struct EdgeCaseTests {
 @Suite("Deck-Centric Edge Cases")
 @MainActor
 struct DeckCentricEdgeCases {
-
     private func freshContext() -> ModelContext {
         TestContainers.freshContext()
     }
@@ -669,10 +668,10 @@ struct DeckCentricEdgeCases {
 
     @Test("Deck with no cards returns zero counts")
     func deckWithNoCards() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let deck = createDeck(context: context)
+        let deck = self.createDeck(context: context)
 
         let scheduler = Scheduler(modelContext: context)
 
@@ -714,10 +713,10 @@ struct DeckCentricEdgeCases {
 
     @Test("Card deleted between fetch and review handles gracefully")
     func cardDeletedDuringFetch() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let deck = createDeck(context: context)
+        let deck = self.createDeck(context: context)
 
         // Create a card
         let card = Flashcard(word: "test", definition: "test")
@@ -755,12 +754,12 @@ struct DeckCentricEdgeCases {
 
     @Test("Large number of decks (100+) handles efficiently")
     func largeDeckCount() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create 100 decks
-        for i in 0..<100 {
-            _ = createDeck(context: context, name: "Deck \(i)")
+        for i in 0 ..< 100 {
+            _ = self.createDeck(context: context, name: "Deck \(i)")
         }
 
         // Verify all decks were created
@@ -770,7 +769,7 @@ struct DeckCentricEdgeCases {
         #expect(decks.count == 100, "Should have 100 decks")
 
         // Test selection with many decks
-        let deckIDs = Set(decks.prefix(50).map { $0.id })
+        let deckIDs = Set(decks.prefix(50).map(\.id))
         AppSettings.selectedDeckIDs = deckIDs
 
         #expect(AppSettings.selectedDeckCount == 50, "Should select 50 decks")
@@ -779,10 +778,10 @@ struct DeckCentricEdgeCases {
 
     @Test("Session with no available cards handles gracefully")
     func sessionWithNoAvailableCards() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let deck = createDeck(context: context)
+        let deck = self.createDeck(context: context)
 
         // Deck has no cards
         let viewModel = StudySessionViewModel(
@@ -799,13 +798,13 @@ struct DeckCentricEdgeCases {
 
     @Test("Multiple sessions with same deck handle correctly")
     func multipleSessionsSameDeck() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let deck = createDeck(context: context)
+        let deck = self.createDeck(context: context)
 
         // Create multiple cards
-        for i in 1...5 {
+        for i in 1 ... 5 {
             let card = Flashcard(word: "card\(i)", definition: "card\(i)")
             card.deck = deck
             context.insert(card)
@@ -838,11 +837,11 @@ struct DeckCentricEdgeCases {
 
     @Test("Deck selection updates during session don't crash")
     func deckSelectionUpdateDuringSession() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let deck1 = createDeck(context: context, name: "Deck 1")
-        let deck2 = createDeck(context: context, name: "Deck 2")
+        let deck1 = self.createDeck(context: context, name: "Deck 1")
+        let deck2 = self.createDeck(context: context, name: "Deck 2")
 
         // Set initial selection
         AppSettings.selectedDeckIDs = [deck1.id]
@@ -869,10 +868,10 @@ struct DeckCentricEdgeCases {
 
     @Test("Study mode switching updates card list")
     func studyModeSwitching() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let deck = createDeck(context: context)
+        let deck = self.createDeck(context: context)
 
         // Create new card
         let card1 = Flashcard(word: "new", definition: "new")

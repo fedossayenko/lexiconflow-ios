@@ -5,8 +5,9 @@
 //  First-launch welcome screen with app introduction and sample deck creation
 //
 
-import SwiftUI
+import OSLog
 import SwiftData
+import SwiftUI
 
 struct OnboardingView: View {
     @Environment(\.modelContext) private var modelContext
@@ -14,6 +15,8 @@ struct OnboardingView: View {
     @State private var currentPage = 0
     @State private var isCreatingSampleDeck = false
     @State private var errorMessage: String?
+
+    private let logger = Logger(subsystem: "com.lexiconflow.onboarding", category: "Onboarding")
 
     private let pages = [
         OnboardingPage(
@@ -29,14 +32,14 @@ struct OnboardingView: View {
         OnboardingPage(
             icon: "checkmark.circle.fill",
             title: "Ready to Start",
-            description: "Let's create your first deck and add some sample cards to get you started."
+            description: "IELTS vocabulary has been pre-loaded. Start learning now!"
         )
     ]
 
     var body: some View {
-        TabView(selection: $currentPage) {
-            ForEach(0..<pages.count, id: \.self) { index in
-                OnboardingPageView(page: pages[index])
+        TabView(selection: self.$currentPage) {
+            ForEach(0 ..< self.pages.count, id: \.self) { index in
+                OnboardingPageView(page: self.pages[index])
                     .tag(index)
             }
         }
@@ -45,46 +48,45 @@ struct OnboardingView: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Onboarding pages")
         .toolbar {
-            if currentPage == pages.count - 1 {
+            if self.currentPage == self.pages.count - 1 {
                 ToolbarItem(placement: .bottomBar) {
-                    Button(action: completeOnboarding) {
-                        if isCreatingSampleDeck {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        } else {
+                    Button(action: self.completeOnboarding) {
+                        HStack {
+                            Image(systemName: "star.fill")
                             Text("Get Started")
                                 .fontWeight(.semibold)
                         }
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
-                    .disabled(isCreatingSampleDeck)
+                    .disabled(self.isCreatingSampleDeck)
                     .accessibilityLabel("Get Started")
-                    .accessibilityHint("Create sample deck and begin using Lexicon Flow")
                 }
             }
         }
-        .alert("Error", isPresented: .constant(errorMessage != nil)) {
+        .alert("Error", isPresented: .constant(self.errorMessage != nil)) {
             Button("Retry", role: .cancel) {
-                errorMessage = nil
-                completeOnboarding()
+                self.errorMessage = nil
+                self.completeOnboarding()
             }
             Button("Cancel", role: .destructive) {
-                errorMessage = nil
-                isCreatingSampleDeck = false
+                self.errorMessage = nil
+                self.isCreatingSampleDeck = false
             }
         } message: {
-            Text(errorMessage ?? "An unknown error occurred")
+            Text(self.errorMessage ?? "An unknown error occurred")
         }
     }
 
+    // MARK: - Sample Deck
+
     private func completeOnboarding() {
-        isCreatingSampleDeck = true
+        self.isCreatingSampleDeck = true
 
         Task { @MainActor in
             // Create sample deck
             let sampleDeck = Deck(name: "Sample Vocabulary", icon: "star.fill", order: 0)
-            modelContext.insert(sampleDeck)
+            self.modelContext.insert(sampleDeck)
 
             // Create sample flashcards
             let sampleCards = [
@@ -113,18 +115,18 @@ struct OnboardingView: View {
                 )
                 card.fsrsState = state
 
-                modelContext.insert(card)
-                modelContext.insert(state)
+                self.modelContext.insert(card)
+                self.modelContext.insert(state)
             }
 
             // Save to persistent store
             do {
-                try modelContext.save()
-                hasCompletedOnboarding = true
+                try self.modelContext.save()
+                self.hasCompletedOnboarding = true
             } catch {
                 Task { Analytics.trackError("onboarding_save", error: error) }
-                errorMessage = "Failed to create sample deck: \(error.localizedDescription)"
-                isCreatingSampleDeck = false
+                self.errorMessage = "Failed to create sample deck: \(error.localizedDescription)"
+                self.isCreatingSampleDeck = false
             }
         }
     }
@@ -147,17 +149,17 @@ struct OnboardingPageView: View {
         VStack(spacing: 40) {
             Spacer()
 
-            Image(systemName: page.icon)
+            Image(systemName: self.page.icon)
                 .font(.system(size: 80))
                 .foregroundStyle(.blue)
 
             VStack(spacing: 16) {
-                Text(page.title)
+                Text(self.page.title)
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .multilineTextAlignment(.center)
 
-                Text(page.description)
+                Text(self.page.description)
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

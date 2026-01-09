@@ -6,17 +6,16 @@
 //  and visual feedback calculations.
 //
 
-import Testing
 import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 @MainActor
 struct CardGestureViewModelTests {
-
     // MARK: - Direction Detection Tests
 
     @Test("Horizontal right movement detected")
-    func testDirectionDetectionRight() {
+    func directionDetectionRight() {
         let viewModel = CardGestureViewModel()
         let translation = CGSize(width: 50, height: 10)
 
@@ -26,7 +25,7 @@ struct CardGestureViewModelTests {
     }
 
     @Test("Horizontal left movement detected")
-    func testDirectionDetectionLeft() {
+    func directionDetectionLeft() {
         let viewModel = CardGestureViewModel()
         let translation = CGSize(width: -50, height: 10)
 
@@ -36,7 +35,7 @@ struct CardGestureViewModelTests {
     }
 
     @Test("Vertical down movement detected")
-    func testDirectionDetectionDown() {
+    func directionDetectionDown() {
         let viewModel = CardGestureViewModel()
         let translation = CGSize(width: 10, height: 50)
 
@@ -46,7 +45,7 @@ struct CardGestureViewModelTests {
     }
 
     @Test("Vertical up movement detected")
-    func testDirectionDetectionUp() {
+    func directionDetectionUp() {
         let viewModel = CardGestureViewModel()
         let translation = CGSize(width: 10, height: -50)
 
@@ -56,7 +55,7 @@ struct CardGestureViewModelTests {
     }
 
     @Test("Below minimum distance returns none")
-    func testBelowMinimumDistance() {
+    func belowMinimumDistance() {
         let viewModel = CardGestureViewModel()
 
         // Test various small movements
@@ -76,7 +75,7 @@ struct CardGestureViewModelTests {
     }
 
     @Test("Exactly minimum distance triggers direction")
-    func testExactlyMinimumDistance() {
+    func exactlyMinimumDistance() {
         let viewModel = CardGestureViewModel()
         let translation = CGSize(width: 15, height: 0)
 
@@ -86,7 +85,7 @@ struct CardGestureViewModelTests {
     }
 
     @Test("Horizontal dominant over vertical")
-    func testHorizontalDominant() {
+    func horizontalDominant() {
         let viewModel = CardGestureViewModel()
 
         // Same magnitude in both directions - horizontal should win
@@ -97,7 +96,7 @@ struct CardGestureViewModelTests {
     }
 
     @Test("Diagonal movements favor dominant axis")
-    func testDiagonalMovements() {
+    func diagonalMovements() {
         let viewModel = CardGestureViewModel()
 
         // Diagonal with more horizontal
@@ -112,7 +111,7 @@ struct CardGestureViewModelTests {
     // MARK: - Visual Feedback Tests
 
     @Test("Right swipe visual feedback: green tint, swelling")
-    func testRightSwipeVisualFeedback() {
+    func rightSwipeVisualFeedback() {
         let viewModel = CardGestureViewModel()
         let translation = CGSize(width: 50, height: 0)
 
@@ -124,7 +123,7 @@ struct CardGestureViewModelTests {
     }
 
     @Test("Left swipe visual feedback: red tint, shrinking")
-    func testLeftSwipeVisualFeedback() {
+    func leftSwipeVisualFeedback() {
         let viewModel = CardGestureViewModel()
         let translation = CGSize(width: -50, height: 0)
 
@@ -136,7 +135,7 @@ struct CardGestureViewModelTests {
     }
 
     @Test("Up swipe visual feedback: blue tint, lightening")
-    func testUpSwipeVisualFeedback() {
+    func upSwipeVisualFeedback() {
         let viewModel = CardGestureViewModel()
         let translation = CGSize(width: 0, height: -50)
 
@@ -147,7 +146,7 @@ struct CardGestureViewModelTests {
     }
 
     @Test("Down swipe visual feedback: orange tint, heavy")
-    func testDownSwipeVisualFeedback() {
+    func downSwipeVisualFeedback() {
         let viewModel = CardGestureViewModel()
         let translation = CGSize(width: 0, height: 50)
 
@@ -158,7 +157,7 @@ struct CardGestureViewModelTests {
     }
 
     @Test("No direction shows subtle feedback")
-    func testNoneDirectionFeedback() {
+    func noneDirectionFeedback() {
         let viewModel = CardGestureViewModel()
         let translation = CGSize(width: 0, height: 0)
 
@@ -170,7 +169,7 @@ struct CardGestureViewModelTests {
     }
 
     @Test("Progress increases visual effect intensity")
-    func testProgressIntensity() {
+    func progressIntensity() {
         let viewModel = CardGestureViewModel()
 
         // Small movement
@@ -187,7 +186,7 @@ struct CardGestureViewModelTests {
     // MARK: - Swipe Threshold Tests
 
     @Test("Swipe at threshold commits")
-    func testSwipeThresholdCommit() {
+    func swipeThresholdCommit() {
         let viewModel = CardGestureViewModel()
 
         #expect(viewModel.shouldCommitSwipe(translation: CGSize(width: 100, height: 0)) == true, "Swipe at threshold should commit")
@@ -195,7 +194,7 @@ struct CardGestureViewModelTests {
     }
 
     @Test("Swipe below threshold does not commit")
-    func testSwipeBelowThreshold() {
+    func swipeBelowThreshold() {
         let viewModel = CardGestureViewModel()
 
         #expect(viewModel.shouldCommitSwipe(translation: CGSize(width: 99, height: 0)) == false, "Swipe below threshold should not commit")
@@ -203,7 +202,7 @@ struct CardGestureViewModelTests {
     }
 
     @Test("Diagonal swipe threshold uses max distance")
-    func testDiagonalThreshold() {
+    func diagonalThreshold() {
         let viewModel = CardGestureViewModel()
 
         // Diagonal where max distance equals threshold (uses max, not Euclidean)
@@ -218,7 +217,7 @@ struct CardGestureViewModelTests {
     // MARK: - Rating Mapping Tests
 
     @Test("Direction to rating mapping is correct")
-    func testRatingMapping() {
+    func ratingMapping() {
         let viewModel = CardGestureViewModel()
 
         #expect(viewModel.ratingForDirection(.right) == 2, "Right should map to Good (2)")
@@ -231,7 +230,7 @@ struct CardGestureViewModelTests {
     // MARK: - Reset Tests
 
     @Test("Reset clears all state")
-    func testResetState() {
+    func resetState() {
         let viewModel = CardGestureViewModel()
 
         // Modify state
@@ -252,7 +251,7 @@ struct CardGestureViewModelTests {
     }
 
     @Test("Multiple resets are safe")
-    func testMultipleResets() {
+    func multipleResets() {
         let viewModel = CardGestureViewModel()
 
         viewModel.resetGestureState()
@@ -265,7 +264,7 @@ struct CardGestureViewModelTests {
     // MARK: - Haptic Direction Extension Tests
 
     @Test("Haptic direction extension works for all directions")
-    func testHapticDirectionExtension() {
+    func hapticDirectionExtension() {
         #expect(CardGestureViewModel.SwipeDirection.right.hapticDirection == .right, "Right should map to right")
         #expect(CardGestureViewModel.SwipeDirection.left.hapticDirection == .left, "Left should map to left")
         #expect(CardGestureViewModel.SwipeDirection.up.hapticDirection == .up, "Up should map to up")
@@ -276,7 +275,7 @@ struct CardGestureViewModelTests {
     // MARK: - Edge Cases
 
     @Test("Negative translation values work correctly")
-    func testNegativeTranslation() {
+    func negativeTranslation() {
         let viewModel = CardGestureViewModel()
 
         let direction1 = viewModel.detectDirection(translation: CGSize(width: -50, height: 0))
@@ -287,14 +286,14 @@ struct CardGestureViewModelTests {
     }
 
     @Test("Zero translation returns none")
-    func testZeroTranslation() {
+    func zeroTranslation() {
         let viewModel = CardGestureViewModel()
         let direction = viewModel.detectDirection(translation: .zero)
         #expect(direction == .none, "Zero translation should return none")
     }
 
     @Test("Very large translation values are handled")
-    func testLargeTranslation() {
+    func largeTranslation() {
         let viewModel = CardGestureViewModel()
 
         // Very large translation

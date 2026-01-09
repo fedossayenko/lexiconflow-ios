@@ -6,9 +6,9 @@
 //  Integrates card info header, review history stats, and review timeline
 //
 
-import SwiftUI
-import SwiftData
 import OSLog
+import SwiftData
+import SwiftUI
 
 /// Flashcard detail view with card information and review history
 ///
@@ -59,19 +59,25 @@ struct FlashcardDetailView: View {
 
     var body: some View {
         Group {
-            if let viewModel = viewModel {
-                mainContent(viewModel: viewModel)
+            if let viewModel {
+                self.mainContent(viewModel: viewModel)
             } else {
                 ProgressView("Loading...")
             }
         }
         .task {
-            if viewModel == nil {
-                viewModel = FlashcardDetailViewModel(
-                    flashcard: flashcard,
-                    modelContext: modelContext
+            if self.viewModel == nil {
+                self.viewModel = FlashcardDetailViewModel(
+                    flashcard: self.flashcard,
+                    modelContext: self.modelContext
                 )
-                await viewModel?.trackView()
+                // Track analytics directly inline (no wrapper needed)
+                await Analytics.trackEvent("review_history_viewed", metadata: [
+                    "flashcard_word": self.flashcard.word,
+                    "review_count": "\(self.flashcard.reviewLogs.count)",
+                    "current_state": self.flashcard.fsrsState?.stateEnum ?? "none",
+                    "stability": self.flashcard.fsrsState.map { String(format: "%.2f", $0.stability) } ?? "0.0"
+                ])
             }
         }
     }
@@ -80,14 +86,14 @@ struct FlashcardDetailView: View {
     private func mainContent(viewModel: FlashcardDetailViewModel) -> some View {
         ScrollView {
             VStack(spacing: 0) {
-                cardInfoSection
-                reviewHistoryHeader
+                self.cardInfoSection
+                self.reviewHistoryHeader
                 ReviewHistoryListView(
                     reviews: viewModel.filteredReviews,
                     selectedFilter: Binding(
                         get: { viewModel.selectedFilter },
                         set: { newFilter in
-                            currentFilter = newFilter
+                            self.currentFilter = newFilter
                             viewModel.selectFilter(newFilter)
                         }
                     ),
@@ -96,36 +102,36 @@ struct FlashcardDetailView: View {
                     },
                     onExport: {
                         Task {
-                            await exportReviewHistory()
+                            await self.exportReviewHistory()
                         }
                     }
                 )
             }
         }
         .background(Color(.systemGroupedBackground))
-        .navigationTitle(flashcard.word)
+        .navigationTitle(self.flashcard.word)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                exportToolbarItem(viewModel: viewModel)
+                self.exportToolbarItem(viewModel: viewModel)
             }
         }
-        .alert("Export Failed", isPresented: $showingExportError) {
+        .alert("Export Failed", isPresented: self.$showingExportError) {
             Button("OK", role: .cancel) {
                 viewModel.exportError = nil
-                showingExportError = false
+                self.showingExportError = false
             }
         } message: {
             Text(viewModel.exportError?.localizedDescription ?? "An unknown error occurred")
         }
         .onChange(of: viewModel.exportError != nil) { _, hasError in
-            showingExportError = hasError
+            self.showingExportError = hasError
         }
-        .onChange(of: currentFilter) { _, newFilter in
+        .onChange(of: self.currentFilter) { _, newFilter in
             // Track filter changes for analytics
             Analytics.trackEvent("review_history_filter_changed", metadata: [
                 "filter": newFilter.rawValue,
-                "flashcard_word": flashcard.word
+                "flashcard_word": self.flashcard.word
             ])
         }
     }
@@ -134,7 +140,8 @@ struct FlashcardDetailView: View {
     @ViewBuilder
     private func exportToolbarItem(viewModel: FlashcardDetailViewModel) -> some View {
         if let csvString = viewModel.exportCSVString,
-           let _ = viewModel.exportFilename {
+           let _ = viewModel.exportFilename
+        {
             ShareLink(
                 item: csvString,
                 preview: SharePreview("Review History", image: Image(systemName: "square.and.arrow.up"))
@@ -151,11 +158,11 @@ struct FlashcardDetailView: View {
     /// Card information header showing word, definition, translation, phonetic, and CEFR
     @ViewBuilder
     private var cardInfoSection: some View {
-        if viewModel != nil {
+        if self.viewModel != nil {
             VStack(alignment: .leading, spacing: 20) {
                 // Word and CEFR badge row
                 HStack(alignment: .top, spacing: 12) {
-                    Text(flashcard.word)
+                    Text(self.flashcard.word)
                         .font(.system(size: 32, weight: .bold, design: .rounded))
                         .foregroundStyle(.primary)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -193,16 +200,17 @@ struct FlashcardDetailView: View {
                         .font(.caption)
                         .foregroundStyle(.tertiary)
 
-                    Text(flashcard.definition)
+                    Text(self.flashcard.definition)
                         .font(.body)
                         .foregroundStyle(.primary)
                 }
-                .accessibilityLabel("Definition: \(flashcard.definition)")
+                .accessibilityLabel("Definition: \(self.flashcard.definition)")
 
                 // FSRS State info (if available)
                 if let state = flashcard.fsrsState?.state,
-                   let stability = flashcard.fsrsState?.stability {
-                    fsrsStateInfo(state: state, stability: stability)
+                   let stability = flashcard.fsrsState?.stability
+                {
+                    self.fsrsStateInfo(state: state, stability: stability)
                 }
             }
             .padding(20)
@@ -223,17 +231,17 @@ struct FlashcardDetailView: View {
     /// code organization and reusability.
     private func fsrsStateInfo(state: FlashcardState, stability: Double) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: stateIcon(for: state))
+            Image(systemName: self.stateIcon(for: state))
                 .font(.callout)
-                .foregroundStyle(stateColor(for: state))
+                .foregroundStyle(self.stateColor(for: state))
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(stateLabel(for: state))
+                Text(self.stateLabel(for: state))
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .foregroundStyle(.primary)
 
-                Text("Stability: \(stabilityText(stability))")
+                Text("Stability: \(self.stabilityText(stability))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -241,15 +249,15 @@ struct FlashcardDetailView: View {
             Spacer()
         }
         .padding()
-        .background(stateColor(for: state).opacity(0.1))
+        .background(self.stateColor(for: state).opacity(0.1))
         .cornerRadius(12)
-        .accessibilityLabel("FSRS state: \(stateLabel(for: state)), Stability: \(stabilityText(stability))")
+        .accessibilityLabel("FSRS state: \(self.stateLabel(for: state)), Stability: \(self.stabilityText(stability))")
     }
 
     /// Review history header with statistics
     @ViewBuilder
     private var reviewHistoryHeader: some View {
-        if let viewModel = viewModel {
+        if let viewModel {
             VStack(spacing: 16) {
                 // Section title
                 HStack {
@@ -285,9 +293,9 @@ struct FlashcardDetailView: View {
     /// 4. Track export with analytics
     /// 5. Trigger haptic feedback (success or error)
     private func exportReviewHistory() async {
-        guard let viewModel = viewModel else { return }
+        guard let viewModel else { return }
 
-        Self.logger.info("Exporting review history for '\(flashcard.word)'")
+        Self.logger.info("Exporting review history for '\(self.flashcard.word)'")
 
         await viewModel.exportCSV()
 
@@ -315,30 +323,30 @@ struct FlashcardDetailView: View {
     /// SF Symbol icon for FSRS state
     private func stateIcon(for state: FlashcardState) -> String {
         switch state {
-        case .new: return "sparkles"
-        case .learning: return "graduationcap.fill"
-        case .review: return "checkmark.circle.fill"
-        case .relearning: return "arrow.clockwise.circle.fill"
+        case .new: "sparkles"
+        case .learning: "graduationcap.fill"
+        case .review: "checkmark.circle.fill"
+        case .relearning: "arrow.clockwise.circle.fill"
         }
     }
 
     /// Color for FSRS state
     private func stateColor(for state: FlashcardState) -> Color {
         switch state {
-        case .new: return .purple
-        case .learning: return .blue
-        case .review: return .green
-        case .relearning: return .orange
+        case .new: .purple
+        case .learning: .blue
+        case .review: .green
+        case .relearning: .orange
         }
     }
 
     /// Human-readable state label
     private func stateLabel(for state: FlashcardState) -> String {
         switch state {
-        case .new: return "New"
-        case .learning: return "Learning"
-        case .review: return "Review"
-        case .relearning: return "Relearning"
+        case .new: "New"
+        case .learning: "Learning"
+        case .review: "Review"
+        case .relearning: "Relearning"
         }
     }
 
@@ -370,14 +378,8 @@ private extension Preview {
         } catch {
             // Preview failure indicates a real problem - log and use fallback
             assertionFailure("Failed to create preview container: \(error.localizedDescription)")
-            // Fallback: create container with no schema (minimal recovery)
-            do {
-                return try ModelContainer(for: Schema(), configurations: config)
-            } catch {
-                // Last resort: in-memory empty container
-                let fallbackConfig = ModelConfiguration(isStoredInMemoryOnly: true)
-                return try! ModelContainer(for: Schema(), configurations: fallbackConfig)
-            }
+            // Fallback: return empty container to prevent preview crash
+            return try! ModelContainer(for: Flashcard.self, configurations: config)
         }
     }
 }

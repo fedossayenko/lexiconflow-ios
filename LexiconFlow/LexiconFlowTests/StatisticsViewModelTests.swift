@@ -6,9 +6,9 @@
 //  Covers: Initialization, state changes, time range switching, error handling
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for StatisticsViewModel
@@ -22,11 +22,10 @@ import SwiftData
 /// - Concurrent access safety
 @MainActor
 struct StatisticsViewModelTests {
-
     // MARK: - Test Fixtures
 
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     private func createFlashcard(
@@ -96,7 +95,7 @@ struct StatisticsViewModelTests {
 
     @Test("Initialize with default time range from AppSettings")
     func initializeWithDefaultTimeRange() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Reset AppSettings to default
@@ -114,7 +113,7 @@ struct StatisticsViewModelTests {
 
     @Test("Initialize with custom time range override")
     func initializeWithCustomTimeRange() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let viewModel = StatisticsViewModel(
@@ -127,7 +126,7 @@ struct StatisticsViewModelTests {
 
     @Test("Initialize loads time range from AppSettings")
     func initializeLoadsFromAppSettings() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Set AppSettings to 30 days
@@ -140,7 +139,7 @@ struct StatisticsViewModelTests {
 
     @Test("Initialize falls back to default for invalid AppSettings")
     func initializeFallbackForInvalidSettings() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Set invalid AppSettings value
@@ -155,7 +154,7 @@ struct StatisticsViewModelTests {
 
     @Test("Refresh sets isLoading flag correctly")
     func refreshSetsIsLoadingFlag() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let viewModel = StatisticsViewModel(modelContext: context)
@@ -170,21 +169,21 @@ struct StatisticsViewModelTests {
 
     @Test("Refresh updates all DTOs")
     func refreshUpdatesAllDTOs() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create test data
-        let card = createFlashcard(
+        let card = self.createFlashcard(
             context: context,
             lastReviewDate: Date().addingTimeInterval(-86400)
         )
-        _ = createReview(
+        _ = self.createReview(
             context: context,
             flashcard: card,
             rating: 3,
             reviewDate: Date().addingTimeInterval(-3600)
         )
-        _ = createStudySession(
+        _ = self.createStudySession(
             context: context,
             startTime: Date().addingTimeInterval(-3600),
             endTime: Date().addingTimeInterval(-3000)
@@ -203,7 +202,7 @@ struct StatisticsViewModelTests {
 
     @Test("Refresh handles empty data gracefully")
     func refreshHandlesEmptyData() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let viewModel = StatisticsViewModel(modelContext: context)
@@ -223,7 +222,7 @@ struct StatisticsViewModelTests {
 
     @Test("Refresh completes successfully with no error")
     func refreshCompletesSuccessfully() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let viewModel = StatisticsViewModel(modelContext: context)
@@ -239,7 +238,7 @@ struct StatisticsViewModelTests {
 
     @Test("Change time range updates selectedTimeRange")
     func changeTimeRangeUpdatesSelection() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let viewModel = StatisticsViewModel(modelContext: context)
@@ -250,12 +249,9 @@ struct StatisticsViewModelTests {
         #expect(viewModel.selectedTimeRange == .thirtyDays)
     }
 
-
-
-
     @Test("Change time range cycles through all options")
     func changeTimeRangeCyclesThroughAllOptions() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let viewModel = StatisticsViewModel(modelContext: context)
@@ -277,7 +273,7 @@ struct StatisticsViewModelTests {
 
     @Test("Clear error removes error message")
     func clearErrorRemovesErrorMessage() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let viewModel = StatisticsViewModel(modelContext: context)
@@ -294,7 +290,7 @@ struct StatisticsViewModelTests {
 
     @Test("Error message is user-friendly")
     func errorMessageIsUserFriendly() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let viewModel = StatisticsViewModel(modelContext: context)
@@ -311,7 +307,7 @@ struct StatisticsViewModelTests {
 
     @Test("HasData is true when at least one DTO exists")
     func hasDataIsTrueWhenAtLeastOneDTOExists() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let viewModel = StatisticsViewModel(modelContext: context)
@@ -327,7 +323,7 @@ struct StatisticsViewModelTests {
 
     @Test("HasData is false when all DTOs are nil")
     func hasDataIsFalseWhenAllDTOsAreNil() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let viewModel = StatisticsViewModel(modelContext: context)
@@ -338,7 +334,7 @@ struct StatisticsViewModelTests {
 
     @Test("IsEmpty is true when all metrics are empty")
     func isEmptyIsTrueWhenAllMetricsEmpty() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let viewModel = StatisticsViewModel(modelContext: context)
@@ -351,21 +347,21 @@ struct StatisticsViewModelTests {
 
     @Test("IsEmpty is false when some data exists")
     func isEmptyIsFalseWhenDataExists() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create test data
-        let card = createFlashcard(
+        let card = self.createFlashcard(
             context: context,
             lastReviewDate: Date().addingTimeInterval(-86400)
         )
-        _ = createReview(
+        _ = self.createReview(
             context: context,
             flashcard: card,
             rating: 3,
             reviewDate: Date().addingTimeInterval(-3600)
         )
-        _ = createStudySession(
+        _ = self.createStudySession(
             context: context,
             startTime: Date().addingTimeInterval(-3600),
             endTime: Date().addingTimeInterval(-3000)
@@ -382,7 +378,7 @@ struct StatisticsViewModelTests {
 
     @Test("IsEmpty is false when DTOs are nil")
     func isEmptyIsFalseWhenDTOsAreNil() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let viewModel = StatisticsViewModel(modelContext: context)
@@ -395,15 +391,15 @@ struct StatisticsViewModelTests {
 
     @Test("Retention rate DTO contains expected data")
     func retentionRateDTOContainsExpectedData() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create test data: 3 successful, 1 failed
-        let card = createFlashcard(context: context)
-        _ = createReview(context: context, flashcard: card, rating: 3, reviewDate: Date()) // Good
-        _ = createReview(context: context, flashcard: card, rating: 4, reviewDate: Date()) // Easy
-        _ = createReview(context: context, flashcard: card, rating: 2, reviewDate: Date()) // Hard (success)
-        _ = createReview(context: context, flashcard: card, rating: 0, reviewDate: Date()) // Again (fail)
+        let card = self.createFlashcard(context: context)
+        _ = self.createReview(context: context, flashcard: card, rating: 3, reviewDate: Date()) // Good
+        _ = self.createReview(context: context, flashcard: card, rating: 4, reviewDate: Date()) // Easy
+        _ = self.createReview(context: context, flashcard: card, rating: 2, reviewDate: Date()) // Hard (success)
+        _ = self.createReview(context: context, flashcard: card, rating: 0, reviewDate: Date()) // Again (fail)
         try context.save()
 
         let viewModel = StatisticsViewModel(modelContext: context)
@@ -417,21 +413,20 @@ struct StatisticsViewModelTests {
         #expect(viewModel.retentionData?.rate == 0.75) // 75%
     }
 
-
     @Test("FSRS metrics DTO contains expected data")
     func fsrsMetricsDTOContainsExpectedData() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create test data: 2 cards with different FSRS states
-        _ = createFlashcard(
+        _ = self.createFlashcard(
             context: context,
             word: "card1",
             stability: 10.0,
             difficulty: 4.0,
             lastReviewDate: Date().addingTimeInterval(-86400)
         )
-        _ = createFlashcard(
+        _ = self.createFlashcard(
             context: context,
             word: "card2",
             stability: 20.0,
@@ -455,7 +450,7 @@ struct StatisticsViewModelTests {
 
     @Test("Refresh with 7 day range filters data correctly")
     func refreshWith7DayRangeFiltersData() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let now = Date()
@@ -463,13 +458,13 @@ struct StatisticsViewModelTests {
 
         // Create data outside 7-day range (10 days ago)
         let oldDate = calendar.date(byAdding: .day, value: -10, to: now)!
-        let oldCard = createFlashcard(context: context, lastReviewDate: oldDate)
-        _ = createReview(context: context, flashcard: oldCard, rating: 3, reviewDate: oldDate)
+        let oldCard = self.createFlashcard(context: context, lastReviewDate: oldDate)
+        _ = self.createReview(context: context, flashcard: oldCard, rating: 3, reviewDate: oldDate)
 
         // Create data within 7-day range (2 days ago)
         let recentDate = calendar.date(byAdding: .day, value: -2, to: now)!
-        let recentCard = createFlashcard(context: context, lastReviewDate: recentDate)
-        _ = createReview(context: context, flashcard: recentCard, rating: 3, reviewDate: recentDate)
+        let recentCard = self.createFlashcard(context: context, lastReviewDate: recentDate)
+        _ = self.createReview(context: context, flashcard: recentCard, rating: 3, reviewDate: recentDate)
 
         try context.save()
 
@@ -483,7 +478,7 @@ struct StatisticsViewModelTests {
 
     @Test("Refresh with 30 day range includes more data")
     func refreshWith30DayRangeIncludesMoreData() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let now = Date()
@@ -491,13 +486,13 @@ struct StatisticsViewModelTests {
 
         // Create data within 30-day range (20 days ago)
         let date20Days = calendar.date(byAdding: .day, value: -20, to: now)!
-        let card20Days = createFlashcard(context: context, lastReviewDate: date20Days)
-        _ = createReview(context: context, flashcard: card20Days, rating: 3, reviewDate: date20Days)
+        let card20Days = self.createFlashcard(context: context, lastReviewDate: date20Days)
+        _ = self.createReview(context: context, flashcard: card20Days, rating: 3, reviewDate: date20Days)
 
         // Create data within 7-day range (2 days ago)
         let date2Days = calendar.date(byAdding: .day, value: -2, to: now)!
-        let card2Days = createFlashcard(context: context, lastReviewDate: date2Days)
-        _ = createReview(context: context, flashcard: card2Days, rating: 3, reviewDate: date2Days)
+        let card2Days = self.createFlashcard(context: context, lastReviewDate: date2Days)
+        _ = self.createReview(context: context, flashcard: card2Days, rating: 3, reviewDate: date2Days)
 
         try context.save()
 
@@ -516,7 +511,7 @@ struct StatisticsViewModelTests {
 
     @Test("Refresh with all time range includes all data")
     func refreshWithAllTimeRangeIncludesAllData() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let now = Date()
@@ -525,8 +520,8 @@ struct StatisticsViewModelTests {
         // Create data at various time ranges
         for daysAgo in [100, 50, 10, 2] {
             let date = calendar.date(byAdding: .day, value: -daysAgo, to: now)!
-            let card = createFlashcard(context: context, lastReviewDate: date)
-            _ = createReview(context: context, flashcard: card, rating: 3, reviewDate: date)
+            let card = self.createFlashcard(context: context, lastReviewDate: date)
+            _ = self.createReview(context: context, flashcard: card, rating: 3, reviewDate: date)
         }
 
         try context.save()
@@ -543,15 +538,15 @@ struct StatisticsViewModelTests {
 
     @Test("Concurrent refresh calls are safe")
     func concurrentRefreshCallsAreSafe() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create test data
-        let card = createFlashcard(
+        let card = self.createFlashcard(
             context: context,
             lastReviewDate: Date().addingTimeInterval(-86400)
         )
-        _ = createReview(
+        _ = self.createReview(
             context: context,
             flashcard: card,
             rating: 3,
@@ -563,7 +558,7 @@ struct StatisticsViewModelTests {
 
         // Trigger multiple concurrent refreshes
         await withTaskGroup(of: Void.self) { group in
-            for _ in 0..<5 {
+            for _ in 0 ..< 5 {
                 group.addTask {
                     await viewModel.refresh()
                 }
@@ -577,15 +572,15 @@ struct StatisticsViewModelTests {
 
     @Test("Time range change during concurrent refresh")
     func timeRangeChangeDuringConcurrentRefresh() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create test data
-        let card = createFlashcard(
+        let card = self.createFlashcard(
             context: context,
             lastReviewDate: Date().addingTimeInterval(-86400)
         )
-        _ = createReview(
+        _ = self.createReview(
             context: context,
             flashcard: card,
             rating: 3,
@@ -613,15 +608,15 @@ struct StatisticsViewModelTests {
 
     @Test("State reads during concurrent refresh")
     func stateReadsDuringConcurrentRefresh() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create test data
-        let card = createFlashcard(
+        let card = self.createFlashcard(
             context: context,
             lastReviewDate: Date().addingTimeInterval(-86400)
         )
-        _ = createReview(
+        _ = self.createReview(
             context: context,
             flashcard: card,
             rating: 3,
@@ -637,7 +632,7 @@ struct StatisticsViewModelTests {
                 await viewModel.refresh()
             }
 
-            for _ in 0..<3 {
+            for _ in 0 ..< 3 {
                 group.addTask {
                     _ = await viewModel.isLoading
                     _ = await viewModel.hasData
@@ -654,21 +649,21 @@ struct StatisticsViewModelTests {
 
     @Test("Full workflow: load, change range, clear error")
     func fullWorkflowIntegration() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create test data
-        let card = createFlashcard(
+        let card = self.createFlashcard(
             context: context,
             lastReviewDate: Date().addingTimeInterval(-86400)
         )
-        _ = createReview(
+        _ = self.createReview(
             context: context,
             flashcard: card,
             rating: 3,
             reviewDate: Date().addingTimeInterval(-3600)
         )
-        _ = createStudySession(
+        _ = self.createStudySession(
             context: context,
             startTime: Date().addingTimeInterval(-3600),
             endTime: Date().addingTimeInterval(-3000)
@@ -698,18 +693,18 @@ struct StatisticsViewModelTests {
     }
 
     @Test("ViewModel handles large datasets")
-    func testHandlesLargeDatasets() async throws {
-        let context = freshContext()
+    func handlesLargeDatasets() async throws {
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create large dataset (100 cards with reviews)
-        for i in 0..<100 {
-            let card = createFlashcard(
+        for i in 0 ..< 100 {
+            let card = self.createFlashcard(
                 context: context,
                 word: "card\(i)",
                 lastReviewDate: Date().addingTimeInterval(-86400)
             )
-            _ = createReview(
+            _ = self.createReview(
                 context: context,
                 flashcard: card,
                 rating: i % 5, // Vary ratings
@@ -718,8 +713,8 @@ struct StatisticsViewModelTests {
         }
 
         // Create 30 study sessions
-        for i in 0..<30 {
-            _ = createStudySession(
+        for i in 0 ..< 30 {
+            _ = self.createStudySession(
                 context: context,
                 startTime: Date().addingTimeInterval(-Double(i * 3600)),
                 endTime: Date().addingTimeInterval(-Double(i * 3600 - 300))

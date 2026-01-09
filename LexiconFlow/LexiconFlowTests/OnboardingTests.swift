@@ -5,9 +5,9 @@
 //  Tests for onboarding flow
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for Onboarding Flow
@@ -21,18 +21,17 @@ import SwiftData
 /// - Retry after error (Issue 5 fix)
 @MainActor
 struct OnboardingTests {
-
     // MARK: - Test Fixtures
 
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     // MARK: - Sample Deck Creation Tests
 
     @Test("Complete onboarding creates sample deck")
     func completeOnboardingCreatesDeck() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Simulate onboarding deck creation
@@ -49,7 +48,7 @@ struct OnboardingTests {
 
     @Test("Complete onboarding creates five cards")
     func completeOnboardingCreatesFiveCards() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Simulate onboarding - create deck and cards
@@ -87,7 +86,7 @@ struct OnboardingTests {
         #expect(cards.count == 5)
 
         // Verify card words
-        let words = cards.map { $0.word }.sorted()
+        let words = cards.map(\.word).sorted()
         #expect(words == ["Eloquent", "Ephemeral", "Meticulous", "Pragmatic", "Serendipity"])
     }
 
@@ -95,7 +94,7 @@ struct OnboardingTests {
 
     @Test("Onboarding cards have correct FSRS state")
     func onboardingCardsFSRSState() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create sample deck and card as onboarding does
@@ -133,7 +132,7 @@ struct OnboardingTests {
 
     @Test("Onboarding cards linked to deck")
     func onboardingCardsLinkedToDeck() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create deck and cards
@@ -166,7 +165,7 @@ struct OnboardingTests {
 
     @Test("Onboarding save error can be handled")
     func onboardingSaveErrorCanBeHandled() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create deck
@@ -186,7 +185,7 @@ struct OnboardingTests {
 
     @Test("Onboarding error allows retry")
     func onboardingErrorAllowsRetry() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // First attempt

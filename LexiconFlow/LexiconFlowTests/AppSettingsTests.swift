@@ -6,15 +6,14 @@
 //  Covers: Default values, persistence, key consistency
 //
 
-import Testing
 import Foundation
 import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for AppSettings
 @MainActor
 struct AppSettingsTests {
-
     // MARK: - Translation Settings Tests
 
     @Test("AppSettings: translationEnabled default is true")
@@ -70,7 +69,7 @@ struct AppSettingsTests {
         }
 
         // Verify common languages are present
-        let codes = languages.map { $0.code }
+        let codes = languages.map(\.code)
         #expect(codes.contains("en"))
         #expect(codes.contains("es"))
         #expect(codes.contains("fr"))
@@ -79,15 +78,15 @@ struct AppSettingsTests {
         #expect(codes.contains("zh-Hans"))
 
         // Verify required on-device translation languages
-        #expect(codes.contains("ar"))      // Arabic
-        #expect(codes.contains("nl"))      // Dutch
-        #expect(codes.contains("it"))      // Italian
-        #expect(codes.contains("ko"))      // Korean
-        #expect(codes.contains("pl"))      // Polish
-        #expect(codes.contains("pt"))      // Portuguese
-        #expect(codes.contains("ru"))      // Russian
-        #expect(codes.contains("th"))      // Thai
-        #expect(codes.contains("tr"))      // Turkish
+        #expect(codes.contains("ar")) // Arabic
+        #expect(codes.contains("nl")) // Dutch
+        #expect(codes.contains("it")) // Italian
+        #expect(codes.contains("ko")) // Korean
+        #expect(codes.contains("pl")) // Polish
+        #expect(codes.contains("pt")) // Portuguese
+        #expect(codes.contains("ru")) // Russian
+        #expect(codes.contains("th")) // Thai
+        #expect(codes.contains("tr")) // Turkish
     }
 
     // MARK: - Haptic Settings Tests
@@ -308,7 +307,7 @@ struct AppSettingsTests {
 
     @Test("AppSettings: supportedLanguages has all required translation languages")
     func supportedLanguagesHasRequiredLanguages() throws {
-        let codes = AppSettings.supportedLanguages.map { $0.code }
+        let codes = AppSettings.supportedLanguages.map(\.code)
 
         // Verify all languages mentioned in CLAUDE.md are present
         let requiredLanguages = [

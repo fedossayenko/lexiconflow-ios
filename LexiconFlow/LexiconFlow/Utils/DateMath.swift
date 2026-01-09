@@ -18,13 +18,22 @@ import Foundation
 /// **Concurrency**: All methods are pure functions using `Calendar.autoupdatingCurrent`,
 /// which is thread-safe. No actor isolation needed.
 enum DateMath {
-
     /// The user's current calendar with locale settings
     private static var currentCalendar: Calendar {
         var calendar = Calendar.current
         calendar.locale = Locale.autoupdatingCurrent
         calendar.timeZone = TimeZone.autoupdatingCurrent
         return calendar
+    }
+
+    // MARK: - Constants
+
+    /// Time constants for date calculations
+    private enum Constants {
+        /// Number of seconds in a day (24 * 60 * 60)
+        static let secondsPerDay: TimeInterval = 86400
+        /// Small epsilon to avoid end-of-day boundary issues
+        static let dayEpsilon: TimeInterval = 0.001
     }
 
     // MARK: - Day Calculations
@@ -55,10 +64,11 @@ enum DateMath {
         // Add fractional time if less than a full day
         if let hour = components.hour,
            let minute = components.minute,
-           let second = components.second {
+           let second = components.second
+        {
             let fractionalDay = Double(hour) / 24.0 +
-                               Double(minute) / 1440.0 +
-                               Double(second) / 86400.0
+                Double(minute) / 1440.0 +
+                Double(second) / 86400.0
             totalDays += fractionalDay
         }
 
@@ -70,7 +80,7 @@ enum DateMath {
     /// - Parameter date: The past date to calculate from
     /// - Returns: Days elapsed (non-negative)
     static func elapsedDays(since date: Date) -> Double {
-        elapsedDays(from: date, to: Date())
+        self.elapsedDays(from: date, to: Date())
     }
 
     /// Add days to a date, respecting calendar boundaries
@@ -110,7 +120,7 @@ enum DateMath {
     /// - Parameter date: Date to check
     /// - Returns: True if date is within current calendar day
     static func isToday(_ date: Date) -> Bool {
-        Self.currentCalendar.isDateInToday(date)
+        self.currentCalendar.isDateInToday(date)
     }
 
     /// Check if a date is in the past (before today in user's timezone)
@@ -142,7 +152,7 @@ enum DateMath {
         // Determine if date is in the past or future
         let isPast = date < now
         // Compute elapsed days in the correct direction to avoid clamp issues
-        let days = isPast ? elapsedDays(from: date, to: now) : elapsedDays(from: now, to: date)
+        let days = isPast ? self.elapsedDays(from: date, to: now) : self.elapsedDays(from: now, to: date)
 
         // Handle past dates
         if isPast {
@@ -219,7 +229,7 @@ enum DateMath {
     /// - Parameter date: Date to get start of day for
     /// - Returns: Midnight of the given date
     static func startOfDay(for date: Date) -> Date {
-        Self.currentCalendar.startOfDay(for: date)
+        self.currentCalendar.startOfDay(for: date)
     }
 
     /// Get the end of day for a date in user's timezone
@@ -228,7 +238,7 @@ enum DateMath {
     /// - Returns: 23:59:59.999 of the given date
     static func endOfDay(for date: Date) -> Date {
         let start = Self.currentCalendar.startOfDay(for: date)
-        return start.addingTimeInterval(86400 - 0.001)
+        return start.addingTimeInterval(Constants.secondsPerDay - Constants.dayEpsilon)
     }
 
     /// Check if two dates are on the same calendar day
@@ -238,7 +248,7 @@ enum DateMath {
     ///   - date2: Second date
     /// - Returns: True if dates are in same day/month/year
     static func isSameDay(_ date1: Date, _ date2: Date) -> Bool {
-        Self.currentCalendar.isDate(date1, inSameDayAs: date2)
+        self.currentCalendar.isDate(date1, inSameDayAs: date2)
     }
 }
 

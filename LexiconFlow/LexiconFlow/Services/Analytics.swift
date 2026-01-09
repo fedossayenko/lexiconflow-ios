@@ -22,7 +22,6 @@ import OSLog
 ///
 /// **Testing**: Supports dependency injection via `setBackend()` for unit tests.
 enum Analytics {
-
     /// Logger for analytics output
     private static let logger = Logger(subsystem: "com.lexiconflow.analytics", category: "Analytics")
 
@@ -39,7 +38,7 @@ enum Analytics {
 
     /// Reset to the production backend (for test cleanup)
     static func resetToProductionBackend() {
-        Self.backend = ProductionAnalyticsBackend()
+        self.backend = ProductionAnalyticsBackend()
     }
 
     // MARK: - Event Tracking
@@ -53,7 +52,7 @@ enum Analytics {
     ///   - name: Event name (e.g., "card_reviewed", "deck_created")
     ///   - metadata: Optional key-value pairs for additional context
     static func trackEvent(_ name: String, metadata: [String: String] = [:]) {
-        backend.trackEvent(name, metadata: metadata)
+        self.backend.trackEvent(name, metadata: metadata)
     }
 
     /// Track an error or exception
@@ -70,7 +69,7 @@ enum Analytics {
         error: Error,
         metadata: [String: String] = [:]
     ) {
-        backend.trackError(name, error: error, metadata: metadata)
+        self.backend.trackError(name, error: error, metadata: metadata)
     }
 
     /// Track a non-fatal issue
@@ -88,7 +87,7 @@ enum Analytics {
         message: String,
         metadata: [String: String] = [:]
     ) {
-        backend.trackIssue(name, message: message, metadata: metadata)
+        self.backend.trackIssue(name, message: message, metadata: metadata)
     }
 
     // MARK: - User Identification
@@ -99,7 +98,7 @@ enum Analytics {
     ///
     /// - Parameter userId: Unique user identifier
     static func setUserId(_ userId: String) {
-        backend.setUserId(userId)
+        self.backend.setUserId(userId)
     }
 
     /// Set user properties for segmentation
@@ -108,7 +107,7 @@ enum Analytics {
     ///
     /// - Parameter properties: Dictionary of user properties
     static func setUserProperties(_ properties: [String: Any]) {
-        backend.setUserProperties(properties)
+        self.backend.setUserProperties(properties)
     }
 
     // MARK: - Performance Tracking
@@ -126,7 +125,7 @@ enum Analytics {
         duration: TimeInterval,
         metadata: [String: String] = [:]
     ) {
-        backend.trackPerformance(name, duration: duration, metadata: metadata)
+        self.backend.trackPerformance(name, duration: duration, metadata: metadata)
     }
 
     /// Measure and track a block of code's execution time
@@ -142,7 +141,7 @@ enum Analytics {
         let result = try await block()
         let duration = Date().timeIntervalSince(start)
 
-        trackPerformance(name, duration: duration)
+        self.trackPerformance(name, duration: duration)
 
         return result
     }

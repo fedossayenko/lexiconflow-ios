@@ -39,7 +39,7 @@ struct AppearanceSettingsView: View {
                     get: { AppSettings.glassEffectsEnabled },
                     set: { AppSettings.glassEffectsEnabled = $0 }
                 ))
-                    .accessibilityLabel("Enable glass morphism effects")
+                .accessibilityLabel("Enable glass morphism effects")
 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {

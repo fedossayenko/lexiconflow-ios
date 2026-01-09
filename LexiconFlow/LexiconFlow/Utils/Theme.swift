@@ -6,11 +6,11 @@
 //  Includes CEFR color coding, badge styles, and visual constants
 //
 
+import Combine
 import SwiftUI
 
 /// Centralized theme utilities for LexiconFlow
 enum Theme {
-
     // MARK: - CEFR Level Colors
 
     /// Returns the color associated with a CEFR level
@@ -24,10 +24,10 @@ enum Theme {
     /// - Invalid/Unknown: Gray - represents neutrality
     static func cefrColor(for level: String) -> Color {
         switch level.uppercased() {
-        case "A1", "A2": return .green
-        case "B1", "B2": return .blue
-        case "C1", "C2": return .purple
-        default: return .gray
+        case "A1", "A2": .green
+        case "B1", "B2": .blue
+        case "C1", "C2": .purple
+        default: .gray
         }
     }
 
@@ -42,10 +42,10 @@ enum Theme {
     /// - Invalid: 0.15 - minimal for unknown
     static func cefrBadgeOpacity(for level: String) -> Double {
         switch level.uppercased() {
-        case "A1", "A2": return 0.2
-        case "B1", "B2": return 0.3
-        case "C1", "C2": return 0.4
-        default: return 0.15
+        case "A1", "A2": 0.2
+        case "B1", "B2": 0.3
+        case "C1", "C2": 0.4
+        default: 0.15
         }
     }
 
@@ -57,14 +57,12 @@ enum Theme {
     ///   - style: The badge style (compact or standard)
     /// - Returns: A tuple of (color, opacity) for badge styling
     static func cefrBadgeStyle(for level: String, style: BadgeStyle = .standard) -> (color: Color, opacity: Double) {
-        let color = cefrColor(for: level)
-        let opacity: Double
-
-        switch style {
+        let color = self.cefrColor(for: level)
+        let opacity: Double = switch style {
         case .compact:
-            opacity = cefrBadgeOpacity(for: level) * 0.8  // Slightly lighter for compact
+            self.cefrBadgeOpacity(for: level) * 0.8 // Slightly lighter for compact
         case .standard:
-            opacity = cefrBadgeOpacity(for: level)
+            self.cefrBadgeOpacity(for: level)
         }
 
         return (color, opacity)
@@ -72,8 +70,8 @@ enum Theme {
 
     /// Badge style variants
     enum BadgeStyle {
-        case standard    // Full-size badges (e.g., on cards)
-        case compact     // Smaller badges (e.g., in lists)
+        case standard // Full-size badges (e.g., on cards)
+        case compact // Smaller badges (e.g., in lists)
     }
 
     // MARK: - Animation Constants
@@ -126,7 +124,7 @@ enum Theme {
     /// - Returns: A view builder function that creates the badge
     @ViewBuilder
     static func cefrBadge(level: String, compact: Bool = false) -> some View {
-        let style = cefrBadgeStyle(for: level, style: compact ? .compact : .standard)
+        let style = self.cefrBadgeStyle(for: level, style: compact ? .compact : .standard)
 
         HStack(spacing: compact ? 4 : 6) {
             if !compact {
@@ -141,7 +139,7 @@ enum Theme {
         .padding(.vertical, compact ? 2 : 4)
         .background(style.color.opacity(style.opacity))
         .foregroundStyle(style.color)
-        .cornerRadius(compact ? cornerRadiusSmall : cornerRadiusMedium)
+        .cornerRadius(compact ? self.cornerRadiusSmall : self.cornerRadiusMedium)
     }
 }
 
@@ -152,7 +150,7 @@ extension View {
     /// - Parameter level: The CEFR level string
     /// - Returns: The view with CEFR color applied
     func cefrStyled(for level: String) -> some View {
-        self.foregroundStyle(Theme.cefrColor(for: level))
+        foregroundStyle(Theme.cefrColor(for: level))
     }
 
     /// Applies CEFR background styling
@@ -162,6 +160,6 @@ extension View {
     /// - Returns: The view with CEFR background applied
     func cefrBackground(for level: String, style: Theme.BadgeStyle = .standard) -> some View {
         let style = Theme.cefrBadgeStyle(for: level, style: style)
-        return self.background(style.color.opacity(style.opacity))
+        return background(style.color.opacity(style.opacity))
     }
 }

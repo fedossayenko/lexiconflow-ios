@@ -1,0 +1,48 @@
+# Codecov Configuration for LexiconFlow
+#
+# This configuration controls how coverage is reported and enforced
+# in CI/CD pipelines.
+#
+# Usage:
+#   - Coverage reports are generated during CI test runs
+#   - PR comments show coverage diff and trends
+#   - Project coverage target: 80%
+#   - Patch coverage target: 75%
+
+coverage:
+  # Project-level coverage status
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 1%
+        informational: true  # Don't fail CI on coverage drop
+
+    # Patch-level coverage status (per PR)
+    patch:
+      default:
+        target: 75%
+        threshold: 1%
+        informational: true
+
+# Ignore test files and generated code from coverage calculations
+ignore:
+  - "**/*Tests.swift"
+  - "**/TestHelpers.swift"
+  - "**/Mocks/**"
+  - "**/Generated/**"
+
+# PR comment configuration
+comment:
+  layout: "reach,diff,flags,files,footer"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+
+# Flags for different parts of the codebase
+flags:
+  lexiconflow:
+    paths:
+      - LexiconFlow/LexiconFlow/
+    carryforward: true

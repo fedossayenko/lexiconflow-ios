@@ -5,8 +5,8 @@
 //  AI-generated sentence examples for vocabulary learning
 //
 
-import SwiftData
 import Foundation
+import SwiftData
 
 /// An AI-generated context sentence for a flashcard
 ///
@@ -49,12 +49,12 @@ final class GeneratedSentence {
 
     /// Whether this sentence has expired (past TTL)
     var isExpired: Bool {
-        Date() > expiresAt
+        Date() > self.expiresAt
     }
 
     /// Days remaining until expiration (negative if expired)
     var daysUntilExpiration: Int {
-        Calendar.current.dateComponents([.day], from: Date(), to: expiresAt).day ?? 0
+        Calendar.current.dateComponents([.day], from: Date(), to: self.expiresAt).day ?? 0
     }
 
     // MARK: - Initialization
@@ -139,22 +139,22 @@ enum GeneratedSentenceError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .emptyText:
-            return "Sentence text cannot be empty"
-        case .invalidCEFRLevel(let level):
-            return "Invalid CEFR level: \(level). Must be one of: A1, A2, B1, B2, C1, C2"
+            "Sentence text cannot be empty"
+        case let .invalidCEFRLevel(level):
+            "Invalid CEFR level: \(level). Must be one of: A1, A2, B1, B2, C1, C2"
         case .invalidTTL:
-            return "TTL must be positive (greater than 0)"
+            "TTL must be positive (greater than 0)"
         }
     }
 
     var recoverySuggestion: String? {
         switch self {
         case .emptyText:
-            return "Provide a non-empty sentence text"
+            "Provide a non-empty sentence text"
         case .invalidCEFRLevel:
-            return "Use a valid CEFR level (A1, A2, B1, B2, C1, or C2)"
+            "Use a valid CEFR level (A1, A2, B1, B2, C1, or C2)"
         case .invalidTTL:
-            return "Specify a positive TTL value (typically 7 days)"
+            "Specify a positive TTL value (typically 7 days)"
         }
     }
 }
@@ -162,11 +162,16 @@ enum GeneratedSentenceError: LocalizedError, Equatable {
 // MARK: - Sentence Generation Response
 
 /// Response from sentence generation API
-struct SentenceGenerationResponse: Codable, Sendable {
+///
+/// **nonisolated**: This type is explicitly non-isolated to allow JSON decoding
+/// in actor-isolated contexts (e.g., SentenceGenerationService's nonisolated
+/// decoding helper). This aligns with Swift 6 best practices for response types
+/// in actor services per Matt Massicotte and Donny Wals recommendations.
+nonisolated struct SentenceGenerationResponse: Codable, Sendable {
     /// Generated sentences with metadata
     let items: [GeneratedSentenceItem]
 
-    struct GeneratedSentenceItem: Codable, Sendable {
+    nonisolated struct GeneratedSentenceItem: Codable, Sendable {
         /// The generated sentence text
         let sentence: String
 

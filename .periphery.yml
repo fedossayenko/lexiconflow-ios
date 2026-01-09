@@ -1,0 +1,52 @@
+# Periphery Configuration for LexiconFlow
+#
+# Periphery is a tool to identify unused code in Swift projects.
+# It understands Swift 6 concurrency, actor isolation, and Sendable.
+#
+# Usage:
+#   brew install peripheryapp/periphery/periphery
+#   periphery scan --setup .
+#   periphery scan
+
+project: LexiconFlow.xcodeproj
+schemes:
+  - LexiconFlow
+
+targets:
+  - LexiconFlow
+
+# Index store path for analysis
+index_store_path: ~/Library/Developer/Xcode/DerivedData
+
+# Retain public APIs (they may be used by external consumers)
+retain_public: true
+
+# Exclude test files from analysis
+exclude:
+  - "**/*Tests.swift"
+  - "**/TestHelpers.swift"
+  - "**/Mocks/**"
+  - "**/UITests/**"
+
+# Swift 6 strict mode
+strict: true
+
+# Report format
+format: xcode
+
+# Retain specific declarations that are used dynamically
+retain_objc_accessible: true
+retain_objc_annotated: true
+
+# External protocols to retain (e.g., SwiftUI, Combine)
+external_protocols:
+  - View
+  - Observable
+  - Sendable
+  - Actor
+  - MainActor
+  - Identifiable
+  - Codable
+  - Equatable
+  - Hashable
+  - Comparable

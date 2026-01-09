@@ -9,14 +9,13 @@
 //  Full UI behavior testing requires UI tests or snapshot tests.
 //
 
-import Testing
-import SwiftUI
 import SwiftData
+import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 @MainActor
 struct MainTabViewTests {
-
     // MARK: - Test Fixtures
 
     private func createTestContainer() -> ModelContainer {
@@ -46,7 +45,7 @@ struct MainTabViewTests {
 
     @Test("MainTabView can be created")
     func mainTabViewCreation() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let view = MainTabView()
 
         // Verify view can be created (smoke test)
@@ -124,12 +123,12 @@ struct MainTabViewTests {
 
     @Test("Study tab displays due count badge")
     func studyTabShowsBadge() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create a due card
         let now = Date()
-        createTestCard(in: context, word: "DueCard", dueDate: now, state: .review)
+        self.createTestCard(in: context, word: "DueCard", dueDate: now, state: .review)
 
         try context.save()
 
@@ -142,11 +141,11 @@ struct MainTabViewTests {
 
     @Test("Study tab badge is zero when no cards due")
     func studyTabBadgeZeroWhenNoDue() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create only new cards (not due)
-        createTestCard(in: context, word: "NewCard", state: .new)
+        self.createTestCard(in: context, word: "NewCard", state: .new)
 
         try context.save()
 
@@ -169,12 +168,12 @@ struct MainTabViewTests {
 
     @Test("Due count refreshes on study tab selection")
     func dueCountRefreshesOnStudyTabSelection() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create a due card
         let now = Date()
-        createTestCard(in: context, word: "DueCard", dueDate: now, state: .review)
+        self.createTestCard(in: context, word: "DueCard", dueDate: now, state: .review)
 
         try context.save()
 
@@ -198,7 +197,7 @@ struct MainTabViewTests {
 
     @Test("View creation with empty database doesn't crash")
     func viewCreationWithEmptyDatabase() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let view = MainTabView()
 
         // Verify view can be created with empty database
@@ -207,12 +206,12 @@ struct MainTabViewTests {
 
     @Test("View creation with cards doesn't crash")
     func viewCreationWithCards() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create some cards
-        createTestCard(in: context, word: "Card1", state: .review)
-        createTestCard(in: context, word: "Card2", state: .learning)
+        self.createTestCard(in: context, word: "Card1", state: .review)
+        self.createTestCard(in: context, word: "Card2", state: .learning)
 
         try context.save()
 
@@ -285,12 +284,12 @@ struct MainTabViewTests {
 
     @Test("Study tab accessibility label includes due count")
     func studyTabAccessibilityLabelWithDue() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create due cards
         let now = Date()
-        createTestCard(in: context, word: "DueCard", dueDate: now, state: .review)
+        self.createTestCard(in: context, word: "DueCard", dueDate: now, state: .review)
 
         try context.save()
 

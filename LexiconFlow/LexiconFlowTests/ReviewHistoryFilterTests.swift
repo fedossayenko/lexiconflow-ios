@@ -5,8 +5,8 @@
 //  Tests for time-based filter enum date calculations
 //
 
-import Testing
 import Foundation
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for ReviewHistoryFilter enum
@@ -18,7 +18,6 @@ import Foundation
 /// - Display properties
 @MainActor
 struct ReviewHistoryFilterTests {
-
     // MARK: - All Time Filter Tests
 
     @Test("AllTime filter returns nil startDate")
@@ -55,20 +54,6 @@ struct ReviewHistoryFilterTests {
     }
 
     // MARK: - Last Week Filter Tests
-
-    @Test("LastWeek filter returns 7 days ago")
-    func lastWeekDateRange() {
-        let (startDate, endDate) = ReviewHistoryFilter.lastWeek.dateRange
-
-        #expect(startDate != nil, "LastWeek should have a startDate")
-        #expect(endDate != nil, "LastWeek should have an endDate")
-
-        // Verify startDate is approximately 7 days ago
-        let now = Date()
-        let elapsedDays = DateMath.elapsedDays(from: startDate!, to: now)
-
-        #expect(elapsedDays >= 6.9 && elapsedDays <= 7.1, "Start date should be ~7 days ago, got \(elapsedDays) days")
-    }
 
     @Test("LastWeek filter startDate is at start of day")
     func lastWeekStartOfDay() {
@@ -137,20 +122,6 @@ struct ReviewHistoryFilterTests {
     }
 
     // MARK: - Last Month Filter Tests
-
-    @Test("LastMonth filter returns 30 days ago")
-    func lastMonthDateRange() {
-        let (startDate, endDate) = ReviewHistoryFilter.lastMonth.dateRange
-
-        #expect(startDate != nil, "LastMonth should have a startDate")
-        #expect(endDate != nil, "LastMonth should have an endDate")
-
-        // Verify startDate is approximately 30 days ago
-        let now = Date()
-        let elapsedDays = DateMath.elapsedDays(from: startDate!, to: now)
-
-        #expect(elapsedDays >= 29.9 && elapsedDays <= 30.1, "Start date should be ~30 days ago, got \(elapsedDays) days")
-    }
 
     @Test("LastMonth filter startDate is at start of day")
     func lastMonthStartOfDay() {

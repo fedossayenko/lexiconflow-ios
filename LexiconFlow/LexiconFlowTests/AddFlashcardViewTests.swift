@@ -13,16 +13,15 @@
 //  These tests verify the saveCard() translation flow through ModelContext changes.
 //
 
-import Testing
-import SwiftUI
-import SwiftData
 import OSLog
+import SwiftData
+import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for AddFlashcardView translation integration
 @MainActor
 struct AddFlashcardViewTests {
-
     // MARK: - Test Fixtures
 
     private func createTestContainer() -> ModelContainer {
@@ -74,9 +73,9 @@ struct AddFlashcardViewTests {
 
     @Test("AddFlashcardView can be created with deck")
     func addFlashcardViewCreation() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         let view = AddFlashcardView(deck: deck)
 
@@ -86,9 +85,9 @@ struct AddFlashcardViewTests {
 
     @Test("AddFlashcardView deck is Bindable")
     func addFlashcardViewUsesBindable() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         let view = AddFlashcardView(deck: deck)
 
@@ -100,9 +99,9 @@ struct AddFlashcardViewTests {
 
     @Test("Card save creates Flashcard with correct fields")
     func cardSaveCreatesFlashcard() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         let flashcard = try saveCard(
             word: "hello",
@@ -118,9 +117,9 @@ struct AddFlashcardViewTests {
 
     @Test("Card save creates FSRSState with defaults")
     func cardSaveCreatesFSRSState() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         let flashcard = try saveCard(
             word: "test",
@@ -141,9 +140,9 @@ struct AddFlashcardViewTests {
 
     @Test("Card with phonetic saves correctly")
     func cardWithPhoneticSaves() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         let flashcard = try saveCard(
             word: "café",
@@ -158,9 +157,9 @@ struct AddFlashcardViewTests {
 
     @Test("Card with nil phonetic saves correctly")
     func cardWithNilPhoneticSaves() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         let flashcard = try saveCard(
             word: "test",
@@ -175,7 +174,7 @@ struct AddFlashcardViewTests {
 
     @Test("Card without deck saves correctly")
     func cardWithoutDeckSaves() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let flashcard = try saveCard(
@@ -192,9 +191,9 @@ struct AddFlashcardViewTests {
 
     @Test("Translation fields are nil when translation disabled")
     func translationFieldsNilWhenDisabled() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         // Ensure translation is disabled
         AppSettings.isTranslationEnabled = false
@@ -212,9 +211,9 @@ struct AddFlashcardViewTests {
 
     @Test("Translation source and target languages match AppSettings")
     func translationLanguagesMatchSettings() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         // Set translation languages
         AppSettings.translationSourceLanguage = "en"
@@ -238,9 +237,9 @@ struct AddFlashcardViewTests {
 
     @Test("Multiple model context saves are idempotent")
     func multipleSavesAreIdempotent() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         let flashcard = try saveCard(
             word: "idempotent",
@@ -262,9 +261,9 @@ struct AddFlashcardViewTests {
 
     @Test("FSRSState is properly linked to Flashcard")
     func fsrsStateLinkedToFlashcard() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         let flashcard = try saveCard(
             word: "linked",
@@ -279,9 +278,9 @@ struct AddFlashcardViewTests {
 
     @Test("Deleting Flashcard cascades to FSRSState")
     func deleteFlashcardCascadesToState() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         let flashcard = try saveCard(
             word: "cascade",
@@ -307,9 +306,9 @@ struct AddFlashcardViewTests {
 
     @Test("New card has due date set to now")
     func newCardDueDateIsNow() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         let beforeSave = Date()
         let flashcard = try saveCard(
@@ -334,9 +333,9 @@ struct AddFlashcardViewTests {
 
     @Test("Card appears in deck cards collection")
     func cardInDeckCollection() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         let flashcard = try saveCard(
             word: "member",
@@ -351,13 +350,13 @@ struct AddFlashcardViewTests {
 
     @Test("Multiple cards can be added to same deck")
     func multipleCardsInDeck() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
-        try saveCard(word: "card1", definition: "def1", deck: deck, context: context)
-        try saveCard(word: "card2", definition: "def2", deck: deck, context: context)
-        try saveCard(word: "card3", definition: "def3", deck: deck, context: context)
+        try self.saveCard(word: "card1", definition: "def1", deck: deck, context: context)
+        try self.saveCard(word: "card2", definition: "def2", deck: deck, context: context)
+        try self.saveCard(word: "card3", definition: "def3", deck: deck, context: context)
 
         try context.save()
 
@@ -368,9 +367,9 @@ struct AddFlashcardViewTests {
 
     @Test("Card with very long word saves correctly")
     func cardWithVeryLongWord() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         let longWord = String(repeating: "a", count: 500)
         let flashcard = try saveCard(
@@ -385,9 +384,9 @@ struct AddFlashcardViewTests {
 
     @Test("Card with very long definition saves correctly")
     func cardWithVeryLongDefinition() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         let longDefinition = String(repeating: "word ", count: 1000)
         let flashcard = try saveCard(
@@ -402,9 +401,9 @@ struct AddFlashcardViewTests {
 
     @Test("Card with unicode word saves correctly")
     func cardWithUnicodeWord() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         let flashcard = try saveCard(
             word: "日本語",
@@ -418,9 +417,9 @@ struct AddFlashcardViewTests {
 
     @Test("Card with emoji saves correctly")
     func cardWithEmoji() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         let flashcard = try saveCard(
             word: "café ☕️",
@@ -435,9 +434,9 @@ struct AddFlashcardViewTests {
 
     @Test("Card with RTL language word saves correctly")
     func cardWithRTLWord() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         let flashcard = try saveCard(
             word: "مرحبا",
@@ -451,9 +450,9 @@ struct AddFlashcardViewTests {
 
     @Test("Card with special characters in definition saves correctly")
     func cardWithSpecialCharacters() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         let flashcard = try saveCard(
             word: "test",
@@ -469,9 +468,9 @@ struct AddFlashcardViewTests {
 
     @Test("Card with newlines in definition saves correctly")
     func cardWithNewlines() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         let flashcard = try saveCard(
             word: "multiline",
@@ -485,9 +484,9 @@ struct AddFlashcardViewTests {
 
     @Test("Multiple rapid saves don't cause conflicts")
     func multipleRapidSaves() throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let deck = createTestDeck(in: context)
+        let deck = self.createTestDeck(in: context)
 
         // Simulate rapid saves
         let card1 = try saveCard(word: "rapid1", definition: "def1", deck: deck, context: context)

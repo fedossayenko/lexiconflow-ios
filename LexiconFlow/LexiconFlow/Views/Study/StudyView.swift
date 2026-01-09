@@ -5,9 +5,9 @@
 //  Deck-centric study entry point with multi-deck selection
 //
 
-import SwiftUI
-import SwiftData
 import OSLog
+import SwiftData
+import SwiftUI
 
 struct StudyView: View {
     private static let logger = Logger(subsystem: "com.lexiconflow.study", category: "StudyView")
@@ -27,31 +27,31 @@ struct StudyView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if isSessionActive {
-                    StudySessionView(mode: studyMode, decks: selectedDecks) {
-                        sessionComplete()
+                if self.isSessionActive {
+                    StudySessionView(mode: self.studyMode, decks: self.selectedDecks) {
+                        self.sessionComplete()
                     }
                 } else if AppSettings.hasSelectedDecks {
-                    studyReadyView
+                    self.studyReadyView
                 } else {
-                    noDecksSelectedView
+                    self.noDecksSelectedView
                 }
             }
             .navigationTitle("Study")
-            .sheet(isPresented: $showDeckSelection, onDismiss: {
+            .sheet(isPresented: self.$showDeckSelection, onDismiss: {
                 // Force refresh when deck selection sheet closes
                 // This ensures card counts update to reflect new selection
-                refreshState()
+                self.refreshState()
             }) {
                 DeckSelectionView()
             }
             .onAppear {
-                refreshState()
+                self.refreshState()
             }
-            .onChange(of: studyMode) { _, _ in
+            .onChange(of: self.studyMode) { _, _ in
                 // When switching modes, refresh the entire state including sessionCards
                 // This ensures the new mode fetches its own cards
-                refreshState()
+                self.refreshState()
             }
         }
     }
@@ -65,7 +65,7 @@ struct StudyView: View {
             Text("Select the decks you want to study from")
         } actions: {
             Button("Select Decks") {
-                showDeckSelection = true
+                self.showDeckSelection = true
             }
             .buttonStyle(.borderedProminent)
             .accessibilityLabel("Select decks to study from")
@@ -78,7 +78,7 @@ struct StudyView: View {
         ScrollView {
             VStack(spacing: 24) {
                 // Deck selection summary
-                deckSelectionSummary
+                self.deckSelectionSummary
 
                 // Study mode picker
                 VStack(spacing: 12) {
@@ -86,7 +86,7 @@ struct StudyView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
-                    Picker("Study Mode", selection: $studyMode) {
+                    Picker("Study Mode", selection: self.$studyMode) {
                         Text("Learn New").tag(StudyMode.learning)
                         Text("Scheduled").tag(StudyMode.scheduled)
                         Text("Cram").tag(StudyMode.cram)
@@ -98,32 +98,32 @@ struct StudyView: View {
 
                 // Cards count display
                 VStack(spacing: 8) {
-                    Image(systemName: countIcon)
+                    Image(systemName: self.countIcon)
                         .font(.system(size: 50))
-                        .foregroundStyle(countColor)
+                        .foregroundStyle(self.countColor)
 
-                    Text(countTitle)
+                    Text(self.countTitle)
                         .font(.title2)
                         .fontWeight(.semibold)
 
-                    Text(countSubtitle)
+                    Text(self.countSubtitle)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
                 .padding(.vertical)
 
                 // Start button
-                Button(action: startSession) {
-                    Text(startButtonTitle)
+                Button(action: self.startSession) {
+                    Text(self.startButtonTitle)
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .padding(.horizontal)
-                .disabled(sessionCards.isEmpty)
-                .accessibilityLabel(startButtonTitle)
-                .accessibilityHint(sessionCards.isEmpty ? "No cards available" : "Begin study session")
+                .disabled(self.sessionCards.isEmpty)
+                .accessibilityLabel(self.startButtonTitle)
+                .accessibilityHint(self.sessionCards.isEmpty ? "No cards available" : "Begin study session")
 
                 Spacer()
             }
@@ -134,14 +134,14 @@ struct StudyView: View {
     // MARK: - Deck Selection Summary
 
     private var deckSelectionSummary: some View {
-        Button(action: { showDeckSelection = true }) {
+        Button(action: { self.showDeckSelection = true }) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Text("Selected Decks")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Text("\(selectedDecks.count)")
+                    Text("\(self.selectedDecks.count)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -150,7 +150,7 @@ struct StudyView: View {
                     GridItem(.flexible()),
                     GridItem(.flexible())
                 ], spacing: 8) {
-                    ForEach(selectedDecks.prefix(4), id: \.id) { deck in
+                    ForEach(self.selectedDecks.prefix(4), id: \.id) { deck in
                         HStack(spacing: 6) {
                             Image(systemName: deck.icon ?? "folder.fill")
                                 .font(.caption)
@@ -164,8 +164,8 @@ struct StudyView: View {
                         .background(.ultraThinMaterial, in: .rect(cornerRadius: 8))
                     }
 
-                    if selectedDecks.count > 4 {
-                        Text("+\(selectedDecks.count - 4) more")
+                    if self.selectedDecks.count > 4 {
+                        Text("+\(self.selectedDecks.count - 4) more")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -176,57 +176,57 @@ struct StudyView: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Selected decks: \(selectedDecks.count). Tap to change selection")
+        .accessibilityLabel("Selected decks: \(self.selectedDecks.count). Tap to change selection")
     }
 
     // MARK: - Computed Properties
 
     private var countTitle: String {
-        switch studyMode {
+        switch self.studyMode {
         case .learning:
-            return "\(newCount) new"
+            "\(self.newCount) new"
         case .scheduled:
-            return "\(dueCount) due"
+            "\(self.dueCount) due"
         case .cram:
-            return "\(totalCount) total"
+            "\(self.totalCount) total"
         }
     }
 
     private var countSubtitle: String {
-        switch studyMode {
+        switch self.studyMode {
         case .learning:
-            return "cards to learn"
+            "cards to learn"
         case .scheduled:
-            return "cards for review"
+            "cards for review"
         case .cram:
-            return "cards to practice"
+            "cards to practice"
         }
     }
 
     private var countIcon: String {
-        switch studyMode {
+        switch self.studyMode {
         case .learning:
-            return "plus.circle.fill"
+            "plus.circle.fill"
         case .scheduled:
-            return "calendar.badge.clock"
+            "calendar.badge.clock"
         case .cram:
-            return "repeat"
+            "repeat"
         }
     }
 
     private var countColor: Color {
-        switch studyMode {
+        switch self.studyMode {
         case .learning:
-            return .green
+            .green
         case .scheduled:
-            return dueCount > 0 ? .orange : .gray
+            self.dueCount > 0 ? .orange : .gray
         case .cram:
-            return .purple
+            .purple
         }
     }
 
     private var startButtonTitle: String {
-        if sessionCards.isEmpty {
+        if self.sessionCards.isEmpty {
             return "No Cards Available"
         }
         return "Start Studying"
@@ -237,38 +237,38 @@ struct StudyView: View {
     private func refreshState() {
         // Filter selected decks
         let selectedIDs = AppSettings.selectedDeckIDs
-        selectedDecks = decks.filter { selectedIDs.contains($0.id) }
+        self.selectedDecks = self.decks.filter { selectedIDs.contains($0.id) }
 
         // Validate that selected decks still exist
-        let validDeckIDs = Set(selectedDecks.map { $0.id })
+        let validDeckIDs = Set(selectedDecks.map(\.id))
         if validDeckIDs != selectedIDs {
             Self.logger.warning("Some selected decks no longer exist, updating selection")
             AppSettings.selectedDeckIDs = validDeckIDs
         }
 
         // Refresh counts
-        refreshCounts()
+        self.refreshCounts()
 
         // Pre-fetch session cards
         let scheduler = Scheduler(modelContext: modelContext)
-        sessionCards = scheduler.fetchCards(for: selectedDecks, mode: studyMode, limit: AppSettings.studyLimit)
+        self.sessionCards = scheduler.fetchCards(for: self.selectedDecks, mode: self.studyMode, limit: AppSettings.studyLimit)
     }
 
     private func refreshCounts() {
         let scheduler = Scheduler(modelContext: modelContext)
-        dueCount = scheduler.dueCardCount(for: selectedDecks)
-        newCount = scheduler.newCardCount(for: selectedDecks)
-        totalCount = scheduler.totalCardCount(for: selectedDecks)
+        self.dueCount = scheduler.dueCardCount(for: self.selectedDecks)
+        self.newCount = scheduler.newCardCount(for: self.selectedDecks)
+        self.totalCount = scheduler.totalCardCount(for: self.selectedDecks)
     }
 
     private func startSession() {
-        guard !sessionCards.isEmpty else { return }
-        isSessionActive = true
+        guard !self.sessionCards.isEmpty else { return }
+        self.isSessionActive = true
     }
 
     private func sessionComplete() {
-        isSessionActive = false
-        refreshState()
+        self.isSessionActive = false
+        self.refreshState()
     }
 }
 

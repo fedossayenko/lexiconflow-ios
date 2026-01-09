@@ -14,19 +14,18 @@
 //  These tests cover testable logic without network mocking
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for SentenceGenerationService
 @MainActor
 struct SentenceGenerationServiceTests {
-
     // MARK: - Singleton Tests
 
     @Test("SentenceGenerationService singleton is consistent")
-    func testSingletonConsistency() {
+    func singletonConsistency() {
         let service1 = SentenceGenerationService.shared
         let service2 = SentenceGenerationService.shared
         // Actor singleton - identity check through behavior
@@ -36,7 +35,7 @@ struct SentenceGenerationServiceTests {
     // MARK: - Configuration Tests
 
     @Test("getAPIKey returns empty string when not set")
-    func testGetAPIKeyNotSet() throws {
+    func getAPIKeyNotSet() throws {
         // Clear any existing API key
         try KeychainManager.deleteAPIKey()
 
@@ -59,7 +58,7 @@ struct SentenceGenerationServiceTests {
     // MARK: - JSON Extraction Tests
 
     @Test("extractJSON from markdown code block with json specifier")
-    func testExtractJSONMarkdownWithSpecifier() {
+    func extractJSONMarkdownWithSpecifier() {
         let input = """
         Some text before
 
@@ -79,8 +78,8 @@ struct SentenceGenerationServiceTests {
 
         if let jsonStart = trimmed.range(of: "```json", options: .caseInsensitive) {
             let afterStart = jsonStart.upperBound
-            if let jsonEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
-                let json = String(trimmed[afterStart..<jsonEnd.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+            if let jsonEnd = trimmed.range(of: "```", range: afterStart ..< trimmed.endIndex) {
+                let json = String(trimmed[afterStart ..< jsonEnd.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
                 #expect(json.contains("items"))
                 #expect(json.contains("sentence"))
             } else {
@@ -92,7 +91,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("extractJSON from generic code block")
-    func testExtractJSONGenericCodeBlock() {
+    func extractJSONGenericCodeBlock() {
         let input = """
         Here's the response:
 
@@ -112,8 +111,8 @@ struct SentenceGenerationServiceTests {
 
         if let codeStart = trimmed.range(of: "```", options: .caseInsensitive) {
             let afterStart = codeStart.upperBound
-            if let codeEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
-                let json = String(trimmed[afterStart..<codeEnd.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+            if let codeEnd = trimmed.range(of: "```", range: afterStart ..< trimmed.endIndex) {
+                let json = String(trimmed[afterStart ..< codeEnd.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
                 #expect(json.contains("items"))
             } else {
                 Issue.record("Code end marker not found")
@@ -124,7 +123,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("extractJSON from plain JSON with braces")
-    func testExtractJSONPlainBraces() {
+    func extractJSONPlainBraces() {
         let input = """
         {"items": [{"sentence": "Direct JSON", "cefr_level": "A2"}]}
         """
@@ -132,8 +131,9 @@ struct SentenceGenerationServiceTests {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if let firstBrace = trimmed.firstIndex(of: "{"),
-           let lastBrace = trimmed.lastIndex(of: "}") {
-            let json = String(trimmed[firstBrace...lastBrace])
+           let lastBrace = trimmed.lastIndex(of: "}")
+        {
+            let json = String(trimmed[firstBrace ... lastBrace])
             #expect(json.contains("items"))
         } else {
             Issue.record("Braces not found")
@@ -141,7 +141,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("extractJSON handles malformed JSON without crashing")
-    func testExtractJSONMalformed() {
+    func extractJSONMalformed() {
         let input = """
         ```json
         {invalid json here}
@@ -152,8 +152,8 @@ struct SentenceGenerationServiceTests {
 
         if let jsonStart = trimmed.range(of: "```json", options: .caseInsensitive) {
             let afterStart = jsonStart.upperBound
-            if let jsonEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
-                let json = String(trimmed[afterStart..<jsonEnd.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+            if let jsonEnd = trimmed.range(of: "```", range: afterStart ..< trimmed.endIndex) {
+                let json = String(trimmed[afterStart ..< jsonEnd.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
                 // Should extract the malformed content, validation happens during decoding
                 #expect(!json.isEmpty)
             } else {
@@ -165,7 +165,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("extractJSON returns original text when no patterns match")
-    func testExtractJSONNoPatternMatch() {
+    func extractJSONNoPatternMatch() {
         let input = "Just plain text with no JSON or code blocks"
 
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -181,7 +181,7 @@ struct SentenceGenerationServiceTests {
     // MARK: - Static Fallback Tests
 
     @Test("getStaticFallbackSentences returns array for known word")
-    func testGetStaticFallbackKnownWord() async {
+    func getStaticFallbackKnownWord() async {
         let service = SentenceGenerationService.shared
 
         let fallbacks = await service.getStaticFallbackSentences(for: "the")
@@ -192,7 +192,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("getStaticFallbackSentences returns default for unknown word")
-    func testGetStaticFallbackUnknownWord() async {
+    func getStaticFallbackUnknownWord() async {
         let service = SentenceGenerationService.shared
 
         let fallbacks = await service.getStaticFallbackSentences(for: "xyzabc123")
@@ -203,7 +203,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("getStaticFallbackSentences is case insensitive")
-    func testGetStaticFallbackCaseInsensitive() async {
+    func getStaticFallbackCaseInsensitive() async {
         let service = SentenceGenerationService.shared
 
         let lowercase = await service.getStaticFallbackSentences(for: "the")
@@ -215,84 +215,84 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("getStaticFallbackSentences for 'be' returns correct sentences")
-    func testGetStaticFallbackBeWord() async {
+    func getStaticFallbackBeWord() async {
         let service = SentenceGenerationService.shared
 
         let fallbacks = await service.getStaticFallbackSentences(for: "be")
 
         #expect(fallbacks.count == 3)
-        let sentences = fallbacks.map { $0.sentence }
+        let sentences = fallbacks.map(\.sentence)
         #expect(sentences.contains("I want to be a doctor."))
     }
 
     @Test("getStaticFallbackSentences for 'to' returns correct sentences")
-    func testGetStaticFallbackToWord() async {
+    func getStaticFallbackToWord() async {
         let service = SentenceGenerationService.shared
 
         let fallbacks = await service.getStaticFallbackSentences(for: "to")
 
         #expect(fallbacks.count == 3)
-        let sentences = fallbacks.map { $0.sentence }
+        let sentences = fallbacks.map(\.sentence)
         #expect(sentences.contains("I need to go to the store."))
     }
 
     @Test("getStaticFallbackSentences for 'of' returns correct sentences")
-    func testGetStaticFallbackOfWord() async {
+    func getStaticFallbackOfWord() async {
         let service = SentenceGenerationService.shared
 
         let fallbacks = await service.getStaticFallbackSentences(for: "of")
 
         #expect(fallbacks.count == 3)
-        let sentences = fallbacks.map { $0.sentence }
+        let sentences = fallbacks.map(\.sentence)
         #expect(sentences.contains("A cup of coffee."))
     }
 
     // MARK: - CEFR Level Estimation Tests
 
     @Test("estimateCEFRLevel returns A1 for 0-8 words")
-    func testEstimateCEFRLevelA1() {
+    func estimateCEFRLevelA1() {
         let sentence = "The cat is on the mat."
         let wordCount = sentence.split(separator: " ").count
         #expect(wordCount >= 0 && wordCount <= 8)
     }
 
     @Test("estimateCEFRLevel returns A2 for 9-15 words")
-    func testEstimateCEFRLevelA2() {
+    func estimateCEFRLevelA2() {
         let sentence = "This is a longer sentence that has more words than before."
         let wordCount = sentence.split(separator: " ").count
         #expect(wordCount >= 9 && wordCount <= 15)
     }
 
     @Test("estimateCEFRLevel returns B1 for 16-25 words")
-    func testEstimateCEFRLevelB1() {
+    func estimateCEFRLevelB1() {
         let sentence = "Here is a sentence that is definitely getting quite long with many words added to it for testing purposes."
         let wordCount = sentence.split(separator: " ").count
         #expect(wordCount >= 16 && wordCount <= 25)
     }
 
     @Test("estimateCEFRLevel returns B2 for 26-35 words")
-    func testEstimateCEFRLevelB2() {
+    func estimateCEFRLevelB2() {
         let sentence = "This is an exceptionally long sentence that contains a substantial number of words, designed specifically to test the upper boundaries of the word counting logic in the CEFR level estimation algorithm."
         let wordCount = sentence.split(separator: " ").count
         #expect(wordCount >= 26 && wordCount <= 35)
     }
 
     @Test("estimateCEFRLevel returns C1 for 36+ words")
-    func testEstimateCEFRLevelC1() {
+    func estimateCEFRLevelC1() {
         let sentence = "This is an extraordinarily lengthy sentence that contains an immense number of words, deliberately constructed to exceed the maximum word count threshold and thereby test the highest level of the CEFR classification system, ensuring that even the most verbose inputs are properly categorized."
         let wordCount = sentence.split(separator: " ").count
         #expect(wordCount >= 36)
     }
 
     @Test("estimateCEFRLevel handles empty sentence")
-    func testEstimateCEFRLevelEmpty() {
+    func estimateCEFRLevelEmpty() {
         let sentence = ""
         let wordCount = sentence.split(separator: " ").count
         #expect(wordCount == 0)
     }
 
     @Test("estimateCEFRLevel handles single word")
-    func testEstimateCEFRLevelSingleWord() {
+    func estimateCEFRLevelSingleWord() {
         let sentence = "Hello"
         let wordCount = sentence.split(separator: " ").count
         #expect(wordCount == 1)
@@ -301,7 +301,7 @@ struct SentenceGenerationServiceTests {
     // MARK: - Error Type Tests
 
     @Test("SentenceGenerationError has correct error descriptions")
-    func testErrorDescriptions() {
+    func errorDescriptions() {
         let errors: [SentenceGenerationError] = [
             .missingAPIKey,
             .invalidConfiguration,
@@ -322,7 +322,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("SentenceGenerationError missingAPIKey has recovery suggestion")
-    func testMissingAPIKeyRecovery() {
+    func missingAPIKeyRecovery() {
         let error = SentenceGenerationError.missingAPIKey
         let suggestion = error.recoverySuggestion
         #expect(suggestion != nil)
@@ -330,7 +330,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("SentenceGenerationError rateLimit has recovery suggestion")
-    func testRateLimitRecovery() {
+    func rateLimitRecovery() {
         let error = SentenceGenerationError.rateLimit
         let suggestion = error.recoverySuggestion
         #expect(suggestion != nil)
@@ -338,7 +338,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("SentenceGenerationError offline has recovery suggestion")
-    func testOfflineRecovery() {
+    func offlineRecovery() {
         let error = SentenceGenerationError.offline
         let suggestion = error.recoverySuggestion
         #expect(suggestion != nil)
@@ -346,21 +346,21 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("SentenceGenerationError clientError includes status code")
-    func testClientErrorStatusCode() {
+    func clientErrorStatusCode() {
         let error = SentenceGenerationError.clientError(statusCode: 404, message: "Not found")
         let description = error.errorDescription
         #expect(description!.contains("404"))
     }
 
     @Test("SentenceGenerationError serverError includes status code")
-    func testServerErrorStatusCode() {
+    func serverErrorStatusCode() {
         let error = SentenceGenerationError.serverError(statusCode: 503, message: "Service unavailable")
         let description = error.errorDescription
         #expect(description!.contains("503"))
     }
 
     @Test("SentenceGenerationError isRetryable for retryable errors")
-    func testIsRetryableTrue() {
+    func isRetryableTrue() {
         let retryableErrors: [SentenceGenerationError] = [
             .rateLimit,
             .serverError(statusCode: 500, message: "Internal error"),
@@ -373,7 +373,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("SentenceGenerationError isRetryable false for non-retryable errors")
-    func testIsRetryableFalse() {
+    func isRetryableFalse() {
         let nonRetryableErrors: [SentenceGenerationError] = [
             .missingAPIKey,
             .invalidConfiguration,
@@ -391,7 +391,7 @@ struct SentenceGenerationServiceTests {
     // MARK: - DTO Tests
 
     @Test("SentenceGenerationResponse is Sendable")
-    func testResponseSendable() {
+    func responseSendable() {
         // This test verifies that the type can be used in concurrent contexts
         // If it compiles, the test passes
         let response = SentenceGenerationResponse(items: [])
@@ -399,7 +399,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("SentenceGenerationResponse decodes correctly")
-    func testResponseDecoding() throws {
+    func responseDecoding() throws {
         let json = """
         {
           "items": [
@@ -420,7 +420,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("SentenceGenerationResponse handles empty items array")
-    func testResponseEmptyItems() throws {
+    func responseEmptyItems() throws {
         let json = """
         {
           "items": []
@@ -434,7 +434,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("SentenceGenerationResponse handles snake_case keys")
-    func testResponseSnakeCase() throws {
+    func responseSnakeCase() throws {
         let json = """
         {
           "items": [
@@ -456,7 +456,7 @@ struct SentenceGenerationServiceTests {
     // MARK: - Batch Generation DTO Tests
 
     @Test("CardData struct is Sendable")
-    func testCardDataSendable() {
+    func cardDataSendable() {
         let cardData = SentenceGenerationService.CardData(
             id: UUID(),
             word: "test",
@@ -468,7 +468,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("SentenceGenerationResult struct is Sendable")
-    func testResultSendable() {
+    func resultSendable() {
         let result = SentenceGenerationService.SentenceGenerationResult(
             cardId: UUID(),
             cardWord: "test",
@@ -479,7 +479,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("SuccessfulGeneration struct is Sendable")
-    func testSuccessfulGenerationSendable() {
+    func successfulGenerationSendable() {
         let generation = SentenceGenerationService.SuccessfulGeneration(
             cardId: UUID(),
             cardWord: "test",
@@ -491,7 +491,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("SentenceBatchResult isSuccess returns true for all success")
-    func testBatchResultIsSuccessTrue() {
+    func batchResultIsSuccessTrue() {
         let result = SentenceGenerationService.SentenceBatchResult(
             successCount: 5,
             failedCount: 0,
@@ -504,7 +504,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("SentenceBatchResult isSuccess returns false with failures")
-    func testBatchResultIsSuccessFalse() {
+    func batchResultIsSuccessFalse() {
         let result = SentenceGenerationService.SentenceBatchResult(
             successCount: 3,
             failedCount: 2,
@@ -517,7 +517,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("SentenceBatchResult isSuccess returns false with no successes")
-    func testBatchResultIsSuccessNoSuccesses() {
+    func batchResultIsSuccessNoSuccesses() {
         let result = SentenceGenerationService.SentenceBatchResult(
             successCount: 0,
             failedCount: 0,
@@ -530,7 +530,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("BatchGenerationProgress struct is Sendable")
-    func testProgressSendable() {
+    func progressSendable() {
         let progress = SentenceGenerationService.BatchGenerationProgress(
             current: 2,
             total: 10,
@@ -542,7 +542,7 @@ struct SentenceGenerationServiceTests {
     // MARK: - Actor Isolation Tests
 
     @Test("SentenceGenerationService is actor-isolated")
-    func testActorIsolation() async {
+    func actorIsolation() async {
         // This test verifies the service is an actor
         // If it compiles and executes without crashing, isolation is working
         let service = SentenceGenerationService.shared
@@ -552,7 +552,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("Concurrent setLanguages calls are safe")
-    func testConcurrentSetLanguages() async {
+    func concurrentSetLanguages() async {
         let service = SentenceGenerationService.shared
 
         // This should not crash or cause data races
@@ -570,7 +570,7 @@ struct SentenceGenerationServiceTests {
     // MARK: - Unicode and Edge Cases
 
     @Test("getStaticFallbackSentences handles emoji in word")
-    func testGetStaticFallbackEmojiWord() async {
+    func getStaticFallbackEmojiWord() async {
         let service = SentenceGenerationService.shared
 
         let fallbacks = await service.getStaticFallbackSentences(for: "hello")
@@ -580,7 +580,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("getStaticFallbackSentences handles empty string")
-    func testGetStaticFallbackEmptyString() async {
+    func getStaticFallbackEmptyString() async {
         let service = SentenceGenerationService.shared
 
         let fallbacks = await service.getStaticFallbackSentences(for: "")
@@ -590,7 +590,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("getStaticFallbackSentences handles special characters")
-    func testGetStaticFallbackSpecialCharacters() async {
+    func getStaticFallbackSpecialCharacters() async {
         let service = SentenceGenerationService.shared
 
         let fallbacks = await service.getStaticFallbackSentences(for: "don't")
@@ -600,7 +600,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("JSON extraction handles unicode characters")
-    func testJSONExtractionUnicode() {
+    func jSONExtractionUnicode() {
         let input = """
         ```json
         {
@@ -616,8 +616,8 @@ struct SentenceGenerationServiceTests {
 
         if let jsonStart = trimmed.range(of: "```json", options: .caseInsensitive) {
             let afterStart = jsonStart.upperBound
-            if let jsonEnd = trimmed.range(of: "```", range: afterStart..<trimmed.endIndex) {
-                let json = String(trimmed[afterStart..<jsonEnd.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+            if let jsonEnd = trimmed.range(of: "```", range: afterStart ..< trimmed.endIndex) {
+                let json = String(trimmed[afterStart ..< jsonEnd.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
                 #expect(json.contains("items"))
                 #expect(json.contains("Hello"))
             } else {
@@ -631,7 +631,7 @@ struct SentenceGenerationServiceTests {
     // MARK: - Sentence Generation Request Tests
 
     @Test("GenerationRequest struct is Codable")
-    func testGenerationRequestCodable() throws {
+    func generationRequestCodable() throws {
         // Note: GenerationRequest is private, so we test through the structure
         // This is a compile-time test - if it compiles, the struct is Codable
 
@@ -655,7 +655,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("GenerationRequest uses correct model")
-    func testGenerationRequestModel() {
+    func generationRequestModel() {
         // Verify the hardcoded model value is correct
         // This is a smoke test for the configuration
         let expectedModel = "glm-4.7"
@@ -666,7 +666,7 @@ struct SentenceGenerationServiceTests {
     }
 
     @Test("GenerationRequest uses correct temperature")
-    func testGenerationRequestTemperature() {
+    func generationRequestTemperature() {
         // Verify the hardcoded temperature value is correct
         let expectedTemperature = 0.8
 

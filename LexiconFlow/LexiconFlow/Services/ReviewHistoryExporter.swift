@@ -97,13 +97,13 @@ final class ReviewHistoryExporter {
 
         // Add data rows
         for review in reviews {
-            let row = buildRow(for: review, flashcard: flashcard)
+            let row = self.buildRow(for: review, flashcard: flashcard)
             rows.append(row)
         }
 
         // Convert to CSV string
         let csv = rows.map { row in
-            row.map { escapeCSVField($0) }.joined(separator: ",")
+            row.map { self.escapeCSVField($0) }.joined(separator: ",")
         }.joined(separator: "\r\n")
 
         // Validate output
@@ -114,11 +114,13 @@ final class ReviewHistoryExporter {
 
         Self.logger.info("CSV export complete: \(csv.utf8.count) bytes")
 
-        await Analytics.trackEvent("review_history_exported", metadata: [
-            "flashcard_word": flashcard.word,
-            "review_count": "\(reviews.count)",
-            "csv_size_bytes": "\(csv.utf8.count)"
-        ])
+        Task {
+            await Analytics.trackEvent("review_history_exported", metadata: [
+                "flashcard_word": flashcard.word,
+                "review_count": "\(reviews.count)",
+                "csv_size_bytes": "\(csv.utf8.count)"
+            ])
+        }
 
         return csv
     }
@@ -161,12 +163,12 @@ final class ReviewHistoryExporter {
 
         // Add data rows from DTOs
         for dto in reviews {
-            let row = buildRow(for: dto, flashcard: flashcard)
+            let row = self.buildRow(for: dto, flashcard: flashcard)
             rows.append(row)
         }
 
         let csv = rows.map { row in
-            row.map { escapeCSVField($0) }.joined(separator: ",")
+            row.map { self.escapeCSVField($0) }.joined(separator: ",")
         }.joined(separator: "\r\n")
 
         guard !csv.isEmpty else {
@@ -176,12 +178,14 @@ final class ReviewHistoryExporter {
 
         Self.logger.info("Filtered CSV export complete: \(csv.utf8.count) bytes")
 
-        await Analytics.trackEvent("review_history_exported_filtered", metadata: [
-            "flashcard_word": flashcard.word,
-            "filter_type": filter.rawValue,
-            "review_count": "\(reviews.count)",
-            "csv_size_bytes": "\(csv.utf8.count)"
-        ])
+        Task {
+            await Analytics.trackEvent("review_history_exported_filtered", metadata: [
+                "flashcard_word": flashcard.word,
+                "filter_type": filter.rawValue,
+                "review_count": "\(reviews.count)",
+                "csv_size_bytes": "\(csv.utf8.count)"
+            ])
+        }
 
         return csv
     }
@@ -327,22 +331,22 @@ enum ExportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noReviews:
-            return "No reviews to export"
+            "No reviews to export"
         case .emptyResult:
-            return "Failed to generate CSV data"
-        case .encodingError(let details):
-            return "Encoding error: \(details)"
+            "Failed to generate CSV data"
+        case let .encodingError(details):
+            "Encoding error: \(details)"
         }
     }
 
     var isRetryable: Bool {
         switch self {
         case .noReviews:
-            return false
+            false
         case .emptyResult:
-            return true
+            true
         case .encodingError:
-            return true
+            true
         }
     }
 }

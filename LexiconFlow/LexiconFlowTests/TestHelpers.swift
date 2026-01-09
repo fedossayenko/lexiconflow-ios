@@ -22,45 +22,45 @@ extension ModelContext {
         // 2. Then delete their parents (cards)
         // 3. Finally delete decks
 
-        let dailyStats = try self.fetch(FetchDescriptor<DailyStats>())
+        let dailyStats = try fetch(FetchDescriptor<DailyStats>())
         for stats in dailyStats {
-            self.delete(stats)
+            delete(stats)
         }
 
-        let studySessions = try self.fetch(FetchDescriptor<StudySession>())
+        let studySessions = try fetch(FetchDescriptor<StudySession>())
         for session in studySessions {
-            self.delete(session)
+            delete(session)
         }
 
-        let reviews = try self.fetch(FetchDescriptor<FlashcardReview>())
+        let reviews = try fetch(FetchDescriptor<FlashcardReview>())
         for review in reviews {
-            self.delete(review)
+            delete(review)
         }
 
-        let sentences = try self.fetch(FetchDescriptor<GeneratedSentence>())
+        let sentences = try fetch(FetchDescriptor<GeneratedSentence>())
         for sentence in sentences {
-            self.delete(sentence)
+            delete(sentence)
         }
 
-        let states = try self.fetch(FetchDescriptor<FSRSState>())
+        let states = try fetch(FetchDescriptor<FSRSState>())
         for state in states {
-            self.delete(state)
+            delete(state)
         }
 
-        let cards = try self.fetch(FetchDescriptor<Flashcard>())
+        let cards = try fetch(FetchDescriptor<Flashcard>())
         for card in cards {
             // Clear relationships before deleting to prevent cascade issues
             card.fsrsState = nil
             card.deck = nil
-            self.delete(card)
+            delete(card)
         }
 
-        let decks = try self.fetch(FetchDescriptor<Deck>())
+        let decks = try fetch(FetchDescriptor<Deck>())
         for deck in decks {
-            self.delete(deck)
+            delete(deck)
         }
 
-        try self.save()
+        try save()
     }
 }
 
@@ -98,6 +98,6 @@ enum TestContainers {
     /// Creates a fresh context for a test
     /// Caller should call clearAll() before use to ensure isolation
     static func freshContext() -> ModelContext {
-        return ModelContext(shared)
+        ModelContext(self.shared)
     }
 }

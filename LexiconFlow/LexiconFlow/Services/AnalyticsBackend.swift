@@ -45,7 +45,7 @@ final class ProductionAnalyticsBackend: AnalyticsBackend {
             let metadataString = metadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
             logMessage = "Event: \(name) [\(metadataString)]"
         }
-        logger.info("\(logMessage)")
+        self.logger.info("\(logMessage)")
     }
 
     func trackError(_ name: String, error: Error, metadata: [String: String] = [:]) {
@@ -55,7 +55,7 @@ final class ProductionAnalyticsBackend: AnalyticsBackend {
         fullMetadata["error_type"] = String(describing: type(of: error))
 
         let metadataString = fullMetadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
-        logger.error("❌ Error: \(name) [\(metadataString)]")
+        self.logger.error("❌ Error: \(name) [\(metadataString)]")
     }
 
     func trackIssue(_ name: String, message: String, metadata: [String: String] = [:]) {
@@ -63,16 +63,16 @@ final class ProductionAnalyticsBackend: AnalyticsBackend {
         fullMetadata["message"] = message
 
         let metadataString = fullMetadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
-        logger.warning("⚠️ Issue: \(name) [\(metadataString)]")
+        self.logger.warning("⚠️ Issue: \(name) [\(metadataString)]")
     }
 
     func setUserId(_ userId: String) {
-        logger.info("Set User ID: \(userId)")
+        self.logger.info("Set User ID: \(userId)")
     }
 
     func setUserProperties(_ properties: [String: Any]) {
         let propertyString = properties.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
-        logger.info("Set User Properties: [\(propertyString)]")
+        self.logger.info("Set User Properties: [\(propertyString)]")
     }
 
     func trackPerformance(_ name: String, duration: TimeInterval, metadata: [String: String] = [:]) {
@@ -80,7 +80,7 @@ final class ProductionAnalyticsBackend: AnalyticsBackend {
         fullMetadata["duration_ms"] = String(format: "%.2f", duration * 1000)
 
         let metadataString = fullMetadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
-        logger.info("⏱ Performance: \(name) [\(metadataString)]")
+        self.logger.info("⏱ Performance: \(name) [\(metadataString)]")
     }
 }
 
@@ -94,61 +94,61 @@ final class MockAnalyticsBackend: AnalyticsBackend, @unchecked Sendable {
 
     /// All recorded analytics events
     var events: [AnalyticsEvent] {
-        lock.lock()
+        self.lock.lock()
         defer { lock.unlock() }
-        return _events
+        return self._events
     }
 
     func trackEvent(_ name: String, metadata: [String: String] = [:]) {
-        record(AnalyticsEvent.event(name, metadata))
+        self.record(AnalyticsEvent.event(name, metadata))
     }
 
     func trackError(_ name: String, error: Error, metadata: [String: String] = [:]) {
         var fullMetadata = metadata
         fullMetadata["error_description"] = error.localizedDescription
         fullMetadata["error_type"] = String(describing: type(of: error))
-        record(AnalyticsEvent.error(name, fullMetadata))
+        self.record(AnalyticsEvent.error(name, fullMetadata))
     }
 
     func trackIssue(_ name: String, message: String, metadata: [String: String] = [:]) {
         var fullMetadata = metadata
         fullMetadata["message"] = message
-        record(AnalyticsEvent.issue(name, fullMetadata))
+        self.record(AnalyticsEvent.issue(name, fullMetadata))
     }
 
     func setUserId(_ userId: String) {
-        record(AnalyticsEvent.setUserId(userId))
+        self.record(AnalyticsEvent.setUserId(userId))
     }
 
     func setUserProperties(_ properties: [String: Any]) {
-        record(AnalyticsEvent.setUserProperties(properties))
+        self.record(AnalyticsEvent.setUserProperties(properties))
     }
 
     func trackPerformance(_ name: String, duration: TimeInterval, metadata: [String: String] = [:]) {
         var fullMetadata = metadata
         fullMetadata["duration_ms"] = String(format: "%.2f", duration * 1000)
-        record(AnalyticsEvent.performance(name, duration, fullMetadata))
+        self.record(AnalyticsEvent.performance(name, duration, fullMetadata))
     }
 
     /// Clear all recorded events
     func clear() {
-        lock.lock()
+        self.lock.lock()
         defer { lock.unlock() }
-        _events.removeAll()
+        self._events.removeAll()
     }
 
     private func record(_ event: AnalyticsEvent) {
-        lock.lock()
+        self.lock.lock()
         defer { lock.unlock() }
-        _events.append(event)
+        self._events.append(event)
     }
 
     // MARK: - Verification Helpers
 
     /// Check if a specific event was recorded
     func didTrackEvent(_ name: String) -> Bool {
-        events.contains { event in
-            if case .event(let eventName, _) = event {
+        self.events.contains { event in
+            if case let .event(eventName, _) = event {
                 return eventName == name
             }
             return false
@@ -157,8 +157,8 @@ final class MockAnalyticsBackend: AnalyticsBackend, @unchecked Sendable {
 
     /// Check if a specific error was recorded
     func didTrackError(_ name: String) -> Bool {
-        events.contains { event in
-            if case .error(let errorName, _) = event {
+        self.events.contains { event in
+            if case let .error(errorName, _) = event {
                 return errorName == name
             }
             return false
@@ -167,12 +167,12 @@ final class MockAnalyticsBackend: AnalyticsBackend, @unchecked Sendable {
 
     /// Get count of recorded events
     func eventCount(for name: String) -> Int {
-        events.filter { event in
-            if case .event(let eventName, _) = event {
+        self.events.count(where: { event in
+            if case let .event(eventName, _) = event {
                 return eventName == name
             }
             return false
-        }.count
+        })
     }
 }
 
@@ -188,22 +188,22 @@ enum AnalyticsEvent: Equatable, Sendable {
     /// Custom equality for setUserProperties with [String: Any]
     static func == (lhs: AnalyticsEvent, rhs: AnalyticsEvent) -> Bool {
         switch (lhs, rhs) {
-        case (.event(let lName, let lMeta), .event(let rName, let rMeta)):
-            return lName == rName && lMeta == rMeta
-        case (.error(let lName, let lMeta), .error(let rName, let rMeta)):
-            return lName == rName && lMeta == rMeta
-        case (.issue(let lName, let lMeta), .issue(let rName, let rMeta)):
-            return lName == rName && lMeta == rMeta
-        case (.setUserId(let lId), .setUserId(let rId)):
-            return lId == rId
-        case (.performance(let lName, let lDur, let lMeta), .performance(let rName, let rDur, let rMeta)):
-            return lName == rName && lDur == rDur && lMeta == rMeta
+        case let (.event(lName, lMeta), .event(rName, rMeta)):
+            lName == rName && lMeta == rMeta
+        case let (.error(lName, lMeta), .error(rName, rMeta)):
+            lName == rName && lMeta == rMeta
+        case let (.issue(lName, lMeta), .issue(rName, rMeta)):
+            lName == rName && lMeta == rMeta
+        case let (.setUserId(lId), .setUserId(rId)):
+            lId == rId
+        case let (.performance(lName, lDur, lMeta), .performance(rName, rDur, rMeta)):
+            lName == rName && lDur == rDur && lMeta == rMeta
         case (.setUserProperties, .setUserProperties):
             // For properties, just check that both are the same type
             // Exact comparison of [String: Any] is complex
-            return true
+            true
         default:
-            return false
+            false
         }
     }
 }

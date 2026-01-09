@@ -5,8 +5,8 @@
 //  Core flashcard model representing a vocabulary item
 //
 
-import SwiftData
 import Foundation
+import SwiftData
 
 /// A flashcard containing vocabulary information and FSRS scheduling state
 ///
@@ -36,6 +36,12 @@ final class Flashcard {
     /// Translation of the word into target language
     /// Used by both on-device (iOS 26 Translation) and cloud (Z.ai) services
     var translation: String?
+
+    /// CEFR level (A1, A2, B1, B2, C1, C2) for vocabulary categorization
+    /// - nil for user-created cards or cards without CEFR annotation
+    /// - Used for IELTS vocabulary decks and difficulty filtering
+    /// - Validated against allowed values: A1, A2, B1, B2, C1, C2
+    var cefrLevel: String?
 
     // MARK: - Optional Fields
 
@@ -87,14 +93,15 @@ final class Flashcard {
     ///   - phonetic: IPA pronunciation (optional)
     ///   - imageData: Image data for visual learning (optional)
     ///   - createdAt: Creation timestamp (defaults to now)
-    init(id: UUID = UUID(),
-         word: String,
-         definition: String,
-         translation: String? = nil,
-         phonetic: String? = nil,
-         imageData: Data? = nil,
-         createdAt: Date = Date()) {
-
+    init(
+        id: UUID = UUID(),
+        word: String,
+        definition: String,
+        translation: String? = nil,
+        phonetic: String? = nil,
+        imageData: Data? = nil,
+        createdAt: Date = Date()
+    ) {
         self.id = id
         self.word = word
         self.definition = definition
@@ -103,5 +110,46 @@ final class Flashcard {
         self.imageData = imageData
         self.createdAt = createdAt
         // Relationships are auto-initialized by SwiftData
+    }
+
+    // MARK: - CEFR Level Validation
+
+    /// Validates and sets CEFR level for this flashcard
+    ///
+    /// - Parameter level: The CEFR level to set (A1, A2, B1, B2, C1, C2), or nil to clear
+    /// - Throws: `FlashcardError.invalidCEFRLevel` if the level is not valid
+    func setCEFRLevel(_ level: String?) throws {
+        guard let level else {
+            self.cefrLevel = nil
+            return
+        }
+
+        let validLevels = ["A1", "A2", "B1", "B2", "C1", "C2"]
+        guard validLevels.contains(level) else {
+            throw FlashcardError.invalidCEFRLevel(level)
+        }
+
+        self.cefrLevel = level
+    }
+}
+
+// MARK: - Flashcard Errors
+
+/// Errors that can occur when working with flashcards
+enum FlashcardError: LocalizedError, @unchecked Sendable {
+    case invalidCEFRLevel(String)
+
+    var errorDescription: String? {
+        switch self {
+        case let .invalidCEFRLevel(level):
+            "Invalid CEFR level: \(level). Must be one of A1, A2, B1, B2, C1, C2."
+        }
+    }
+
+    var recoverySuggestion: String? {
+        switch self {
+        case .invalidCEFRLevel:
+            "Use a valid CEFR level: A1, A2, B1, B2, C1, or C2."
+        }
     }
 }

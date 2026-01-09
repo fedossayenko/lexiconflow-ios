@@ -5,9 +5,9 @@
 //  Tests for ViewModelHolder utility
 //
 
-import Testing
-import SwiftUI
 import Combine
+import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 /// Test ObservableObject for testing
@@ -18,11 +18,11 @@ final class TestViewModel: ObservableObject {
     var nonPublishedValue: String = "not published"
 
     func increment() {
-        count += 1
+        self.count += 1
     }
 
     func updateText(_ newText: String) {
-        text = newText
+        self.text = newText
     }
 }
 
@@ -35,7 +35,6 @@ final class TestViewModel: ObservableObject {
 /// - Cancellation on value change
 @MainActor
 struct ViewModelHolderTests {
-
     // MARK: - Initialization Tests
 
     @Test("Initialize with nil value")
@@ -106,7 +105,7 @@ struct ViewModelHolderTests {
         viewModel.increment()
 
         // Small delay to let change propagate
-        try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        try? await Task.sleep(nanoseconds: 10000000) // 10ms
 
         #expect(changeCount >= 1, "objectWillChange should fire when inner object changes")
         #expect(viewModel.count == 1, "ViewModel should be updated")
@@ -128,9 +127,9 @@ struct ViewModelHolderTests {
 
         // Modify multiple properties
         viewModel.increment() // count: 0 -> 1
-        try? await Task.sleep(nanoseconds: 5_000_000) // 5ms
+        try? await Task.sleep(nanoseconds: 5000000) // 5ms
         viewModel.updateText("new text") // text: "test" -> "new text"
-        try? await Task.sleep(nanoseconds: 5_000_000) // 5ms
+        try? await Task.sleep(nanoseconds: 5000000) // 5ms
 
         #expect(changeCount >= 2, "objectWillChange should fire for each change")
         #expect(viewModel.count == 1, "Count should be updated")
@@ -149,7 +148,7 @@ struct ViewModelHolderTests {
             }
 
         // Holder has no value
-        try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        try? await Task.sleep(nanoseconds: 10000000) // 10ms
 
         #expect(changeCount == 0, "No changes should fire when value is nil")
 
@@ -236,7 +235,7 @@ struct ViewModelHolderTests {
             }
 
         viewModel.increment()
-        try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        try? await Task.sleep(nanoseconds: 10000000) // 10ms
 
         #expect(updateCount >= 1, "View should receive updates")
 
@@ -258,13 +257,13 @@ struct ViewModelHolderTests {
             }
 
         // Rapidly change values
-        for i in 0..<10 {
+        for i in 0 ..< 10 {
             let viewModel = TestViewModel()
             viewModel.count = i
             holder.value = viewModel
         }
 
-        try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
+        try? await Task.sleep(nanoseconds: 50000000) // 50ms
 
         #expect(changeCount >= 10, "Should handle rapid changes")
 
@@ -279,14 +278,14 @@ struct ViewModelHolderTests {
 
         await withTaskGroup(of: Void.self) { group in
             // Multiple concurrent reads
-            for _ in 0..<10 {
+            for _ in 0 ..< 10 {
                 group.addTask { @MainActor in
                     _ = holder.value?.count
                 }
             }
 
             // Multiple concurrent writes
-            for i in 0..<10 {
+            for i in 0 ..< 10 {
                 group.addTask { @MainActor in
                     holder.value?.count = i
                 }
@@ -356,17 +355,17 @@ struct ViewModelHolderTests {
 
         // Change first view model
         firstViewModel.increment()
-        try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        try? await Task.sleep(nanoseconds: 10000000) // 10ms
 
         let changesAfterFirst = changeCount
 
         // Switch to new view model
         holder.value = secondViewModel
-        try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        try? await Task.sleep(nanoseconds: 10000000) // 10ms
 
         // Modify first view model (should not trigger changes)
         firstViewModel.increment()
-        try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        try? await Task.sleep(nanoseconds: 10000000) // 10ms
 
         let changesAfterSwitch = changeCount
 
@@ -392,17 +391,17 @@ struct ViewModelHolderTests {
 
         let firstViewModel = TestViewModel()
         holder.value = firstViewModel
-        try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        try? await Task.sleep(nanoseconds: 10000000) // 10ms
 
         // Change first view model
         firstViewModel.increment()
-        try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        try? await Task.sleep(nanoseconds: 10000000) // 10ms
 
         let changesBeforeSwitch = firstChanges
 
         // Create new cancellable after switch
         holder.value = TestViewModel()
-        try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        try? await Task.sleep(nanoseconds: 10000000) // 10ms
 
         // First cancellable should still receive changes
         #expect(firstChanges >= changesBeforeSwitch, "Observations should be maintained")
@@ -427,7 +426,7 @@ struct ViewModelHolderTests {
             viewModel.increment()
         }.value
 
-        try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        try? await Task.sleep(nanoseconds: 10000000) // 10ms
 
         #expect(holder.value?.count == 1, "ViewModel should be updated")
 
@@ -439,7 +438,7 @@ struct ViewModelHolderTests {
             }
 
         holder.value?.increment()
-        try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        try? await Task.sleep(nanoseconds: 10000000) // 10ms
 
         #expect(updateReceived, "View should receive update notification")
 
@@ -455,15 +454,15 @@ struct ViewModelHolderTests {
             @Published var error: String?
 
             func addItem(_ item: String) {
-                items.append(item)
+                self.items.append(item)
             }
 
             func startLoading() {
-                isLoading = true
+                self.isLoading = true
             }
 
             func stopLoading() {
-                isLoading = false
+                self.isLoading = false
             }
 
             func setError(_ error: String?) {

@@ -6,9 +6,9 @@
 //  Tests verify complete workflow from study session to statistics display
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for Statistics Dashboard end-to-end integration
@@ -23,11 +23,10 @@ import SwiftData
 /// - Realistic user scenarios with realistic data
 @MainActor
 struct StatisticsDashboardE2ETests {
-
     // MARK: - Test Fixtures
 
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     private func createDeck(context: ModelContext, name: String = "Test Deck") -> Deck {
@@ -106,23 +105,22 @@ struct StatisticsDashboardE2ETests {
 
     // MARK: - Complete Workflow Tests
 
-
     @Test("E2E: Multiple study sessions over consecutive days")
     func multipleStudySessionsOverConsecutiveDays() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let deck = createDeck(context: context)
+        let deck = self.createDeck(context: context)
         let calendar = Calendar.autoupdatingCurrent
 
         // Create cards for 3 days of study sessions
         var allReviews: [FlashcardReview] = []
 
-        for dayOffset in 0..<3 {
+        for dayOffset in 0 ..< 3 {
             let dayStart = calendar.startOfDay(for: Date().addingTimeInterval(-Double(dayOffset * 86400)))
 
             // Create study session for this day
-            let session = createStudySession(
+            let session = self.createStudySession(
                 context: context,
                 startTime: dayStart.addingTimeInterval(3600), // 1:00 AM
                 endTime: dayStart.addingTimeInterval(4200), // 1:10 AM
@@ -131,20 +129,20 @@ struct StatisticsDashboardE2ETests {
             )
 
             // Create flashcards and reviews for this session
-            for i in 0..<10 {
-                let card = createFlashcard(
+            for i in 0 ..< 10 {
+                let card = self.createFlashcard(
                     context: context,
                     word: "word\(dayOffset)_\(i)",
                     stateEnum: FlashcardState.review.rawValue,
                     stability: Double(dayOffset + 1) * 2.0,
-                    difficulty: Double.random(in: 3...7),
+                    difficulty: Double.random(in: 3 ... 7),
                     lastReviewDate: dayStart.addingTimeInterval(3600 + Double(i * 60))
                 )
 
-                let review = createReview(
+                let review = self.createReview(
                     context: context,
                     flashcard: card,
-                    rating: Int.random(in: 1...4),
+                    rating: Int.random(in: 1 ... 4),
                     reviewDate: dayStart.addingTimeInterval(3600 + Double(i * 60)),
                     scheduledDays: 0,
                     elapsedDays: 0,
@@ -174,18 +172,18 @@ struct StatisticsDashboardE2ETests {
 
     @Test("E2E: Study session with mixed ratings (Again, Hard, Good, Easy)")
     func studySessionWithMixedRatings() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let deck = createDeck(context: context)
-        let session = createStudySession(context: context, startTime: Date(), cardsReviewed: 20)
+        let deck = self.createDeck(context: context)
+        let session = self.createStudySession(context: context, startTime: Date(), cardsReviewed: 20)
 
         // Create cards with mixed ratings
         let ratings = [0, 0, 1, 1, 2, 2, 2, 3, 3, 3, 0, 1, 2, 3, 2, 1, 3, 2, 1, 0]
         var cards: [Flashcard] = []
 
         for (index, rating) in ratings.enumerated() {
-            let card = createFlashcard(
+            let card = self.createFlashcard(
                 context: context,
                 word: "word_\(index)",
                 stateEnum: FlashcardState.review.rawValue,
@@ -194,7 +192,7 @@ struct StatisticsDashboardE2ETests {
                 lastReviewDate: Date()
             )
 
-            createReview(
+            self.createReview(
                 context: context,
                 flashcard: card,
                 rating: rating,
@@ -212,8 +210,8 @@ struct StatisticsDashboardE2ETests {
 
         // Verify retention rate calculation
         let retentionData = statsViewModel.retentionData!
-        let expectedSuccessCount = ratings.filter { $0 >= 1 }.count
-        let expectedFailedCount = ratings.filter { $0 == 0 }.count
+        let expectedSuccessCount = ratings.count(where: { $0 >= 1 })
+        let expectedFailedCount = ratings.count(where: { $0 == 0 })
         let expectedRate = Double(expectedSuccessCount) / Double(ratings.count)
 
         #expect(retentionData.totalCount == 20, "Should have 20 total reviews")
@@ -228,26 +226,26 @@ struct StatisticsDashboardE2ETests {
 
     @Test("E2E: Time range filtering (7d vs 30d vs all time)")
     func timeRangeFiltering() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let deck = createDeck(context: context)
+        let deck = self.createDeck(context: context)
         let calendar = Calendar.autoupdatingCurrent
 
         // Create data across 45 days
-        for dayOffset in 0..<45 {
+        for dayOffset in 0 ..< 45 {
             guard dayOffset % 3 == 0 else { continue } // Every 3 days to keep test fast
 
             let dayStart = calendar.startOfDay(for: Date().addingTimeInterval(-Double(dayOffset * 86400)))
-            let session = createStudySession(
+            let session = self.createStudySession(
                 context: context,
                 startTime: dayStart.addingTimeInterval(3600),
                 cardsReviewed: 5,
                 modeEnum: "scheduled"
             )
 
-            for i in 0..<5 {
-                let card = createFlashcard(
+            for i in 0 ..< 5 {
+                let card = self.createFlashcard(
                     context: context,
                     word: "word_\(dayOffset)_\(i)",
                     stateEnum: FlashcardState.review.rawValue,
@@ -256,10 +254,10 @@ struct StatisticsDashboardE2ETests {
                     lastReviewDate: dayStart
                 )
 
-                createReview(
+                self.createReview(
                     context: context,
                     flashcard: card,
-                    rating: Int.random(in: 2...4),
+                    rating: Int.random(in: 2 ... 4),
                     reviewDate: dayStart,
                     studySession: session
                 )
@@ -296,77 +294,77 @@ struct StatisticsDashboardE2ETests {
 
     @Test("E2E: All study modes (scheduled, learning, cram)")
     func allStudyModes() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let deck = createDeck(context: context)
+        let deck = self.createDeck(context: context)
 
         // Scheduled mode session
-        let scheduledSession = createStudySession(
+        let scheduledSession = self.createStudySession(
             context: context,
             startTime: Date().addingTimeInterval(-86400), // Yesterday
             cardsReviewed: 10,
             modeEnum: "scheduled"
         )
 
-        for i in 0..<10 {
-            let card = createFlashcard(
+        for i in 0 ..< 10 {
+            let card = self.createFlashcard(
                 context: context,
                 word: "scheduled_\(i)",
                 stateEnum: FlashcardState.review.rawValue,
                 lastReviewDate: Date().addingTimeInterval(-86400)
             )
-            createReview(
+            self.createReview(
                 context: context,
                 flashcard: card,
-                rating: Int.random(in: 2...4),
+                rating: Int.random(in: 2 ... 4),
                 reviewDate: Date().addingTimeInterval(-86400),
                 studySession: scheduledSession
             )
         }
 
         // Learning mode session
-        let learningSession = createStudySession(
+        let learningSession = self.createStudySession(
             context: context,
             startTime: Date().addingTimeInterval(-43200), // 12 hours ago
             cardsReviewed: 5,
             modeEnum: "learning"
         )
 
-        for i in 0..<5 {
-            let card = createFlashcard(
+        for i in 0 ..< 5 {
+            let card = self.createFlashcard(
                 context: context,
                 word: "learning_\(i)",
                 stateEnum: FlashcardState.learning.rawValue,
                 lastReviewDate: Date().addingTimeInterval(-43200)
             )
-            createReview(
+            self.createReview(
                 context: context,
                 flashcard: card,
-                rating: Int.random(in: 1...3),
+                rating: Int.random(in: 1 ... 3),
                 reviewDate: Date().addingTimeInterval(-43200),
                 studySession: learningSession
             )
         }
 
         // Cram mode session
-        let cramSession = createStudySession(
+        let cramSession = self.createStudySession(
             context: context,
             startTime: Date(),
             cardsReviewed: 8,
             modeEnum: "cram"
         )
 
-        for i in 0..<8 {
-            let card = createFlashcard(
+        for i in 0 ..< 8 {
+            let card = self.createFlashcard(
                 context: context,
                 word: "cram_\(i)",
                 stateEnum: FlashcardState.review.rawValue
             )
-            createReview(
+            self.createReview(
                 context: context,
                 flashcard: card,
-                rating: Int.random(in: 1...4),
+                rating: Int.random(in: 1 ... 4),
                 reviewDate: Date(),
                 studySession: cramSession
             )
@@ -394,11 +392,11 @@ struct StatisticsDashboardE2ETests {
 
     @Test("E2E: New user with no study data")
     func newUserWithNoStudyData() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create only a deck, no cards or sessions
-        let deck = createDeck(context: context)
+        let deck = self.createDeck(context: context)
         try context.save()
 
         let statsViewModel = StatisticsViewModel(modelContext: context)
@@ -416,13 +414,12 @@ struct StatisticsDashboardE2ETests {
         // New user empty state verified
     }
 
-
     @Test("E2E: Dashboard refresh with changing data")
     func dashboardRefreshWithChangingData() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let deck = createDeck(context: context)
+        let deck = self.createDeck(context: context)
         let statsViewModel = StatisticsViewModel(modelContext: context)
 
         // Initial refresh with no data
@@ -430,15 +427,15 @@ struct StatisticsDashboardE2ETests {
         #expect(statsViewModel.isEmpty, "Should be empty initially")
 
         // Add study session
-        let session = createStudySession(context: context, startTime: Date(), cardsReviewed: 5)
-        for i in 0..<5 {
-            let card = createFlashcard(
+        let session = self.createStudySession(context: context, startTime: Date(), cardsReviewed: 5)
+        for i in 0 ..< 5 {
+            let card = self.createFlashcard(
                 context: context,
                 word: "word_\(i)",
                 stateEnum: FlashcardState.review.rawValue,
                 lastReviewDate: Date()
             )
-            createReview(
+            self.createReview(
                 context: context,
                 flashcard: card,
                 rating: 3,
@@ -454,19 +451,19 @@ struct StatisticsDashboardE2ETests {
         #expect(statsViewModel.retentionData?.totalCount == 5, "Should have 5 reviews")
 
         // Add another session
-        let session2 = createStudySession(
+        let session2 = self.createStudySession(
             context: context,
             startTime: Date().addingTimeInterval(3600),
             cardsReviewed: 3
         )
-        for i in 0..<3 {
-            let card = createFlashcard(
+        for i in 0 ..< 3 {
+            let card = self.createFlashcard(
                 context: context,
                 word: "word2_\(i)",
                 stateEnum: FlashcardState.review.rawValue,
                 lastReviewDate: Date().addingTimeInterval(3600)
             )
-            createReview(
+            self.createReview(
                 context: context,
                 flashcard: card,
                 rating: 4,
@@ -487,24 +484,24 @@ struct StatisticsDashboardE2ETests {
 
     @Test("E2E: Realistic scenario - Consistent learner over 30 days")
     func consistentLearnerScenario() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let deck = createDeck(context: context, name: "Spanish Vocabulary")
+        let deck = self.createDeck(context: context, name: "Spanish Vocabulary")
         let calendar = Calendar.autoupdatingCurrent
 
         // Simulate 30 days of consistent learning (5 days/week)
         var totalCards = 0
         var totalReviews = 0
 
-        for week in 0..<4 {
-            for day in 0..<5 { // Monday to Friday
+        for week in 0 ..< 4 {
+            for day in 0 ..< 5 { // Monday to Friday
                 let dayOffset = week * 7 + day
                 let dayStart = calendar.startOfDay(for: Date().addingTimeInterval(-Double(dayOffset * 86400)))
 
                 // Study session: 15-25 cards per day
-                let cardsToday = Int.random(in: 15...25)
-                let session = createStudySession(
+                let cardsToday = Int.random(in: 15 ... 25)
+                let session = self.createStudySession(
                     context: context,
                     startTime: dayStart.addingTimeInterval(3600 + Double(day * 3600)),
                     endTime: dayStart.addingTimeInterval(3600 + Double(day * 3600) + Double(cardsToday * 20)),
@@ -512,13 +509,13 @@ struct StatisticsDashboardE2ETests {
                     modeEnum: "scheduled"
                 )
 
-                for i in 0..<cardsToday {
-                    let card = createFlashcard(
+                for i in 0 ..< cardsToday {
+                    let card = self.createFlashcard(
                         context: context,
                         word: "word_\(dayOffset)_\(i)",
                         stateEnum: FlashcardState.review.rawValue,
-                        stability: Double(week * 7 + day) * 0.5 + Double.random(in: 0...2),
-                        difficulty: Double.random(in: 3...8),
+                        stability: Double(week * 7 + day) * 0.5 + Double.random(in: 0 ... 2),
+                        difficulty: Double.random(in: 3 ... 8),
                         lastReviewDate: dayStart
                     )
 
@@ -526,7 +523,7 @@ struct StatisticsDashboardE2ETests {
                     let ratingDistribution = [0, 1, 2, 2, 2, 3, 3, 3, 3, 3]
                     let rating = ratingDistribution.randomElement() ?? 2
 
-                    createReview(
+                    self.createReview(
                         context: context,
                         flashcard: card,
                         rating: rating,
@@ -567,10 +564,10 @@ struct StatisticsDashboardE2ETests {
 
     @Test("E2E: Realistic scenario - Irregular learner with gaps")
     func irregularLearnerScenario() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let deck = createDeck(context: context)
+        let deck = self.createDeck(context: context)
         let calendar = Calendar.autoupdatingCurrent
 
         // Simulate irregular learning pattern: 3 days on, 2 days off, 1 day on, 3 days off, etc.
@@ -583,15 +580,15 @@ struct StatisticsDashboardE2ETests {
 
             // Varying study intensity
             let cardsToday = dayOffset % 3 == 0 ? 20 : 10
-            let session = createStudySession(
+            let session = self.createStudySession(
                 context: context,
                 startTime: dayStart.addingTimeInterval(3600),
                 cardsReviewed: cardsToday,
                 modeEnum: "scheduled"
             )
 
-            for i in 0..<cardsToday {
-                let card = createFlashcard(
+            for i in 0 ..< cardsToday {
+                let card = self.createFlashcard(
                     context: context,
                     word: "irregular_\(dayOffset)_\(i)",
                     stateEnum: FlashcardState.review.rawValue,
@@ -600,10 +597,10 @@ struct StatisticsDashboardE2ETests {
                     lastReviewDate: dayStart
                 )
 
-                createReview(
+                self.createReview(
                     context: context,
                     flashcard: card,
-                    rating: Int.random(in: 1...4),
+                    rating: Int.random(in: 1 ... 4),
                     reviewDate: dayStart.addingTimeInterval(Double(i * 30)),
                     studySession: session
                 )
@@ -630,21 +627,21 @@ struct StatisticsDashboardE2ETests {
 
     @Test("E2E: Data persistence across ViewModel recreation")
     func dataPersistenceAcrossViewModelRecreation() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let deck = createDeck(context: context)
+        let deck = self.createDeck(context: context)
 
         // Create initial data
-        let session1 = createStudySession(context: context, startTime: Date(), cardsReviewed: 10)
-        for i in 0..<10 {
-            let card = createFlashcard(
+        let session1 = self.createStudySession(context: context, startTime: Date(), cardsReviewed: 10)
+        for i in 0 ..< 10 {
+            let card = self.createFlashcard(
                 context: context,
                 word: "persistent_\(i)",
                 stateEnum: FlashcardState.review.rawValue,
                 lastReviewDate: Date()
             )
-            createReview(
+            self.createReview(
                 context: context,
                 flashcard: card,
                 rating: 3,
@@ -665,19 +662,19 @@ struct StatisticsDashboardE2ETests {
         #expect(initialRetention?.totalCount == 10, "First ViewModel: Should have 10 reviews")
 
         // Add more data
-        let session2 = createStudySession(
+        let session2 = self.createStudySession(
             context: context,
             startTime: Date().addingTimeInterval(3600),
             cardsReviewed: 5
         )
-        for i in 0..<5 {
-            let card = createFlashcard(
+        for i in 0 ..< 5 {
+            let card = self.createFlashcard(
                 context: context,
                 word: "new_\(i)",
                 stateEnum: FlashcardState.review.rawValue,
                 lastReviewDate: Date().addingTimeInterval(3600)
             )
-            createReview(
+            self.createReview(
                 context: context,
                 flashcard: card,
                 rating: 4,
@@ -701,26 +698,26 @@ struct StatisticsDashboardE2ETests {
 
     @Test("E2E: Graceful handling of corrupted study session data")
     func gracefulHandlingOfCorruptedData() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let deck = createDeck(context: context)
+        let deck = self.createDeck(context: context)
 
         // Create valid session
-        let validSession = createStudySession(
+        let validSession = self.createStudySession(
             context: context,
             startTime: Date(),
             cardsReviewed: 5
         )
 
-        for i in 0..<5 {
-            let card = createFlashcard(
+        for i in 0 ..< 5 {
+            let card = self.createFlashcard(
                 context: context,
                 word: "valid_\(i)",
                 stateEnum: FlashcardState.review.rawValue,
                 lastReviewDate: Date()
             )
-            createReview(
+            self.createReview(
                 context: context,
                 flashcard: card,
                 rating: 3,

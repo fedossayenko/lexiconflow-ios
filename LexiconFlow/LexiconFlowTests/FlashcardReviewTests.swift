@@ -6,25 +6,24 @@
 //  Covers: FlashcardReview creation, relationships, timestamp accuracy
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for FlashcardReview model
 @MainActor
 struct FlashcardReviewTests {
-
     /// Get a fresh isolated context for testing
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     // MARK: - FlashcardReview Creation Tests
 
     @Test("FlashcardReview creation with all fields")
     func flashcardReviewCreationWithAllFields() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -48,7 +47,7 @@ struct FlashcardReviewTests {
 
     @Test("FlashcardReview creation with minimal fields")
     func flashcardReviewCreationWithMinimalFields() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -73,7 +72,7 @@ struct FlashcardReviewTests {
 
     @Test("FlashcardReview rating: again (0)")
     func reviewRatingAgain() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -94,7 +93,7 @@ struct FlashcardReviewTests {
 
     @Test("FlashcardReview rating: hard (1)")
     func reviewRatingHard() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -115,7 +114,7 @@ struct FlashcardReviewTests {
 
     @Test("FlashcardReview rating: good (2)")
     func reviewRatingGood() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -136,7 +135,7 @@ struct FlashcardReviewTests {
 
     @Test("FlashcardReview rating: easy (3)")
     func reviewRatingEasy() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -159,7 +158,7 @@ struct FlashcardReviewTests {
 
     @Test("FlashcardReview timestamp is set automatically")
     func reviewTimestampAutomatic() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -185,7 +184,7 @@ struct FlashcardReviewTests {
 
     @Test("FlashcardReview timestamp ordering")
     func reviewTimestampOrdering() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -200,7 +199,7 @@ struct FlashcardReviewTests {
         context.insert(review1)
 
         // Small delay to ensure different timestamps
-        try await Task.sleep(nanoseconds: 10_000_000) // 0.01 seconds
+        try await Task.sleep(nanoseconds: 10000000) // 0.01 seconds
 
         let review2 = FlashcardReview(
             rating: 3,
@@ -219,7 +218,7 @@ struct FlashcardReviewTests {
 
     @Test("FlashcardReview scheduledDays and elapsedDays")
     func reviewScheduledElapsedDays() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -241,7 +240,7 @@ struct FlashcardReviewTests {
 
     @Test("FlashcardReview elapsedDays can be zero")
     func reviewElapsedDaysZero() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -264,7 +263,7 @@ struct FlashcardReviewTests {
 
     @Test("FlashcardReview-flashcard relationship")
     func reviewFlashcardRelationship() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "hola", definition: "hello")
@@ -286,7 +285,7 @@ struct FlashcardReviewTests {
 
     @Test("FlashcardReview with no flashcard (should not happen in practice)")
     func reviewWithNoFlashcard() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create a review without associating it with a flashcard
@@ -308,7 +307,7 @@ struct FlashcardReviewTests {
 
     @Test("Flashcard with multiple reviews")
     func flashcardWithMultipleReviews() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -322,7 +321,7 @@ struct FlashcardReviewTests {
         review1.card = flashcard
         context.insert(review1)
 
-        try await Task.sleep(nanoseconds: 100_000_000) // 100ms to ensure different timestamps
+        try await Task.sleep(nanoseconds: 100000000) // 100ms to ensure different timestamps
 
         let review2 = FlashcardReview(
             rating: 3,
@@ -332,7 +331,7 @@ struct FlashcardReviewTests {
         review2.card = flashcard
         context.insert(review2)
 
-        try await Task.sleep(nanoseconds: 100_000_000) // 100ms to ensure different timestamps
+        try await Task.sleep(nanoseconds: 100000000) // 100ms to ensure different timestamps
 
         let review3 = FlashcardReview(
             rating: 3,
@@ -361,7 +360,7 @@ struct FlashcardReviewTests {
 
     @Test("Cascade delete: deleting flashcard nullifies reviews")
     func deleteFlashcardNullifiesReviews() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -388,13 +387,13 @@ struct FlashcardReviewTests {
 
     @Test("Cascade delete: deleting flashcard with multiple reviews")
     func deleteFlashcardWithMultipleReviews() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
         context.insert(flashcard)
 
-        for i in 1...5 {
+        for i in 1 ... 5 {
             let review = FlashcardReview(
                 rating: i % 4,
                 scheduledDays: 1.0,
@@ -419,7 +418,7 @@ struct FlashcardReviewTests {
 
     @Test("Query: fetch reviews by rating")
     func fetchReviewsByRating() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard1 = Flashcard(word: "test1", definition: "test")
@@ -457,7 +456,7 @@ struct FlashcardReviewTests {
 
     @Test("Query: fetch reviews by elapsed days")
     func fetchReviewsByElapsedDays() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard1 = Flashcard(word: "test1", definition: "test")
@@ -494,14 +493,14 @@ struct FlashcardReviewTests {
 
     @Test("Query: fetch reviews sorted by timestamp")
     func fetchReviewsSortedByTimestamp() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
         context.insert(flashcard)
 
         // Create multiple reviews
-        for i in 1...3 {
+        for i in 1 ... 3 {
             let review = FlashcardReview(
                 rating: 2,
                 scheduledDays: 1.0,
@@ -511,7 +510,7 @@ struct FlashcardReviewTests {
             context.insert(review)
 
             // Small delay to ensure different timestamps
-            try await Task.sleep(nanoseconds: 10_000_000)
+            try await Task.sleep(nanoseconds: 10000000)
         }
 
         try context.save()
@@ -527,7 +526,7 @@ struct FlashcardReviewTests {
 
     @Test("Query: fetch reviews for specific flashcard")
     func fetchReviewsForFlashcard() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard1 = Flashcard(word: "card1", definition: "test")

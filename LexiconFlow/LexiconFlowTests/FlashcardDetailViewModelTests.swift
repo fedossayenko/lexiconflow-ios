@@ -18,25 +18,24 @@
 //    invalid ratings, DTO properties verification, filter selection
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for FlashcardDetailViewModel
 @MainActor
 struct FlashcardDetailViewModelTests {
-
     /// Get a fresh isolated context for testing
     private func freshContext() -> ModelContext {
-        return TestContainers.freshContext()
+        TestContainers.freshContext()
     }
 
     // MARK: - State Change Detection Tests
 
     @Test("Detect first review correctly")
     func detectFirstReview() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Create flashcard with one review
@@ -67,7 +66,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Detect graduation: learning → review transition")
     func detectGraduation() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "A test word")
@@ -114,7 +113,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Detect relearning: review → relearning transition")
     func detectRelearning() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "A test word")
@@ -173,7 +172,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Handle first review with failure (rating 0)")
     func firstReviewWithFailure() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "A test word")
@@ -204,7 +203,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Handle missing previous state gracefully")
     func missingPreviousState() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "A test word")
@@ -234,7 +233,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Complex progression: new → learning → review → relearning → review")
     func complexProgression() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "complex", definition: "Complex progression test")
@@ -314,7 +313,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Filter reviews by last week")
     func filterByLastWeek() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "Test filtering")
@@ -359,7 +358,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Filter reviews by last month")
     func filterByLastMonth() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "Test month filtering")
@@ -401,7 +400,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Filter reviews by all time (default)")
     func filterByAllTime() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "Test all time filtering")
@@ -447,13 +446,13 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Calculate total review count")
     func totalReviewCount() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "Test stats")
         context.insert(flashcard)
 
-        for i in 0..<5 {
+        for i in 0 ..< 5 {
             let review = FlashcardReview(
                 rating: i % 4,
                 reviewDate: Date().addingTimeInterval(-86400 * Double(5 - i)),
@@ -475,7 +474,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Calculate average rating")
     func averageRating() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "Test average rating")
@@ -507,7 +506,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Handle empty review history for stats")
     func emptyReviewHistoryStats() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "Test empty stats")
@@ -525,7 +524,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Read FSRS state and stability")
     func fsrsStateAndStability() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "Test FSRS state")
@@ -555,7 +554,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Handle missing FSRS state")
     func missingFSRSState() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "Test missing FSRS state")
@@ -576,7 +575,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Export CSV with filtered reviews")
     func exportCSVFiltered() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "export", definition: "Export test")
@@ -585,7 +584,7 @@ struct FlashcardDetailViewModelTests {
         let now = Date()
 
         // Create multiple reviews
-        for i in 0..<5 {
+        for i in 0 ..< 5 {
             let review = FlashcardReview(
                 rating: i % 4,
                 reviewDate: now.addingTimeInterval(-86400 * Double(5 - i)),
@@ -621,7 +620,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Export all reviews CSV")
     func exportCSVAll() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "all", definition: "Export all test")
@@ -656,7 +655,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Export CSV with empty review history")
     func exportCSVEmpty() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "empty", definition: "Empty export test")
@@ -678,7 +677,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Export CSV with special characters in data")
     func exportCSVSpecialCharacters() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Flashcard with special characters
@@ -717,7 +716,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Performance: Load 100+ reviews efficiently")
     func loadManyReviews() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "performance", definition: "Performance test")
@@ -725,7 +724,7 @@ struct FlashcardDetailViewModelTests {
 
         // Create 150 reviews
         let reviewCount = 150
-        for i in 0..<reviewCount {
+        for i in 0 ..< reviewCount {
             let review = FlashcardReview(
                 rating: i % 4,
                 reviewDate: Date().addingTimeInterval(-86400 * Double(reviewCount - i)),
@@ -755,7 +754,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Performance: Filter 100+ reviews efficiently")
     func filterManyReviews() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "filterperf", definition: "Filter performance test")
@@ -764,7 +763,7 @@ struct FlashcardDetailViewModelTests {
         let now = Date()
 
         // Create 150 reviews spread over 6 months
-        for i in 0..<150 {
+        for i in 0 ..< 150 {
             let daysAgo = Double(i) * 1.2 // Spread out over ~180 days
             let review = FlashcardReview(
                 rating: i % 4,
@@ -800,7 +799,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Handle out-of-order reviews")
     func outOfOrderReviews() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "order", definition: "Test ordering")
@@ -852,7 +851,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Handle reviews on same day")
     func sameDayReviews() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "sameday", definition: "Same day reviews")
@@ -861,7 +860,7 @@ struct FlashcardDetailViewModelTests {
         let baseDate = Date()
 
         // Multiple reviews on same day (cram mode) - created in past so filter includes them
-        for i in 0..<3 {
+        for i in 0 ..< 3 {
             let review = FlashcardReview(
                 rating: 2,
                 reviewDate: baseDate.addingTimeInterval(-Double(i * 3600)), // 1 hour ago, 2 hours ago, 3 hours ago
@@ -887,7 +886,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Handle invalid rating values")
     func invalidRatingValues() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "invalid", definition: "Invalid rating test")
@@ -918,7 +917,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Verify DTO properties are correctly set")
     func dtoProperties() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "dto", definition: "DTO property test")
@@ -954,7 +953,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Filter selection updates selectedFilter property")
     func filterSelection() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "filter", definition: "Filter selection test")

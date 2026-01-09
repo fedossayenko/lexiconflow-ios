@@ -27,11 +27,11 @@ struct CardFrontView: View {
             }
 
             // Word
-            Text(card.word)
+            Text(self.card.word)
                 .font(.system(size: 42, weight: .bold, design: .rounded))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
-                .accessibilityLabel("Word: \(card.word)")
+                .accessibilityLabel("Word: \(self.card.word)")
 
             // Phonetic
             if let phonetic = card.phonetic {

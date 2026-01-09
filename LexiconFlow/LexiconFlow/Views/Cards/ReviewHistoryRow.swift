@@ -15,38 +15,38 @@ struct ReviewHistoryRow: View {
     var body: some View {
         HStack(spacing: 16) {
             // Rating badge (left)
-            ratingBadge
+            self.ratingBadge
 
             // Review details (center)
             VStack(alignment: .leading, spacing: 6) {
                 // Primary info: rating label + state change
                 HStack(spacing: 8) {
-                    Text(review.ratingLabel)
+                    Text(self.review.ratingLabel)
                         .font(.headline)
-                        .foregroundStyle(ratingColor)
+                        .foregroundStyle(self.ratingColor)
 
                     // State change badge (if applicable)
                     if let stateBadge = review.stateChangeBadge {
-                        stateChangeBadge(stateBadge)
+                        self.stateChangeBadge(stateBadge)
                     }
                 }
 
                 // Secondary info: relative date + timing details
                 HStack(spacing: 6) {
-                    Text(review.relativeDateString)
+                    Text(self.review.relativeDateString)
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
                     Text("·")
                         .foregroundStyle(.secondary)
 
-                    Text(review.elapsedTimeDescription)
+                    Text(self.review.elapsedTimeDescription)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
                 // Tertiary info: scheduled interval
-                Text(review.scheduledIntervalDescription)
+                Text(self.review.scheduledIntervalDescription)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -61,8 +61,8 @@ struct ReviewHistoryRow: View {
                 .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
         )
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(accessibilityLabel)
-        .accessibilityHint("Review from \(review.fullDateString)")
+        .accessibilityLabel(self.accessibilityLabel)
+        .accessibilityHint("Review from \(self.review.fullDateString)")
     }
 
     // MARK: - Rating Badge
@@ -71,24 +71,24 @@ struct ReviewHistoryRow: View {
     private var ratingBadge: some View {
         ZStack {
             Circle()
-                .fill(ratingColor.opacity(0.15))
+                .fill(self.ratingColor.opacity(0.15))
                 .frame(width: 44, height: 44)
 
-            Image(systemName: review.ratingIcon)
+            Image(systemName: self.review.ratingIcon)
                 .font(.title3)
-                .foregroundStyle(ratingColor)
+                .foregroundStyle(self.ratingColor)
         }
         .accessibilityHidden(true) // Part of combined label
     }
 
     /// SwiftUI Color for rating
     private var ratingColor: Color {
-        switch review.rating {
-        case 0: return .red
-        case 1: return .orange
-        case 2: return .blue
-        case 3: return .green
-        default: return .blue
+        switch self.review.rating {
+        case 0: .red
+        case 1: .orange
+        case 2: .blue
+        case 3: .green
+        default: .blue
         }
     }
 
@@ -102,8 +102,8 @@ struct ReviewHistoryRow: View {
             .fontWeight(.semibold)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(stateChangeColor(for: text).opacity(0.15))
-            .foregroundStyle(stateChangeColor(for: text))
+            .background(self.stateChangeColor(for: text).opacity(0.15))
+            .foregroundStyle(self.stateChangeColor(for: text))
             .clipShape(Capsule())
             .accessibilityLabel(text)
     }
@@ -112,13 +112,13 @@ struct ReviewHistoryRow: View {
     private func stateChangeColor(for text: String) -> Color {
         switch text {
         case "First Review":
-            return .purple
+            .purple
         case "Graduated":
-            return .green
+            .green
         case "Relearning":
-            return .orange
+            .orange
         default:
-            return .gray
+            .gray
         }
     }
 
@@ -129,7 +129,7 @@ struct ReviewHistoryRow: View {
         var parts: [String] = []
 
         // Rating
-        parts.append("Rated \(review.ratingLabel.lowercased())")
+        parts.append("Rated \(self.review.ratingLabel.lowercased())")
 
         // State change (if any)
         if let stateBadge = review.stateChangeBadge {
@@ -137,11 +137,11 @@ struct ReviewHistoryRow: View {
         }
 
         // Timing
-        parts.append(review.relativeDateString)
-        parts.append(review.elapsedTimeDescription)
+        parts.append(self.review.relativeDateString)
+        parts.append(self.review.elapsedTimeDescription)
 
         // Scheduled info
-        parts.append("Next review \(review.scheduledIntervalDescription)")
+        parts.append("Next review \(self.review.scheduledIntervalDescription)")
 
         return parts.joined(separator: ", ")
     }

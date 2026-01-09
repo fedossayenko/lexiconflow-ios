@@ -6,8 +6,8 @@
 //  Routes between Onboarding and MainTabView based on first launch
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
@@ -15,7 +15,7 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if hasCompletedOnboarding {
+            if self.hasCompletedOnboarding {
                 MainTabView()
             } else {
                 OnboardingView()

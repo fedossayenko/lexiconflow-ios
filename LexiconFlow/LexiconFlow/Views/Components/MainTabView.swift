@@ -5,8 +5,8 @@
 //  Root navigation container with 4 tabs: Decks, Study, Statistics, Settings
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
@@ -16,7 +16,7 @@ struct MainTabView: View {
     @Query(sort: \Deck.order) private var decks: [Deck]
 
     var body: some View {
-        TabView(selection: $selectedTab) {
+        TabView(selection: self.$selectedTab) {
             NavigationStack {
                 DeckListView()
             }
@@ -33,9 +33,9 @@ struct MainTabView: View {
                 Label("Study", systemImage: "brain.fill")
             }
             .tag(1)
-            .badge(dueCardCount)
+            .badge(self.dueCardCount)
             .accessibilityIdentifier("study_tab")
-            .accessibilityLabel(dueCardCount > 0 ? "Study, \(dueCardCount) cards due" : "Study")
+            .accessibilityLabel(self.dueCardCount > 0 ? "Study, \(self.dueCardCount) cards due" : "Study")
 
             NavigationStack {
                 StatisticsDashboardView()
@@ -56,26 +56,26 @@ struct MainTabView: View {
             .accessibilityIdentifier("settings_tab")
         }
         .onAppear {
-            refreshDueCount()
+            self.refreshDueCount()
         }
-        .onChange(of: selectedTab) { _, _ in
-            if selectedTab == 1 {
-                refreshDueCount()
+        .onChange(of: self.selectedTab) { _, _ in
+            if self.selectedTab == 1 {
+                self.refreshDueCount()
             }
         }
         .onChange(of: AppSettings.selectedDeckIDs) { _, _ in
-            refreshDueCount()
+            self.refreshDueCount()
         }
     }
 
     private var selectedDecks: [Deck] {
         let selectedIDs = AppSettings.selectedDeckIDs
-        return decks.filter { selectedIDs.contains($0.id) }
+        return self.decks.filter { selectedIDs.contains($0.id) }
     }
 
     private func refreshDueCount() {
         let scheduler = Scheduler(modelContext: modelContext)
-        dueCardCount = scheduler.dueCardCount(for: selectedDecks)
+        self.dueCardCount = scheduler.dueCardCount(for: self.selectedDecks)
     }
 }
 

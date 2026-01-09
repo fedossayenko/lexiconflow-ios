@@ -12,19 +12,18 @@
 //  - Offline fallback behavior
 //
 
-import Testing
 import Foundation
 import SwiftData
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for SentenceGenerationViewModel
 @MainActor
 struct SentenceGenerationViewModelTests {
-
     // MARK: - Initialization Tests
 
     @Test("ViewModel initializes with model context")
-    func testInitialization() throws {
+    func initialization() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -38,7 +37,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("ViewModel initializes with empty sentences array")
-    func testInitialEmptySentences() throws {
+    func initialEmptySentences() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -49,7 +48,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("ViewModel is not generating initially")
-    func testInitialIsGenerating() throws {
+    func initialIsGenerating() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -61,7 +60,7 @@ struct SentenceGenerationViewModelTests {
     // MARK: - Computed Properties Tests
 
     @Test("hasSentences returns true with sentences")
-    func testHasSentencesTrue() throws {
+    func hasSentencesTrue() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -71,7 +70,7 @@ struct SentenceGenerationViewModelTests {
         let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1",
-            
+
             source: .aiGenerated
         )
         sentence.flashcard = card
@@ -85,7 +84,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("hasSentences returns false when empty")
-    func testHasSentencesFalse() throws {
+    func hasSentencesFalse() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -95,7 +94,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("validSentences filters expired sentences")
-    func testValidSentencesFiltersExpired() throws {
+    func validSentencesFiltersExpired() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -106,7 +105,7 @@ struct SentenceGenerationViewModelTests {
         let validSentence = try GeneratedSentence(
             sentenceText: "Valid sentence.",
             cefrLevel: "A1",
-            
+
             generatedAt: Date(),
             ttlDays: 7,
             source: .aiGenerated
@@ -118,7 +117,7 @@ struct SentenceGenerationViewModelTests {
         let expiredSentence = try GeneratedSentence(
             sentenceText: "Expired sentence.",
             cefrLevel: "A1",
-            
+
             generatedAt: Date().addingTimeInterval(-8 * 24 * 60 * 60), // 8 days ago
             ttlDays: 7,
             source: .aiGenerated
@@ -136,7 +135,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("validSentences maintains original order")
-    func testValidSentencesMaintainsOrder() throws {
+    func validSentencesMaintainsOrder() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -146,7 +145,7 @@ struct SentenceGenerationViewModelTests {
         let sentence1 = try GeneratedSentence(
             sentenceText: "First",
             cefrLevel: "A1",
-            
+
             source: .aiGenerated
         )
         sentence1.flashcard = card
@@ -155,7 +154,7 @@ struct SentenceGenerationViewModelTests {
         let sentence2 = try GeneratedSentence(
             sentenceText: "Second",
             cefrLevel: "A1",
-            
+
             source: .aiGenerated
         )
         sentence2.flashcard = card
@@ -184,7 +183,7 @@ struct SentenceGenerationViewModelTests {
         let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1",
-            
+
             source: .aiGenerated
         )
         sentence.flashcard = card
@@ -199,7 +198,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("loadSentences filters expired sentences")
-    func testLoadSentencesFiltersExpired() throws {
+    func loadSentencesFiltersExpired() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -210,7 +209,7 @@ struct SentenceGenerationViewModelTests {
         let validSentence = try GeneratedSentence(
             sentenceText: "Valid",
             cefrLevel: "A1",
-            
+
             generatedAt: Date(),
             ttlDays: 7,
             source: .aiGenerated
@@ -222,7 +221,7 @@ struct SentenceGenerationViewModelTests {
         let expiredSentence = try GeneratedSentence(
             sentenceText: "Expired",
             cefrLevel: "A1",
-            
+
             generatedAt: Date().addingTimeInterval(-10 * 24 * 60 * 60),
             ttlDays: 7,
             source: .aiGenerated
@@ -239,7 +238,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("loadSentences sorts by generatedAt descending")
-    func testLoadSentencesSortsByDate() throws {
+    func loadSentencesSortsByDate() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -250,7 +249,7 @@ struct SentenceGenerationViewModelTests {
         let oldSentence = try GeneratedSentence(
             sentenceText: "Old",
             cefrLevel: "A1",
-            
+
             generatedAt: Date().addingTimeInterval(-1000),
             source: .aiGenerated
         )
@@ -261,7 +260,7 @@ struct SentenceGenerationViewModelTests {
         let newSentence = try GeneratedSentence(
             sentenceText: "New",
             cefrLevel: "A1",
-            
+
             generatedAt: Date().addingTimeInterval(-100),
             source: .aiGenerated
         )
@@ -278,7 +277,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("loadSentences handles empty array")
-    func testLoadSentencesEmpty() throws {
+    func loadSentencesEmpty() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -293,7 +292,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("loadSentences cleans up if all expired")
-    func testLoadSentencesCleanupAllExpired() throws {
+    func loadSentencesCleanupAllExpired() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -304,7 +303,7 @@ struct SentenceGenerationViewModelTests {
         let expired1 = try GeneratedSentence(
             sentenceText: "Expired 1",
             cefrLevel: "A1",
-            
+
             generatedAt: Date().addingTimeInterval(-10 * 24 * 60 * 60),
             ttlDays: 7,
             source: .aiGenerated
@@ -315,7 +314,7 @@ struct SentenceGenerationViewModelTests {
         let expired2 = try GeneratedSentence(
             sentenceText: "Expired 2",
             cefrLevel: "A1",
-            
+
             generatedAt: Date().addingTimeInterval(-10 * 24 * 60 * 60),
             ttlDays: 7,
             source: .aiGenerated
@@ -348,7 +347,7 @@ struct SentenceGenerationViewModelTests {
         let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1",
-            
+
             isFavorite: false,
             source: .aiGenerated
         )
@@ -375,7 +374,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("toggleFavorite saves to SwiftData")
-    func testToggleFavoriteSaves() throws {
+    func toggleFavoriteSaves() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -385,7 +384,7 @@ struct SentenceGenerationViewModelTests {
         let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1",
-            
+
             isFavorite: false,
             source: .aiGenerated
         )
@@ -402,7 +401,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("toggleFavorite sets errorMessage on failure")
-    func testToggleFavoriteError() throws {
+    func toggleFavoriteError() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -410,7 +409,7 @@ struct SentenceGenerationViewModelTests {
         let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1",
-            
+
             isFavorite: false,
             source: .aiGenerated
         )
@@ -435,7 +434,7 @@ struct SentenceGenerationViewModelTests {
         let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1",
-            
+
             source: .aiGenerated
         )
         sentence.flashcard = card
@@ -463,7 +462,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("deleteSentence removes from published array")
-    func testDeleteSentenceRemovesFromArray() throws {
+    func deleteSentenceRemovesFromArray() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -473,7 +472,7 @@ struct SentenceGenerationViewModelTests {
         let sentence1 = try GeneratedSentence(
             sentenceText: "Sentence 1",
             cefrLevel: "A1",
-            
+
             source: .aiGenerated
         )
         sentence1.flashcard = card
@@ -482,7 +481,7 @@ struct SentenceGenerationViewModelTests {
         let sentence2 = try GeneratedSentence(
             sentenceText: "Sentence 2",
             cefrLevel: "A1",
-            
+
             source: .aiGenerated
         )
         sentence2.flashcard = card
@@ -499,14 +498,14 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("deleteSentence handles save errors")
-    func testDeleteSentenceError() throws {
+    func deleteSentenceError() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
         let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1",
-            
+
             source: .aiGenerated
         )
 
@@ -534,7 +533,7 @@ struct SentenceGenerationViewModelTests {
         let valid = try GeneratedSentence(
             sentenceText: "Valid",
             cefrLevel: "A1",
-            
+
             generatedAt: Date(),
             ttlDays: 7,
             source: .aiGenerated
@@ -546,7 +545,7 @@ struct SentenceGenerationViewModelTests {
         let expired = try GeneratedSentence(
             sentenceText: "Expired",
             cefrLevel: "A1",
-            
+
             generatedAt: Date().addingTimeInterval(-10 * 24 * 60 * 60),
             ttlDays: 7,
             source: .aiGenerated
@@ -568,7 +567,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("cleanupExpiredSentences keeps valid sentences")
-    func testCleanupKeepsValid() throws {
+    func cleanupKeepsValid() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -578,7 +577,7 @@ struct SentenceGenerationViewModelTests {
         let valid1 = try GeneratedSentence(
             sentenceText: "Valid 1",
             cefrLevel: "A1",
-            
+
             generatedAt: Date(),
             ttlDays: 7,
             source: .aiGenerated
@@ -589,7 +588,7 @@ struct SentenceGenerationViewModelTests {
         let valid2 = try GeneratedSentence(
             sentenceText: "Valid 2",
             cefrLevel: "A1",
-            
+
             generatedAt: Date().addingTimeInterval(-1),
             ttlDays: 7,
             source: .aiGenerated
@@ -610,7 +609,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("cleanupExpiredSentences updates published array")
-    func testCleanupUpdatesPublishedArray() throws {
+    func cleanupUpdatesPublishedArray() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -620,7 +619,7 @@ struct SentenceGenerationViewModelTests {
         let valid = try GeneratedSentence(
             sentenceText: "Valid",
             cefrLevel: "A1",
-            
+
             generatedAt: Date(),
             ttlDays: 7,
             source: .aiGenerated
@@ -631,7 +630,7 @@ struct SentenceGenerationViewModelTests {
         let expired = try GeneratedSentence(
             sentenceText: "Expired",
             cefrLevel: "A1",
-            
+
             generatedAt: Date().addingTimeInterval(-10 * 24 * 60 * 60),
             ttlDays: 7,
             source: .aiGenerated
@@ -650,7 +649,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("cleanupExpiredSentences handles empty array")
-    func testCleanupEmptyArray() throws {
+    func cleanupEmptyArray() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -670,7 +669,7 @@ struct SentenceGenerationViewModelTests {
     // MARK: - SwiftData Integration Tests
 
     @Test("ModelContext is used correctly")
-    func testModelContextUsage() throws {
+    func modelContextUsage() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -683,7 +682,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("Insert operations work correctly")
-    func testInsertOperation() throws {
+    func insertOperation() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -693,7 +692,7 @@ struct SentenceGenerationViewModelTests {
         let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1",
-            
+
             source: .aiGenerated
         )
         sentence.flashcard = card
@@ -707,7 +706,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("Delete operations work correctly")
-    func testDeleteOperation() throws {
+    func deleteOperation() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -717,7 +716,7 @@ struct SentenceGenerationViewModelTests {
         let sentence = try GeneratedSentence(
             sentenceText: "Test sentence.",
             cefrLevel: "A1",
-            
+
             source: .aiGenerated
         )
         sentence.flashcard = card
@@ -735,7 +734,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("Cascade delete behavior works")
-    func testCascadeDelete() throws {
+    func cascadeDelete() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -745,7 +744,7 @@ struct SentenceGenerationViewModelTests {
         let sentence1 = try GeneratedSentence(
             sentenceText: "Sentence 1",
             cefrLevel: "A1",
-            
+
             source: .aiGenerated
         )
         sentence1.flashcard = card
@@ -754,7 +753,7 @@ struct SentenceGenerationViewModelTests {
         let sentence2 = try GeneratedSentence(
             sentenceText: "Sentence 2",
             cefrLevel: "A1",
-            
+
             source: .aiGenerated
         )
         sentence2.flashcard = card
@@ -774,7 +773,7 @@ struct SentenceGenerationViewModelTests {
     // MARK: - State Management Tests
 
     @Test("isGenerating true during generation")
-    func testIsGeneratingDuringGeneration() throws {
+    func isGeneratingDuringGeneration() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -790,7 +789,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("generationMessage set on success")
-    func testGenerationMessageSuccess() throws {
+    func generationMessageSuccess() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -804,7 +803,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("errorMessage set on error")
-    func testErrorMessageSet() throws {
+    func errorMessageSet() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -815,7 +814,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("State cleared on new generation")
-    func testStateCleared() throws {
+    func stateCleared() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -832,7 +831,7 @@ struct SentenceGenerationViewModelTests {
     // MARK: - Sentences Per Card Tests
 
     @Test("sentencesPerCard defaults to 3")
-    func testSentencesPerCardDefault() throws {
+    func sentencesPerCardDefault() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -842,7 +841,7 @@ struct SentenceGenerationViewModelTests {
     }
 
     @Test("sentencesPerCard is mutable")
-    func testSentencesPerCardMutable() throws {
+    func sentencesPerCardMutable() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 
@@ -855,7 +854,7 @@ struct SentenceGenerationViewModelTests {
     // MARK: - MainActor Isolation Tests
 
     @Test("ViewModel is MainActor isolated")
-    func testMainActorIsolation() throws {
+    func mainActorIsolation() throws {
         let context = TestContainers.freshContext()
         try context.clearAll()
 

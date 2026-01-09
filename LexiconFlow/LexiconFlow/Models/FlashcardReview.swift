@@ -7,8 +7,8 @@
 //  NOTE: Renamed from ReviewLog to avoid conflict with FSRS.ReviewLog
 //
 
-import SwiftData
 import Foundation
+import SwiftData
 
 /// A record of a single card review session
 ///
@@ -64,12 +64,13 @@ final class FlashcardReview {
     ///   - reviewDate: When review occurred (defaults to now)
     ///   - scheduledDays: Days until next review
     ///   - elapsedDays: Days since previous review
-    init(id: UUID = UUID(),
-         rating: Int,
-         reviewDate: Date = Date(),
-         scheduledDays: Double = 0.0,
-         elapsedDays: Double = 0.0) {
-
+    init(
+        id: UUID = UUID(),
+        rating: Int,
+        reviewDate: Date = Date(),
+        scheduledDays: Double = 0.0,
+        elapsedDays: Double = 0.0
+    ) {
         self.id = id
         self.rating = rating
         self.reviewDate = reviewDate
@@ -78,12 +79,16 @@ final class FlashcardReview {
     }
 
     /// Initialize review log with minimal parameters
-    convenience init(rating: Int,
-                     scheduledDays: Double,
-                     elapsedDays: Double) {
-        self.init(rating: rating,
-                  reviewDate: Date(),
-                  scheduledDays: scheduledDays,
-                  elapsedDays: elapsedDays)
+    convenience init(
+        rating: Int,
+        scheduledDays: Double,
+        elapsedDays: Double
+    ) {
+        self.init(
+            rating: rating,
+            reviewDate: Date(),
+            scheduledDays: scheduledDays,
+            elapsedDays: elapsedDays
+        )
     }
 }

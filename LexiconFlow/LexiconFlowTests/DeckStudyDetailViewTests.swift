@@ -5,15 +5,14 @@
 //  Tests for DeckStudyDetailView covering session lifecycle, stats refresh, error handling
 //
 
-import Testing
-import SwiftUI
 import SwiftData
+import SwiftUI
+import Testing
 @testable import LexiconFlow
 
 @MainActor
 @Suite("DeckStudyDetailView Tests")
 struct DeckStudyDetailViewTests {
-
     private func makeTestContainer() -> ModelContainer {
         let schema = Schema([Deck.self, Flashcard.self, FSRSState.self, FlashcardReview.self])
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
@@ -60,9 +59,9 @@ struct DeckStudyDetailViewTests {
 
     @Test("View initializes with deck parameter")
     func initWithDeck() async {
-        let container = makeTestContainer()
+        let container = self.makeTestContainer()
         let context = ModelContext(container)
-        let deck = insertDeckWithCards(context: context)
+        let deck = self.insertDeckWithCards(context: context)
 
         let view = DeckStudyDetailView(deck: deck)
             .modelContainer(container)
@@ -72,9 +71,9 @@ struct DeckStudyDetailViewTests {
 
     @Test("Statistics refresh on appear")
     func statsRefreshOnAppear() async {
-        let container = makeTestContainer()
+        let container = self.makeTestContainer()
         let context = ModelContext(container)
-        let deck = insertDeckWithCards(context: context)
+        let deck = self.insertDeckWithCards(context: context)
 
         let view = DeckStudyDetailView(deck: deck)
             .modelContainer(container)
@@ -92,7 +91,7 @@ struct DeckStudyDetailViewTests {
 
     @Test("Study session start validation shows error when no cards")
     func startSessionNoCards() async {
-        let container = makeTestContainer()
+        let container = self.makeTestContainer()
         let context = ModelContext(container)
 
         // Create empty deck
@@ -112,9 +111,9 @@ struct DeckStudyDetailViewTests {
 
     @Test("Study session start navigates to session with cards")
     func startSessionWithCards() async {
-        let container = makeTestContainer()
+        let container = self.makeTestContainer()
         let context = ModelContext(container)
-        let deck = insertDeckWithCards(context: context)
+        let deck = self.insertDeckWithCards(context: context)
 
         let scheduler = Scheduler(modelContext: context)
         let availableCount = scheduler.fetchCards(for: deck, mode: .scheduled, limit: 1).count
@@ -124,9 +123,9 @@ struct DeckStudyDetailViewTests {
 
     @Test("Session lifecycle: start → study → complete → refresh")
     func sessionLifecycle() async {
-        let container = makeTestContainer()
+        let container = self.makeTestContainer()
         let context = ModelContext(container)
-        let deck = insertDeckWithCards(context: context)
+        let deck = self.insertDeckWithCards(context: context)
 
         // Start session
         let viewModel = StudySessionViewModel(
@@ -139,16 +138,16 @@ struct DeckStudyDetailViewTests {
         #expect(viewModel.cards.count > 0)
 
         // Simulate session completion
-        let initialDueCount = scheduler(for: context).dueCardCount(for: deck)
+        let initialDueCount = self.scheduler(for: context).dueCardCount(for: deck)
 
         // After review, stats should be refreshed
-        let refreshedDueCount = scheduler(for: context).dueCardCount(for: deck)
+        let refreshedDueCount = self.scheduler(for: context).dueCardCount(for: deck)
         #expect(refreshedDueCount <= initialDueCount)
     }
 
     @Test("Empty session handles gracefully")
     func emptySessionHandling() async {
-        let container = makeTestContainer()
+        let container = self.makeTestContainer()
         let context = ModelContext(container)
 
         // Create deck with no cards
@@ -171,9 +170,9 @@ struct DeckStudyDetailViewTests {
 
     @Test("Navigation passes correct deck to StudySessionView")
     func navigationWithDeck() async {
-        let container = makeTestContainer()
+        let container = self.makeTestContainer()
         let context = ModelContext(container)
-        let deck = insertDeckWithCards(context: context)
+        let deck = self.insertDeckWithCards(context: context)
 
         // Verify deck is passed correctly
         #expect(deck.name == "Vocabulary")
@@ -181,9 +180,9 @@ struct DeckStudyDetailViewTests {
 
     @Test("Conditional UI: scheduled section only if due cards")
     func conditionalScheduledSection() async {
-        let container = makeTestContainer()
+        let container = self.makeTestContainer()
         let context = ModelContext(container)
-        let deck = insertDeckWithCards(context: context)
+        let deck = self.insertDeckWithCards(context: context)
 
         let scheduler = Scheduler(modelContext: context)
         let dueCount = scheduler.dueCardCount(for: deck)
@@ -194,9 +193,9 @@ struct DeckStudyDetailViewTests {
 
     @Test("StudyModeCard displays correct mode name")
     func studyModeCardDisplay() async {
-        let container = makeTestContainer()
+        let container = self.makeTestContainer()
         let context = ModelContext(container)
-        let deck = insertDeckWithCards(context: context)
+        let deck = self.insertDeckWithCards(context: context)
 
         let view = DeckStudyDetailView(deck: deck)
             .modelContainer(container)
@@ -207,7 +206,7 @@ struct DeckStudyDetailViewTests {
 
     @Test("Error state displays for failed operations")
     func errorStateDisplay() async {
-        let container = makeTestContainer()
+        let container = self.makeTestContainer()
         let context = ModelContext(container)
 
         // Create empty deck
@@ -227,11 +226,11 @@ struct DeckStudyDetailViewTests {
 
     @Test("Statistics update after session completion")
     func statsUpdateAfterSession() async {
-        let container = makeTestContainer()
+        let container = self.makeTestContainer()
         let context = ModelContext(container)
-        let deck = insertDeckWithCards(context: context)
+        let deck = self.insertDeckWithCards(context: context)
 
-        let initialTotalCount = scheduler(for: context).totalCardCount(for: deck)
+        let initialTotalCount = self.scheduler(for: context).totalCardCount(for: deck)
 
         // Simulate session
         let viewModel = StudySessionViewModel(
@@ -244,16 +243,16 @@ struct DeckStudyDetailViewTests {
         let initialCardCount = viewModel.cards.count
 
         // Stats should remain consistent
-        let finalTotalCount = scheduler(for: context).totalCardCount(for: deck)
+        let finalTotalCount = self.scheduler(for: context).totalCardCount(for: deck)
         #expect(finalTotalCount == initialTotalCount)
         #expect(initialCardCount > 0)
     }
 
     @Test("Deleted deck during session handles gracefully")
     func deletedDeckHandling() async {
-        let container = makeTestContainer()
+        let container = self.makeTestContainer()
         let context = ModelContext(container)
-        let deck = insertDeckWithCards(context: context)
+        let deck = self.insertDeckWithCards(context: context)
 
         let deckID = deck.id
 

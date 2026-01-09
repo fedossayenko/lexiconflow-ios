@@ -5,8 +5,8 @@
 //  Manages gesture state for flashcard swipe interactions.
 //
 
-import SwiftUI
 import Combine
+import SwiftUI
 
 /// View model for tracking and updating flashcard swipe gesture state.
 ///
@@ -14,7 +14,6 @@ import Combine
 /// Maps 4-directional swipes to FSRS ratings with appropriate visual effects.
 @MainActor
 class CardGestureViewModel: ObservableObject {
-
     // MARK: - Published Properties
 
     /// Current offset of the card from center.
@@ -46,11 +45,11 @@ class CardGestureViewModel: ObservableObject {
 
     /// Direction of swipe gesture.
     enum SwipeDirection {
-        case left    // Again rating
-        case right   // Good rating
-        case up      // Easy rating
-        case down    // Hard rating
-        case none    // No clear direction
+        case left // Again rating
+        case right // Good rating
+        case up // Easy rating
+        case down // Hard rating
+        case none // No clear direction
     }
 
     /// Result of gesture change processing.
@@ -90,43 +89,43 @@ class CardGestureViewModel: ObservableObject {
     /// Calculates progress based on threshold and updates all visual properties
     /// according to the detected direction.
     func updateGestureState(translation: CGSize) {
-        let direction = detectDirection(translation: translation)
+        let direction = self.detectDirection(translation: translation)
         let distance = max(abs(translation.width), abs(translation.height))
         let progress = min(distance / GestureConstants.swipeThreshold, 1.0)
 
-        offset = translation
+        self.offset = translation
 
         switch direction {
         case .right:
             // Good rating - Green tint, swelling effect
-            scale = 1.0 + (progress * 0.15)
-            tintColor = .green.opacity(progress * 0.3)
-            rotation = Double(translation.width / 50)
+            self.scale = 1.0 + (progress * 0.15)
+            self.tintColor = .green.opacity(progress * 0.3)
+            self.rotation = Double(translation.width / 50)
 
         case .left:
             // Again rating - Red tint, shrinking effect
-            scale = 1.0 - (progress * 0.2)
-            tintColor = .red.opacity(progress * 0.3)
-            rotation = Double(translation.width / 50)
+            self.scale = 1.0 - (progress * 0.2)
+            self.tintColor = .red.opacity(progress * 0.3)
+            self.rotation = Double(translation.width / 50)
 
         case .up:
             // Easy rating - Blue tint, lightening effect
-            scale = 1.0 + (progress * 0.1)
-            tintColor = .blue.opacity(progress * 0.3)
-            opacity = 1.0 - (progress * 0.2)
+            self.scale = 1.0 + (progress * 0.1)
+            self.tintColor = .blue.opacity(progress * 0.3)
+            self.opacity = 1.0 - (progress * 0.2)
 
         case .down:
             // Hard rating - Orange tint, heavy effect
-            scale = 1.0 + (progress * 0.05)
-            tintColor = .orange.opacity(progress * 0.4)
-            opacity = min(1.0 + (progress * 0.1), 1.0)
+            self.scale = 1.0 + (progress * 0.05)
+            self.tintColor = .orange.opacity(progress * 0.4)
+            self.opacity = min(1.0 + (progress * 0.1), 1.0)
 
         case .none:
             // No clear direction yet - show subtle dragging feedback
             // This eliminates the dead zone feeling for small movements
-            scale = 1.0 + (progress * 0.05)
-            tintColor = .clear
-            rotation = 0
+            self.scale = 1.0 + (progress * 0.05)
+            self.tintColor = .clear
+            self.rotation = 0
         }
     }
 
@@ -138,13 +137,13 @@ class CardGestureViewModel: ObservableObject {
     /// This method combines direction detection, progress calculation, and state update
     /// into a single call for cleaner view code.
     func handleGestureChange(_ value: DragGesture.Value) -> GestureResult? {
-        let direction = detectDirection(translation: value.translation)
+        let direction = self.detectDirection(translation: value.translation)
         guard direction != .none else { return nil }
 
         let distance = max(abs(value.translation.width), abs(value.translation.height))
         let progress = min(distance / GestureConstants.swipeThreshold, 1.0)
 
-        updateGestureState(translation: value.translation)
+        self.updateGestureState(translation: value.translation)
         return GestureResult(direction: direction, progress: progress)
     }
 
@@ -152,11 +151,11 @@ class CardGestureViewModel: ObservableObject {
     ///
     /// Called when gesture is cancelled or card snaps back to center.
     func resetGestureState() {
-        offset = .zero
-        scale = 1.0
-        rotation = 0.0
-        opacity = 1.0
-        tintColor = .clear
+        self.offset = .zero
+        self.scale = 1.0
+        self.rotation = 0.0
+        self.opacity = 1.0
+        self.tintColor = .clear
     }
 
     /// Checks if translation exceeds swipe threshold.
@@ -174,11 +173,11 @@ class CardGestureViewModel: ObservableObject {
     /// - Returns: Corresponding FSRS rating value
     func ratingForDirection(_ direction: SwipeDirection) -> Int {
         switch direction {
-        case .right: return 2  // Good
-        case .left:  return 0  // Again
-        case .up:    return 3  // Easy
-        case .down:  return 1  // Hard
-        case .none:  return 2  // Default to Good
+        case .right: 2 // Good
+        case .left: 0 // Again
+        case .up: 3 // Easy
+        case .down: 1 // Hard
+        case .none: 2 // Default to Good
         }
     }
 }
@@ -189,11 +188,11 @@ extension CardGestureViewModel.SwipeDirection {
     /// Converts gesture direction to haptic service direction.
     var hapticDirection: HapticService.SwipeDirection {
         switch self {
-        case .right: return .right
-        case .left:  return .left
-        case .up:    return .up
-        case .down:  return .down
-        case .none:  return .right  // fallback
+        case .right: .right
+        case .left: .left
+        case .up: .up
+        case .down: .down
+        case .none: .right // fallback
         }
     }
 }
