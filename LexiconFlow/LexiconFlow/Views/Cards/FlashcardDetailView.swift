@@ -376,10 +376,11 @@ private extension Preview {
         do {
             return try ModelContainer(for: Flashcard.self, configurations: config)
         } catch {
-            // Preview failure indicates a real problem - log and use fallback
+            // Preview failure indicates a real problem - log and use minimal fallback
             assertionFailure("Failed to create preview container: \(error.localizedDescription)")
             // Fallback: return empty container to prevent preview crash
-            return try! ModelContainer(for: Flashcard.self, configurations: config)
+            // EmptyModel.self is guaranteed to succeed as it has no persistent properties
+            return try! ModelContainer(for: EmptyModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         }
     }
 }

@@ -232,7 +232,7 @@ cd LexiconFlow
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.2' \
   -only-testing:LexiconFlowTests
 ```
 
@@ -242,7 +242,7 @@ xcodebuild test \
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.2' \
   -only-testing:LexiconFlowTests/ModelTests
 ```
 
@@ -252,7 +252,7 @@ xcodebuild test \
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.2' \
   -only-testing:LexiconFlowTests/ModelTests/testFlashcardCreation
 ```
 
@@ -426,7 +426,7 @@ private func createTestFlashcard(
 Tests run automatically on:
 - Pull requests to `main` or `develop`
 - Workflow: `.github/workflows/ci.yml`
-- Platform: macOS latest, iPhone 16 simulator, iOS 26.1
+- Platform: macOS latest, iPhone 17 simulator, iOS 26.2
 
 ## Writing New Tests
 

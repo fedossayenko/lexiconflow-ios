@@ -192,6 +192,12 @@ enum AppSettings {
     /// Whether glass morphism effects are enabled
     @AppStorage("glassEffectsEnabled") static var glassEffectsEnabled: Bool = true
 
+    /// Whether matched geometry effect transitions are enabled for card flips
+    ///
+    /// **Note**: When enabled, card elements (word, phonetic) smoothly animate to new positions during flip.
+    /// Disabled by default to maintain current ZStack transition behavior.
+    @AppStorage("matchedGeometryEffectEnabled") static var matchedGeometryEffectEnabled: Bool = false
+
     // MARK: - Test Support
 
     #if DEBUG
@@ -209,7 +215,8 @@ enum AppSettings {
                 "dailyGoal": 20,
                 "statisticsTimeRange": "7d",
                 "darkMode": "system",
-                "glassEffectsEnabled": true
+                "glassEffectsEnabled": true,
+                "matchedGeometryEffectEnabled": false
             ] as [String: Any]
 
             for (key, value) in defaults {

@@ -40,12 +40,27 @@ struct LexiconFlowApp: App {
     /// Shared SwiftData ModelContainer for the entire app
     /// - Persists to SQLite database (not in-memory)
     /// - CloudKit sync: DISABLED (will be enabled in Phase 4)
-    /// - Falls back to in-memory storage if SQLite fails
+    /// - Migration: Automatic lightweight migration (SwiftData handles schema changes)
+    ///
+    /// **Migration History (Lightweight Migrations Handled Automatically by SwiftData):**
+    /// - V1 → V2: Added `translation: String?` field to Flashcard
+    /// - V2 → V3: Added `cefrLevel: String?` field to Flashcard
+    /// - V3 → V4: Added `lastReviewDate: Date?` field to FSRSState
+    /// - V3 → V4: Added `GeneratedSentence` and `DailyStats` models
+    ///
+    /// **Lightweight Migration Criteria:**
+    /// SwiftData automatically handles migrations that:
+    /// - Add new properties (optional or with default values)
+    /// - Remove properties
+    /// - Add new models
+    /// - Remove empty models
+    ///
+    /// All LexiconFlow schema changes meet these criteria, so no explicit migration plan is needed.
     var sharedModelContainer: ModelContainer = {
         let logger = Logger(subsystem: "com.lexiconflow.app", category: "LexiconFlowApp")
 
         // Define the schema with all models
-        // SwiftData automatically handles lightweight migrations (dropping optional fields)
+        // SwiftData automatically handles lightweight migrations
         let schema = Schema([
             FSRSState.self,
             Flashcard.self,
@@ -63,6 +78,7 @@ struct LexiconFlowApp: App {
         } catch {
             // Log critical failure
             logger.critical("Failed to create persistent ModelContainer: \(error.localizedDescription)")
+            Analytics.trackError("model_container_persistent_failed", error: error)
         }
 
         // Attempt 2: Fallback to in-memory storage (data loss on app quit)
@@ -70,10 +86,12 @@ struct LexiconFlowApp: App {
         do {
             let container = try ModelContainer(for: schema, configurations: [inMemoryConfig])
             logger.warning("Using in-memory storage due to persistent storage failure")
+            Analytics.trackEvent("model_container_in_memory_fallback")
             return container
         } catch {
             // Log critical failure
             logger.critical("Failed to create in-memory ModelContainer: \(error.localizedDescription)")
+            Analytics.trackError("model_container_in_memory_failed", error: error)
         }
 
         // Attempt 3: Last resort - create minimal container (allows error UI to show)
@@ -86,6 +104,7 @@ struct LexiconFlowApp: App {
         do {
             let minimalContainer = try ModelContainer(for: EmptyModel.self)
             logger.critical("Minimal container created successfully. App will run with no data persistence.")
+            Analytics.trackEvent("model_container_minimal_fallback")
             return minimalContainer
         } catch {
             // Last resort: return pre-initialized empty container
@@ -191,7 +210,7 @@ struct LexiconFlowApp: App {
         do {
             // Check if vocabulary file exists
             guard Bundle.main.url(
-                forResource: "IELTS/ielts-vocabulary-smartool",
+                forResource: "Resources/IELTS/ielts-vocabulary-smartool",
                 withExtension: "json"
             ) != nil else {
                 logger.error("IELTS vocabulary file not found in bundle")

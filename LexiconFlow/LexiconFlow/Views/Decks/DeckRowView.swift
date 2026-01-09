@@ -12,13 +12,30 @@ struct DeckRowView: View {
     @Bindable var deck: Deck
     let dueCount: Int
 
+    // MARK: - Computed Properties
+
+    /// Calculate progress ratio (due/total), clamped to 0-1
+    private var progressRatio: Double {
+        guard self.deck.cards.count > 0 else { return 0 }
+        return min(max(Double(self.dueCount) / Double(self.deck.cards.count), 0), 1)
+    }
+
+    // MARK: - Body
+
     var body: some View {
         HStack(spacing: 16) {
-            // Deck icon
+            // Deck icon with progress ring (UNIFIED)
             Image(systemName: self.deck.icon ?? "folder.fill")
-                .font(.title2)
+                .font(.system(size: 24))
                 .foregroundStyle(.blue)
-                .frame(width: 40, height: 40)
+                .glassEffectUnion(
+                    progress: self.progressRatio,
+                    thickness: .thin,
+                    iconSize: 50
+                )
+                .accessibilityLabel("Deck icon")
+                .accessibilityValue("\(self.dueCount) of \(self.deck.cards.count) cards due")
+                .accessibilityHint("Circular progress showing \(Int(self.progressRatio * 100))% complete")
 
             // Deck info
             VStack(alignment: .leading, spacing: 4) {

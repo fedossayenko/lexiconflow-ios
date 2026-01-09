@@ -172,7 +172,7 @@ final class IELTSVocabularyImporter {
 
         // Step 1: Load vocabulary from bundle
         guard let url = Bundle.main.url(
-            forResource: "IELTS/ielts-vocabulary-smartool",
+            forResource: "Resources/IELTS/ielts-vocabulary-smartool",
             withExtension: "json"
         ) else {
             self.logger.error("Vocabulary file not found in bundle")
@@ -342,7 +342,7 @@ final class IELTSVocabularyImporter {
 
         // Load vocabulary from bundle
         guard let url = Bundle.main.url(
-            forResource: "IELTS/ielts-vocabulary-smartool",
+            forResource: "Resources/IELTS/ielts-vocabulary-smartool",
             withExtension: "json"
         ) else {
             self.logger.error("Vocabulary file not found in bundle")
@@ -435,7 +435,7 @@ final class IELTSVocabularyImporter {
     /// - Returns: true if the file exists, false otherwise
     func vocabularyFileExists() -> Bool {
         Bundle.main.url(
-            forResource: "IELTS/ielts-vocabulary-smartool",
+            forResource: "Resources/IELTS/ielts-vocabulary-smartool",
             withExtension: "json"
         ) != nil
     }
@@ -446,7 +446,7 @@ final class IELTSVocabularyImporter {
     /// - Throws: IELTSImportError if loading fails
     func getVocabularyMetadata() throws -> VocabularyMetadata {
         guard let url = Bundle.main.url(
-            forResource: "IELTS/ielts-vocabulary-smartool",
+            forResource: "Resources/IELTS/ielts-vocabulary-smartool",
             withExtension: "json"
         ) else {
             throw IELTSImportError.fileNotFound

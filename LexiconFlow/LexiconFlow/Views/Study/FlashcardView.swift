@@ -64,18 +64,27 @@ struct FlashcardView: View {
     var onSwipe: ((Int) -> Void)?
 
     var body: some View {
-        ZStack {
-            if self.isFlipped {
-                CardBackView(card: self.card)
-                    .glassEffectTransition(.scaleFade)
-                    .zIndex(1)
+        Group {
+            if AppSettings.matchedGeometryEffectEnabled {
+                // Use matched geometry effect for smooth element transitions
+                FlashcardMatchedView(card: self.card, isFlipped: self.$isFlipped)
             } else {
-                CardFrontView(card: self.card)
-                    .glassEffectTransition(.scaleFade)
-                    .zIndex(0)
+                // Use traditional ZStack transition (original behavior)
+                ZStack {
+                    if self.isFlipped {
+                        CardBackView(card: self.card)
+                            .glassEffectTransition(.scaleFade)
+                            .zIndex(1)
+                    } else {
+                        CardFrontView(card: self.card)
+                            .glassEffectTransition(.scaleFade)
+                            .zIndex(0)
+                    }
+                }
             }
-
-            // Info button (top-right corner)
+        }
+        .overlay {
+            // Info button (top-right corner) - shared by both modes
             VStack {
                 HStack {
                     Spacer()
@@ -104,12 +113,24 @@ struct FlashcardView: View {
         .glassEffect(AppSettings.glassEffectsEnabled ? self.glassThickness : .thin)
         .animation(.spring(response: 0.4, dampingFraction: 0.75), value: self.isFlipped)
         .interactive(self.$gestureViewModel.offset) { dragOffset in
-            let progress = min(max(dragOffset.width / 100, -1), 1)
+            let horizontalProgress = min(max(dragOffset.width / 100, -1), 1)
+            let verticalProgress = min(max(dragOffset.height / 100, -1), 1)
+            let isHorizontal = abs(dragOffset.width) > abs(dragOffset.height)
 
-            if progress > 0 {
-                return .tint(.green.opacity(0.3 * progress))
+            if isHorizontal {
+                // Horizontal swipes: Left (Again) / Right (Good)
+                if horizontalProgress > 0 {
+                    return .tint(.green.opacity(0.3 * horizontalProgress)) // Right (Good)
+                } else {
+                    return .tint(.red.opacity(0.3 * abs(horizontalProgress))) // Left (Again)
+                }
             } else {
-                return .tint(.red.opacity(0.3 * abs(progress)))
+                // Vertical swipes: Up (Easy) / Down (Hard)
+                if verticalProgress < 0 {
+                    return .tint(.blue.opacity(0.3 * abs(verticalProgress))) // Up (Easy)
+                } else {
+                    return .tint(.orange.opacity(0.4 * verticalProgress)) // Down (Hard)
+                }
             }
         }
         // Gesture visual feedback

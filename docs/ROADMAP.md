@@ -67,7 +67,7 @@ This document outlines the phased development approach for Lexicon Flow, from in
 - [x] App launches without crashes on iOS 26
 - [x] Can create a deck and add cards manually
 - [x] FSRS algorithm schedules next review correctly
-- [x] All unit tests passing (131 tests, 9 suites)
+- [x] All unit tests passing (370+ tests, 24+ suites)
 
 ---
 

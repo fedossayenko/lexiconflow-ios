@@ -7,6 +7,52 @@
 
 import SwiftUI
 
+// MARK: - Interactive Glass Constants
+
+/// Visual constants for interactive glass effects.
+///
+/// These values are tuned for the "Liquid Glass" feel where glass responds
+/// fluidly to drag gestures with appropriate visual feedback.
+private enum InteractiveGlassConstants {
+    /// Maximum drag distance for full effect (points)
+    /// - Drag distance beyond this value saturates at 1.0 progress
+    static let maxDragDistance: CGFloat = 200
+
+    /// Specular highlight opacity at full progress
+    /// - Controls brightness of the light refraction effect
+    static let specularHighlightOpacity: Double = 0.3
+
+    /// Edge glow opacity multiplier at full progress
+    /// - Controls intensity of the glowing rim effect
+    static let edgeGlowOpacityMultiplier: Double = 0.5
+
+    /// Edge glow line width (points)
+    /// - Thickness of the glowing border around the card
+    static let edgeGlowLineWidth: CGFloat = 2
+
+    /// Edge glow blur radius (points)
+    /// - Softness of the glowing edge
+    static let edgeGlowBlurRadius: CGFloat = 4
+
+    /// Hue rotation degrees at max drag
+    /// - Creates subtle color shift during drag
+    static let hueRotationDegrees: Double = 5
+
+    /// Saturation increase multiplier at full progress
+    /// - Enhances color vividness during interaction
+    static let saturationIncreaseMultiplier: Double = 0.2
+
+    /// Scale effect multiplier at full progress (5% swelling)
+    /// - Creates subtle "swelling" effect when dragged
+    static let scaleEffectMultiplier: Double = 0.05
+
+    /// 3D rotation degrees at max drag
+    /// - Creates subtle perspective tilt effect
+    static let rotation3DDegrees: Double = 5
+}
+
+// MARK: - Interactive Effect
+
 /// Configuration for interactive glass effects.
 ///
 /// Defines the visual feedback applied during drag gestures,
@@ -39,7 +85,7 @@ struct InteractiveGlassModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         let effect = self.effectBuilder(self.offset)
-        let progress = min(abs(offset.width) / 200, 1.0)
+        let progress = min(abs(offset.width) / InteractiveGlassConstants.maxDragDistance, 1.0)
 
         return content
             .overlay(
@@ -53,7 +99,7 @@ struct InteractiveGlassModifier: ViewModifier {
                             .fill(
                                 LinearGradient(
                                     colors: [
-                                        .white.opacity(0.3 * progress),
+                                        .white.opacity(InteractiveGlassConstants.specularHighlightOpacity * progress),
                                         .clear
                                     ],
                                     startPoint: self.offset.width > 0 ? .leading : .trailing,
@@ -67,18 +113,18 @@ struct InteractiveGlassModifier: ViewModifier {
                     if progress > 0.2 {
                         RoundedRectangle(cornerRadius: 20)
                             .strokeBorder(
-                                effect.tint.opacity(progress * 0.5),
-                                lineWidth: 2
+                                effect.tint.opacity(progress * InteractiveGlassConstants.edgeGlowOpacityMultiplier),
+                                lineWidth: InteractiveGlassConstants.edgeGlowLineWidth
                             )
-                            .blur(radius: 4)
+                            .blur(radius: InteractiveGlassConstants.edgeGlowBlurRadius)
                     }
                 }
             )
-            .hueRotation(.degrees(progress * 5))
-            .saturation(progress > 0 ? 1.0 + (progress * 0.2) : 1.0)
-            .scaleEffect(1.0 + (progress * 0.05)) // Subtle "swelling"
+            .hueRotation(.degrees(progress * InteractiveGlassConstants.hueRotationDegrees))
+            .saturation(progress > 0 ? 1.0 + (progress * InteractiveGlassConstants.saturationIncreaseMultiplier) : 1.0)
+            .scaleEffect(1.0 + (progress * InteractiveGlassConstants.scaleEffectMultiplier)) // Subtle "swelling"
             .rotation3DEffect(
-                .degrees(progress * 5),
+                .degrees(progress * InteractiveGlassConstants.rotation3DDegrees),
                 axis: (x: 0, y: 1, z: 0),
                 anchor: .center,
                 perspective: 1.0

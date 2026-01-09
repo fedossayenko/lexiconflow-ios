@@ -95,13 +95,11 @@ struct TimeoutExtensionsTests {
         let error = await TimeoutErrorResult.capture {
             try await withTimeout(seconds: 0.1) {
                 // Long-running operation that checks for cancellation
-                for await _ in Task.sleep(interval: .milliseconds(50)).stream {
-                    if Task.isCancelled {
-                        taskWasCancelled = true
-                        throw CancellationError()
-                    }
+                while !Task.isCancelled {
+                    try await Task.sleep(for: .milliseconds(50))
                 }
-                return "never completes"
+                taskWasCancelled = true
+                throw CancellationError()
             }
         }
 
@@ -196,7 +194,7 @@ struct TimeoutExtensionsTests {
     @Test("withTimeout handles concurrent operations")
     func concurrentOperations() async throws {
         // Run multiple timeout operations concurrently
-        async func operation(_ id: Int) async throws -> Int {
+        func operation(_ id: Int) async throws -> Int {
             try await withTimeout(seconds: 1.0) {
                 try await Task.sleep(nanoseconds: 10000000)
                 return id
