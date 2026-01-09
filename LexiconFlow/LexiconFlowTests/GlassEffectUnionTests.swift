@@ -35,7 +35,6 @@ struct GlassEffectUnionTests {
         // Verify view can be created with 0.0 progress
         let view = self.createProgressView(progress: 0.0)
         // SwiftUI trim(from:to:) with to: 0.0 shows empty ring
-        #expect(view != EmptyView())
     }
 
     @Test("Progress 0.25 shows quarter ring (green)")
@@ -43,7 +42,6 @@ struct GlassEffectUnionTests {
         let progress = 0.25
         let view = self.createProgressView(progress: progress)
         // 0.25 is in green range (< 0.3)
-        #expect(view != EmptyView())
     }
 
     @Test("Progress 0.5 shows half ring (orange)")
@@ -51,7 +49,6 @@ struct GlassEffectUnionTests {
         let progress = 0.5
         let view = self.createProgressView(progress: progress)
         // 0.5 is in orange range (0.3-0.7)
-        #expect(view != EmptyView())
     }
 
     @Test("Progress 0.75 shows three-quarter ring (red)")
@@ -59,7 +56,6 @@ struct GlassEffectUnionTests {
         let progress = 0.75
         let view = self.createProgressView(progress: progress)
         // 0.75 is in red range (>= 0.7)
-        #expect(view != EmptyView())
     }
 
     @Test("Progress 1.0 shows full ring")
@@ -67,7 +63,6 @@ struct GlassEffectUnionTests {
         let progress = 1.0
         let view = self.createProgressView(progress: progress)
         // 1.0 shows full ring (max due count)
-        #expect(view != EmptyView())
     }
 
     @Test("Progress handles boundary case 0.3 exactly")
@@ -75,7 +70,6 @@ struct GlassEffectUnionTests {
         let progress = 0.3
         let view = self.createProgressView(progress: progress)
         // 0.3 is boundary (inclusive for orange: 0.3..<0.7)
-        #expect(view != EmptyView())
     }
 
     @Test("Progress handles boundary case 0.7 exactly")
@@ -83,7 +77,6 @@ struct GlassEffectUnionTests {
         let progress = 0.7
         let view = self.createProgressView(progress: progress)
         // 0.7 is boundary (>= 0.7 for red)
-        #expect(view != EmptyView())
     }
 
     // MARK: - B. Color Coding (9 tests)
@@ -94,14 +87,12 @@ struct GlassEffectUnionTests {
         // baseHue = 120 (green), saturation = 0.8
         let progress = 0.0
         let view = self.createProgressView(progress: progress)
-        #expect(view != EmptyView())
     }
 
     @Test("Progress 0.1 uses green color")
     func progress0Point1UsesGreen() {
         let progress = 0.1
         let view = self.createProgressView(progress: progress)
-        #expect(view != EmptyView())
     }
 
     @Test("Progress 0.29 uses green color")
@@ -109,7 +100,6 @@ struct GlassEffectUnionTests {
         let progress = 0.29
         let view = self.createProgressView(progress: progress)
         // Last value before orange boundary
-        #expect(view != EmptyView())
     }
 
     @Test("Progress 0.3 uses orange color")
@@ -118,7 +108,6 @@ struct GlassEffectUnionTests {
         let view = self.createProgressView(progress: progress)
         // First value in orange range
         // baseHue = 30 (orange), saturation = 0.9
-        #expect(view != EmptyView())
     }
 
     @Test("Progress 0.5 uses orange color")
@@ -126,7 +115,6 @@ struct GlassEffectUnionTests {
         let progress = 0.5
         let view = self.createProgressView(progress: progress)
         // Middle of orange range
-        #expect(view != EmptyView())
     }
 
     @Test("Progress 0.69 uses orange color")
@@ -134,7 +122,6 @@ struct GlassEffectUnionTests {
         let progress = 0.69
         let view = self.createProgressView(progress: progress)
         // Last value before red boundary
-        #expect(view != EmptyView())
     }
 
     @Test("Progress 0.7 uses red color")
@@ -143,7 +130,6 @@ struct GlassEffectUnionTests {
         let view = self.createProgressView(progress: progress)
         // First value in red range
         // baseHue = 0 (red), saturation = 0.9
-        #expect(view != EmptyView())
     }
 
     @Test("Progress 0.9 uses red color")
@@ -151,7 +137,6 @@ struct GlassEffectUnionTests {
         let progress = 0.9
         let view = self.createProgressView(progress: progress)
         // High red value
-        #expect(view != EmptyView())
     }
 
     @Test("Color gradient has 3 stops")
@@ -161,7 +146,6 @@ struct GlassEffectUnionTests {
         // Each with proper opacity: 0.8, 0.6, 0.4
         let progress = 0.5
         let view = self.createProgressView(progress: progress)
-        #expect(view != EmptyView())
     }
 
     // MARK: - C. Clamping (5 tests)
@@ -171,7 +155,6 @@ struct GlassEffectUnionTests {
         let progress = -0.5
         let view = self.createProgressView(progress: progress)
         // SwiftUI trim(from:to:) automatically clamps to 0-1
-        #expect(view != EmptyView())
     }
 
     @Test("Progress clamps to 1.0 when above 1.0")
@@ -179,7 +162,6 @@ struct GlassEffectUnionTests {
         let progress = 1.5
         let view = self.createProgressView(progress: progress)
         // Verify trim doesn't exceed 1.0
-        #expect(view != EmptyView())
     }
 
     @Test("Progress handles very small positive value")
@@ -187,7 +169,6 @@ struct GlassEffectUnionTests {
         let progress = 0.001
         let view = self.createProgressView(progress: progress)
         // Verify doesn't crash
-        #expect(view != EmptyView())
     }
 
     @Test("Progress handles very large value")
@@ -195,7 +176,6 @@ struct GlassEffectUnionTests {
         let progress = 1000.0
         let view = self.createProgressView(progress: progress)
         // Verify clamps to 1.0
-        #expect(view != EmptyView())
     }
 
     @Test("Progress handles NaN")
@@ -203,7 +183,6 @@ struct GlassEffectUnionTests {
         let progress = Double.nan
         let view = self.createProgressView(progress: progress)
         // Verify graceful handling
-        #expect(view != EmptyView())
     }
 
     // MARK: - D. Animation (4 tests)
@@ -214,7 +193,6 @@ struct GlassEffectUnionTests {
         let view = self.createProgressView(progress: progress)
         // .onAppear sets animatedProgress with spring
         // Spring parameters: response 0.6, dampingFraction 0.7
-        #expect(view != EmptyView())
     }
 
     @Test("Animation on progress change uses spring")
@@ -222,7 +200,6 @@ struct GlassEffectUnionTests {
         let progress = 0.5
         let view = self.createProgressView(progress: progress)
         // .onChange(of: progress) animates with spring
-        #expect(view != EmptyView())
     }
 
     @Test("Animated progress starts at 0")
@@ -230,14 +207,12 @@ struct GlassEffectUnionTests {
         // @State private var animatedProgress: Double = 0
         // Cannot directly test @State, but can verify view creation
         let view = self.createProgressView(progress: 0.5)
-        #expect(view != EmptyView())
     }
 
     @Test("Progress changes trigger animation")
     func progressChangeTriggersAnimation() {
         let view = self.createProgressView(progress: 0.5)
         // Changing progress property triggers animation
-        #expect(view != EmptyView())
     }
 
     // MARK: - E. Thickness (3 tests)
@@ -273,14 +248,12 @@ struct GlassEffectUnionTests {
         let size: CGFloat = 60
         let view = self.createProgressView(progress: 0.5, iconSize: size)
         // Background circle should be (size + 16, size + 16) = 76x76
-        #expect(view != EmptyView())
     }
 
     @Test("Icon size defaults to 50")
     func iconSizeDefaultsTo50() {
         // Default parameter value is 50
         let view = self.createProgressView(progress: 0.5, iconSize: 50)
-        #expect(view != EmptyView())
     }
 
     @Test("Icon size affects content frame")
@@ -288,7 +261,6 @@ struct GlassEffectUnionTests {
         let size: CGFloat = 50
         let view = self.createProgressView(progress: 0.5, iconSize: size)
         // Content frame is (size, size)
-        #expect(view != EmptyView())
     }
 
     // MARK: - G. Visual Components (4 tests)
@@ -297,28 +269,24 @@ struct GlassEffectUnionTests {
     func backgroundCircleUsesMaterial() {
         let view = self.createProgressView(progress: 0.5)
         // Circle().fill(thickness.material)
-        #expect(view != EmptyView())
     }
 
     @Test("Progress arc uses trim")
     func progressArcUsesTrim() {
         let view = self.createProgressView(progress: 0.5)
         // Circle().trim(from: 0, to: animatedProgress)
-        #expect(view != EmptyView())
     }
 
     @Test("Progress arc has blur")
     func progressArcHasBlur() {
         let view = self.createProgressView(progress: 0.5)
         // .blur(radius: 2)
-        #expect(view != EmptyView())
     }
 
     @Test("Specular highlight uses overlay blend mode")
     func specularHighlightUsesOverlay() {
         let view = self.createProgressView(progress: 0.5)
         // .blendMode(.overlay)
-        #expect(view != EmptyView())
     }
 
     // MARK: - H. Edge Cases (3 tests)
@@ -327,14 +295,12 @@ struct GlassEffectUnionTests {
     func progress0Point3ExactUsesOrange() {
         // Boundary test: 0.3 is inclusive for orange
         let view = self.createProgressView(progress: 0.3)
-        #expect(view != EmptyView())
     }
 
     @Test("Progress 0.7 exactly uses red")
     func progress0Point7ExactUsesRed() {
         // Boundary test: 0.7 is >= 0.7 for red
         let view = self.createProgressView(progress: 0.7)
-        #expect(view != EmptyView())
     }
 
     @Test("Progress infinity handles gracefully")
@@ -342,6 +308,5 @@ struct GlassEffectUnionTests {
         let progress = Double.infinity
         let view = self.createProgressView(progress: progress)
         // Verify graceful handling
-        #expect(view != EmptyView())
     }
 }

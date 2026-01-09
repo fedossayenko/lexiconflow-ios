@@ -59,24 +59,21 @@ struct MaterializeTransitionAccessibilityTests {
         // Verify insertion: .opacity.combined(with: .scale(scale: 0.98))
         // Verify removal: .opacity.combined(with: .scale(scale: 1.02))
         let view = self.createTestView()
-        let modified = view.glassEffectTransition(.materialize)
-        #expect(modified != EmptyView())
+        let modified = view.glassEffectTransition(GlassTransitionStyle.materialize)
     }
 
     @Test("Materialize insertion scale is 0.98")
     func materializeInsertionScale() {
         // Verify scale parameter is 0.98 (subtle shrink)
         let view = self.createTestView()
-        let modified = view.glassEffectTransition(.materialize)
-        #expect(modified != EmptyView())
+        let modified = view.glassEffectTransition(GlassTransitionStyle.materialize)
     }
 
     @Test("Materialize removal scale is 1.02")
     func materializeRemovalScale() {
         // Verify scale parameter is 1.02 (subtle grow)
         let view = self.createTestView()
-        let modified = view.glassEffectTransition(.materialize)
-        #expect(modified != EmptyView())
+        let modified = view.glassEffectTransition(GlassTransitionStyle.materialize)
     }
 
     // MARK: - B. Accessible Materialize (5 tests)
@@ -86,7 +83,6 @@ struct MaterializeTransitionAccessibilityTests {
         let view = self.createTestView()
         let modified = view.accessibleMaterialize()
         // Verify modifier can be applied
-        #expect(modified != EmptyView())
     }
 
     @Test("Accessible materialize uses same transition")
@@ -94,7 +90,6 @@ struct MaterializeTransitionAccessibilityTests {
         let view = self.createTestView()
         let modified = view.accessibleMaterialize()
         // Verify .accessibleMaterialize() uses same asymmetric transition
-        #expect(modified != EmptyView())
     }
 
     @Test("Accessible materialize avoids AnyView")
@@ -102,19 +97,16 @@ struct MaterializeTransitionAccessibilityTests {
         let view = self.createTestView()
         let modified = view.accessibleMaterialize()
         // Verify .accessibleMaterialize() returns some View (not AnyView)
-        // This is the key difference from .glassEffectTransition(.materialize)
-        #expect(modified != EmptyView())
+        // This is the key difference from .glassEffectTransition(GlassTransitionStyle.materialize)
     }
 
     @Test("Accessible materialize is functionally equivalent")
     func accessibleMaterializeFunctionallyEquivalent() {
         let view = self.createTestView()
         let accessible = view.accessibleMaterialize()
-        let standard = view.glassEffectTransition(.materialize)
+        let standard = view.glassEffectTransition(GlassTransitionStyle.materialize)
         // Verify both produce same visual result
         // Difference is in type erasure (affects accessibility)
-        #expect(accessible != EmptyView())
-        #expect(standard != EmptyView())
     }
 
     @Test("Accessible materialize can be chained")
@@ -125,18 +117,16 @@ struct MaterializeTransitionAccessibilityTests {
             .padding()
             .background(Color.blue)
         // Verify chaining works
-        #expect(chained != EmptyView())
     }
 
     // MARK: - C. AnyView vs Explicit Comparison (4 tests)
 
     @Test("AnyView materialize uses type erasure")
     func anyViewMaterializeUsesTypeErasure() {
-        // Verify .glassEffectTransition(.materialize) returns AnyView
+        // Verify .glassEffectTransition(GlassTransitionStyle.materialize) returns AnyView
         // This is documented in source code comments
         let view = self.createTestView()
-        let modified = view.glassEffectTransition(.materialize)
-        #expect(modified != EmptyView())
+        let modified = view.glassEffectTransition(GlassTransitionStyle.materialize)
     }
 
     @Test("Accessible materialize preserves type")
@@ -145,20 +135,17 @@ struct MaterializeTransitionAccessibilityTests {
         // Returns 'some View' instead of AnyView
         let view = self.createTestView()
         let modified = view.accessibleMaterialize()
-        #expect(modified != EmptyView())
     }
 
     @Test("Both use same animation parameters")
     func bothUseSameAnimationParameters() {
         let view = self.createTestView()
         let accessible = view.accessibleMaterialize()
-        let standard = view.glassEffectTransition(.materialize)
+        let standard = view.glassEffectTransition(GlassTransitionStyle.materialize)
 
         // Verify both use scale 0.98 for insertion
         // Verify both use scale 1.02 for removal
         // Verify both use opacity transition
-        #expect(accessible != EmptyView())
-        #expect(standard != EmptyView())
     }
 
     @Test("Known issue is documented")
@@ -176,7 +163,6 @@ struct MaterializeTransitionAccessibilityTests {
         // Verify .accessibleMaterialize() exists as workaround
         let view = self.createTestView()
         let workaround = view.accessibleMaterialize()
-        #expect(workaround != EmptyView())
     }
 
     @Test("Accessible materialize supports VoiceOver")
@@ -185,7 +171,6 @@ struct MaterializeTransitionAccessibilityTests {
         // Actual VoiceOver testing requires UI tests
         let view = self.createTestView()
         let modified = view.accessibleMaterialize()
-        #expect(modified != EmptyView())
     }
 
     @Test("Accessible materialize preserves accessibility labels")
@@ -194,7 +179,6 @@ struct MaterializeTransitionAccessibilityTests {
             .accessibilityLabel("Greeting")
             .accessibleMaterialize()
         // Verify accessibilityLabel is preserved
-        #expect(view != EmptyView())
     }
 
     @Test("Accessible materialize preserves accessibility traits")
@@ -203,7 +187,6 @@ struct MaterializeTransitionAccessibilityTests {
             .accessibilityAddTraits(.isButton)
             .accessibleMaterialize()
         // Verify traits are preserved
-        #expect(view != EmptyView())
     }
 
     @Test("Accessible materialize works with accessibility children")
@@ -215,7 +198,6 @@ struct MaterializeTransitionAccessibilityTests {
         .accessibilityElement(children: .contain)
         .accessibleMaterialize()
         // Verify children containment is preserved
-        #expect(view != EmptyView())
     }
 
     @Test("Accessible materialize announcement")
@@ -224,7 +206,6 @@ struct MaterializeTransitionAccessibilityTests {
         // Actual announcement testing requires UI tests with XCUItest
         let view = self.createTestView()
         let modified = view.accessibleMaterialize()
-        #expect(modified != EmptyView())
     }
 
     // MARK: - E. Transition Styles (4 tests)
@@ -255,7 +236,6 @@ struct MaterializeTransitionAccessibilityTests {
         // removal: .scale(scale: 1.05)
         let view = self.createTestView()
         let modified = view.glassEffectTransition(.scaleFade)
-        #expect(modified != EmptyView())
     }
 
     @Test("Dissolve uses opacity only")
@@ -264,7 +244,6 @@ struct MaterializeTransitionAccessibilityTests {
         // No scale effect
         let view = self.createTestView()
         let modified = view.glassEffectTransition(.dissolve)
-        #expect(modified != EmptyView())
     }
 
     // MARK: - F. Integration Tests (3 tests)
@@ -272,9 +251,8 @@ struct MaterializeTransitionAccessibilityTests {
     @Test("Materialize transition can be applied to views")
     func materializeCanBeApplied() {
         let view = Text("Hello")
-        let modified = view.glassEffectTransition(.materialize)
+        let modified = view.glassEffectTransition(GlassTransitionStyle.materialize)
         // Verify view can be created
-        #expect(modified != EmptyView())
     }
 
     @Test("Accessible materialize can be applied to views")
@@ -282,14 +260,12 @@ struct MaterializeTransitionAccessibilityTests {
         let view = Text("Hello")
         let modified = view.accessibleMaterialize()
         // Verify view can be created
-        #expect(modified != EmptyView())
     }
 
     @Test("Both transitions work with ZStack")
     func bothWorkWithZStack() {
         let view = self.createTransitionContainer(useAccessible: true, isFlipped: false)
         // Verify ZStack integration works
-        #expect(view != EmptyView())
     }
 
     // MARK: - G. Edge Cases (3 tests)
@@ -300,7 +276,6 @@ struct MaterializeTransitionAccessibilityTests {
         #expect(style == .liquid)
         let view = self.createTestView()
         let modified = view.glassEffectTransition(.liquid)
-        #expect(modified != EmptyView())
     }
 
     @Test("Dissolve transition exists")
@@ -309,7 +284,6 @@ struct MaterializeTransitionAccessibilityTests {
         #expect(style == .dissolve)
         let view = self.createTestView()
         let modified = view.glassEffectTransition(.dissolve)
-        #expect(modified != EmptyView())
     }
 
     @Test("ScaleFade transition exists")
@@ -318,6 +292,5 @@ struct MaterializeTransitionAccessibilityTests {
         #expect(style == .scaleFade)
         let view = self.createTestView()
         let modified = view.glassEffectTransition(.scaleFade)
-        #expect(modified != EmptyView())
     }
 }

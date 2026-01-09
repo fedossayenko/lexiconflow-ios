@@ -5,6 +5,7 @@
 //  Main statistics dashboard showing retention rate, study streak, and FSRS metrics
 //
 
+import Combine
 import SwiftData
 import SwiftUI
 

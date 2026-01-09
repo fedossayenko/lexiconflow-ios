@@ -678,7 +678,7 @@ LexiconFlow/
 │   ├── Decks/              # DeckDetailView
 │   └── Settings/           # TranslationSettingsView, AppearanceSettingsView, etc.
 ├── Assets.xcassets/        # Images, colors
-└── LexiconFlowTests/       # Unit tests (14+ suites)
+└── LexiconFlowTests/       # Unit tests (24+ suites)
 ```
 
 ## Concurrency Guidelines
@@ -692,7 +692,7 @@ LexiconFlow/
 ## Testing
 
 - **Framework**: Swift Testing (`import Testing`)
-- **Structure**: 16 test suites in `LexiconFlowTests/`:
+- **Structure**: 24 test suites in `LexiconFlowTests/`:
   - ModelTests, SchedulerTests, DataImporterTests
   - StudySessionViewModelTests, OnboardingTests, ErrorHandlingTests
   - FSRSWrapperTests, DateMathTests, AnalyticsTests

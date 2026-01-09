@@ -333,7 +333,7 @@ final class Flashcard {
 Lexicon Flow uses the **SwiftFSRS** package for Spaced Repetition scheduling.
 
 ```swift
-import SwiftFSRS
+import FSRS
 
 // Wrapper for FSRS algorithm
 @Observable

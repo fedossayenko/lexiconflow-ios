@@ -43,11 +43,6 @@ struct GlassEffectContainer<Content: View>: View {
     /// The content to display with glass effect
     let content: Content
 
-    /// Whether rendering optimization is enabled
-    /// - Default: true (optimized)
-    /// - Set to false on older devices if drawingGroup() causes issues
-    @State private var isOptimized = true
-
     // MARK: - Body
 
     var body: some View {
@@ -62,15 +57,12 @@ struct GlassEffectContainer<Content: View>: View {
     ///
     /// - Parameters:
     ///   - thickness: The thickness of the glass effect (thin, regular, thick)
-    ///   - isOptimized: Whether to enable rendering optimizations (default: true)
     ///   - content: The content to display with glass effect
     init(
         thickness: GlassThickness,
-        isOptimized: Bool = true,
         @ViewBuilder content: () -> Content
     ) {
         self.thickness = thickness
-        self.isOptimized = isOptimized
         self.content = content()
     }
 }
@@ -136,38 +128,6 @@ struct GlassEffectPerformance {
             frameTime: 16.6,
             memoryUsage: 0
         )
-    }
-}
-
-// MARK: - ProMotion Detection Helper
-
-/// Helper functions for ProMotion display detection
-///
-/// **Note**: `UIScreen.main` is deprecated in iOS 26.0.
-/// Use environment values like `@Environment(\.displayScale)` instead.
-/// This helper is kept for legacy compatibility.
-@available(*, deprecated, message: "Use environment values like @Environment(\\.displayScale) instead")
-enum ProMotionDetector {
-    /// Detects if the current device supports ProMotion (120Hz)
-    ///
-    /// - Returns: true if device supports 120Hz refresh rate
-    static var supportsProMotion: Bool {
-        #if os(iOS)
-            return UIScreen.main.maximumFramesPerSecond >= 120
-        #else
-            return false
-        #endif
-    }
-
-    /// Gets the maximum refresh rate for the current device
-    ///
-    /// - Returns: Maximum frames per second (60, 120, or adaptive)
-    static var maximumFramesPerSecond: Int {
-        #if os(iOS)
-            return Int(UIScreen.main.maximumFramesPerSecond)
-        #else
-            return 60 // Default for non-iOS platforms
-        #endif
     }
 }
 
