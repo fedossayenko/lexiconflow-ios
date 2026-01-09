@@ -16,6 +16,35 @@ import SwiftUI
 enum AppSettings {
     private static let logger = Logger(subsystem: "com.lexiconflow.settings", category: "AppSettings")
 
+    // MARK: - Types
+
+    /// AI source preference for sentence generation
+    enum AISource: String, CaseIterable, Sendable {
+        case onDevice
+        case cloud
+
+        var displayName: String {
+            switch self {
+            case .onDevice: "On-Device AI"
+            case .cloud: "Cloud API"
+            }
+        }
+
+        var description: String {
+            switch self {
+            case .onDevice: "Private, offline-capable (iOS 26+)"
+            case .cloud: "Requires API key and internet"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .onDevice: "cpu"
+            case .cloud: "cloud"
+            }
+        }
+    }
+
     // MARK: - Translation Settings
 
     /// Whether automatic translation is enabled
@@ -27,7 +56,7 @@ enum AppSettings {
     /// Target language code for translation (e.g., "ru")
     @AppStorage("translationTargetLanguage") static var translationTargetLanguage: String = "ru"
 
-    // MARK: - Sentence Generation Settings (NEW)
+    // MARK: - Sentence Generation Settings
 
     /// Whether AI-powered sentence generation is enabled
     ///
@@ -35,6 +64,17 @@ enum AppSettings {
     /// Disabled by default. Can be enabled in future "Premium" tier.
     /// When disabled, flashcards work normally but without example sentences.
     @AppStorage("sentenceGenerationEnabled") static var isSentenceGenerationEnabled: Bool = false
+
+    /// AI source preference for sentence generation
+    ///
+    /// **Options:**
+    /// - `.onDevice`: Use Apple's Foundation Models framework (iOS 26+, private)
+    /// - `.cloud`: Use Z.ai API (requires API key, network connection)
+    ///
+    /// **Behavior:**
+    /// - When `.onDevice`: Falls back to `.cloud` if Foundation Models unavailable
+    /// - When `.cloud`: Falls back to static sentences if no API key
+    @AppStorage("aiSourcePreference") static var aiSourcePreference: AISource = .onDevice
 
     /// Supported translation languages for on-device translation (24 languages supported by iOS Translation framework)
     static let supportedLanguages: [(code: String, name: String)] = [
@@ -72,8 +112,40 @@ enum AppSettings {
     /// Whether haptic feedback is enabled
     @AppStorage("hapticEnabled") static var hapticEnabled: Bool = true
 
+    // MARK: - Audio Settings (NEW)
+
     /// Whether audio feedback is enabled
     @AppStorage("audioEnabled") static var audioEnabled: Bool = true
+
+    /// Whether streak chimes are enabled (plays harmonic chimes at streak milestones)
+    @AppStorage("streakChimesEnabled") static var streakChimesEnabled: Bool = true
+
+    // MARK: - Text-to-Speech Settings
+
+    /// Whether TTS (Text-to-Speech) is enabled
+    @AppStorage("ttsEnabled") static var ttsEnabled: Bool = true
+
+    /// Speech rate multiplier (0.0 to 1.0, where 0.5 = default)
+    @AppStorage("ttsSpeechRate") static var ttsSpeechRate: Double = 0.5
+
+    /// Voice pitch multiplier (0.5 to 2.0, where 1.0 = normal)
+    @AppStorage("ttsPitchMultiplier") static var ttsPitchMultiplier: Double = 1.0
+
+    /// Selected voice language code (e.g., "en-US", "en-GB")
+    @AppStorage("ttsVoiceLanguage") static var ttsVoiceLanguage: String = "en-US"
+
+    /// Whether to auto-play pronunciation on card flip
+    @AppStorage("ttsAutoPlayOnFlip") static var ttsAutoPlayOnFlip: Bool = false
+
+    /// Supported English TTS accents
+    static let supportedTTSAccents: [(code: String, name: String)] = [
+        ("en-US", "American English"),
+        ("en-GB", "British English"),
+        ("en-AU", "Australian English"),
+        ("en-IE", "Irish English"),
+        ("en-IN", "Indian English"),
+        ("en-ZA", "South African English")
+    ]
 
     // MARK: - Study Session Settings (NEW)
 
@@ -192,6 +264,20 @@ enum AppSettings {
     /// Whether glass morphism effects are enabled
     @AppStorage("glassEffectsEnabled") static var glassEffectsEnabled: Bool = true
 
+    /// Glass effect intensity (0.0 to 1.0)
+    ///
+    /// Controls the opacity and blur intensity of glass effects.
+    /// Higher values create more pronounced glass morphism visuals.
+    @AppStorage("glassEffectIntensity") static var glassEffectIntensity: Double = 0.7
+
+    /// Gesture sensitivity multiplier (0.5 to 2.0)
+    ///
+    /// Controls how responsive swipe gestures are to user input.
+    /// - 1.0 = default sensitivity
+    /// - < 1.0 = less sensitive (requires larger gestures)
+    /// - > 1.0 = more sensitive (smaller gestures trigger rating)
+    @AppStorage("gestureSensitivity") static var gestureSensitivity: Double = 1.0
+
     /// Whether matched geometry effect transitions are enabled for card flips
     ///
     /// **Note**: When enabled, card elements (word, phonetic) smoothly animate to new positions during flip.
@@ -208,14 +294,18 @@ enum AppSettings {
                 "translationSourceLanguage": "en",
                 "translationTargetLanguage": "ru",
                 "sentenceGenerationEnabled": false,
+                "aiSourcePreference": "onDevice",
                 "hapticEnabled": true,
                 "audioEnabled": true,
+                "streakChimesEnabled": true,
                 "studyLimit": 20,
                 "defaultStudyMode": "scheduled",
                 "dailyGoal": 20,
                 "statisticsTimeRange": "7d",
                 "darkMode": "system",
                 "glassEffectsEnabled": true,
+                "glassEffectIntensity": 0.7,
+                "gestureSensitivity": 1.0,
                 "matchedGeometryEffectEnabled": false
             ] as [String: Any]
 

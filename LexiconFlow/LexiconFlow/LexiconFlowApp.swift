@@ -68,7 +68,8 @@ struct LexiconFlowApp: App {
             FlashcardReview.self,
             StudySession.self,
             DailyStats.self,
-            GeneratedSentence.self
+            GeneratedSentence.self,
+            CachedTranslation.self
         ])
 
         // Attempt 1: Try persistent SQLite storage (primary)
@@ -122,14 +123,31 @@ struct LexiconFlowApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .preferredColorScheme(self.preferredColorScheme)
                 .task {
                     await self.ensureDefaultDeckExists()
                     await self.ensureIELTSVocabularyExists()
+
+                    // Clear expired translation cache
+                    let context = self.sharedModelContainer.mainContext
+                    await QuickTranslationService.shared.clearExpiredCache(modelContext: context)
                 }
         }
         .modelContainer(self.sharedModelContainer)
         .onChange(of: self.scenePhase) { oldPhase, newPhase in
             self.handleScenePhaseChange(from: oldPhase, to: newPhase)
+        }
+    }
+
+    /// Returns the preferred color scheme based on user settings
+    private var preferredColorScheme: ColorScheme? {
+        switch AppSettings.darkMode {
+        case .system:
+            nil // Follow system preference
+        case .light:
+            .light
+        case .dark:
+            .dark
         }
     }
 

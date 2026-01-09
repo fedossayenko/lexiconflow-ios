@@ -82,6 +82,11 @@ fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
 
+# Test output files
+LexiconFlow/test_output.txt
+LexiconFlow/test_output/*.txt
+LexiconFlow/final_test_*.txt
+
 # Code Injection
 #
 # After new code Injection tools there's a generated folder /iOSInjectionProject

@@ -116,7 +116,7 @@ struct StudySessionView: View {
         VStack(spacing: 24) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 60))
-                .foregroundStyle(.green)
+                .foregroundStyle(Theme.Colors.success)
 
             Text("Session Complete!")
                 .font(.title)

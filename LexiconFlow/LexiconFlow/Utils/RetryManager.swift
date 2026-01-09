@@ -160,8 +160,22 @@ enum RetryManager {
         logger.critical("\(logContext): Operation signature mismatch - cannot convert errors to expected type")
 
         // Programming error: operation signature doesn't match declared ErrorType
-        // Use preconditionFailure which can be disabled with -Ounchecked compile flag
-        // In production with proper type annotations, this branch should never execute
-        preconditionFailure("Operation threw error type that doesn't match declared ErrorType. Check operation signature.")
+        // Since we cannot return a properly typed ErrorType here, we need to
+        // create a runtime error that wraps the situation
+        // This is a last resort fallback - the caller should handle this
+        let typeMismatchError = NSError(
+            domain: "com.lexiconflow.retrymanager",
+            code: -1,
+            userInfo: [
+                NSLocalizedDescriptionKey: "Type mismatch: expected \(ErrorType.self), got unknown error type. Check operation signature.",
+                "expectedType": "\(ErrorType.self)"
+            ]
+        )
+
+        // Force cast is safe here because we're creating a NSError which conforms to Error
+        // If ErrorType is not compatible, this will crash at the call site which is appropriate
+        // for a programming error in operation signature
+        // swiftlint:disable:next force_cast
+        return .failure(typeMismatchError as! ErrorType)
     }
 }

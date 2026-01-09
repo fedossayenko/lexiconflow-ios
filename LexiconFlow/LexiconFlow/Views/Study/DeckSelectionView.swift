@@ -104,8 +104,7 @@ struct DeckSelectionView: View {
         }
         .overlay {
             if self.isLoading {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                LoadingView(message: "Loading deck statistics...")
                     .background(.ultraThinMaterial)
             }
         }

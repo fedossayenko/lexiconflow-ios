@@ -85,7 +85,7 @@ struct AddFlashcardView: View {
                                 self.imageData = nil
                                 self.selectedImage = nil
                             }
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Theme.Colors.destructive)
                             .accessibilityLabel("Remove Image")
                             .accessibilityHint("Remove the selected image from the flashcard")
                         }
