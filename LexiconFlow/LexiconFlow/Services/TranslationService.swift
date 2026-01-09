@@ -60,12 +60,12 @@ final class TranslationService {
     private func getAPIKey() throws -> String {
         do {
             guard let key = try KeychainManager.getAPIKey() else {
-                logger.error("API key not found in Keychain")
+                self.logger.error("API key not found in Keychain")
                 throw TranslationError.missingAPIKey
             }
             return key
         } catch {
-            logger.error("Failed to read API key from Keychain: \(error.localizedDescription)")
+            self.logger.error("Failed to read API key from Keychain: \(error.localizedDescription)")
             throw TranslationError.missingAPIKey
         }
     }
@@ -76,7 +76,7 @@ final class TranslationService {
     /// - Throws: KeychainError if storage fails
     func setAPIKey(_ key: String) throws {
         try KeychainManager.setAPIKey(key)
-        logger.info("API key updated securely in Keychain")
+        self.logger.info("API key updated securely in Keychain")
     }
 
     /// Check if API key is configured
@@ -84,7 +84,7 @@ final class TranslationService {
         do {
             return try (KeychainManager.getAPIKey())?.isEmpty == false
         } catch {
-            logger.error("Failed to check API key: \(error.localizedDescription)")
+            self.logger.error("Failed to check API key: \(error.localizedDescription)")
             return false
         }
     }
@@ -95,9 +95,9 @@ final class TranslationService {
     ///   - source: Source language code (e.g., "en")
     ///   - target: Target language code (e.g., "ru")
     func setLanguages(source: String, target: String) {
-        sourceLanguage = source
-        targetLanguage = target
-        logger.info("Languages set: \(source) -> \(target)")
+        self.sourceLanguage = source
+        self.targetLanguage = target
+        self.logger.info("Languages set: \(source) -> \(target)")
     }
 
     /// Validate an API key without storing it to Keychain
@@ -110,7 +110,7 @@ final class TranslationService {
     /// - Throws: `TranslationError` if the validation request fails
     func validateAPIKey(_ key: String) async throws -> Bool {
         guard !key.isEmpty else {
-            logger.error("API key validation failed: key is empty")
+            self.logger.error("API key validation failed: key is empty")
             throw TranslationError.missingAPIKey
         }
 
@@ -161,13 +161,13 @@ final class TranslationService {
         urlRequest.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         urlRequest.httpBody = try JSONEncoder().encode(request)
 
-        logger.debug("Validating API key with test request (URL: \(url.absoluteString))")
+        self.logger.debug("Validating API key with test request (URL: \(url.absoluteString))")
 
         let (data, response) = try await URLSession.shared.data(for: urlRequest)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
-            logger.error("API key validation error: Invalid HTTP response - \(String(errorBody.prefix(200)))")
+            self.logger.error("API key validation error: Invalid HTTP response - \(String(errorBody.prefix(200)))")
             throw TranslationError.apiFailed
         }
 
@@ -177,29 +177,29 @@ final class TranslationService {
             let rawResponse = try JSONDecoder().decode(ZAIResponse.self, from: data)
             let content = rawResponse.choices.first?.message.content ?? ""
             let isValid = !content.isEmpty
-            logger.info("API key validation succeeded: isValid=\(isValid)")
+            self.logger.info("API key validation succeeded: isValid=\(isValid)")
             return isValid
 
         case 401:
-            logger.error("API key validation failed: Invalid credentials (401)")
+            self.logger.error("API key validation failed: Invalid credentials (401)")
             throw TranslationError.clientError(statusCode: 401, message: "Invalid API key")
 
         case 429:
-            logger.warning("API key validation hit rate limit (429)")
+            self.logger.warning("API key validation hit rate limit (429)")
             throw TranslationError.rateLimit
 
         case 400 ... 499:
             let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
-            logger.error("API key validation client error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
+            self.logger.error("API key validation client error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
             throw TranslationError.clientError(statusCode: httpResponse.statusCode, message: errorBody)
 
         case 500 ... 599:
             let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
-            logger.error("API key validation server error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
+            self.logger.error("API key validation server error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
             throw TranslationError.serverError(statusCode: httpResponse.statusCode, message: errorBody)
 
         default:
-            logger.error("API key validation unexpected HTTP status: \(httpResponse.statusCode)")
+            self.logger.error("API key validation unexpected HTTP status: \(httpResponse.statusCode)")
             throw TranslationError.apiFailed
         }
     }
@@ -231,7 +231,7 @@ final class TranslationService {
         let successfulTranslations: [SuccessfulTranslation]
 
         var isSuccess: Bool {
-            failedCount == 0 && successCount > 0
+            self.failedCount == 0 && self.successCount > 0
         }
     }
 
@@ -288,12 +288,12 @@ final class TranslationService {
         }
 
         func get() -> Task<TranslationBatchResult, Error>? {
-            task
+            self.task
         }
 
         func cancel() {
-            task?.cancel()
-            task = nil
+            self.task?.cancel()
+            self.task = nil
         }
     }
 
@@ -302,8 +302,8 @@ final class TranslationService {
     /// Cancel any ongoing batch translation
     func cancelBatchTranslation() {
         Task {
-            await taskStorage.cancel()
-            logger.info("Batch translation cancelled")
+            await self.taskStorage.cancel()
+            self.logger.info("Batch translation cancelled")
         }
     }
 
@@ -324,15 +324,15 @@ final class TranslationService {
         progressHandler: (@Sendable (BatchTranslationProgress) -> Void)? = nil
     ) async throws -> TranslationBatchResult {
         guard !cards.isEmpty else {
-            logger.warning("Batch translation called with empty array")
+            self.logger.warning("Batch translation called with empty array")
             return TranslationBatchResult(successCount: 0, failedCount: 0, totalDuration: 0, errors: [], successfulTranslations: [])
         }
 
-        logger.info("Starting batch translation: \(cards.count) cards, max concurrency: \(maxConcurrency)")
+        self.logger.info("Starting batch translation: \(cards.count) cards, max concurrency: \(maxConcurrency)")
 
         // Store active task for cancellation
         let task = Task<TranslationBatchResult, Error> {
-            try await performBatchTranslation(
+            try await self.performBatchTranslation(
                 cards,
                 maxConcurrency: maxConcurrency,
                 progressHandler: progressHandler
@@ -347,7 +347,7 @@ final class TranslationService {
             }
             return try await currentTask.value
         } catch is CancellationError {
-            logger.info("Batch translation cancelled")
+            self.logger.info("Batch translation cancelled")
             return TranslationBatchResult(
                 successCount: 0,
                 failedCount: cards.count,
@@ -379,7 +379,7 @@ final class TranslationService {
                     if let result = try await group.next() {
                         results.append(result)
                         completedCount += 1
-                        reportProgress(
+                        self.reportProgress(
                             handler: progressHandler,
                             current: completedCount,
                             total: cards.count,
@@ -397,7 +397,7 @@ final class TranslationService {
             for try await result in group {
                 results.append(result)
                 completedCount += 1
-                reportProgress(
+                self.reportProgress(
                     handler: progressHandler,
                     current: completedCount,
                     total: cards.count,
@@ -407,8 +407,8 @@ final class TranslationService {
 
             // Aggregate and return results
             let duration = Date().timeIntervalSince(startTime)
-            let batchResult = aggregateResults(results, duration: duration)
-            logBatchCompletion(batchResult)
+            let batchResult = self.aggregateResults(results, duration: duration)
+            self.logBatchCompletion(batchResult)
             return batchResult
         }
     }
@@ -461,7 +461,7 @@ final class TranslationService {
 
     /// Log batch translation completion summary
     private func logBatchCompletion(_ result: TranslationBatchResult) {
-        logger.info("""
+        self.logger.info("""
         Batch translation complete:
         - Success: \(result.successCount)
         - Failed: \(result.failedCount)
@@ -497,21 +497,21 @@ final class TranslationService {
                 error.isRetryable
             },
             logContext: "Translation for '\(cardWord)'",
-            logger: logger
+            logger: self.logger
         )
 
         let duration = Date().timeIntervalSince(startTime)
 
         switch result {
         case let .success(translation):
-            logger.debug("Translation succeeded: \(cardWord)")
+            self.logger.debug("Translation succeeded: \(cardWord)")
             return TranslationTaskResult(
                 card: card,
                 result: .success(translation),
                 duration: duration
             )
         case let .failure(error):
-            logger.error("Translation failed: \(cardWord) - \(error.localizedDescription)")
+            self.logger.error("Translation failed: \(cardWord) - \(error.localizedDescription)")
             return TranslationTaskResult(
                 card: card,
                 result: .failure(error),
@@ -532,10 +532,10 @@ final class TranslationService {
     /// - Returns: TranslationResponse with translation and metadata
     /// - Throws: TranslationError if the request fails
     func translate(word: String, definition: String, context: String? = nil) async throws -> TranslationResponse {
-        let key = try await getAPIKey()
+        let key = try getAPIKey()
 
         guard !key.isEmpty else {
-            logger.error("Translation failed: API key not configured")
+            self.logger.error("Translation failed: API key not configured")
             throw TranslationError.missingAPIKey
         }
 
@@ -586,13 +586,13 @@ final class TranslationService {
         urlRequest.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         urlRequest.httpBody = try JSONEncoder().encode(request)
 
-        logger.debug("Sending translation request for '\(word)' (URL: \(url.absoluteString), model: glm-4.7)")
+        self.logger.debug("Sending translation request for '\(word)' (URL: \(url.absoluteString), model: glm-4.7)")
 
         let (data, response) = try await URLSession.shared.data(for: urlRequest)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
-            logger.error("Translation API error: Invalid HTTP response - \(String(errorBody.prefix(200)))")
+            self.logger.error("Translation API error: Invalid HTTP response - \(String(errorBody.prefix(200)))")
             throw TranslationError.apiFailed
         }
 
@@ -601,48 +601,48 @@ final class TranslationService {
 
             switch httpResponse.statusCode {
             case 429:
-                logger.warning("Rate limit hit for '\(word.replacingOccurrences(of: "'", with: "\\'"))'")
+                self.logger.warning("Rate limit hit for '\(word.replacingOccurrences(of: "'", with: "\\'"))'")
                 throw TranslationError.rateLimit
 
             case 400 ... 499:
-                logger.error("Client error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
+                self.logger.error("Client error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
                 throw TranslationError.clientError(statusCode: httpResponse.statusCode, message: errorBody)
 
             case 500 ... 599:
-                logger.error("Server error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
+                self.logger.error("Server error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
                 throw TranslationError.serverError(statusCode: httpResponse.statusCode, message: errorBody)
 
             default:
-                logger.error("Unexpected HTTP status: \(httpResponse.statusCode)")
+                self.logger.error("Unexpected HTTP status: \(httpResponse.statusCode)")
                 throw TranslationError.apiFailed
             }
         }
 
         // Log raw response for debugging
-        logger.debug("Raw response data: \(String(data: data, encoding: .utf8)?.prefix(1000) ?? "Unable to decode")")
+        self.logger.debug("Raw response data: \(String(data: data, encoding: .utf8)?.prefix(1000) ?? "Unable to decode")")
 
         let rawResponse = try JSONDecoder().decode(ZAIResponse.self, from: data)
         let content = rawResponse.choices.first?.message.content ?? ""
 
         // Log the extracted content before processing
-        logger.debug("Extracted content (first 500 chars): \(content.prefix(500))")
+        self.logger.debug("Extracted content (first 500 chars): \(content.prefix(500))")
 
         // Extract JSON from content (handle markdown code blocks)
-        let jsonContent = JSONExtractor.extract(from: content, logger: logger)
-        logger.debug("Extracted JSON: \(jsonContent.prefix(500))")
+        let jsonContent = JSONExtractor.extract(from: content, logger: self.logger)
+        self.logger.debug("Extracted JSON: \(jsonContent.prefix(500))")
 
         guard let data = jsonContent.data(using: .utf8) else {
-            logger.error("Failed to decode JSON content as UTF-8")
+            self.logger.error("Failed to decode JSON content as UTF-8")
             throw TranslationError.invalidResponse(reason: "Content is not valid UTF-8")
         }
 
         do {
             let translation = try JSONDecoder().decode(TranslationResponse.self, from: data)
-            logSuccess(word: word, translation: translation)
+            self.logSuccess(word: word, translation: translation)
             return translation
         } catch {
-            logger.error("JSON decode error: \(error.localizedDescription)")
-            logger.error("Content that failed to decode: \(String(jsonContent.prefix(500)))")
+            self.logger.error("JSON decode error: \(error.localizedDescription)")
+            self.logger.error("Content that failed to decode: \(String(jsonContent.prefix(500)))")
             throw TranslationError.invalidResponse(reason: error.localizedDescription)
         }
     }
@@ -650,7 +650,7 @@ final class TranslationService {
     /// Process successful translation result
     private func logSuccess(word: String, translation: TranslationResponse) {
         if let item = translation.items.first {
-            logger.info("Successfully translated '\(word.replacingOccurrences(of: "'", with: "\\'"))' -> '\(item.targetTranslation.replacingOccurrences(of: "'", with: "\\'"))' (CEFR: \(item.cefrLevel))")
+            self.logger.info("Successfully translated '\(word.replacingOccurrences(of: "'", with: "\\'"))' -> '\(item.targetTranslation.replacingOccurrences(of: "'", with: "\\'"))' (CEFR: \(item.cefrLevel))")
         }
     }
 

@@ -15,7 +15,7 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if hasCompletedOnboarding {
+            if self.hasCompletedOnboarding {
                 MainTabView()
             } else {
                 OnboardingView()

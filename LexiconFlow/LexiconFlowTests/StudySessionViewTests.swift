@@ -67,12 +67,12 @@ struct StudySessionViewTests {
 
     @Test("Cards have unique persistent IDs")
     func cardsHaveUniqueIds() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create multiple cards
-        let firstCard = createTestFlashcard(context: context, word: "First")
-        let secondCard = createTestFlashcard(context: context, word: "Second")
+        let firstCard = self.createTestFlashcard(context: context, word: "First")
+        let secondCard = self.createTestFlashcard(context: context, word: "Second")
 
         // Each card should have unique ID for view refresh
         #expect(firstCard.id != secondCard.id, "Cards should have unique IDs")
@@ -82,10 +82,10 @@ struct StudySessionViewTests {
 
     @Test("Created cards have FSRSState")
     func createdCardsHaveFSRSState() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let card = createTestFlashcard(
+        let card = self.createTestFlashcard(
             context: context,
             word: "TestCard",
             stateEnum: FlashcardState.learning.rawValue
@@ -99,7 +99,7 @@ struct StudySessionViewTests {
 
     @Test("View creation with empty database doesn't crash")
     func viewCreationWithEmptyDatabase() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         var onCompleteCalled = false
@@ -113,12 +113,12 @@ struct StudySessionViewTests {
 
     @Test("View creation with cards doesn't crash")
     func viewCreationWithCards() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create some cards
-        _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
-        _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
+        _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
+        _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600)
 
         var onCompleteCalled = false
         let view = StudySessionView(mode: .scheduled) {
@@ -131,13 +131,13 @@ struct StudySessionViewTests {
 
     @Test("Multiple card creation generates valid data")
     func multipleCardCreationGeneratesValidData() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create multiple cards
         var cards: [Flashcard] = []
         for i in 0 ..< 10 {
-            let card = createTestFlashcard(
+            let card = self.createTestFlashcard(
                 context: context,
                 word: "Card\(i)",
                 stateEnum: FlashcardState.learning.rawValue,

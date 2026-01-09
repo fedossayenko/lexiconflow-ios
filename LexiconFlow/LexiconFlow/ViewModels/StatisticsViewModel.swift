@@ -6,6 +6,7 @@
 //  Manages state for retention rate, study streak, and FSRS metrics
 //
 
+import Combine
 import Foundation
 import OSLog
 import SwiftData

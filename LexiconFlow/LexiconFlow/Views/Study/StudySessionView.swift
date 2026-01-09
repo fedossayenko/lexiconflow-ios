@@ -92,22 +92,22 @@ struct StudySessionView: View {
         }
 
         return content
-            .alert("Error", isPresented: $showError) {
+            .alert("Error", isPresented: self.$showError) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text(viewModel?.lastError?.localizedDescription ?? "An unknown error occurred")
+                Text(self.viewModel?.lastError?.localizedDescription ?? "An unknown error occurred")
             }
             .task {
                 if viewModel == nil {
-                    viewModel = StudySessionViewModel(modelContext: modelContext, decks: decks, mode: mode)
+                    viewModel = StudySessionViewModel(modelContext: self.modelContext, decks: self.decks, mode: self.mode)
                 }
                 if let viewModel, viewModel.cards.isEmpty {
                     viewModel.loadCards()
                 }
             }
-            .onChange(of: viewModel?.lastError != nil) { _, hasError in
+            .onChange(of: self.viewModel?.lastError != nil) { _, hasError in
                 if hasError {
-                    showError = true
+                    self.showError = true
                 }
             }
     }
@@ -125,7 +125,7 @@ struct StudySessionView: View {
                 .foregroundStyle(.secondary)
 
             Button("Done") {
-                onComplete()
+                self.onComplete()
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)

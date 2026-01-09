@@ -74,25 +74,25 @@ struct GlassEffectModifier<S: InsettableShape>: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .clipShape(shape)
+            .clipShape(self.shape)
             .background {
                 ZStack {
                     // Layer 1: Base material
-                    shape.fill(thickness.material)
+                    self.shape.fill(self.thickness.material)
 
                     // Layer 2: Refraction blur (simulates light bending through glass)
-                    shape
+                    self.shape
                         .fill(.ultraThinMaterial)
-                        .blur(radius: thickness.refractionBlur)
+                        .blur(radius: self.thickness.refractionBlur)
 
                     // Layer 3: Specular highlight (creates "shiny" appearance)
-                    shape
+                    self.shape
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    .white.opacity(thickness.specularOpacity),
+                                    .white.opacity(self.thickness.specularOpacity),
                                     .clear,
-                                    .white.opacity(thickness.specularOpacity * 0.5)
+                                    .white.opacity(self.thickness.specularOpacity * 0.5)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -103,11 +103,11 @@ struct GlassEffectModifier<S: InsettableShape>: ViewModifier {
             }
             .overlay {
                 // Inner glow for depth
-                shape
+                self.shape
                     .strokeBorder(
                         LinearGradient(
                             colors: [
-                                .white.opacity(thickness.overlayOpacity),
+                                .white.opacity(self.thickness.overlayOpacity),
                                 .white.opacity(0)
                             ],
                             startPoint: .topLeading,
@@ -116,8 +116,8 @@ struct GlassEffectModifier<S: InsettableShape>: ViewModifier {
                         lineWidth: 1.5
                     )
             }
-            .shadow(color: .black.opacity(0.15), radius: thickness.shadowRadius, x: 0, y: 4)
-            .modifier(DynamicLightingModifier(thickness: thickness))
+            .shadow(color: .black.opacity(0.15), radius: self.thickness.shadowRadius, x: 0, y: 4)
+            .modifier(DynamicLightingModifier(thickness: self.thickness))
     }
 }
 

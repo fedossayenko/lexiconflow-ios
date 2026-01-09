@@ -84,7 +84,7 @@ final class DataImporter {
                 result.errors.append(contentsOf: batchStats.errors)
 
                 // Commit after each batch
-                try modelContext.save()
+                try self.modelContext.save()
 
                 // Report progress
                 let progress = ImportProgress(
@@ -96,14 +96,20 @@ final class DataImporter {
                 progressHandler?(progress)
 
                 // Analytics for performance monitoring
-                await Analytics.trackPerformance(
-                    "import_batch_\(batchNumber)",
-                    duration: Date().timeIntervalSince(startTime),
-                    metadata: [
-                        "batch_size": "\(batch.count)",
-                        "total_processed": "\(result.importedCount)"
-                    ]
-                )
+                // FIX: Capture current values explicitly to avoid mutable capture
+                let currentImportedCount = result.importedCount
+                let batchCount = batch.count
+
+                Task {
+                    Analytics.trackPerformance(
+                        "import_batch_\(batchNumber)",
+                        duration: Date().timeIntervalSince(startTime),
+                        metadata: [
+                            "batch_size": "\(batchCount)",
+                            "total_processed": "\(currentImportedCount)"
+                        ]
+                    )
+                }
 
             } catch {
                 Self.logger.error("❌ Batch \(batchNumber) failed: \(error)")
@@ -115,14 +121,16 @@ final class DataImporter {
                     )
                 )
 
-                await Analytics.trackError(
-                    "import_batch_failed",
-                    error: error,
-                    metadata: [
-                        "batch_number": "\(batchNumber)",
-                        "batch_size": "\(batch.count)"
-                    ]
-                )
+                Task {
+                    Analytics.trackError(
+                        "import_batch_failed",
+                        error: error,
+                        metadata: [
+                            "batch_number": "\(batchNumber)",
+                            "batch_size": "\(batch.count)"
+                        ]
+                    )
+                }
             }
         }
 
@@ -137,12 +145,14 @@ final class DataImporter {
         - Duration: \(String(format: "%.2f", duration))s
         """)
 
-        await Analytics.trackEvent("data_import_complete", metadata: [
-            "imported_count": "\(result.importedCount)",
-            "skipped_count": "\(result.skippedCount)",
-            "error_count": "\(result.errors.count)",
-            "duration_seconds": String(format: "%.2f", duration)
-        ])
+        Task {
+            Analytics.trackEvent("data_import_complete", metadata: [
+                "imported_count": "\(result.importedCount)",
+                "skipped_count": "\(result.skippedCount)",
+                "error_count": "\(result.errors.count)",
+                "duration_seconds": String(format: "%.2f", duration)
+            ])
+        }
 
         return result
     }
@@ -210,11 +220,11 @@ final class DataImporter {
                 dueDate: Date(),
                 stateEnum: FlashcardState.new.rawValue
             )
-            modelContext.insert(state)
+            self.modelContext.insert(state)
             flashcard.fsrsState = state
 
             // Insert flashcard
-            modelContext.insert(flashcard)
+            self.modelContext.insert(flashcard)
 
             stats.success += 1
         }
@@ -267,13 +277,13 @@ struct ImportProgress: Sendable {
 
     /// Progress as percentage (0-100)
     var percentage: Int {
-        guard total > 0 else { return 0 }
-        return (current * 100) / total
+        guard self.total > 0 else { return 0 }
+        return (self.current * 100) / self.total
     }
 
     /// Human-readable progress string
     var description: String {
-        "\(current)/\(total) (\(percentage)%) - Batch \(batchNumber)/\(totalBatches)"
+        "\(self.current)/\(self.total) (\(self.percentage)%) - Batch \(self.batchNumber)/\(self.totalBatches)"
     }
 }
 
@@ -293,7 +303,7 @@ struct ImportResult: Sendable {
 
     /// Whether import was completely successful
     var isSuccess: Bool {
-        errors.isEmpty && importedCount > 0
+        self.errors.isEmpty && self.importedCount > 0
     }
 }
 

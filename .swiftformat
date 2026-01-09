@@ -18,6 +18,10 @@
 # Import organization
 --import-grouping testable-last
 
+# Combine imports - only import when actually using Combine types
+# @Published is provided by SwiftUI, so import Combine is NOT needed
+# unless using Publishers, Subscribers, Subjects, etc.
+
 # Decimal grouping
 --decimal-grouping none
 

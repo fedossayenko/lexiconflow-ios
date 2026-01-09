@@ -106,7 +106,7 @@ final class DailyStats {
 
     /// Whether this day has any study activity
     var hasActivity: Bool {
-        studyTimeSeconds > 0 || cardsLearned > 0 || retentionRate != nil
+        self.studyTimeSeconds > 0 || self.cardsLearned > 0 || self.retentionRate != nil
     }
 
     // MARK: - Initialization

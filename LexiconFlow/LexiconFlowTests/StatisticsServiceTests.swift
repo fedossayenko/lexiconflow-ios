@@ -92,7 +92,7 @@ struct StatisticsServiceTests {
 
     @Test("Retention rate with empty data")
     func retentionRateEmptyData() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let result = await StatisticsService.shared.calculateRetentionRate(
@@ -109,12 +109,12 @@ struct StatisticsServiceTests {
 
     @Test("Retention rate with single successful review")
     func retentionRateSingleSuccessful() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let flashcard = createFlashcard(context: context)
+        let flashcard = self.createFlashcard(context: context)
         let reviewDate = Date()
-        _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: reviewDate)
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: reviewDate)
 
         let result = await StatisticsService.shared.calculateRetentionRate(
             context: context,
@@ -131,12 +131,12 @@ struct StatisticsServiceTests {
 
     @Test("Retention rate with single failed review")
     func retentionRateSingleFailed() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let flashcard = createFlashcard(context: context)
+        let flashcard = self.createFlashcard(context: context)
         let reviewDate = Date()
-        _ = createReview(context: context, flashcard: flashcard, rating: 0, reviewDate: reviewDate)
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 0, reviewDate: reviewDate)
 
         let result = await StatisticsService.shared.calculateRetentionRate(
             context: context,
@@ -153,17 +153,17 @@ struct StatisticsServiceTests {
 
     @Test("Retention rate with mixed reviews")
     func retentionRateMixedReviews() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let flashcard = createFlashcard(context: context)
+        let flashcard = self.createFlashcard(context: context)
         let reviewDate = Date()
 
         // Create 3 successful (rating >= 1) and 1 failed (rating 0)
-        _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: reviewDate)
-        _ = createReview(context: context, flashcard: flashcard, rating: 4, reviewDate: reviewDate)
-        _ = createReview(context: context, flashcard: flashcard, rating: 1, reviewDate: reviewDate)
-        _ = createReview(context: context, flashcard: flashcard, rating: 0, reviewDate: reviewDate)
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: reviewDate)
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 4, reviewDate: reviewDate)
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 1, reviewDate: reviewDate)
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 0, reviewDate: reviewDate)
 
         let result = await StatisticsService.shared.calculateRetentionRate(
             context: context,
@@ -179,19 +179,19 @@ struct StatisticsServiceTests {
 
     @Test("Retention rate with time range filtering")
     func retentionRateTimeRangeFiltering() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let flashcard = createFlashcard(context: context)
+        let flashcard = self.createFlashcard(context: context)
         let today = Date()
         let tenDaysAgo = DateMath.addingDays(-10, to: today)
 
         // Old review (outside 7-day range)
-        _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: tenDaysAgo)
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: tenDaysAgo)
 
         // Recent reviews (within 7-day range)
         for _ in 0 ..< 5 {
-            _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: today)
+            _ = self.createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: today)
         }
 
         // Test 7-day range (should only count recent reviews)
@@ -213,20 +213,20 @@ struct StatisticsServiceTests {
 
     @Test("Retention rate with custom start date")
     func retentionRateCustomStartDate() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let flashcard = createFlashcard(context: context)
+        let flashcard = self.createFlashcard(context: context)
         let today = Date()
         let fiveDaysAgo = DateMath.addingDays(-5, to: today)
         let tenDaysAgo = DateMath.addingDays(-10, to: today)
 
         // Old review
-        _ = createReview(context: context, flashcard: flashcard, rating: 0, reviewDate: tenDaysAgo)
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 0, reviewDate: tenDaysAgo)
 
         // Recent reviews
         for _ in 0 ..< 3 {
-            _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: fiveDaysAgo)
+            _ = self.createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: fiveDaysAgo)
         }
 
         // Custom start date at 6 days ago (should exclude the 10-day-old review)
@@ -245,17 +245,17 @@ struct StatisticsServiceTests {
 
     @Test("Retention rate with timezone boundary handling")
     func retentionRateTimezoneBoundaries() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let flashcard = createFlashcard(context: context)
+        let flashcard = self.createFlashcard(context: context)
 
         // Create reviews at day boundaries (23:59 and 00:01 next day)
         let day1 = DateMath.startOfDay(for: Date()).addingTimeInterval(86340) // 23:59
         let day2 = DateMath.startOfDay(for: Date()).addingTimeInterval(86460) // 00:01 next day
 
-        _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: day1)
-        _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: day2)
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: day1)
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: day2)
 
         let result = await StatisticsService.shared.calculateRetentionRate(
             context: context,
@@ -271,7 +271,7 @@ struct StatisticsServiceTests {
 
     @Test("Study streak with empty data")
     func studyStreakEmptyData() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let result = await StatisticsService.shared.calculateStudyStreak(
@@ -288,12 +288,12 @@ struct StatisticsServiceTests {
 
     @Test("Study streak with single session today")
     func studyStreakSingleSessionToday() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let startTime = Date().addingTimeInterval(-300) // 5 minutes ago
         let endTime = Date()
-        _ = createStudySession(
+        _ = self.createStudySession(
             context: context,
             startTime: startTime,
             endTime: endTime,
@@ -315,16 +315,16 @@ struct StatisticsServiceTests {
 
     @Test("Study streak with consecutive days")
     func studyStreakConsecutiveDays() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let today = Date()
         let yesterday = DateMath.addingDays(-1, to: today)
         let twoDaysAgo = DateMath.addingDays(-2, to: today)
 
-        _ = createStudySession(context: context, startTime: twoDaysAgo, endTime: twoDaysAgo.addingTimeInterval(300), cardsReviewed: 5)
-        _ = createStudySession(context: context, startTime: yesterday, endTime: yesterday.addingTimeInterval(300), cardsReviewed: 5)
-        _ = createStudySession(context: context, startTime: today, endTime: today.addingTimeInterval(300), cardsReviewed: 5)
+        _ = self.createStudySession(context: context, startTime: twoDaysAgo, endTime: twoDaysAgo.addingTimeInterval(300), cardsReviewed: 5)
+        _ = self.createStudySession(context: context, startTime: yesterday, endTime: yesterday.addingTimeInterval(300), cardsReviewed: 5)
+        _ = self.createStudySession(context: context, startTime: today, endTime: today.addingTimeInterval(300), cardsReviewed: 5)
 
         let result = await StatisticsService.shared.calculateStudyStreak(
             context: context,
@@ -339,7 +339,7 @@ struct StatisticsServiceTests {
 
     @Test("Study streak broken by missed day")
     func studyStreakBrokenByMissedDay() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let today = Date()
@@ -347,9 +347,9 @@ struct StatisticsServiceTests {
         let threeDaysAgo = DateMath.addingDays(-3, to: today)
 
         // Day 1, 2, 3: studied
-        _ = createStudySession(context: context, startTime: threeDaysAgo, endTime: threeDaysAgo.addingTimeInterval(300), cardsReviewed: 5)
-        _ = createStudySession(context: context, startTime: twoDaysAgo, endTime: twoDaysAgo.addingTimeInterval(300), cardsReviewed: 5)
-        _ = createStudySession(context: context, startTime: today, endTime: today.addingTimeInterval(300), cardsReviewed: 5)
+        _ = self.createStudySession(context: context, startTime: threeDaysAgo, endTime: threeDaysAgo.addingTimeInterval(300), cardsReviewed: 5)
+        _ = self.createStudySession(context: context, startTime: twoDaysAgo, endTime: twoDaysAgo.addingTimeInterval(300), cardsReviewed: 5)
+        _ = self.createStudySession(context: context, startTime: today, endTime: today.addingTimeInterval(300), cardsReviewed: 5)
 
         let result = await StatisticsService.shared.calculateStudyStreak(
             context: context,
@@ -364,7 +364,7 @@ struct StatisticsServiceTests {
 
     @Test("Study streak longest streak calculation")
     func studyStreakLongestStreak() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let today = Date()
@@ -372,13 +372,13 @@ struct StatisticsServiceTests {
         // Create two separate streaks: 5 days, then 3 days
         for i in 0 ..< 5 {
             let date = DateMath.addingDays(-Double(i), to: today)
-            _ = createStudySession(context: context, startTime: date, endTime: date.addingTimeInterval(300), cardsReviewed: 5)
+            _ = self.createStudySession(context: context, startTime: date, endTime: date.addingTimeInterval(300), cardsReviewed: 5)
         }
 
         // Gap of 2 days
         for i in 7 ..< 10 {
             let date = DateMath.addingDays(-Double(i), to: today)
-            _ = createStudySession(context: context, startTime: date, endTime: date.addingTimeInterval(300), cardsReviewed: 5)
+            _ = self.createStudySession(context: context, startTime: date, endTime: date.addingTimeInterval(300), cardsReviewed: 5)
         }
 
         let result = await StatisticsService.shared.calculateStudyStreak(
@@ -393,14 +393,14 @@ struct StatisticsServiceTests {
 
     @Test("Study streak not studied today")
     func studyStreakNotStudiedToday() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let yesterday = DateMath.addingDays(-1, to: Date())
         let twoDaysAgo = DateMath.addingDays(-2, to: Date())
 
-        _ = createStudySession(context: context, startTime: twoDaysAgo, endTime: twoDaysAgo.addingTimeInterval(300), cardsReviewed: 5)
-        _ = createStudySession(context: context, startTime: yesterday, endTime: yesterday.addingTimeInterval(300), cardsReviewed: 5)
+        _ = self.createStudySession(context: context, startTime: twoDaysAgo, endTime: twoDaysAgo.addingTimeInterval(300), cardsReviewed: 5)
+        _ = self.createStudySession(context: context, startTime: yesterday, endTime: yesterday.addingTimeInterval(300), cardsReviewed: 5)
 
         let result = await StatisticsService.shared.calculateStudyStreak(
             context: context,
@@ -414,15 +414,15 @@ struct StatisticsServiceTests {
 
     @Test("Study streak calendar heatmap data")
     func studyStreakCalendarHeatmap() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let today = Date()
         let yesterday = DateMath.addingDays(-1, to: today)
 
         // Create sessions with different durations
-        _ = createStudySession(context: context, startTime: yesterday, endTime: yesterday.addingTimeInterval(600), cardsReviewed: 10) // 10 min
-        _ = createStudySession(context: context, startTime: today, endTime: today.addingTimeInterval(1200), cardsReviewed: 20) // 20 min
+        _ = self.createStudySession(context: context, startTime: yesterday, endTime: yesterday.addingTimeInterval(600), cardsReviewed: 10) // 10 min
+        _ = self.createStudySession(context: context, startTime: today, endTime: today.addingTimeInterval(1200), cardsReviewed: 20) // 20 min
 
         let result = await StatisticsService.shared.calculateStudyStreak(
             context: context,
@@ -444,15 +444,15 @@ struct StatisticsServiceTests {
 
     @Test("Study streak with multiple sessions per day")
     func studyStreakMultipleSessionsPerDay() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let today = Date()
 
         // Multiple sessions on same day should be aggregated
-        _ = createStudySession(context: context, startTime: today, endTime: today.addingTimeInterval(300), cardsReviewed: 5)
-        _ = createStudySession(context: context, startTime: today.addingTimeInterval(600), endTime: today.addingTimeInterval(900), cardsReviewed: 5)
-        _ = createStudySession(context: context, startTime: today.addingTimeInterval(1200), endTime: today.addingTimeInterval(1500), cardsReviewed: 5)
+        _ = self.createStudySession(context: context, startTime: today, endTime: today.addingTimeInterval(300), cardsReviewed: 5)
+        _ = self.createStudySession(context: context, startTime: today.addingTimeInterval(600), endTime: today.addingTimeInterval(900), cardsReviewed: 5)
+        _ = self.createStudySession(context: context, startTime: today.addingTimeInterval(1200), endTime: today.addingTimeInterval(1500), cardsReviewed: 5)
 
         let result = await StatisticsService.shared.calculateStudyStreak(
             context: context,
@@ -470,16 +470,16 @@ struct StatisticsServiceTests {
 
     @Test("Study streak with time range filtering")
     func studyStreakTimeRangeFiltering() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let today = Date()
         let fiveDaysAgo = DateMath.addingDays(-5, to: today)
         let tenDaysAgo = DateMath.addingDays(-10, to: today)
 
-        _ = createStudySession(context: context, startTime: tenDaysAgo, endTime: tenDaysAgo.addingTimeInterval(300), cardsReviewed: 5)
-        _ = createStudySession(context: context, startTime: fiveDaysAgo, endTime: fiveDaysAgo.addingTimeInterval(300), cardsReviewed: 5)
-        _ = createStudySession(context: context, startTime: today, endTime: today.addingTimeInterval(300), cardsReviewed: 5)
+        _ = self.createStudySession(context: context, startTime: tenDaysAgo, endTime: tenDaysAgo.addingTimeInterval(300), cardsReviewed: 5)
+        _ = self.createStudySession(context: context, startTime: fiveDaysAgo, endTime: fiveDaysAgo.addingTimeInterval(300), cardsReviewed: 5)
+        _ = self.createStudySession(context: context, startTime: today, endTime: today.addingTimeInterval(300), cardsReviewed: 5)
 
         // 7-day range should exclude the 10-day-old session
         let result7Days = await StatisticsService.shared.calculateStudyStreak(
@@ -502,7 +502,7 @@ struct StatisticsServiceTests {
 
     @Test("FSRS metrics with empty data")
     func fsrsMetricsEmptyData() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let result = await StatisticsService.shared.calculateFSRSMetrics(
@@ -520,11 +520,11 @@ struct StatisticsServiceTests {
 
     @Test("FSRS metrics with single reviewed card")
     func fsrsMetricsSingleCard() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let lastReview = Date()
-        _ = createFlashcard(
+        _ = self.createFlashcard(
             context: context,
             stability: 10.0,
             difficulty: 4.0,
@@ -546,15 +546,15 @@ struct StatisticsServiceTests {
 
     @Test("FSRS metrics with multiple cards")
     func fsrsMetricsMultipleCards() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let lastReview = Date()
 
         // Create cards with varying stability and difficulty
-        _ = createFlashcard(context: context, stability: 5.0, difficulty: 3.0, lastReviewDate: lastReview)
-        _ = createFlashcard(context: context, stability: 15.0, difficulty: 5.0, lastReviewDate: lastReview)
-        _ = createFlashcard(context: context, stability: 25.0, difficulty: 7.0, lastReviewDate: lastReview)
+        _ = self.createFlashcard(context: context, stability: 5.0, difficulty: 3.0, lastReviewDate: lastReview)
+        _ = self.createFlashcard(context: context, stability: 15.0, difficulty: 5.0, lastReviewDate: lastReview)
+        _ = self.createFlashcard(context: context, stability: 25.0, difficulty: 7.0, lastReviewDate: lastReview)
 
         let result = await StatisticsService.shared.calculateFSRSMetrics(
             context: context,
@@ -569,17 +569,17 @@ struct StatisticsServiceTests {
 
     @Test("FSRS metrics excluding unreviewed cards")
     func fsrsMetricsExcludeUnreviewed() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let lastReview = Date()
 
         // Reviewed cards
-        _ = createFlashcard(context: context, stability: 10.0, difficulty: 5.0, lastReviewDate: lastReview)
-        _ = createFlashcard(context: context, stability: 20.0, difficulty: 6.0, lastReviewDate: lastReview)
+        _ = self.createFlashcard(context: context, stability: 10.0, difficulty: 5.0, lastReviewDate: lastReview)
+        _ = self.createFlashcard(context: context, stability: 20.0, difficulty: 6.0, lastReviewDate: lastReview)
 
         // Unreviewed card (no last review date)
-        _ = createFlashcard(context: context, stability: 0.0, difficulty: 5.0, lastReviewDate: nil)
+        _ = self.createFlashcard(context: context, stability: 0.0, difficulty: 5.0, lastReviewDate: nil)
 
         let result = await StatisticsService.shared.calculateFSRSMetrics(
             context: context,
@@ -594,21 +594,21 @@ struct StatisticsServiceTests {
 
     @Test("FSRS metrics stability distribution")
     func fsrsMetricsStabilityDistribution() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let lastReview = Date()
 
         // Create cards across different stability buckets
-        _ = createFlashcard(context: context, stability: 0.5, difficulty: 5.0, lastReviewDate: lastReview) // 0-1 days
-        _ = createFlashcard(context: context, stability: 2.0, difficulty: 5.0, lastReviewDate: lastReview) // 1-3 days
-        _ = createFlashcard(context: context, stability: 5.0, difficulty: 5.0, lastReviewDate: lastReview) // 3-7 days
-        _ = createFlashcard(context: context, stability: 10.0, difficulty: 5.0, lastReviewDate: lastReview) // 1-2 weeks
-        _ = createFlashcard(context: context, stability: 25.0, difficulty: 5.0, lastReviewDate: lastReview) // 2-4 weeks
-        _ = createFlashcard(context: context, stability: 60.0, difficulty: 5.0, lastReviewDate: lastReview) // 1-3 months
-        _ = createFlashcard(context: context, stability: 150.0, difficulty: 5.0, lastReviewDate: lastReview) // 3-6 months
-        _ = createFlashcard(context: context, stability: 300.0, difficulty: 5.0, lastReviewDate: lastReview) // 6-12 months
-        _ = createFlashcard(context: context, stability: 500.0, difficulty: 5.0, lastReviewDate: lastReview) // 1+ years
+        _ = self.createFlashcard(context: context, stability: 0.5, difficulty: 5.0, lastReviewDate: lastReview) // 0-1 days
+        _ = self.createFlashcard(context: context, stability: 2.0, difficulty: 5.0, lastReviewDate: lastReview) // 1-3 days
+        _ = self.createFlashcard(context: context, stability: 5.0, difficulty: 5.0, lastReviewDate: lastReview) // 3-7 days
+        _ = self.createFlashcard(context: context, stability: 10.0, difficulty: 5.0, lastReviewDate: lastReview) // 1-2 weeks
+        _ = self.createFlashcard(context: context, stability: 25.0, difficulty: 5.0, lastReviewDate: lastReview) // 2-4 weeks
+        _ = self.createFlashcard(context: context, stability: 60.0, difficulty: 5.0, lastReviewDate: lastReview) // 1-3 months
+        _ = self.createFlashcard(context: context, stability: 150.0, difficulty: 5.0, lastReviewDate: lastReview) // 3-6 months
+        _ = self.createFlashcard(context: context, stability: 300.0, difficulty: 5.0, lastReviewDate: lastReview) // 6-12 months
+        _ = self.createFlashcard(context: context, stability: 500.0, difficulty: 5.0, lastReviewDate: lastReview) // 1+ years
 
         let result = await StatisticsService.shared.calculateFSRSMetrics(
             context: context,
@@ -628,17 +628,17 @@ struct StatisticsServiceTests {
 
     @Test("FSRS metrics difficulty distribution")
     func fsrsMetricsDifficultyDistribution() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let lastReview = Date()
 
         // Create cards across different difficulty buckets
-        _ = createFlashcard(context: context, stability: 10.0, difficulty: 1.0, lastReviewDate: lastReview) // 0-2
-        _ = createFlashcard(context: context, stability: 10.0, difficulty: 3.0, lastReviewDate: lastReview) // 2-4
-        _ = createFlashcard(context: context, stability: 10.0, difficulty: 5.0, lastReviewDate: lastReview) // 4-6
-        _ = createFlashcard(context: context, stability: 10.0, difficulty: 7.0, lastReviewDate: lastReview) // 6-8
-        _ = createFlashcard(context: context, stability: 10.0, difficulty: 9.0, lastReviewDate: lastReview) // 8-10
+        _ = self.createFlashcard(context: context, stability: 10.0, difficulty: 1.0, lastReviewDate: lastReview) // 0-2
+        _ = self.createFlashcard(context: context, stability: 10.0, difficulty: 3.0, lastReviewDate: lastReview) // 2-4
+        _ = self.createFlashcard(context: context, stability: 10.0, difficulty: 5.0, lastReviewDate: lastReview) // 4-6
+        _ = self.createFlashcard(context: context, stability: 10.0, difficulty: 7.0, lastReviewDate: lastReview) // 6-8
+        _ = self.createFlashcard(context: context, stability: 10.0, difficulty: 9.0, lastReviewDate: lastReview) // 8-10
 
         let result = await StatisticsService.shared.calculateFSRSMetrics(
             context: context,
@@ -654,14 +654,14 @@ struct StatisticsServiceTests {
 
     @Test("FSRS metrics with difficulty clamping")
     func fsrsMetricsDifficultyClamping() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let lastReview = Date()
 
         // Test edge cases: negative and > 10 difficulty
-        _ = createFlashcard(context: context, stability: 10.0, difficulty: -5.0, lastReviewDate: lastReview) // Should clamp to 0
-        _ = createFlashcard(context: context, stability: 10.0, difficulty: 15.0, lastReviewDate: lastReview) // Should clamp to 10
+        _ = self.createFlashcard(context: context, stability: 10.0, difficulty: -5.0, lastReviewDate: lastReview) // Should clamp to 0
+        _ = self.createFlashcard(context: context, stability: 10.0, difficulty: 15.0, lastReviewDate: lastReview) // Should clamp to 10
 
         let result = await StatisticsService.shared.calculateFSRSMetrics(
             context: context,
@@ -675,16 +675,16 @@ struct StatisticsServiceTests {
 
     @Test("FSRS metrics formatted stability")
     func fsrsMetricsFormattedStability() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let lastReview = Date()
 
         // Test different stability ranges
-        _ = createFlashcard(context: context, stability: 0.5, difficulty: 5.0, lastReviewDate: lastReview) // days
-        _ = createFlashcard(context: context, stability: 10.0, difficulty: 5.0, lastReviewDate: lastReview) // weeks
-        _ = createFlashcard(context: context, stability: 45.0, difficulty: 5.0, lastReviewDate: lastReview) // months
-        _ = createFlashcard(context: context, stability: 400.0, difficulty: 5.0, lastReviewDate: lastReview) // years
+        _ = self.createFlashcard(context: context, stability: 0.5, difficulty: 5.0, lastReviewDate: lastReview) // days
+        _ = self.createFlashcard(context: context, stability: 10.0, difficulty: 5.0, lastReviewDate: lastReview) // weeks
+        _ = self.createFlashcard(context: context, stability: 45.0, difficulty: 5.0, lastReviewDate: lastReview) // months
+        _ = self.createFlashcard(context: context, stability: 400.0, difficulty: 5.0, lastReviewDate: lastReview) // years
 
         let result = await StatisticsService.shared.calculateFSRSMetrics(
             context: context,
@@ -708,7 +708,7 @@ struct StatisticsServiceTests {
 
     @Test("Daily stats aggregation with empty data")
     func dailyStatsAggregationEmpty() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let count = try await StatisticsService.shared.aggregateDailyStats(context: context)
@@ -718,12 +718,12 @@ struct StatisticsServiceTests {
 
     @Test("Daily stats aggregation with single session")
     func dailyStatsAggregationSingleSession() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let today = Date()
-        let flashcard = createFlashcard(context: context, lastReviewDate: today)
-        let session = createStudySession(
+        let flashcard = self.createFlashcard(context: context, lastReviewDate: today)
+        let session = self.createStudySession(
             context: context,
             startTime: today,
             endTime: today.addingTimeInterval(600),
@@ -732,7 +732,7 @@ struct StatisticsServiceTests {
 
         // Add reviews to session
         for _ in 0 ..< 5 {
-            _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: today)
+            _ = self.createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: today)
             session.cardsReviewed += 1
         }
         session.reviewsLog = (try? context.fetch(FetchDescriptor<FlashcardReview>())) ?? []
@@ -750,16 +750,16 @@ struct StatisticsServiceTests {
 
     @Test("Daily stats aggregation with multiple sessions per day")
     func dailyStatsAggregationMultipleSessions() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let today = Date()
-        let flashcard = createFlashcard(context: context, lastReviewDate: today)
+        let flashcard = self.createFlashcard(context: context, lastReviewDate: today)
 
         // Create multiple sessions on same day
         for i in 0 ..< 3 {
             let startTime = today.addingTimeInterval(TimeInterval(i * 1000))
-            let session = createStudySession(
+            let session = self.createStudySession(
                 context: context,
                 startTime: startTime,
                 endTime: startTime.addingTimeInterval(300),
@@ -768,7 +768,7 @@ struct StatisticsServiceTests {
 
             // Add reviews
             for _ in 0 ..< 2 {
-                _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: startTime)
+                _ = self.createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: startTime)
             }
         }
 
@@ -784,20 +784,20 @@ struct StatisticsServiceTests {
 
     @Test("Daily stats aggregation across multiple days")
     func dailyStatsAggregationMultipleDays() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let today = Date()
         let yesterday = DateMath.addingDays(-1, to: today)
 
         // Create sessions on different days
-        _ = createStudySession(
+        _ = self.createStudySession(
             context: context,
             startTime: yesterday,
             endTime: yesterday.addingTimeInterval(300),
             cardsReviewed: 5
         )
-        _ = createStudySession(
+        _ = self.createStudySession(
             context: context,
             startTime: today,
             endTime: today.addingTimeInterval(600),
@@ -816,7 +816,7 @@ struct StatisticsServiceTests {
 
     @Test("Daily stats aggregation updating existing records")
     func dailyStatsAggregationUpdateExisting() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let today = Date()
@@ -833,7 +833,7 @@ struct StatisticsServiceTests {
         try context.save()
 
         // Create new session that should update the stats
-        let session = createStudySession(
+        let session = self.createStudySession(
             context: context,
             startTime: today,
             endTime: today.addingTimeInterval(600),
@@ -853,13 +853,13 @@ struct StatisticsServiceTests {
 
     @Test("Daily stats aggregation only processes unaggregated sessions")
     func dailyStatsAggregationIncremental() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let today = Date()
 
         // Create first session and aggregate
-        let session1 = createStudySession(
+        let session1 = self.createStudySession(
             context: context,
             startTime: today,
             endTime: today.addingTimeInterval(300),
@@ -869,7 +869,7 @@ struct StatisticsServiceTests {
         #expect(count1 == 1)
 
         // Create second session
-        let session2 = createStudySession(
+        let session2 = self.createStudySession(
             context: context,
             startTime: today.addingTimeInterval(1000),
             endTime: today.addingTimeInterval(1300),
@@ -890,22 +890,22 @@ struct StatisticsServiceTests {
 
     @Test("StatisticsService concurrent access safety")
     func statisticsServiceConcurrentAccess() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let today = Date()
-        let flashcard = createFlashcard(context: context, lastReviewDate: today)
+        let flashcard = self.createFlashcard(context: context, lastReviewDate: today)
 
         // Create test data
         for i in 0 ..< 10 {
             let date = DateMath.addingDays(-Double(i), to: today)
-            _ = createStudySession(
+            _ = self.createStudySession(
                 context: context,
                 startTime: date,
                 endTime: date.addingTimeInterval(300),
                 cardsReviewed: 5
             )
-            _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: date)
+            _ = self.createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: date)
         }
 
         // Test concurrent access to all methods
@@ -931,7 +931,7 @@ struct StatisticsServiceTests {
 
     @Test("StatisticsService aggregation concurrency")
     func statisticsServiceAggregationConcurrency() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let today = Date()
@@ -939,7 +939,7 @@ struct StatisticsServiceTests {
         // Create sessions for concurrent aggregation
         for i in 0 ..< 10 {
             let date = DateMath.addingDays(-Double(i), to: today)
-            _ = createStudySession(
+            _ = self.createStudySession(
                 context: context,
                 startTime: date,
                 endTime: date.addingTimeInterval(300),
@@ -974,7 +974,7 @@ struct StatisticsServiceTests {
 
     @Test("StatisticsService with nil model context operations")
     func statisticsServiceNilHandling() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         // Empty context should return default DTOs, not crash
@@ -1000,19 +1000,19 @@ struct StatisticsServiceTests {
 
     @Test("StatisticsService with all rating values")
     func statisticsServiceAllRatings() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
-        let flashcard = createFlashcard(context: context)
+        let flashcard = self.createFlashcard(context: context)
         let today = Date()
 
         // Test all possible rating values (0-4)
         // 0 = Again (failed), 1 = Hard (successful), 2 = Good, 3 = Easy, 4 = Custom Easy
-        _ = createReview(context: context, flashcard: flashcard, rating: 0, reviewDate: today)
-        _ = createReview(context: context, flashcard: flashcard, rating: 1, reviewDate: today)
-        _ = createReview(context: context, flashcard: flashcard, rating: 2, reviewDate: today)
-        _ = createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: today)
-        _ = createReview(context: context, flashcard: flashcard, rating: 4, reviewDate: today)
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 0, reviewDate: today)
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 1, reviewDate: today)
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 2, reviewDate: today)
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: today)
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 4, reviewDate: today)
 
         let result = await StatisticsService.shared.calculateRetentionRate(context: context)
 

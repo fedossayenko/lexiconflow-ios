@@ -65,12 +65,12 @@ struct FlashcardView: View {
 
     var body: some View {
         ZStack {
-            if isFlipped {
-                CardBackView(card: card)
+            if self.isFlipped {
+                CardBackView(card: self.card)
                     .glassEffectTransition(.scaleFade)
                     .zIndex(1)
             } else {
-                CardFrontView(card: card)
+                CardFrontView(card: self.card)
                     .glassEffectTransition(.scaleFade)
                     .zIndex(0)
             }
@@ -81,7 +81,7 @@ struct FlashcardView: View {
                     Spacer()
 
                     Button {
-                        showingDetail = true
+                        self.showingDetail = true
                     } label: {
                         Image(systemName: "info.circle.fill")
                             .font(.title3)
@@ -101,9 +101,9 @@ struct FlashcardView: View {
         .frame(maxWidth: .infinity)
         .frame(height: 400)
         .background(Color(.systemBackground))
-        .glassEffect(AppSettings.glassEffectsEnabled ? glassThickness : .thin)
-        .animation(.spring(response: 0.4, dampingFraction: 0.75), value: isFlipped)
-        .interactive($gestureViewModel.offset) { dragOffset in
+        .glassEffect(AppSettings.glassEffectsEnabled ? self.glassThickness : .thin)
+        .animation(.spring(response: 0.4, dampingFraction: 0.75), value: self.isFlipped)
+        .interactive(self.$gestureViewModel.offset) { dragOffset in
             let progress = min(max(dragOffset.width / 100, -1), 1)
 
             if progress > 0 {
@@ -113,35 +113,35 @@ struct FlashcardView: View {
             }
         }
         // Gesture visual feedback
-        .offset(x: gestureViewModel.offset.width, y: gestureViewModel.offset.height)
-        .scaleEffect(gestureViewModel.scale)
-        .rotationEffect(.degrees(gestureViewModel.rotation))
-        .opacity(gestureViewModel.opacity)
+        .offset(x: self.gestureViewModel.offset.width, y: self.gestureViewModel.offset.height)
+        .scaleEffect(self.gestureViewModel.scale)
+        .rotationEffect(.degrees(self.gestureViewModel.rotation))
+        .opacity(self.gestureViewModel.opacity)
         // Gesture handling - use simultaneousGesture to allow tap to work
         .simultaneousGesture(
             DragGesture(minimumDistance: 10, coordinateSpace: .local)
                 .onChanged { value in
-                    isDragging = true
+                    self.isDragging = true
 
                     guard let result = gestureViewModel.handleGestureChange(value) else { return }
 
                     let now = Date()
-                    if now.timeIntervalSince(lastHapticTime) >= AnimationConstants.hapticThrottleInterval {
+                    if now.timeIntervalSince(self.lastHapticTime) >= AnimationConstants.hapticThrottleInterval {
                         HapticService.shared.triggerSwipe(
                             direction: result.direction.hapticDirection,
                             progress: result.progress
                         )
-                        lastHapticTime = now
+                        self.lastHapticTime = now
                     }
                 }
                 .onEnded { value in
-                    let direction = gestureViewModel.detectDirection(translation: value.translation)
+                    let direction = self.gestureViewModel.detectDirection(translation: value.translation)
                     _ = max(abs(value.translation.width), abs(value.translation.height))
-                    let shouldCommit = gestureViewModel.shouldCommitSwipe(translation: value.translation)
+                    let shouldCommit = self.gestureViewModel.shouldCommitSwipe(translation: value.translation)
 
                     if shouldCommit {
                         // Commit swipe
-                        let rating = gestureViewModel.ratingForDirection(direction)
+                        let rating = self.gestureViewModel.ratingForDirection(direction)
 
                         // Success haptic
                         if rating == 2 || rating == 3 {
@@ -151,36 +151,36 @@ struct FlashcardView: View {
                         }
 
                         // Reset with animation
-                        isDragging = false
+                        self.isDragging = false
                         withAnimation(.spring(response: AnimationConstants.commitSpringResponse, dampingFraction: AnimationConstants.commitSpringDamping)) {
-                            gestureViewModel.resetGestureState()
+                            self.gestureViewModel.resetGestureState()
                         }
 
                         // Notify parent
-                        onSwipe?(rating)
+                        self.onSwipe?(rating)
                     } else {
                         // Cancel swipe - snap back
-                        isDragging = false
+                        self.isDragging = false
                         withAnimation(.spring(response: AnimationConstants.cancelSpringResponse, dampingFraction: AnimationConstants.cancelSpringDamping)) {
-                            gestureViewModel.resetGestureState()
+                            self.gestureViewModel.resetGestureState()
                         }
                     }
                 }
         )
-        .accessibilityLabel(isFlipped ? "Card back showing definition" : "Card front showing word")
+        .accessibilityLabel(self.isFlipped ? "Card back showing definition" : "Card front showing word")
         .accessibilityHint("Double tap to flip card, or swipe in any direction to rate")
         .accessibilityAddTraits(.isButton)
         .accessibilityIdentifier("flashcard")
         .onTapGesture {
             // Only allow tap to flip if not currently dragging
-            guard !isDragging else { return }
+            guard !self.isDragging else { return }
 
             withAnimation(.easeInOut(duration: 0.3)) {
-                isFlipped.toggle()
+                self.isFlipped.toggle()
             }
         }
-        .sheet(isPresented: $showingDetail) {
-            FlashcardDetailView(flashcard: card)
+        .sheet(isPresented: self.$showingDetail) {
+            FlashcardDetailView(flashcard: self.card)
         }
         .id("flashcard-base")
     }

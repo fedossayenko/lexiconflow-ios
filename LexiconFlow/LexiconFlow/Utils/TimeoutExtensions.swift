@@ -6,6 +6,7 @@
 //  Provides withTimeout() wrapper for async operations
 //
 
+import Combine
 import Foundation
 
 /// Error thrown when an operation times out

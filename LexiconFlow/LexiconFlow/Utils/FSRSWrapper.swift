@@ -55,7 +55,7 @@ final class FSRSWrapper {
     private init() {
         // Create FSRS instance with default parameters
         let params = FSRSParameters()
-        fsrs = FSRS(parameters: params)
+        self.fsrs = FSRS(parameters: params)
     }
 
     // MARK: - Type Conversions
@@ -83,7 +83,7 @@ final class FSRSWrapper {
             scheduledDays: 0,
             reps: flashcard.reviewLogs.count,
             lapses: flashcard.reviewLogs.count(where: { $0.rating == 0 }),
-            state: toFSCardState(fsrsState?.stateEnum),
+            state: self.toFSCardState(fsrsState?.stateEnum),
             lastReview: lastReview
         )
     }
@@ -138,7 +138,7 @@ final class FSRSWrapper {
             0.0
         }
 
-        let fsrsCard = toFSCard(flashcard, elapsedDays: elapsedDays)
+        let fsrsCard = self.toFSCard(flashcard, elapsedDays: elapsedDays)
 
         // Convert our rating (0-3) to FSRS Rating (again=1, hard=2, good=3, easy=4)
         let fsrsRating = switch rating {
@@ -161,7 +161,7 @@ final class FSRSWrapper {
         }
 
         // Use shared helper to convert state
-        let stateEnum = toFlashcardStateEnum(result.card.state)
+        let stateEnum = self.toFlashcardStateEnum(result.card.state)
 
         let scheduledDays = result.card.due.timeIntervalSince(now) / 86400.0
 
@@ -193,8 +193,8 @@ final class FSRSWrapper {
             0.0
         }
 
-        let fsrsCard = toFSCard(flashcard, elapsedDays: elapsedDays)
-        let preview = fsrs.repeat(card: fsrsCard, now: now)
+        let fsrsCard = self.toFSCard(flashcard, elapsedDays: elapsedDays)
+        let preview = self.fsrs.repeat(card: fsrsCard, now: now)
 
         // Use the public subscript to access preview for each rating
         return [
@@ -224,11 +224,11 @@ final class FSRSWrapper {
             0.0
         }
 
-        let fsrsCard = toFSCard(flashcard, elapsedDays: elapsedDays)
-        let result = fsrs.forget(card: fsrsCard, now: now)
+        let fsrsCard = self.toFSCard(flashcard, elapsedDays: elapsedDays)
+        let result = self.fsrs.forget(card: fsrsCard, now: now)
 
         // Use shared helper to convert state
-        let stateEnum = toFlashcardStateEnum(result.card.state)
+        let stateEnum = self.toFlashcardStateEnum(result.card.state)
 
         return FSRSReviewResult(
             stability: result.card.stability,

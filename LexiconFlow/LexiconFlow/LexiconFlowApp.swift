@@ -195,13 +195,7 @@ struct LexiconFlowApp: App {
                 withExtension: "json"
             ) != nil else {
                 logger.error("IELTS vocabulary file not found in bundle")
-                Task {
-                    do {
-                        await Analytics.trackError("ielts_file_missing", error: IELTSImportError.fileNotFound)
-                    } catch {
-                        logger.error("Failed to track analytics error: \(error)")
-                    }
-                }
+                Analytics.trackError("ielts_file_missing", error: IELTSImportError.fileNotFound)
                 return // Don't set flag - will retry on next launch
             }
 
@@ -219,28 +213,16 @@ struct LexiconFlowApp: App {
             - Duration: \(String(format: "%.2f", result.duration))s
             """)
 
-            Task {
-                do {
-                    await Analytics.trackEvent("ielts_auto_import_complete", metadata: [
-                        "imported_count": "\(result.importedCount)",
-                        "failed_count": "\(result.failedCount)",
-                        "duration_seconds": String(format: "%.2f", result.duration)
-                    ])
-                } catch {
-                    logger.analytics.error("Failed to track analytics event: \(error)")
-                }
-            }
+            Analytics.trackEvent("ielts_auto_import_complete", metadata: [
+                "imported_count": "\(result.importedCount)",
+                "failed_count": "\(result.failedCount)",
+                "duration_seconds": String(format: "%.2f", result.duration)
+            ])
 
         } catch {
             logger.error("❌ IELTS vocabulary pre-population failed: \(error.localizedDescription)")
 
-            Task {
-                do {
-                    await Analytics.trackError("ielts_auto_import_failed", error: error)
-                } catch {
-                    logger.analytics.error("Failed to track analytics error: \(error)")
-                }
-            }
+            Analytics.trackError("ielts_auto_import_failed", error: error)
 
             // Don't set flag - will retry on next launch
             // App remains functional with default deck

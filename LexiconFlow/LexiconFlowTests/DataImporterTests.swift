@@ -15,11 +15,11 @@ actor ProgressCollector {
     private var updates: [ImportProgress] = []
 
     func add(_ progress: ImportProgress) {
-        updates.append(progress)
+        self.updates.append(progress)
     }
 
     var allUpdates: [ImportProgress] {
-        updates
+        self.updates
     }
 }
 
@@ -28,11 +28,11 @@ actor BatchCounter {
     private var value: Int = 0
 
     func increment() {
-        value += 1
+        self.value += 1
     }
 
     var count: Int {
-        value
+        self.value
     }
 }
 
@@ -54,7 +54,7 @@ struct DataImporterTests {
 
     @Test("Import single card successfully")
     func importSingleCard() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
@@ -80,7 +80,7 @@ struct DataImporterTests {
 
     @Test("Import multiple cards in batch")
     func importMultipleCards() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
@@ -101,7 +101,7 @@ struct DataImporterTests {
 
     @Test("Import empty array returns success")
     func importEmptyArray() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
@@ -117,7 +117,7 @@ struct DataImporterTests {
 
     @Test("Skip duplicate cards by default")
     func skipDuplicateCards() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
@@ -143,7 +143,7 @@ struct DataImporterTests {
 
     @Test("Duplicate detection is case-sensitive")
     func duplicateDetectionCaseSensitive() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
@@ -166,7 +166,7 @@ struct DataImporterTests {
 
     @Test("Progress handler called for each batch")
     func progressHandlerCalled() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
@@ -201,7 +201,7 @@ struct DataImporterTests {
 
     @Test("Progress percentage calculated correctly")
     func progressPercentageCalculation() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
@@ -233,7 +233,7 @@ struct DataImporterTests {
 
     @Test("Cards associated with deck correctly")
     func deckAssociation() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
@@ -262,7 +262,7 @@ struct DataImporterTests {
 
     @Test("FSRS state created for imported cards")
     func fsrsStateCreated() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
@@ -285,7 +285,7 @@ struct DataImporterTests {
 
     @Test("Image data stored correctly")
     func imageDataStorage() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
@@ -315,7 +315,7 @@ struct DataImporterTests {
 
     @Test("Custom batch size respected")
     func customBatchSize() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
@@ -345,7 +345,7 @@ struct DataImporterTests {
 
     @Test("Large batch size imports all at once")
     func largeBatchSize() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
@@ -374,7 +374,7 @@ struct DataImporterTests {
 
     @Test("Import 20 cards quickly")
     func importPerformance() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 
@@ -391,7 +391,7 @@ struct DataImporterTests {
 
     @Test("Duplicate check is O(n) not O(n²)")
     func duplicateCheckPerformance() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
         let importer = DataImporter(modelContext: context)
 

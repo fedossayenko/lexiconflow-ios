@@ -44,7 +44,7 @@ struct TranslationSettingsView: View {
                             AppSettings.translationSourceLanguage = newLang
                             // Recheck availability when language changes
                             Task {
-                                await checkLanguageAvailability()
+                                await self.checkLanguageAvailability()
                             }
                         }
                     )) {
@@ -59,7 +59,7 @@ struct TranslationSettingsView: View {
                             AppSettings.translationTargetLanguage = newLang
                             // Recheck availability when language changes
                             Task {
-                                await checkLanguageAvailability()
+                                await self.checkLanguageAvailability()
                             }
                         }
                     )) {
@@ -70,19 +70,19 @@ struct TranslationSettingsView: View {
 
                     // On-Device Language Availability
                     OnDeviceLanguageStatusView(
-                        sourceDownloaded: sourceLanguageDownloaded,
-                        targetDownloaded: targetLanguageDownloaded,
-                        isChecking: isCheckingAvailability,
-                        isDownloading: isDownloadingLanguage,
-                        downloadError: downloadError,
+                        sourceDownloaded: self.sourceLanguageDownloaded,
+                        targetDownloaded: self.targetLanguageDownloaded,
+                        isChecking: self.isCheckingAvailability,
+                        isDownloading: self.isDownloadingLanguage,
+                        downloadError: self.downloadError,
                         onDownloadSource: {
-                            Task { await downloadLanguagePack(.source) }
+                            Task { await self.downloadLanguagePack(.source) }
                         },
                         onDownloadTarget: {
-                            Task { await downloadLanguagePack(.target) }
+                            Task { await self.downloadLanguagePack(.target) }
                         },
                         onOpenSystemSettings: {
-                            openSystemSettingsForLanguagePacks()
+                            self.openSystemSettingsForLanguagePacks()
                         }
                     )
                 }
@@ -98,11 +98,11 @@ struct TranslationSettingsView: View {
             Task {
                 // If user just returned from system settings, refresh availability
                 // in case they installed language packs
-                if returnedFromSettings {
-                    logger.info("User returned from system settings - refreshing language availability")
-                    returnedFromSettings = false
+                if self.returnedFromSettings {
+                    self.logger.info("User returned from system settings - refreshing language availability")
+                    self.returnedFromSettings = false
                 }
-                await checkLanguageAvailability()
+                await self.checkLanguageAvailability()
             }
         }
     }
@@ -111,45 +111,45 @@ struct TranslationSettingsView: View {
 
     /// Check if selected language packs are downloaded for on-device translation
     private func checkLanguageAvailability() async {
-        isCheckingAvailability = true
-        downloadError = nil
+        self.isCheckingAvailability = true
+        self.downloadError = nil
 
-        sourceLanguageDownloaded = await onDeviceService.isLanguageAvailable(AppSettings.translationSourceLanguage)
-        targetLanguageDownloaded = await onDeviceService.isLanguageAvailable(AppSettings.translationTargetLanguage)
+        self.sourceLanguageDownloaded = await self.onDeviceService.isLanguageAvailable(AppSettings.translationSourceLanguage)
+        self.targetLanguageDownloaded = await self.onDeviceService.isLanguageAvailable(AppSettings.translationTargetLanguage)
 
-        logger.debug("""
+        self.logger.debug("""
         Language availability check:
-        - Source (\(AppSettings.translationSourceLanguage)): \(sourceLanguageDownloaded ? "Downloaded" : "Not downloaded")
-        - Target (\(AppSettings.translationTargetLanguage)): \(targetLanguageDownloaded ? "Downloaded" : "Not downloaded")
+        - Source (\(AppSettings.translationSourceLanguage)): \(self.sourceLanguageDownloaded ? "Downloaded" : "Not downloaded")
+        - Target (\(AppSettings.translationTargetLanguage)): \(self.targetLanguageDownloaded ? "Downloaded" : "Not downloaded")
         """)
 
-        isCheckingAvailability = false
+        self.isCheckingAvailability = false
     }
 
     /// Download language pack for on-device translation
     private func downloadLanguagePack(_ languageType: LanguageType) async {
-        isDownloadingLanguage = true
-        downloadError = nil
+        self.isDownloadingLanguage = true
+        self.downloadError = nil
 
         let languageCode = languageType == .source
             ? AppSettings.translationSourceLanguage
             : AppSettings.translationTargetLanguage
 
-        logger.info("Requesting language pack download for '\(languageCode)'")
+        self.logger.info("Requesting language pack download for '\(languageCode)'")
 
         do {
-            try await onDeviceService.requestLanguageDownload(languageCode)
-            logger.info("Language pack download initiated for '\(languageCode)'")
+            try await self.onDeviceService.requestLanguageDownload(languageCode)
+            self.logger.info("Language pack download initiated for '\(languageCode)'")
 
             // Refresh availability after download request
-            await checkLanguageAvailability()
+            await self.checkLanguageAvailability()
         } catch {
-            logger.error("Failed to download language pack: \(error.localizedDescription)")
-            downloadError = error.localizedDescription
+            self.logger.error("Failed to download language pack: \(error.localizedDescription)")
+            self.downloadError = error.localizedDescription
             Analytics.trackError("language_pack_download", error: error)
         }
 
-        isDownloadingLanguage = false
+        self.isDownloadingLanguage = false
     }
 
     /// Open iOS System Settings to download language packs
@@ -158,26 +158,26 @@ struct TranslationSettingsView: View {
     /// Language packs can be downloaded in Settings → General → Translation.
     private func openSystemSettingsForLanguagePacks() {
         // Set flag to detect when user returns from settings
-        returnedFromSettings = true
+        self.returnedFromSettings = true
 
         // iOS 26 URL scheme for Translation settings
         // Note: URL schemes may change between iOS versions
         if let url = URL(string: "App-prefs:General&path=TRANSLATION") {
-            logger.info("Opening system settings for language pack download")
+            self.logger.info("Opening system settings for language pack download")
 
             if UIApplication.shared.canOpenURL(url) {
                 UIApplication.shared.open(url)
             } else {
                 // Fallback: Open main settings if specific path doesn't work
                 if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
-                    logger.info("Opening main system settings as fallback")
+                    self.logger.info("Opening main system settings as fallback")
                     UIApplication.shared.open(settingsURL)
                 }
             }
         } else {
             // Final fallback: Open main settings
             if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
-                logger.info("Opening main system settings as final fallback")
+                self.logger.info("Opening main system settings as final fallback")
                 UIApplication.shared.open(settingsURL)
             }
         }
@@ -205,7 +205,7 @@ private struct OnDeviceLanguageStatusView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if isChecking {
+            if self.isChecking {
                 HStack(spacing: 8) {
                     ProgressView()
                         .controlSize(.small)
@@ -218,23 +218,23 @@ private struct OnDeviceLanguageStatusView: View {
                 LanguageStatusRow(
                     languageName: "Source Language",
                     languageCode: AppSettings.translationSourceLanguage,
-                    isDownloaded: sourceDownloaded,
-                    isDownloading: isDownloading,
-                    onTap: onDownloadSource
+                    isDownloaded: self.sourceDownloaded,
+                    isDownloading: self.isDownloading,
+                    onTap: self.onDownloadSource
                 )
 
                 // Target Language Status
                 LanguageStatusRow(
                     languageName: "Target Language",
                     languageCode: AppSettings.translationTargetLanguage,
-                    isDownloaded: targetDownloaded,
-                    isDownloading: isDownloading,
-                    onTap: onDownloadTarget
+                    isDownloaded: self.targetDownloaded,
+                    isDownloading: self.isDownloading,
+                    onTap: self.onDownloadTarget
                 )
 
                 // Open System Settings Button (always shown when not all downloaded)
-                if !sourceDownloaded || !targetDownloaded {
-                    Button(action: onOpenSystemSettings) {
+                if !self.sourceDownloaded || !self.targetDownloaded {
+                    Button(action: self.onOpenSystemSettings) {
                         HStack {
                             Image(systemName: "gear")
                             Text("Open System Settings to Download Language Packs")
@@ -259,7 +259,7 @@ private struct OnDeviceLanguageStatusView: View {
                 }
 
                 // Info Message
-                if sourceDownloaded, targetDownloaded {
+                if self.sourceDownloaded, self.targetDownloaded {
                     HStack(spacing: 8) {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.green)
@@ -286,32 +286,32 @@ private struct LanguageStatusRow: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Image(systemName: isDownloaded ? "checkmark.circle.fill" : "arrow.down.circle")
-                        .foregroundStyle(isDownloaded ? .green : .blue)
-                    Text(languageName)
+                    Image(systemName: self.isDownloaded ? "checkmark.circle.fill" : "arrow.down.circle")
+                        .foregroundStyle(self.isDownloaded ? .green : .blue)
+                    Text(self.languageName)
                         .font(.caption)
                         .fontWeight(.medium)
-                    Text("(\(languageCode))")
+                    Text("(\(self.languageCode))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
-                Text(isDownloaded ? "Downloaded" : "Language pack required")
+                Text(self.isDownloaded ? "Downloaded" : "Language pack required")
                     .font(.caption2)
-                    .foregroundStyle(isDownloaded ? .green : .secondary)
+                    .foregroundStyle(self.isDownloaded ? .green : .secondary)
             }
 
             Spacer()
 
-            if !isDownloaded, !isDownloading {
+            if !self.isDownloaded, !self.isDownloading {
                 Button("Download") {
-                    onTap()
+                    self.onTap()
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
             }
 
-            if isDownloading {
+            if self.isDownloading {
                 ProgressView()
                     .controlSize(.small)
             }

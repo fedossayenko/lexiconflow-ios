@@ -49,12 +49,12 @@ final class GeneratedSentence {
 
     /// Whether this sentence has expired (past TTL)
     var isExpired: Bool {
-        Date() > expiresAt
+        Date() > self.expiresAt
     }
 
     /// Days remaining until expiration (negative if expired)
     var daysUntilExpiration: Int {
-        Calendar.current.dateComponents([.day], from: Date(), to: expiresAt).day ?? 0
+        Calendar.current.dateComponents([.day], from: Date(), to: self.expiresAt).day ?? 0
     }
 
     // MARK: - Initialization
@@ -103,7 +103,7 @@ final class GeneratedSentence {
         self.sentenceText = sentenceText
         self.cefrLevel = normalizedLevel
         self.generatedAt = generatedAt
-        expiresAt = Calendar.autoupdatingCurrent.date(
+        self.expiresAt = Calendar.autoupdatingCurrent.date(
             byAdding: .day,
             value: ttlDays,
             to: generatedAt
@@ -162,11 +162,16 @@ enum GeneratedSentenceError: LocalizedError, Equatable {
 // MARK: - Sentence Generation Response
 
 /// Response from sentence generation API
-struct SentenceGenerationResponse: Codable, Sendable {
+///
+/// **nonisolated**: This type is explicitly non-isolated to allow JSON decoding
+/// in actor-isolated contexts (e.g., SentenceGenerationService's nonisolated
+/// decoding helper). This aligns with Swift 6 best practices for response types
+/// in actor services per Matt Massicotte and Donny Wals recommendations.
+nonisolated struct SentenceGenerationResponse: Codable, Sendable {
     /// Generated sentences with metadata
     let items: [GeneratedSentenceItem]
 
-    struct GeneratedSentenceItem: Codable, Sendable {
+    nonisolated struct GeneratedSentenceItem: Codable, Sendable {
         /// The generated sentence text
         let sentence: String
 

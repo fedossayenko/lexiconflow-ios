@@ -6,9 +6,9 @@
 //  Verify retry logic, exponential backoff, and error handling
 //
 
+import Foundation
 import OSLog
 import Testing
-import Foundation
 @testable import LexiconFlow
 
 /// Test suite for RetryManager
@@ -51,7 +51,7 @@ struct RetryManagerTests {
     // MARK: - Immediate Success
 
     @Test("RetryManager succeeds on first attempt")
-    func testImmediateSuccess() async throws {
+    func immediateSuccess() async throws {
         var attemptCount = 0
 
         let result = await RetryManager.executeWithRetry(
@@ -63,13 +63,13 @@ struct RetryManagerTests {
             },
             isRetryable: { (_: RetryableError) in true },
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         #attemptCount == 1, "Operation should execute only once"
-        
+
         switch result {
-        case .success(let value):
+        case let .success(value):
             #expect(value == "success", "Should return success value")
         case .failure:
             #expect(Bool(false), "Should not fail")
@@ -77,7 +77,7 @@ struct RetryManagerTests {
     }
 
     @Test("RetryManager succeeds on second attempt")
-    func testSuccessOnRetry() async throws {
+    func successOnRetry() async throws {
         var attemptCount = 0
 
         let result = await RetryManager.executeWithRetry(
@@ -92,13 +92,13 @@ struct RetryManagerTests {
             },
             isRetryable: { $0.isRetryable },
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         #expect(attemptCount == 2, "Should retry once")
-        
+
         switch result {
-        case .success(let value):
+        case let .success(value):
             #expect(value == "success", "Should return success value")
         case .failure:
             #expect(Bool(false), "Should not fail")
@@ -108,7 +108,7 @@ struct RetryManagerTests {
     // MARK: - Retry on Retryable Errors
 
     @Test("RetryManager retries on retryable errors")
-    func testRetryOnRetryableError() async throws {
+    func retryOnRetryableError() async throws {
         var attemptCount = 0
 
         let result = await RetryManager.executeWithRetry(
@@ -123,13 +123,13 @@ struct RetryManagerTests {
             },
             isRetryable: { $0.isRetryable },
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         #expect(attemptCount == 3, "Should retry 3 times")
-        
+
         switch result {
-        case .success(let value):
+        case let .success(value):
             #expect(value == "success", "Should succeed after retries")
         case .failure:
             #expect(Bool(false), "Should not fail")
@@ -137,7 +137,7 @@ struct RetryManagerTests {
     }
 
     @Test("RetryManager exhausts retries and fails")
-    func testExhaustedRetries() async throws {
+    func exhaustedRetries() async throws {
         var attemptCount = 0
 
         let result = await RetryManager.executeWithRetry(
@@ -149,15 +149,15 @@ struct RetryManagerTests {
             },
             isRetryable: { $0.isRetryable },
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         #expect(attemptCount == 2, "Should attempt maxRetries times")
-        
+
         switch result {
         case .success:
             #expect(Bool(false), "Should not succeed")
-        case .failure(let error):
+        case let .failure(error):
             #expect(error == .rateLimit, "Should fail with last error")
         }
     }
@@ -165,7 +165,7 @@ struct RetryManagerTests {
     // MARK: - No Retry on Non-Retryable Errors
 
     @Test("RetryManager fails immediately on non-retryable errors")
-    func testNoRetryOnNonRetryableError() async throws {
+    func noRetryOnNonRetryableError() async throws {
         var attemptCount = 0
 
         let result = await RetryManager.executeWithRetry(
@@ -177,21 +177,21 @@ struct RetryManagerTests {
             },
             isRetryable: { $0.isRetryable },
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         #expect(attemptCount == 1, "Should fail immediately without retry")
-        
+
         switch result {
         case .success:
             #expect(Bool(false), "Should not succeed")
-        case .failure(let error):
+        case let .failure(error):
             #expect(error == .invalidInput, "Should fail with non-retryable error")
         }
     }
 
     @Test("RetryManager handles mixed retryable and non-retryable")
-    func testMixedErrorTypes() async throws {
+    func mixedErrorTypes() async throws {
         var attemptCount = 0
 
         // First attempt: retryable error, second: non-retryable
@@ -207,15 +207,15 @@ struct RetryManagerTests {
             },
             isRetryable: { $0.isRetryable },
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         #expect(attemptCount == 2, "Should retry once then fail")
-        
+
         switch result {
         case .success:
             #expect(Bool(false), "Should not succeed")
-        case .failure(let error):
+        case let .failure(error):
             #expect(error == .unauthorized, "Should fail with non-retryable error")
         }
     }
@@ -223,7 +223,7 @@ struct RetryManagerTests {
     // MARK: - Exponential Backoff
 
     @Test("RetryManager uses exponential backoff")
-    func testExponentialBackoffTiming() async throws {
+    func exponentialBackoffTiming() async throws {
         var attemptTimes: [TimeInterval] = []
         var attemptCount = 0
 
@@ -235,10 +235,10 @@ struct RetryManagerTests {
             operation: {
                 let startTime = Date()
                 attemptCount += 1
-                
+
                 // Record start time
                 attemptTimes.append(startTime.timeIntervalSince1970)
-                
+
                 if attemptCount < 4 {
                     throw RetryableError.timeout
                 }
@@ -246,7 +246,7 @@ struct RetryManagerTests {
             },
             isRetryable: { $0.isRetryable },
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         #expect(result.isSuccess, "Should eventually succeed")
@@ -260,7 +260,7 @@ struct RetryManagerTests {
     }
 
     @Test("RetryManager respects custom initial delay")
-    func testCustomInitialDelay() async throws {
+    func customInitialDelay() async throws {
         let customDelay: TimeInterval = 0.2
         var attemptCount = 0
 
@@ -276,7 +276,7 @@ struct RetryManagerTests {
             },
             isRetryable: { $0.isRetryable },
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         #expect(attemptCount == 2, "Should retry once with custom delay")
@@ -285,7 +285,7 @@ struct RetryManagerTests {
     // MARK: - Error Propagation
 
     @Test("RetryManager preserves error type")
-    func testErrorTypePreservation() async throws {
+    func errorTypePreservation() async throws {
         enum CustomError: Error, Sendable {
             case specificError(code: Int)
         }
@@ -298,14 +298,14 @@ struct RetryManagerTests {
             },
             isRetryable: { (_: CustomError) in false },
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         switch result {
         case .success:
             #expect(Bool(false), "Should not succeed")
-        case .failure(let error):
-            if case .specificError(let code) = error {
+        case let .failure(error):
+            if case let .specificError(code) = error {
                 #expect(code == 42, "Should preserve error associated value")
             } else {
                 #expect(Bool(false), "Should preserve error case")
@@ -314,7 +314,7 @@ struct RetryManagerTests {
     }
 
     @Test("RetryManager handles zero max retries")
-    func testZeroMaxRetries() async throws {
+    func zeroMaxRetries() async throws {
         var attemptCount = 0
 
         let result = await RetryManager.executeWithRetry(
@@ -326,13 +326,13 @@ struct RetryManagerTests {
             },
             isRetryable: { (_: RetryableError) in true },
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         #expect(attemptCount == 1, "Should execute once even with zero max retries")
-        
+
         switch result {
-        case .success(let value):
+        case let .success(value):
             #expect(value == "success", "Should succeed")
         case .failure:
             #expect(Bool(false), "Should not fail")
@@ -342,7 +342,7 @@ struct RetryManagerTests {
     // MARK: - Edge Cases
 
     @Test("RetryManager handles complex return types")
-    func testComplexReturnType() async throws {
+    func complexReturnType() async throws {
         struct TestData: Sendable, Equatable {
             let id: Int
             let data: String
@@ -356,11 +356,11 @@ struct RetryManagerTests {
             operation: { expected },
             isRetryable: { (_: RetryableError) in true },
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         switch result {
-        case .success(let value):
+        case let .success(value):
             #expect(value == expected, "Should preserve complex return type")
         case .failure:
             #expect(Bool(false), "Should not fail")
@@ -368,7 +368,7 @@ struct RetryManagerTests {
     }
 
     @Test("RetryManager handles async operation cancellation")
-    func testOperationCancellation() async throws {
+    func operationCancellation() async throws {
         var attemptCount = 0
 
         let task = Task {
@@ -377,17 +377,17 @@ struct RetryManagerTests {
                 initialDelay: 0.1,
                 operation: {
                     attemptCount += 1
-                    try await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+                    try await Task.sleep(nanoseconds: 100000000) // 0.1s
                     throw RetryableError.timeout
                 },
                 isRetryable: { $0.isRetryable },
                 logContext: "test",
-                logger: logger
+                logger: self.logger
             )
         }
 
         // Cancel after first attempt starts
-        try await Task.sleep(nanoseconds: 50_000_000) // 0.05s
+        try await Task.sleep(nanoseconds: 50000000) // 0.05s
         task.cancel()
 
         let result = await task.value
@@ -404,7 +404,7 @@ struct RetryManagerTests {
     // MARK: - Integration Tests
 
     @Test("RetryManager handles realistic retry scenario")
-    func testRealisticRetryScenario() async throws {
+    func realisticRetryScenario() async throws {
         enum APIError: Error, Sendable {
             case rateLimitExceeded
             case serverError(code: Int)
@@ -412,10 +412,10 @@ struct RetryManagerTests {
 
             var isRetryable: Bool {
                 switch self {
-                case .rateLimitExceeded, .serverError(let code) where code >= 500:
-                    return true
+                case .rateLimitExceeded, let .serverError(code) where code >= 500:
+                    true
                 default:
-                    return false
+                    false
                 }
             }
         }
@@ -436,13 +436,13 @@ struct RetryManagerTests {
             },
             isRetryable: { $0.isRetryable },
             logContext: "API call",
-            logger: logger
+            logger: self.logger
         )
 
         #expect(attemptCount == 3, "Should retry on 503 errors")
-        
+
         switch result {
-        case .success(let value):
+        case let .success(value):
             #expect(value == "api_response", "Should succeed after retries")
         case .failure:
             #expect(Bool(false), "Should not fail")

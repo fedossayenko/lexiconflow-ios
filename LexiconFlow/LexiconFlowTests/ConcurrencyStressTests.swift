@@ -92,7 +92,7 @@ struct ConcurrencyStressTests {
 
         // Process 100 concurrent reviews using TaskGroup
         await withTaskGroup(of: FSRSReviewResult.self) { group in
-            for _ in 0 ..< concurrencyCount {
+            for _ in 0 ..< self.concurrencyCount {
                 group.addTask {
                     // Call actor-isolated FSRSWrapper
                     try! await FSRSWrapper.shared.processReview(
@@ -110,7 +110,7 @@ struct ConcurrencyStressTests {
 
         // Verify all operations completed successfully
         let count = await results.count
-        #expect(count == concurrencyCount, "All concurrent operations should complete")
+        #expect(count == self.concurrencyCount, "All concurrent operations should complete")
 
         // Verify consistency: all results should have valid state
         let array = await results.array
@@ -124,9 +124,9 @@ struct ConcurrencyStressTests {
     @Test("MainActor ViewModel prevents concurrent mutation")
     @MainActor
     func mainActorViewModelSafety() async throws {
-        let context = freshContext()
+        let context = self.freshContext()
         let viewModel = Scheduler(modelContext: context)
-        let flashcard = createTestFlashcard(in: context)
+        let flashcard = self.createTestFlashcard(in: context)
 
         // Track results
         let results = LockedArray<FlashcardReview?>()
@@ -233,11 +233,11 @@ struct ConcurrencyStressTests {
             private var value = 0
 
             func increment() {
-                value += 1
+                self.value += 1
             }
 
             func get() -> Int {
-                value
+                self.value
             }
         }
 
@@ -265,9 +265,9 @@ private actor LockedArray<Element> {
     private var storage: [Element] = []
 
     func append(_ element: Element) {
-        storage.append(element)
+        self.storage.append(element)
     }
 
-    var array: [Element] { storage }
-    var count: Int { storage.count }
+    var array: [Element] { self.storage }
+    var count: Int { self.storage.count }
 }

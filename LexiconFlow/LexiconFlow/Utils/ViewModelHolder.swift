@@ -6,6 +6,7 @@
 //  Use this when you need @StateObject semantics with optional values
 //
 
+import Combine
 import SwiftUI
 
 /// A wrapper that holds an optional ObservableObject and properly publishes changes

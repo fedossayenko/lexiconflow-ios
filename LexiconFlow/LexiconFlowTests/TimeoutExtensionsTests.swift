@@ -6,8 +6,8 @@
 //  Verify timeout behavior, cancellation, and error propagation
 //
 
-import Testing
 import Foundation
+import Testing
 @testable import LexiconFlow
 
 /// Test suite for TimeoutExtensions
@@ -22,7 +22,7 @@ struct TimeoutExtensionsTests {
     // MARK: - Success Before Timeout
 
     @Test("withTimeout completes successfully before timeout")
-    func testSuccessBeforeTimeout() async throws {
+    func successBeforeTimeout() async throws {
         // Operation that completes well before timeout
         let result = try await withTimeout(seconds: 1.0) {
             "completed"
@@ -32,7 +32,7 @@ struct TimeoutExtensionsTests {
     }
 
     @Test("withTimeout completes operation that returns complex type")
-    func testComplexReturnType() async throws {
+    func complexReturnType() async throws {
         struct TestData: Sendable, Equatable {
             let id: Int
             let name: String
@@ -49,11 +49,11 @@ struct TimeoutExtensionsTests {
     // MARK: - Timeout Behavior
 
     @Test("withTimeout throws TimeoutError when operation exceeds time")
-    func testTimeoutExceeded() async throws {
+    func timeoutExceeded() async throws {
         // Operation that takes longer than timeout
         let timeoutError = await TimeoutErrorResult.capture {
             try await withTimeout(seconds: 0.1) {
-                try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                try await Task.sleep(nanoseconds: 500000000) // 0.5 seconds
                 return "should not complete"
             }
         }
@@ -66,12 +66,12 @@ struct TimeoutExtensionsTests {
     }
 
     @Test("withTimeout includes timeout duration in error")
-    func testTimeoutErrorContainsDuration() async throws {
+    func timeoutErrorContainsDuration() async throws {
         let timeoutDuration: TimeInterval = 0.2
 
         let error = await TimeoutErrorResult.capture {
             try await withTimeout(seconds: timeoutDuration) {
-                try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                try await Task.sleep(nanoseconds: 1000000000) // 1 second
                 return "late"
             }
         }
@@ -89,7 +89,7 @@ struct TimeoutExtensionsTests {
     // MARK: - Cancellation
 
     @Test("withTimeout cancels operation when timeout occurs")
-    func testCancellationOnTimeout() async throws {
+    func cancellationOnTimeout() async throws {
         var taskWasCancelled = false
 
         let error = await TimeoutErrorResult.capture {
@@ -112,7 +112,7 @@ struct TimeoutExtensionsTests {
     // MARK: - Error Propagation
 
     @Test("withTimeout propagates operation errors")
-    func testOperationErrorPropagation() async throws {
+    func operationErrorPropagation() async throws {
         enum TestError: Error, Sendable {
             case operationFailed
         }
@@ -135,7 +135,7 @@ struct TimeoutExtensionsTests {
     }
 
     @Test("withTimeout propagates operation errors immediately")
-    func testImmediateErrorPropagation() async throws {
+    func immediateErrorPropagation() async throws {
         enum ImmediateError: Error, Sendable {
             case instantFailure
         }
@@ -158,10 +158,10 @@ struct TimeoutExtensionsTests {
     // MARK: - Edge Cases
 
     @Test("withTimeout handles zero-second timeout")
-    func testZeroSecondTimeout() async throws {
+    func zeroSecondTimeout() async throws {
         let error = await TimeoutErrorResult.capture {
             try await withTimeout(seconds: 0.0) {
-                try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+                try await Task.sleep(nanoseconds: 100000000) // 0.1 seconds
                 return "slow"
             }
         }
@@ -170,10 +170,10 @@ struct TimeoutExtensionsTests {
     }
 
     @Test("withTimeout handles very short timeout")
-    func testVeryShortTimeout() async throws {
+    func veryShortTimeout() async throws {
         let error = await TimeoutErrorResult.capture {
             try await withTimeout(seconds: 0.001) { // 1ms
-                try await Task.sleep(nanoseconds: 100_000_000) // 100ms
+                try await Task.sleep(nanoseconds: 100000000) // 100ms
                 return "too slow"
             }
         }
@@ -182,11 +182,11 @@ struct TimeoutExtensionsTests {
     }
 
     @Test("withTimeout handles successful async operation")
-    func testAsyncOperationSuccess() async throws {
+    func asyncOperationSuccess() async throws {
         let expected = 42
 
         let result = try await withTimeout(seconds: 1.0) {
-            try await Task.sleep(nanoseconds: 10_000_000) // 0.01 seconds
+            try await Task.sleep(nanoseconds: 10000000) // 0.01 seconds
             return expected
         }
 
@@ -194,11 +194,11 @@ struct TimeoutExtensionsTests {
     }
 
     @Test("withTimeout handles concurrent operations")
-    func testConcurrentOperations() async throws {
+    func concurrentOperations() async throws {
         // Run multiple timeout operations concurrently
         async func operation(_ id: Int) async throws -> Int {
             try await withTimeout(seconds: 1.0) {
-                try await Task.sleep(nanoseconds: 10_000_000)
+                try await Task.sleep(nanoseconds: 10000000)
                 return id
             }
         }

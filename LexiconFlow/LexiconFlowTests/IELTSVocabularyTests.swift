@@ -39,7 +39,7 @@ final class IELTSVocabularyTests {
             Flashcard.self,
             Deck.self,
             FlashcardReview.self,
-            GeneratedSentence.self,
+            GeneratedSentence.self
         ])
 
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
@@ -54,7 +54,7 @@ final class IELTSVocabularyTests {
     // MARK: - CEFR Level Validation Tests
 
     @Test("CEFR level validation - accepts valid levels")
-    func testCEFRValidationValid() throws {
+    func cEFRValidationValid() throws {
         let card = Flashcard(word: "test", definition: "test")
 
         // Test all valid CEFR levels
@@ -67,7 +67,7 @@ final class IELTSVocabularyTests {
     }
 
     @Test("CEFR level validation - accepts nil to clear")
-    func testCEFRValidationNil() throws {
+    func cEFRValidationNil() throws {
         let card = Flashcard(word: "test", definition: "test")
 
         // Set a level
@@ -80,7 +80,7 @@ final class IELTSVocabularyTests {
     }
 
     @Test("CEFR level validation - rejects invalid levels")
-    func testCEFRValidationInvalid() {
+    func cEFRValidationInvalid() {
         let card = Flashcard(word: "test", definition: "test")
 
         let invalidLevels = ["X1", "A0", "C3", "B", "A", "", "ABC", "123"]
@@ -98,7 +98,7 @@ final class IELTSVocabularyTests {
     }
 
     @Test("CEFR level validation - case sensitive")
-    func testCEFRValidationCaseSensitive() {
+    func cEFRValidationCaseSensitive() {
         let card = Flashcard(word: "test", definition: "test")
 
         // Lowercase should be rejected
@@ -123,7 +123,7 @@ final class IELTSVocabularyTests {
     }
 
     @Test("Flashcard initialization without CEFR level")
-    func testFlashcardInitWithoutCEFR() {
+    func flashcardInitWithoutCEFR() {
         let card = Flashcard(word: "test", definition: "test definition")
 
         #expect(card.cefrLevel == nil, "New cards should have nil CEFR level")
@@ -132,7 +132,7 @@ final class IELTSVocabularyTests {
     // MARK: - IELTSDeckManager Tests
 
     @Test("IELTSDeckManager - create deck for valid CEFR level")
-    func testDeckManagerCreateDeck() throws {
+    func deckManagerCreateDeck() throws {
         let context = ModelContext(modelContainer)
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -144,7 +144,7 @@ final class IELTSVocabularyTests {
     }
 
     @Test("IELTSDeckManager - throws error for invalid CEFR level")
-    func testDeckManagerInvalidLevel() {
+    func deckManagerInvalidLevel() {
         let context = ModelContext(modelContainer)
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -161,7 +161,7 @@ final class IELTSVocabularyTests {
     }
 
     @Test("IELTSDeckManager - returns existing deck")
-    func testDeckManagerExistingDeck() throws {
+    func deckManagerExistingDeck() throws {
         let context = ModelContext(modelContainer)
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -175,7 +175,7 @@ final class IELTSVocabularyTests {
     }
 
     @Test("IELTSDeckManager - create all decks")
-    func testDeckManagerCreateAllDecks() throws {
+    func deckManagerCreateAllDecks() throws {
         let context = ModelContext(modelContainer)
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -190,7 +190,7 @@ final class IELTSVocabularyTests {
     }
 
     @Test("IELTSDeckManager - get all decks")
-    func testDeckManagerGetAllDecks() throws {
+    func deckManagerGetAllDecks() throws {
         let context = ModelContext(modelContainer)
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -213,7 +213,7 @@ final class IELTSVocabularyTests {
     }
 
     @Test("IELTSDeckManager - deck exists check")
-    func testDeckManagerDeckExists() {
+    func deckManagerDeckExists() {
         let context = ModelContext(modelContainer)
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -228,7 +228,7 @@ final class IELTSVocabularyTests {
     }
 
     @Test("IELTSDeckManager - deck name helper")
-    func testDeckManagerDeckName() {
+    func deckManagerDeckName() {
         let context = ModelContext(modelContainer)
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -241,7 +241,7 @@ final class IELTSVocabularyTests {
     // MARK: - DataImporter with CEFR Tests
 
     @Test("DataImporter - import with CEFR level")
-    func testDataImporterWithCEFR() async throws {
+    func dataImporterWithCEFR() async throws {
         let context = ModelContext(modelContainer)
         let importer = DataImporter(modelContext: context)
 
@@ -258,7 +258,7 @@ final class IELTSVocabularyTests {
                 imageData: nil,
                 cefrLevel: "B2",
                 russianTranslation: "изучать"
-            ),
+            )
         ]
 
         // Import cards
@@ -278,7 +278,7 @@ final class IELTSVocabularyTests {
     }
 
     @Test("DataImporter - import with invalid CEFR level logs warning")
-    func testDataImporterWithInvalidCEFR() async throws {
+    func dataImporterWithInvalidCEFR() async throws {
         let context = ModelContext(modelContainer)
         let importer = DataImporter(modelContext: context)
 
@@ -293,9 +293,9 @@ final class IELTSVocabularyTests {
                 definition: "Test definition",
                 phonetic: nil,
                 imageData: nil,
-                cefrLevel: "X1",  // Invalid
+                cefrLevel: "X1", // Invalid
                 russianTranslation: nil
-            ),
+            )
         ]
 
         // Import should succeed but skip the CEFR level
@@ -312,7 +312,7 @@ final class IELTSVocabularyTests {
     }
 
     @Test("DataImporter - import with Russian translation")
-    func testDataImporterWithTranslation() async throws {
+    func dataImporterWithTranslation() async throws {
         let context = ModelContext(modelContainer)
         let importer = DataImporter(modelContext: context)
 
@@ -329,7 +329,7 @@ final class IELTSVocabularyTests {
                 imageData: nil,
                 cefrLevel: "A1",
                 russianTranslation: "привет"
-            ),
+            )
         ]
 
         // Import cards
@@ -347,7 +347,7 @@ final class IELTSVocabularyTests {
     // MARK: - Integration Tests
 
     @Test("Integration - full IELTS vocabulary import workflow")
-    func testFullIELTSImportWorkflow() async throws {
+    func fullIELTSImportWorkflow() async throws {
         let context = ModelContext(modelContainer)
 
         // Create deck manager
@@ -382,7 +382,7 @@ final class IELTSVocabularyTests {
                 imageData: nil,
                 cefrLevel: "C1",
                 russianTranslation: "оценивать"
-            ),
+            )
         ]
 
         // Import all cards
@@ -412,7 +412,7 @@ final class IELTSVocabularyTests {
     }
 
     @Test("Integration - duplicate detection across CEFR levels")
-    func testDuplicateDetectionAcrossCEFRLevels() async throws {
+    func duplicateDetectionAcrossCEFRLevels() async throws {
         let context = ModelContext(modelContainer)
 
         let deckManager = IELTSDeckManager(modelContext: context)
@@ -430,7 +430,7 @@ final class IELTSVocabularyTests {
                 imageData: nil,
                 cefrLevel: "A2",
                 russianTranslation: "достигать"
-            ),
+            )
         ]
 
         let result1 = await importer.importCards(cardsA2, into: deckA2, batchSize: 10)
@@ -439,13 +439,13 @@ final class IELTSVocabularyTests {
         // Try to import same word to B1 deck - should be skipped
         let cardsB1 = [
             FlashcardData(
-                word: "achieve",  // Same word
+                word: "achieve", // Same word
                 definition: "Different definition",
                 phonetic: nil,
                 imageData: nil,
                 cefrLevel: "B1",
                 russianTranslation: "another translation"
-            ),
+            )
         ]
 
         let result2 = await importer.importCards(cardsB1, into: deckB1, batchSize: 10)

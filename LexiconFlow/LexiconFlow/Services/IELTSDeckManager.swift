@@ -38,6 +38,16 @@ final class IELTSDeckManager {
         "C2": "IELTS C2 (Proficiency)"
     ]
 
+    /// CEFR level to order mapping (ensures proper sort order in DeckListView)
+    private let deckOrders = [
+        "A1": 100, // After sample deck (order: 0)
+        "A2": 200,
+        "B1": 300,
+        "B2": 400,
+        "C1": 500,
+        "C2": 600
+    ]
+
     /// Valid CEFR levels
     private let validLevels = ["A1", "A2", "B1", "B2", "C1", "C2"]
 
@@ -62,7 +72,7 @@ final class IELTSDeckManager {
     /// - Throws: `DeckManagerError.invalidCEFRLevel` if the level is not valid
     func getDeck(for level: String) throws -> Deck {
         // Validate CEFR level
-        guard validLevels.contains(level), let deckName = deckNames[level] else {
+        guard self.validLevels.contains(level), let deckName = deckNames[level] else {
             throw DeckManagerError.invalidCEFRLevel(level)
         }
 
@@ -78,11 +88,15 @@ final class IELTSDeckManager {
             return existingDeck
         }
 
-        // Create new deck
+        // Create new deck with explicit order for proper sorting
         Self.logger.info("Creating new deck for level \(level): \(deckName)")
-        let deck = Deck(name: deckName, icon: "book.fill")
-        modelContext.insert(deck)
-        try modelContext.save()
+        let deck = Deck(
+            name: deckName,
+            icon: "book.fill",
+            order: deckOrders[level] ?? 100
+        )
+        self.modelContext.insert(deck)
+        try self.modelContext.save()
 
         return deck
     }
@@ -98,8 +112,8 @@ final class IELTSDeckManager {
 
         var decks: [String: Deck] = [:]
 
-        for level in validLevels {
-            decks[level] = try getDeck(for: level)
+        for level in self.validLevels {
+            decks[level] = try self.getDeck(for: level)
         }
 
         Self.logger.info("Successfully created/verified \(decks.count) IELTS decks")
@@ -114,8 +128,8 @@ final class IELTSDeckManager {
     func getAllDecks() throws -> [Deck] {
         var decks: [Deck] = []
 
-        for level in validLevels {
-            try decks.append(getDeck(for: level))
+        for level in self.validLevels {
+            try decks.append(self.getDeck(for: level))
         }
 
         return decks
@@ -126,7 +140,7 @@ final class IELTSDeckManager {
     /// - Parameter level: The CEFR level to check
     /// - Returns: true if the deck exists, false otherwise
     func deckExists(for level: String) -> Bool {
-        guard validLevels.contains(level), let deckName = deckNames[level] else {
+        guard self.validLevels.contains(level), let deckName = deckNames[level] else {
             return false
         }
         let descriptor = FetchDescriptor<Deck>(
@@ -151,7 +165,7 @@ final class IELTSDeckManager {
     /// - Parameter level: The CEFR level whose deck should be deleted
     /// - Throws: `DeckManagerError.invalidCEFRLevel` if the level is not valid
     func deleteDeck(for level: String) throws {
-        guard validLevels.contains(level), let deckName = deckNames[level] else {
+        guard self.validLevels.contains(level), let deckName = deckNames[level] else {
             throw DeckManagerError.invalidCEFRLevel(level)
         }
         let descriptor = FetchDescriptor<Deck>(
@@ -166,8 +180,8 @@ final class IELTSDeckManager {
         }
 
         Self.logger.info("Deleting deck for level \(level): \(deckName)")
-        modelContext.delete(deck)
-        try modelContext.save()
+        self.modelContext.delete(deck)
+        try self.modelContext.save()
     }
 
     /// Get deck name for a CEFR level
@@ -175,7 +189,7 @@ final class IELTSDeckManager {
     /// - Parameter level: The CEFR level
     /// - Returns: The display name for the deck, or nil if level is invalid
     func deckName(for level: String) -> String? {
-        deckNames[level]
+        self.deckNames[level]
     }
 }
 

@@ -30,10 +30,10 @@ struct DeckSelectionView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if decks.isEmpty {
-                    emptyStateView
+                if self.decks.isEmpty {
+                    self.emptyStateView
                 } else {
-                    deckList
+                    self.deckList
                 }
             }
             .navigationTitle("Select Decks")
@@ -41,39 +41,39 @@ struct DeckSelectionView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
-                        saveSelection()
-                        dismiss()
+                        self.saveSelection()
+                        self.dismiss()
                     }
                     .fontWeight(.semibold)
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    if !decks.isEmpty {
-                        quickActionsMenu
+                    if !self.decks.isEmpty {
+                        self.quickActionsMenu
                     }
                 }
             }
             .task {
-                if scheduler == nil {
-                    scheduler = Scheduler(modelContext: modelContext)
+                if self.scheduler == nil {
+                    self.scheduler = Scheduler(modelContext: self.modelContext)
                 }
-                await loadStats()
+                await self.loadStats()
             }
             .onAppear {
                 // Re-sync local state from AppSettings when sheet is presented
                 // This fixes the bug where cached view instance shows stale selection
-                selectedDeckIDs = AppSettings.selectedDeckIDs
+                self.selectedDeckIDs = AppSettings.selectedDeckIDs
             }
-            .alert("Error", isPresented: .constant(errorMessage != nil)) {
-                Button("OK") { errorMessage = nil }
+            .alert("Error", isPresented: .constant(self.errorMessage != nil)) {
+                Button("OK") { self.errorMessage = nil }
             } message: {
-                Text(errorMessage ?? "Unknown error")
+                Text(self.errorMessage ?? "Unknown error")
             }
         }
     }
@@ -92,18 +92,18 @@ struct DeckSelectionView: View {
 
     private var deckList: some View {
         List {
-            ForEach(decks) { deck in
+            ForEach(self.decks) { deck in
                 DeckSelectionRow(
                     deck: deck,
-                    stats: deckStats[deck.id] ?? DeckStudyStats(),
-                    isSelected: selectedDeckIDs.contains(deck.id)
+                    stats: self.deckStats[deck.id] ?? DeckStudyStats(),
+                    isSelected: self.selectedDeckIDs.contains(deck.id)
                 ) {
-                    toggleSelection(deck.id)
+                    self.toggleSelection(deck.id)
                 }
             }
         }
         .overlay {
-            if isLoading {
+            if self.isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(.ultraThinMaterial)
@@ -114,25 +114,25 @@ struct DeckSelectionView: View {
     private var quickActionsMenu: some View {
         Menu {
             Button("Select All") {
-                selectAll()
+                self.selectAll()
             }
 
             Button("Deselect All") {
-                deselectAll()
+                self.deselectAll()
             }
 
             Divider()
 
             Button("Select Decks with Due Cards") {
-                selectDueDecks()
+                self.selectDueDecks()
             }
 
             Button("Select Decks with New Cards") {
-                selectNewDecks()
+                self.selectNewDecks()
             }
         } label: {
             HStack(spacing: 4) {
-                Text("\(selectedDeckIDs.count) selected")
+                Text("\(self.selectedDeckIDs.count) selected")
                 Image(systemName: "chevron.down")
                     .font(.caption)
             }
@@ -144,49 +144,49 @@ struct DeckSelectionView: View {
     }
 
     private func toggleSelection(_ deckID: UUID) {
-        if selectedDeckIDs.contains(deckID) {
-            selectedDeckIDs.remove(deckID)
+        if self.selectedDeckIDs.contains(deckID) {
+            self.selectedDeckIDs.remove(deckID)
         } else {
-            selectedDeckIDs.insert(deckID)
+            self.selectedDeckIDs.insert(deckID)
         }
     }
 
     private func selectAll() {
-        selectedDeckIDs = Set(decks.map(\.id))
+        self.selectedDeckIDs = Set(self.decks.map(\.id))
     }
 
     private func deselectAll() {
-        selectedDeckIDs.removeAll()
+        self.selectedDeckIDs.removeAll()
     }
 
     private func selectDueDecks() {
-        selectedDeckIDs = Set(deckStats.filter { _, stats in
+        self.selectedDeckIDs = Set(self.deckStats.filter { _, stats in
             stats.dueCount > 0
         }.map { deckID, _ in deckID })
     }
 
     private func selectNewDecks() {
-        selectedDeckIDs = Set(deckStats.filter { _, stats in
+        self.selectedDeckIDs = Set(self.deckStats.filter { _, stats in
             stats.newCount > 0
         }.map { deckID, _ in deckID })
     }
 
     private func saveSelection() {
-        AppSettings.selectedDeckIDs = selectedDeckIDs
+        AppSettings.selectedDeckIDs = self.selectedDeckIDs
     }
 
     private func loadStats() async {
-        isLoading = true
+        self.isLoading = true
         defer { isLoading = false }
 
         guard let scheduler else {
-            errorMessage = "Failed to initialize scheduler"
+            self.errorMessage = "Failed to initialize scheduler"
             return
         }
 
         var stats: [UUID: DeckStudyStats] = [:]
 
-        for deck in decks {
+        for deck in self.decks {
             let newCount = scheduler.newCardCount(for: deck)
             let dueCount = scheduler.dueCardCount(for: deck)
             let totalCount = scheduler.totalCardCount(for: deck)
@@ -198,7 +198,7 @@ struct DeckSelectionView: View {
             )
         }
 
-        deckStats = stats
+        self.deckStats = stats
     }
 }
 
@@ -210,28 +210,28 @@ struct DeckSelectionRow: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
+        Button(action: self.onTap) {
             HStack(spacing: 16) {
                 // Deck icon
-                Image(systemName: deck.icon ?? "folder.fill")
+                Image(systemName: self.deck.icon ?? "folder.fill")
                     .font(.title2)
                     .foregroundStyle(.blue)
                     .frame(width: 44, height: 44)
                     .background(.ultraThinMaterial, in: .circle)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(deck.name)
+                    Text(self.deck.name)
                         .font(.headline)
                         .foregroundStyle(.primary)
 
-                    Text(statsText)
+                    Text(self.statsText)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
                 Spacer()
 
-                if isSelected {
+                if self.isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.title2)
                         .foregroundStyle(.blue)
@@ -241,24 +241,24 @@ struct DeckSelectionRow: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Deck: \(deck.name)")
+        .accessibilityLabel("Deck: \(self.deck.name)")
         .accessibilityHint("Tap to toggle selection")
-        .accessibilityValue(isSelected ? "Selected" : "Not selected")
+        .accessibilityValue(self.isSelected ? "Selected" : "Not selected")
     }
 
     private var statsText: String {
         var parts: [String] = []
 
-        if stats.newCount > 0 {
-            parts.append("\(stats.newCount) new")
+        if self.stats.newCount > 0 {
+            parts.append("\(self.stats.newCount) new")
         }
 
-        if stats.dueCount > 0 {
-            parts.append("\(stats.dueCount) due")
+        if self.stats.dueCount > 0 {
+            parts.append("\(self.stats.dueCount) due")
         }
 
         if parts.isEmpty {
-            return "\(stats.totalCount) cards"
+            return "\(self.stats.totalCount) cards"
         }
 
         return parts.joined(separator: " • ")

@@ -6,6 +6,7 @@
 //  Manages review history display, filtering, and export functionality
 //
 
+import Combine
 import Foundation
 import OSLog
 import SwiftData
@@ -391,19 +392,13 @@ final class FlashcardDetailViewModel: ObservableObject {
             self.exportFilename = filename
             self.exportError = nil
 
-            // Track successful export
-            let csvByteCount = csv.utf8.count
-            await self.trackExport(csvByteCount: csvByteCount)
-
-            Self.logger.info("CSV export successful: \(csvByteCount) bytes")
+            Self.logger.info("CSV export successful: \(csv.utf8.count) bytes")
 
         } catch {
             Self.logger.error("CSV export failed: \(error.localizedDescription)")
 
             // Track error with analytics
-            Task {
-                await Analytics.trackError("review_history_export_failed", error: error)
-            }
+            Analytics.trackError("review_history_export_failed", error: error)
 
             // Set user-facing error
             self.exportError = FlashcardDetailError.exportFailed(

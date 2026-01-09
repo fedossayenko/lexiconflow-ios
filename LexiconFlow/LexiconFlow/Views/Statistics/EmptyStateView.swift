@@ -56,25 +56,25 @@ struct EmptyStateView: View {
     var body: some View {
         VStack(spacing: 24) {
             // Icon
-            Image(systemName: icon)
+            Image(systemName: self.icon)
                 .font(.system(size: 60))
                 .foregroundStyle(.tertiary)
 
             // Text Content
             VStack(spacing: 8) {
-                Text(title)
+                Text(self.title)
                     .font(.title2)
                     .fontWeight(.semibold)
 
-                Text(message)
+                Text(self.message)
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
 
             // Action Button
-            Button(action: action) {
-                Text(buttonTitle)
+            Button(action: self.action) {
+                Text(self.buttonTitle)
                     .font(.headline)
                     .foregroundStyle(.white)
                     .padding()
@@ -86,8 +86,8 @@ struct EmptyStateView: View {
         }
         .padding(32)
         .frame(maxWidth: .infinity)
-        .accessibilityLabel(accessibilityLabel)
-        .accessibilityHint(accessibilityHint)
+        .accessibilityLabel(self.accessibilityLabel)
+        .accessibilityHint(self.accessibilityHint)
     }
 }
 

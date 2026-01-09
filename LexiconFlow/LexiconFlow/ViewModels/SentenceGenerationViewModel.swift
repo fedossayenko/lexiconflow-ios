@@ -5,6 +5,7 @@
 //  Manages AI sentence generation state and operations
 //
 
+import Combine
 import OSLog
 import SwiftData
 import SwiftUI

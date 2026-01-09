@@ -26,7 +26,7 @@ struct ModelTests {
 
     @Test("Flashcard creation with required fields")
     func flashcardCreation() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(
@@ -46,7 +46,7 @@ struct ModelTests {
 
     @Test("Flashcard optional fields can be nil")
     func flashcardOptionals() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(
@@ -64,7 +64,7 @@ struct ModelTests {
 
     @Test("Flashcard-deck relationship")
     func flashcardDeckRelationship() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let deck = Deck(name: "Test Deck", icon: "📚")
@@ -80,7 +80,7 @@ struct ModelTests {
 
     @Test("Flashcard FSRS state relationship")
     func flashcardFSRSState() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -101,7 +101,7 @@ struct ModelTests {
 
     @Test("Flashcard review logs relationship")
     func flashcardReviewLogs() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -123,7 +123,7 @@ struct ModelTests {
 
     @Test("Flashcard-generatedSentences relationship")
     func flashcardGeneratedSentencesRelationship() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "A test")
@@ -154,7 +154,7 @@ struct ModelTests {
 
     @Test("Flashcard has empty sentences array by default")
     func flashcardEmptySentencesDefault() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "A test")
@@ -166,7 +166,7 @@ struct ModelTests {
 
     @Test("Flashcard cascade delete deletes all sentences")
     func flashcardCascadeDeleteSentences() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "A test")
@@ -196,7 +196,7 @@ struct ModelTests {
 
     @Test("Flashcard sentence backfill works correctly")
     func flashcardSentenceBackfill() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "A test")
@@ -241,7 +241,7 @@ struct ModelTests {
 
     @Test("Deck creation and properties")
     func deckCreation() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let deck = Deck(name: "Vocabulary", icon: "📖")
@@ -255,7 +255,7 @@ struct ModelTests {
 
     @Test("Deck-cards relationship")
     func deckCardsRelationship() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let deck = Deck(name: "Test", icon: "📚")
@@ -276,7 +276,7 @@ struct ModelTests {
 
     @Test("Review log creation")
     func reviewLogCreation() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let now = Date()
@@ -347,7 +347,7 @@ struct ModelTests {
 
     @Test("FSRS state with lastReviewDate cache")
     func fsrsStateCache() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let state = FSRSState(
@@ -408,7 +408,7 @@ struct ModelTests {
 
     @Test("Deleting flashcard cascades to reviews")
     func flashcardDeleteCascade() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")

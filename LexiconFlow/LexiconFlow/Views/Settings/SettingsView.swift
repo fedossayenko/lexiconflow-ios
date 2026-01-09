@@ -34,6 +34,19 @@ struct SettingsView: View {
         return url
     }()
 
+    /// URL for SMARTool dataset (CC-BY 4.0 license)
+    /// DOI: https://doi.org/10.18710/QNAPNE
+    /// Citation: Janda, Laura A. and Francis M. Tyers. 2021
+    private static let smartoolURL: URL = {
+        let urlString = "https://doi.org/10.18710/QNAPNE"
+        guard let url = URL(string: urlString) else {
+            assertionFailure("Failed to create SMARTool URL")
+            // Fallback to home directory (always valid)
+            return URL(fileURLWithPath: NSHomeDirectory())
+        }
+        return url
+    }()
+
     var body: some View {
         NavigationStack {
             List {
@@ -137,6 +150,18 @@ struct SettingsView: View {
                         }
                     }
                     .accessibilityLabel("View GitHub repository")
+
+                    Link(destination: Self.smartoolURL) {
+                        HStack {
+                            Label("SMARTool Dataset", systemImage: "arrow.up.right.square")
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .accessibilityLabel("View SMARTool dataset license and attribution")
                 }
             }
             .navigationTitle("Settings")

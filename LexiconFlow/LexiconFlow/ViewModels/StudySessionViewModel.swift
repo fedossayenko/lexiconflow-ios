@@ -5,6 +5,7 @@
 //  Manages study session state and coordinates with Scheduler
 //
 
+import Combine
 import Foundation
 import OSLog
 import SwiftData

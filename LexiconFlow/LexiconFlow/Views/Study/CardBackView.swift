@@ -18,10 +18,10 @@ struct CardBackView: View {
                 Spacer()
 
                 // Word reminder (smaller)
-                Text(card.word)
+                Text(self.card.word)
                     .font(.title3)
                     .foregroundStyle(.secondary)
-                    .accessibilityLabel("Word: \(card.word)")
+                    .accessibilityLabel("Word: \(self.card.word)")
 
                 // Translation - NEW
                 if let translation = card.translation {
@@ -63,11 +63,11 @@ struct CardBackView: View {
                 }
 
                 // Definition
-                Text(card.definition)
+                Text(self.card.definition)
                     .font(.body)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
-                    .accessibilityLabel("Definition: \(card.definition)")
+                    .accessibilityLabel("Definition: \(self.card.definition)")
 
                 // Image (if available)
                 if let imageData = card.imageData,
@@ -84,7 +84,7 @@ struct CardBackView: View {
                 }
 
                 // AI-Generated Sentences Section
-                sentenceSection
+                self.sentenceSection
 
                 Spacer()
             }
@@ -99,7 +99,7 @@ struct CardBackView: View {
     @ViewBuilder
     private var sentenceSection: some View {
         // Filter valid (non-expired) sentences
-        let validSentences = card.generatedSentences.filter { !$0.isExpired }
+        let validSentences = self.card.generatedSentences.filter { !$0.isExpired }
 
         // Only show section if there are valid sentences
         if !validSentences.isEmpty {
@@ -112,7 +112,7 @@ struct CardBackView: View {
                     .padding(.horizontal)
 
                 // Sentences display
-                sentencesList(sentences: validSentences)
+                self.sentencesList(sentences: validSentences)
             }
             .padding(.vertical, 8)
         }
@@ -120,7 +120,7 @@ struct CardBackView: View {
 
     /// Display generated sentences (read-only)
     private func sentencesList(sentences: [GeneratedSentence]) -> some View {
-        let sentencesToShow = showAllSentences ? sentences : Array(sentences.prefix(2))
+        let sentencesToShow = self.showAllSentences ? sentences : Array(sentences.prefix(2))
 
         return VStack(spacing: 12) {
             ForEach(sentencesToShow, id: \.id) { sentence in
@@ -128,10 +128,10 @@ struct CardBackView: View {
             }
 
             // Show more button
-            if sentences.count > 2, !showAllSentences {
+            if sentences.count > 2, !self.showAllSentences {
                 Button("Show \(sentences.count - 2) more sentences") {
                     withAnimation {
-                        showAllSentences = true
+                        self.showAllSentences = true
                     }
                 }
                 .font(.caption)
@@ -165,7 +165,7 @@ struct ReadOnlySentenceRow: View {
         HStack(alignment: .top, spacing: 12) {
             // Sentence text
             VStack(alignment: .leading, spacing: 6) {
-                Text(sentence.sentenceText)
+                Text(self.sentence.sentenceText)
                     .font(.callout)
                     .foregroundStyle(.primary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -173,20 +173,20 @@ struct ReadOnlySentenceRow: View {
                 HStack(spacing: 8) {
                     // CEFR Level badge
                     HStack(spacing: 4) {
-                        Text(sentence.cefrLevel)
+                        Text(self.sentence.cefrLevel)
                             .font(.caption2)
                             .fontWeight(.semibold)
-                        Text(sourceLabel(for: sentence.source))
+                        Text(self.sourceLabel(for: self.sentence.source))
                             .font(.caption2)
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Theme.cefrColor(for: sentence.cefrLevel).opacity(0.15))
-                    .foregroundStyle(Theme.cefrColor(for: sentence.cefrLevel))
+                    .background(Theme.cefrColor(for: self.sentence.cefrLevel).opacity(0.15))
+                    .foregroundStyle(Theme.cefrColor(for: self.sentence.cefrLevel))
                     .cornerRadius(6)
 
                     // Source badge
-                    Text(sourceLabel(for: sentence.source))
+                    Text(self.sourceLabel(for: self.sentence.source))
                         .font(.caption2)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
@@ -195,18 +195,18 @@ struct ReadOnlySentenceRow: View {
                 }
 
                 // Expiration warning
-                if sentence.isExpired {
+                if self.sentence.isExpired {
                     Text("Expired")
                         .font(.caption2)
                         .foregroundStyle(.red)
-                } else if sentence.daysUntilExpiration <= 2 {
-                    Text("Expires in \(sentence.daysUntilExpiration)d")
+                } else if self.sentence.daysUntilExpiration <= 2 {
+                    Text("Expires in \(self.sentence.daysUntilExpiration)d")
                         .font(.caption2)
                         .foregroundStyle(.orange)
                 }
 
                 // Favorite indicator (display only)
-                if sentence.isFavorite {
+                if self.sentence.isFavorite {
                     HStack(spacing: 4) {
                         Image(systemName: "star.fill")
                             .font(.caption2)

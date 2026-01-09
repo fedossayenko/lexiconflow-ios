@@ -38,7 +38,7 @@ struct InteractiveGlassModifier: ViewModifier {
     let effectBuilder: (CGSize) -> InteractiveEffect
 
     func body(content: Content) -> some View {
-        let effect = effectBuilder(offset)
+        let effect = self.effectBuilder(self.offset)
         let progress = min(abs(offset.width) / 200, 1.0)
 
         return content
@@ -56,8 +56,8 @@ struct InteractiveGlassModifier: ViewModifier {
                                         .white.opacity(0.3 * progress),
                                         .clear
                                     ],
-                                    startPoint: offset.width > 0 ? .leading : .trailing,
-                                    endPoint: offset.width > 0 ? .trailing : .leading
+                                    startPoint: self.offset.width > 0 ? .leading : .trailing,
+                                    endPoint: self.offset.width > 0 ? .trailing : .leading
                                 )
                             )
                             .blendMode(.screen)

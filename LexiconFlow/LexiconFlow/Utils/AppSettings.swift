@@ -86,6 +86,12 @@ enum AppSettings {
     /// Daily study goal in number of cards
     @AppStorage("dailyGoal") static var dailyGoal: Int = 20
 
+    // MARK: - Data Import Settings
+
+    /// Whether IELTS vocabulary has been pre-populated
+    /// Used to ensure one-time automatic import on first launch
+    @AppStorage("hasPrepopulatedIELTS") static var hasPrepopulatedIELTS: Bool = false
+
     // MARK: - Statistics Settings (NEW)
 
     /// Selected time range for statistics dashboard ("7d", "30d", "all")

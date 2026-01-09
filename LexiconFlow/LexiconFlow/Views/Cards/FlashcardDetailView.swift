@@ -75,8 +75,8 @@ struct FlashcardDetailView: View {
                 await Analytics.trackEvent("review_history_viewed", metadata: [
                     "flashcard_word": self.flashcard.word,
                     "review_count": "\(self.flashcard.reviewLogs.count)",
-                    "current_state": self.flashcard.fsrsState?.stateEnum.rawValue ?? "none",
-                    "stability": self.flashcard.fsrsState?.stability.map { String(format: "%.2f", $0) } ?? "0.0"
+                    "current_state": self.flashcard.fsrsState?.stateEnum ?? "none",
+                    "stability": self.flashcard.fsrsState.map { String(format: "%.2f", $0.stability) } ?? "0.0"
                 ])
             }
         }
@@ -379,7 +379,7 @@ private extension Preview {
             // Preview failure indicates a real problem - log and use fallback
             assertionFailure("Failed to create preview container: \(error.localizedDescription)")
             // Fallback: return empty container to prevent preview crash
-            return ModelContainer.empty()
+            return try! ModelContainer(for: Flashcard.self, configurations: config)
         }
     }
 }

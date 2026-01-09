@@ -22,15 +22,15 @@ struct StudySettingsView: View {
         Form {
             // Study Session Limits
             Section {
-                Picker("Cards per Session", selection: $studyLimit) {
-                    ForEach(limitOptions, id: \.self) { limit in
+                Picker("Cards per Session", selection: self.$studyLimit) {
+                    ForEach(self.limitOptions, id: \.self) { limit in
                         Text("\(limit) cards").tag(limit)
                     }
                 }
                 .accessibilityLabel("Cards per session")
 
-                Picker("Daily Goal", selection: $dailyGoal) {
-                    ForEach(goalOptions, id: \.self) { goal in
+                Picker("Daily Goal", selection: self.$dailyGoal) {
+                    ForEach(self.goalOptions, id: \.self) { goal in
                         Text("\(goal) cards").tag(goal)
                     }
                 }
@@ -43,7 +43,7 @@ struct StudySettingsView: View {
 
             // Study Mode
             Section {
-                Picker("Default Mode", selection: $studyMode) {
+                Picker("Default Mode", selection: self.$studyMode) {
                     ForEach(AppSettings.StudyModeOption.allCases, id: \.rawValue) { mode in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(mode.displayName)
