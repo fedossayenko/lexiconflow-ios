@@ -96,14 +96,29 @@ struct DeckStudyRow: View {
     let deck: Deck
     let stats: DeckStudyStats
 
+    // MARK: - Computed Properties
+
+    /// Calculate progress ratio (due/total), clamped to 0-1
+    private var progressRatio: Double {
+        guard self.stats.totalCount > 0 else { return 0 }
+        return min(max(Double(self.stats.dueCount) / Double(self.stats.totalCount), 0), 1)
+    }
+
+    // MARK: - Body
+
     var body: some View {
         HStack(spacing: 16) {
-            // Deck icon
+            // Deck icon with progress ring (UNIFIED)
             Image(systemName: self.deck.icon ?? "folder.fill")
-                .font(.system(size: 32))
+                .font(.system(size: 28))
                 .foregroundStyle(.blue)
-                .frame(width: 50, height: 50)
-                .background(.ultraThinMaterial, in: .circle)
+                .glassEffectUnion(
+                    progress: self.progressRatio,
+                    thickness: .regular,
+                    iconSize: 50
+                )
+                .accessibilityLabel("Deck: \(self.deck.name)")
+                .accessibilityValue("\(self.stats.dueCount) of \(self.stats.totalCount) cards due")
 
             // Deck info
             VStack(alignment: .leading, spacing: 4) {
@@ -124,7 +139,7 @@ struct DeckStudyRow: View {
 
             Spacer()
 
-            // Total count badge
+            // Total count badge (reduced emphasis since progress is now visual)
             Text("\(self.stats.totalCount)")
                 .font(.title2)
                 .fontWeight(.semibold)

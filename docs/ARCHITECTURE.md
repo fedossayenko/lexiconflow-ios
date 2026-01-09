@@ -213,6 +213,117 @@ enum Rating: Int, Codable {
 }
 ```
 
+### SwiftData Migration Strategy
+
+LexiconFlow uses SwiftData's **automatic lightweight migration** to handle schema changes without data loss or explicit migration code.
+
+#### Migration History
+
+| Version | Change | Type | Impact |
+|---------|--------|------|--------|
+| **V1 → V2** | Added `translation: String?` to Flashcard | Lightweight | Existing cards have `nil` translation |
+| **V2 → V3** | Added `cefrLevel: String?` to Flashcard | Lightweight | Existing cards have `nil` CEFR level |
+| **V3 → V4** | Added `lastReviewDate: Date?` to FSRSState | Lightweight | Existing cards have `nil` lastReviewDate |
+| **V3 → V4** | Added `GeneratedSentence` model | Lightweight | No existing sentences (new feature) |
+| **V3 → V4** | Added `DailyStats` model | Lightweight | No existing stats (new feature) |
+
+#### Lightweight Migration Criteria
+
+SwiftData automatically handles migrations that meet these criteria:
+
+✅ **Supported (Automatic)**
+- Adding new properties (optional or with default values)
+- Removing properties
+- Adding new models
+- Removing empty models
+- Renaming properties (with `@Attribute` migration hints)
+
+❌ **Not Supported (Requires Custom Migration)**
+- Changing property types (non-compatible)
+- Renaming models
+- Complex data transformations
+- Merging or splitting models
+
+**All LexiconFlow migrations are lightweight** - SwiftData handles them automatically without any custom migration code.
+
+#### Implementation
+
+The ModelContainer is configured in `LexiconFlowApp.swift`:
+
+```swift
+var sharedModelContainer: ModelContainer = {
+    let schema = Schema([
+        FSRSState.self,
+        Flashcard.self,
+        Deck.self,
+        FlashcardReview.self,
+        StudySession.self,
+        DailyStats.self,
+        GeneratedSentence.self
+    ])
+
+    let persistentConfig = ModelConfiguration(isStoredInMemoryOnly: false)
+
+    do {
+        // SwiftData automatically migrates existing databases
+        return try ModelContainer(for: schema, configurations: [persistentConfig])
+    } catch {
+        // Fallback to in-memory storage if persistent fails
+        // (3-tier graceful degradation documented in CLAUDE.md)
+    }
+}()
+```
+
+#### Testing Migrations
+
+To test migrations in development:
+
+1. **Create old schema database**: Run app with V1 schema
+2. **Insert test data**: Create sample cards
+3. **Update to new schema**: Add new fields/models
+4. **Launch app**: SwiftData migrates automatically
+5. **Verify data integrity**: Check all existing data is preserved
+
+```swift
+// Test migration verification
+let descriptor = FetchDescriptor<Flashcard>()
+let cards = try context.fetch(descriptor)
+
+// Verify: All cards exist
+XAssertEqual(cards.count, originalCount)
+
+// Verify: New fields have default values
+for card in cards {
+    XCTAssertNotNil(card.translation) // Should be nil (optional)
+    XCTAssertNotNil(card.cefrLevel)   // Should be nil (optional)
+}
+```
+
+#### Future Schema Changes
+
+When adding new properties or models:
+
+1. **Make properties optional** or provide default values
+2. **Test migration** with existing data
+3. **Document** the change in this Migration History table
+4. **Never** use force unwrap or fatalError for migration failures
+
+**Example - Adding a new property:**
+
+```swift
+// ✅ CORRECT: Optional property (lightweight migration)
+@Model
+final class Flashcard {
+    var newField: String? // Existing cards will have nil
+}
+
+// ❌ AVOID: Non-optional without default (requires custom migration)
+@Model
+final class Flashcard {
+    var newField: String // Will crash existing databases
+}
+```
+
 ---
 
 ## Algorithm Architecture

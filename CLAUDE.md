@@ -49,6 +49,34 @@ xcodebuild test \
 - **Translation**: iOS 26 Translation framework (on-device translation, no package dependency)
 - Resolve with: `xcodebuild -resolvePackageDependencies` (from `LexiconFlow/` directory)
 
+### Bundle Resource Paths
+
+**IMPORTANT:** This project uses Xcode 26's `PBXFileSystemSynchronizedRootGroup` for resource management.
+
+**Key Behavior:**
+- Source files in `Resources/` directory are copied to bundle root
+- Files maintain their relative path from the synchronized root
+- Source: `LexiconFlow/Resources/IELTS/file.json` → Bundle: `{bundle}/Resources/IELTS/file.json`
+
+**When accessing bundle resources:**
+```swift
+// ✅ CORRECT: Use full relative path from bundle root
+Bundle.main.url(forResource: "Resources/IELTS/ielts-vocabulary-smartool", withExtension: "json")
+
+// ❌ WRONG: Missing Resources/ prefix
+Bundle.main.url(forResource: "IELTS/ielts-vocabulary-smartool", withExtension: "json")
+```
+
+**Debugging bundle paths:**
+```swift
+#if DEBUG
+if let resourcePath = Bundle.main.resourcePath {
+    let files = try? FileManager.default.contentsOfDirectory(atPath: resourcePath)
+    print("Bundle contents:", files ?? [])
+}
+#endif
+```
+
 ## Architecture
 
 ### MVVM with SwiftData
