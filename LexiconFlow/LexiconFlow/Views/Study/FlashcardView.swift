@@ -252,15 +252,21 @@ struct FlashcardView: View {
     /// Handle double-tap gesture for translation
     @MainActor
     private func handleDoubleTapTranslation() async {
-        guard let context = self.card.modelContext else { return }
+        guard let container = self.card.modelContext?.container else { return }
 
         self.isTranslating = true
         self.showingTranslation = true
 
         do {
+            // Create DTO with word to translate
+            let request = QuickTranslationService.FlashcardTranslationRequest(
+                word: self.card.word,
+                flashcardID: self.card.persistentModelID
+            )
+
             let result = try await QuickTranslationService.shared.translate(
-                flashcard: self.card,
-                modelContext: context
+                request: request,
+                container: container
             )
 
             self.translationResult = result

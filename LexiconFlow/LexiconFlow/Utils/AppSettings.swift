@@ -164,6 +164,10 @@ enum AppSettings {
     /// Used to ensure one-time automatic import on first launch
     @AppStorage("hasPrepopulatedIELTS") static var hasPrepopulatedIELTS: Bool = false
 
+    /// Whether user has completed onboarding flow
+    /// Used to skip onboarding on subsequent app launches
+    @AppStorage("hasCompletedOnboarding") static var hasCompletedOnboarding: Bool = false
+
     // MARK: - Statistics Settings (NEW)
 
     /// Selected time range for statistics dashboard ("7d", "30d", "all")

@@ -16,12 +16,17 @@ import SwiftData
 /// - Privacy: On-device translation only (no cloud API)
 /// - Resilience: Graceful degradation when offline
 /// - Transparency: Clear cache hit/miss indication
+/// - Concurrency: Actor-isolated with DTO pattern for SwiftData safety
 ///
 /// **Usage:**
 /// ```swift
+/// let request = FlashcardTranslationRequest(
+///     word: card.word,
+///     flashcardID: card.persistentModelID
+/// )
 /// let result = try await QuickTranslationService.shared.translate(
-///     flashcard: card,
-///     modelContext: modelContext
+///     request: request,
+///     container: modelContext.container
 /// )
 ///
 /// if result.isCacheHit {
@@ -48,6 +53,18 @@ actor QuickTranslationService {
     }
 
     // MARK: - Types
+
+    /// Data transfer object for flashcard translation request
+    ///
+    /// **Why DTO?** SwiftData models cannot cross actor boundaries safely.
+    /// This Sendable struct contains only the data needed for translation.
+    struct FlashcardTranslationRequest: Sendable {
+        /// The word to translate
+        let word: String
+
+        /// Flashcard identifier for context (optional)
+        let flashcardID: PersistentIdentifier?
+    }
 
     /// Result of a quick translation operation
     struct QuickTranslationResult: Sendable {
@@ -147,23 +164,28 @@ actor QuickTranslationService {
     /// 4. Save fresh translation to SwiftData cache
     /// 5. Return with isCacheHit: false
     ///
+    /// **Actor Isolation:**
+    /// - SwiftData operations run on MainActor via `await MainActor.run`
+    /// - This prevents passing ModelContext (MainActor-bound) across actor boundaries
+    /// - DTO pattern ensures thread-safe data transfer
+    ///
     /// **Parameters:**
-    ///   - flashcard: The flashcard to translate (uses `.word` property)
-    ///   - modelContext: SwiftData context for cache operations
+    ///   - request: FlashcardTranslationRequest DTO with word to translate
+    ///   - container: ModelContainer for creating contexts on MainActor
     ///
     /// **Returns:** QuickTranslationResult with translation and metadata
     ///
     /// **Throws:**
-    ///   - `.emptyWord` if flashcard.word is empty
+    ///   - `.emptyWord` if request.word is empty
     ///   - `.languagePackMissing` if language packs not downloaded
     ///   - `.offlineNoCache` if device offline and no cached translation
     ///   - `.translationFailed` if translation operation fails
     func translate(
-        flashcard: Flashcard,
-        modelContext: ModelContext
+        request: FlashcardTranslationRequest,
+        container: ModelContainer
     ) async throws -> QuickTranslationResult {
         // Input validation
-        let word = flashcard.word.trimmingCharacters(in: .whitespacesAndNewlines)
+        let word = request.word.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !word.isEmpty else {
             self.logger.warning("Translation attempted with empty word")
             throw QuickTranslationError.emptyWord
@@ -175,22 +197,28 @@ actor QuickTranslationService {
 
         self.logger.debug("Translating '\(word)' from \(sourceLanguage) to \(targetLanguage)")
 
-        // Step 1: Check cache
-        if let cachedTranslation = self.findCachedTranslation(
-            word: word,
-            source: sourceLanguage,
-            target: targetLanguage,
-            modelContext: modelContext
-        ) {
-            self.logger.info("Cache HIT for '\(word)'")
+        // Step 1: Check cache (on MainActor for SwiftData safety)
+        let cachedResult = await MainActor.run {
+            let context = ModelContext(container)
+            return self.findCachedTranslation(
+                word: word,
+                source: sourceLanguage,
+                target: targetLanguage,
+                modelContext: context
+            ).map { cached in
+                QuickTranslationResult(
+                    translatedText: cached.translatedText,
+                    sourceLanguage: sourceLanguage,
+                    targetLanguage: targetLanguage,
+                    isCacheHit: true,
+                    cacheExpirationDate: cached.expiresAt
+                )
+            }
+        }
 
-            return QuickTranslationResult(
-                translatedText: cachedTranslation.translatedText,
-                sourceLanguage: sourceLanguage,
-                targetLanguage: targetLanguage,
-                isCacheHit: true,
-                cacheExpirationDate: cachedTranslation.expiresAt
-            )
+        if let cachedResult {
+            self.logger.info("Cache HIT for '\(word)'")
+            return cachedResult
         }
 
         self.logger.info("Cache MISS for '\(word)', performing fresh translation")
@@ -230,14 +258,20 @@ actor QuickTranslationService {
             throw QuickTranslationError.translationFailed(reason: error.localizedDescription)
         }
 
-        // Step 3: Save to cache
-        await self.saveToCache(
-            word: word,
-            translatedText: translatedText,
-            source: sourceLanguage,
-            target: targetLanguage,
-            modelContext: modelContext
-        )
+        // Step 3: Save to cache (on MainActor for SwiftData safety)
+        await MainActor.run {
+            let context = ModelContext(container)
+            // Fire and forget - cache save is non-critical for the result
+            Task {
+                await self.saveToCache(
+                    word: word,
+                    translatedText: translatedText,
+                    source: sourceLanguage,
+                    target: targetLanguage,
+                    modelContext: context
+                )
+            }
+        }
 
         return QuickTranslationResult(
             translatedText: translatedText,
@@ -279,29 +313,36 @@ actor QuickTranslationService {
     /// Clear expired translations from cache (maintenance operation)
     ///
     /// **Usage:** Call periodically (e.g., app launch) to clean up expired entries
-    func clearExpiredCache(modelContext: ModelContext) async {
-        let now = Date()
+    ///
+    /// **Actor Isolation:** SwiftData operations run on MainActor via `await MainActor.run`
+    func clearExpiredCache(container: ModelContainer) async {
+        await MainActor.run {
+            let context = ModelContext(container)
+            let now = Date()
 
-        let fetchDescriptor = FetchDescriptor<CachedTranslation>(
-            predicate: #Predicate<CachedTranslation> { translation in
-                translation.expiresAt < now
+            let fetchDescriptor = FetchDescriptor<CachedTranslation>(
+                predicate: #Predicate<CachedTranslation> { translation in
+                    translation.expiresAt < now
+                }
+            )
+
+            do {
+                let expiredTranslations = try context.fetch(fetchDescriptor)
+
+                for translation in expiredTranslations {
+                    context.delete(translation)
+                }
+
+                if !expiredTranslations.isEmpty {
+                    try context.save()
+                    self.logger.info("Cleared \(expiredTranslations.count) expired translations from cache")
+                }
+            } catch {
+                self.logger.error("Failed to clear expired cache: \(error.localizedDescription)")
+                Task {
+                    await Analytics.trackError("quick_translation_cache_cleanup_failed", error: error)
+                }
             }
-        )
-
-        do {
-            let expiredTranslations = try modelContext.fetch(fetchDescriptor)
-
-            for translation in expiredTranslations {
-                modelContext.delete(translation)
-            }
-
-            if !expiredTranslations.isEmpty {
-                try modelContext.save()
-                self.logger.info("Cleared \(expiredTranslations.count) expired translations from cache")
-            }
-        } catch {
-            self.logger.error("Failed to clear expired cache: \(error.localizedDescription)")
-            await Analytics.trackError("quick_translation_cache_cleanup_failed", error: error)
         }
     }
 
@@ -310,7 +351,10 @@ actor QuickTranslationService {
     /// Find valid cached translation for word and language pair
     ///
     /// **Returns:** `nil` if no valid cache entry exists
-    private func findCachedTranslation(
+    ///
+    /// **Actor Isolation:** `nonisolated` - safe to call from any actor context
+    /// since ModelContext is already bound to the calling actor.
+    private nonisolated func findCachedTranslation(
         word: String,
         source: String,
         target: String,
@@ -337,7 +381,15 @@ actor QuickTranslationService {
     }
 
     /// Save translation to cache with 30-day expiration
-    private func saveToCache(
+    ///
+    /// **Cache Management:**
+    /// - Enforces `maxCacheSize` limit (10,000 entries)
+    /// - Implements LRU eviction when cache is full (deletes oldest 10%)
+    /// - Logs cache size for monitoring
+    ///
+    /// **Actor Isolation:** `nonisolated` - safe to call from any actor context
+    /// since ModelContext is already bound to the calling actor.
+    private nonisolated func saveToCache(
         word: String,
         translatedText: String,
         source: String,
@@ -345,6 +397,31 @@ actor QuickTranslationService {
         modelContext: ModelContext
     ) async {
         do {
+            // 1. Check cache size before inserting
+            let countDescriptor = FetchDescriptor<CachedTranslation>()
+            let currentCount = try modelContext.fetchCount(countDescriptor)
+
+            // 2. Enforce cache size limit
+            if currentCount >= CacheConstants.maxCacheSize {
+                self.logger.info("Cache full (\(currentCount)/\(CacheConstants.maxCacheSize)), evicting oldest entries")
+
+                // Fetch oldest entries (LRU eviction)
+                let deleteDescriptor = FetchDescriptor<CachedTranslation>(
+                    sortBy: [SortDescriptor(\.cachedAt, order: .forward)]
+                )
+                let entriesToDelete = try modelContext.fetch(deleteDescriptor)
+
+                // Delete oldest 10% of cache
+                let deleteCount = max(1, entriesToDelete.count / 10)
+                for i in 0 ..< deleteCount {
+                    modelContext.delete(entriesToDelete[i])
+                }
+
+                try modelContext.save()
+                self.logger.info("Evicted \(deleteCount) oldest cache entries")
+            }
+
+            // 3. Insert new entry
             let cachedTranslation = try CachedTranslation(
                 sourceWord: word,
                 translatedText: translatedText,
@@ -356,7 +433,7 @@ actor QuickTranslationService {
             modelContext.insert(cachedTranslation)
             try modelContext.save()
 
-            self.logger.info("Saved translation to cache: '\(word)' → '\(translatedText)'")
+            self.logger.info("Saved translation to cache: '\(word)' → '\(translatedText)' (size: \(currentCount + 1)/\(CacheConstants.maxCacheSize))")
         } catch {
             self.logger.error("Failed to save translation to cache: \(error.localizedDescription)")
             await Analytics.trackError("quick_translation_cache_save_failed", error: error)

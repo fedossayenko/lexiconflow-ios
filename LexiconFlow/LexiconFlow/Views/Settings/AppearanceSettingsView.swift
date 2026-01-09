@@ -8,6 +8,14 @@
 import SwiftUI
 
 struct AppearanceSettingsView: View {
+    // MARK: - UI Constants
+
+    /// Percentage display constants
+    private enum PercentageDisplay {
+        /// Multiplier to convert decimal (0.0-1.0) to percentage (0-100)
+        static let multiplier: Int = 100
+    }
+
     var body: some View {
         Form {
             // Theme Selection
@@ -49,7 +57,7 @@ struct AppearanceSettingsView: View {
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                             Spacer()
-                            Text("\(Int(AppSettings.glassEffectIntensity * 100))%")
+                            Text("\(Int(AppSettings.glassEffectIntensity * Double(PercentageDisplay.multiplier)))%")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
@@ -62,7 +70,7 @@ struct AppearanceSettingsView: View {
                             step: 0.1
                         )
                         .accessibilityLabel("Glass effect intensity")
-                        .accessibilityValue("\(Int(AppSettings.glassEffectIntensity * 100)) percent")
+                        .accessibilityValue("\(Int(AppSettings.glassEffectIntensity * Double(PercentageDisplay.multiplier))) percent")
                     }
                     .padding(.vertical, 4)
 

@@ -11,6 +11,16 @@ import SwiftUI
 
 struct StudyView: View {
     private static let logger = Logger(subsystem: "com.lexiconflow.study", category: "StudyView")
+
+    // MARK: - UI Constants
+
+    /// Card count display constants
+    private enum CardCountDisplay {
+        /// Large icon font size for card count display
+        /// Balances prominence without overwhelming the screen
+        static let iconFontSize: CGFloat = 50
+    }
+
     @Environment(\.modelContext) private var modelContext
 
     @Query(sort: \Deck.order) private var decks: [Deck]
@@ -102,7 +112,7 @@ struct StudyView: View {
                 // Cards count display
                 VStack(spacing: 8) {
                     Image(systemName: self.countIcon)
-                        .font(.system(size: 50))
+                        .font(.system(size: CardCountDisplay.iconFontSize))
                         .foregroundStyle(self.countColor)
 
                     Text(self.countTitle)

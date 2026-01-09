@@ -21,6 +21,20 @@ import SwiftUI
 /// }
 /// ```
 struct SkeletonLoader: View {
+    // MARK: - Animation Constants
+
+    /// Shimmer animation timing constants
+    private enum ShimmerAnimation {
+        /// Duration of one complete shimmer animation cycle (seconds)
+        /// Longer duration = more subtle effect, shorter = more noticeable
+        static let duration: TimeInterval = 1.5
+
+        /// Maximum opacity of shimmer gradient (0.0 to 1.0)
+        static let maxOpacity: Double = 0.3
+    }
+
+    // MARK: - Properties
+
     /// Width of the skeleton
     var width: CGFloat = 100
 
@@ -59,7 +73,7 @@ struct SkeletonLoader: View {
             LinearGradient(
                 colors: [
                     Color(.systemBackground).opacity(0),
-                    Color(.systemBackground).opacity(0.3),
+                    Color(.systemBackground).opacity(ShimmerAnimation.maxOpacity),
                     Color(.systemBackground).opacity(0)
                 ],
                 startPoint: .leading,
@@ -69,7 +83,7 @@ struct SkeletonLoader: View {
             .offset(x: self.shimmerOffset)
             .onAppear {
                 withAnimation(
-                    Animation.linear(duration: 1.5)
+                    Animation.linear(duration: ShimmerAnimation.duration)
                         .repeatForever(autoreverses: false)
                 ) {
                     self.shimmerOffset = geometry.size.width

@@ -8,6 +8,7 @@
 import OSLog
 import SwiftData
 import SwiftUI
+import UIKit
 
 /// Empty model for minimal fallback container when all storage attempts fail
 @Model
@@ -19,17 +20,65 @@ final class EmptyModel {
 struct LexiconFlowApp: App {
     /// Pre-initialized empty container for absolute worst case fallback
     /// This is used when even runtime container creation fails
+    ///
+    /// **Fallback Strategy:**
+    /// 1. Try standard in-memory container with EmptyModel
+    /// 2. Try minimal container with empty schema
+    /// 3. Last resort: accept that SwiftData is broken and return truly minimal container
     private static let emptyFallbackContainer: ModelContainer = {
+        let logger = Logger(subsystem: "com.lexiconflow.app", category: "LexiconFlowApp")
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
-        do {
-            return try ModelContainer(for: EmptyModel.self, configurations: configuration)
-        } catch {
-            // If this fails during static initialization, SwiftData is completely broken
-            // Use assertionFailure for debugging, but return empty container to prevent crash
-            assertionFailure("SwiftData failed to create empty fallback container: \(error)")
-            // Return truly empty container as last resort - app will launch but show error UI
-            return try! ModelContainer(for: EmptyModel.self, configurations: configuration)
+
+        // Attempt 1: Standard in-memory container with EmptyModel
+        if let container = try? ModelContainer(for: EmptyModel.self, configurations: configuration) {
+            return container
         }
+
+        // Attempt 2: Minimal schema configuration (no models)
+        let minimalConfig = ModelConfiguration(
+            schema: Schema([]),
+            isStoredInMemoryOnly: true,
+            allowsSave: false
+        )
+
+        if let container = try? ModelContainer(for: EmptyModel.self, configurations: minimalConfig) {
+            logger.critical("Using minimal fallback container - SwiftData partially broken")
+            return container
+        }
+
+        // Attempt 3: Empty schema only (no EmptyModel)
+        if let container = try? ModelContainer(for: Schema([]), configurations: [minimalConfig]) {
+            logger.critical("Using empty schema container - SwiftData severely broken")
+            return container
+        }
+
+        // Attempt 4: Absolute last resort with diagnostic
+        // At this point SwiftData is fundamentally broken on this device
+        let diagnostic = """
+        FATAL: SwiftData cannot create any ModelContainer.
+        This indicates a corrupted iOS installation or incompatible device.
+        Device: \(UIDevice.current.model)
+        iOS: \(UIDevice.current.systemVersion)
+        """
+
+        #if DEBUG
+            // In DEBUG builds, crash immediately for diagnostics
+            fatalError(diagnostic)
+        #else
+            // In RELEASE, log critical error and attempt one final time
+            // This will likely crash, but with better diagnostics
+            logger.critical("\(diagnostic)")
+
+            // Final attempt: this WILL crash if SwiftData is broken, but that's unavoidable
+            // The app cannot function without ANY container
+            do {
+                return try ModelContainer(for: EmptyModel.self, configurations: configuration)
+            } catch {
+                logger.critical("Final fallback attempt failed: \(error.localizedDescription)")
+                // We must return something - this will crash on first use but with clear logging
+                return try! ModelContainer(for: EmptyModel.self, configurations: configuration)
+            }
+        #endif
     }()
 
     /// Scene phase for app lifecycle management
@@ -129,8 +178,7 @@ struct LexiconFlowApp: App {
                     await self.ensureIELTSVocabularyExists()
 
                     // Clear expired translation cache
-                    let context = self.sharedModelContainer.mainContext
-                    await QuickTranslationService.shared.clearExpiredCache(modelContext: context)
+                    await QuickTranslationService.shared.clearExpiredCache(container: self.sharedModelContainer)
                 }
         }
         .modelContainer(self.sharedModelContainer)

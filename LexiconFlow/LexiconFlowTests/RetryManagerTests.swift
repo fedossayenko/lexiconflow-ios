@@ -304,7 +304,7 @@ struct RetryManagerTests {
             operation: {
                 throw CustomError.specificError(code: 42)
             },
-            isRetryable: { (_: CustomError) in false },
+            isRetryable: { (_: CustomError) in false }, // Explicitly type to avoid inference error
             logContext: "test",
             logger: self.logger
         )
@@ -332,7 +332,7 @@ struct RetryManagerTests {
                 attemptCount += 1
                 return "success"
             },
-            isRetryable: { (_: RetryableError) in true },
+            isRetryable: { (_: Error) in true }, // Use Error type to match any error
             logContext: "test",
             logger: self.logger
         )
@@ -444,7 +444,10 @@ struct RetryManagerTests {
                 }
                 return "api_response"
             },
-            isRetryable: { (_: Error) in true },
+            isRetryable: { (error: APIError) in
+                // Use concrete APIError type with its isRetryable property
+                error.isRetryable
+            },
             logContext: "API call",
             logger: self.logger
         )

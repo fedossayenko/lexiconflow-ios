@@ -9,6 +9,40 @@
 import Foundation
 import OSLog
 
+// MARK: - Feature Flag
+
+/// Feature availability configuration for Foundation Models integration
+///
+/// Controls rollout of Foundation Models on-device AI sentence generation.
+/// This allows gradual deployment and quick disabling if issues arise.
+enum FoundationModelsFeatureFlag {
+    /// Current implementation status
+    enum Status: String {
+        case disabled // Always use fallback
+        case placeholderOnly = "placeholder" // Return placeholder (current state)
+        case internalBeta = "internal_beta" // Enable for internal testing
+        case production // Full production rollout
+    }
+
+    /// Current rollout status - change this to control feature
+    static let currentStatus: Status = .disabled
+
+    /// Whether the feature should attempt to use real implementation
+    static var isEnabled: Bool {
+        switch currentStatus {
+        case .disabled, .placeholderOnly:
+            false
+        case .internalBeta, .production:
+            true
+        }
+    }
+
+    /// Whether placeholder sentences should be returned when unavailable
+    static var shouldUsePlaceholder: Bool {
+        currentStatus == .placeholderOnly
+    }
+}
+
 // MARK: - FoundationModelsError
 
 /// Errors that can occur during Foundation Models operations
@@ -117,6 +151,9 @@ final actor FoundationModelsService {
     /// Foundation Models session (lazily initialized)
     private var session: Any?
 
+    /// Initialization task to prevent race conditions
+    private var initializationTask: Task<Void, Error>?
+
     /// Supported languages for sentence generation
     private let supportedLanguages: Set<String> = [
         "en", // English
@@ -148,15 +185,20 @@ final actor FoundationModelsService {
     /// - iOS 26.0 or later
     /// - Compatible device (Apple Silicon or recent iPhone)
     /// - Foundation Models framework present
+    /// - Feature flag enabled (see FoundationModelsFeatureFlag)
     ///
     /// - Returns: `true` if Foundation Models are available for use
     func isAvailable() -> Bool {
+        // Early exit if feature flagged off
+        guard FoundationModelsFeatureFlag.isEnabled else {
+            self.logger.debug("Foundation Models disabled by feature flag (status: \(FoundationModelsFeatureFlag.currentStatus.rawValue))")
+            return false
+        }
+
         // Check for Foundation Models framework availability at runtime
         // This is a placeholder - actual implementation would use NSClassFromString
         // or check for specific Foundation Models APIs
 
-        // For now, return false since Foundation Models requires iOS 26
-        // and we need to verify framework availability
         #if arch(arm64)
             if #available(iOS 26.0, *) {
                 // Check if Foundation Models framework is available
@@ -165,7 +207,9 @@ final actor FoundationModelsService {
                 self.logger.debug("Checking Foundation Models availability on iOS 26+ (actor: \(className))")
                 // TODO: Implement actual availability check using LanguageModelSession availability
                 // This requires the Foundation Models framework to be linked
-                return false // Will be updated when framework is integrated
+                // For now, return false until framework is integrated
+                self.logger.info("Foundation Models framework not yet integrated")
+                return false
             } else {
                 self.logger.debug("Foundation Models not available: iOS < 26.0")
                 return false
@@ -196,22 +240,60 @@ final actor FoundationModelsService {
     /// - Device must support Foundation Models
     /// - App must have necessary permissions
     ///
+    /// **Thread Safety:**
+    /// - Multiple concurrent calls to `initialize()` are safe
+    /// - If an initialization is in progress, subsequent calls wait for completion
+    /// - If already initialized, returns immediately
+    ///
     /// **Throws:**
     /// - `FoundationModelsError.notAvailable` if device doesn't support Foundation Models
     /// - `FoundationModelsError.generationFailed` if session initialization fails
     func initialize() async throws {
-        guard self.isAvailable() else {
-            self.logger.error("Cannot initialize: Foundation Models not available")
-            throw FoundationModelsError.notAvailable
+        // 1. Check if already initialized
+        guard self.session == nil else {
+            self.logger.debug("Session already initialized")
+            return
         }
 
-        // TODO: Initialize actual LanguageModelSession
-        // This is a placeholder for when Foundation Models framework is integrated
-        self.logger.info("Foundation Models session initialization (placeholder)")
+        // 2. Check if initialization is in progress
+        if let existingTask = self.initializationTask {
+            // Wait for existing task to complete
+            try await existingTask.value
+            return
+        }
 
-        // Example of what actual implementation would look like:
-        // self.session = try await LanguageModelSession()
-        // logger.info("Foundation Models session initialized successfully")
+        // 3. Create new initialization task
+        let task = Task<Void, Error> {
+            guard self.isAvailable() else {
+                self.logger.error("Cannot initialize: Foundation Models not available")
+                throw FoundationModelsError.notAvailable
+            }
+
+            // TODO: Initialize actual LanguageModelSession
+            // This is a placeholder for when Foundation Models framework is integrated
+            self.logger.info("Foundation Models session initialization (placeholder)")
+
+            // Example of what actual implementation would look like:
+            // self.session = try await LanguageModelSession()
+            // logger.info("Foundation Models session initialized successfully")
+        }
+
+        self.initializationTask = task
+
+        // 4. Wait for completion
+        try await task.value
+
+        // 5. Clear task reference
+        self.initializationTask = nil
+    }
+
+    /// Reset session (for testing or error recovery)
+    ///
+    /// **WARNING:** Only use for testing or error recovery scenarios
+    func resetSession() {
+        self.logger.info("Resetting Foundation Models session")
+        self.session = nil
+        self.initializationTask = nil
     }
 
     /// Ensure the session is initialized before use
@@ -236,6 +318,7 @@ final actor FoundationModelsService {
     /// **Returns: A generated sentence appropriate for the target CEFR level**
     ///
     /// **Throws:**
+    ///   - `FoundationModelsError.notAvailable` if feature is disabled
     ///   - `FoundationModelsError.sessionNotInitialized` if session not ready
     ///   - `FoundationModelsError.languageNotSupported` if language unavailable
     ///   - `FoundationModelsError.invalidInput` if word is empty
@@ -254,10 +337,22 @@ final actor FoundationModelsService {
         cefrLevel: String,
         language: String = "en"
     ) async throws -> String {
-        // Validate input
+        // Validate input first (always)
         guard !word.isEmpty else {
             self.logger.error("Cannot generate sentence for empty word")
             throw FoundationModelsError.invalidInput("Word cannot be empty")
+        }
+
+        // Feature flag check - if disabled, throw immediately
+        guard FoundationModelsFeatureFlag.isEnabled else {
+            // If placeholders enabled, return one
+            if FoundationModelsFeatureFlag.shouldUsePlaceholder {
+                self.logger.info("Returning placeholder (feature flag: placeholder mode)")
+                return Self.fallbackSentence(for: word, cefrLevel: cefrLevel)
+            }
+            // Otherwise, throw to force caller to use alternative
+            self.logger.info("Foundation Models disabled by feature flag (status: \(FoundationModelsFeatureFlag.currentStatus.rawValue))")
+            throw FoundationModelsError.notAvailable
         }
 
         // Validate language support

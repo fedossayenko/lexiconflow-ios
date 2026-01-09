@@ -20,8 +20,41 @@ import SwiftData
 /// **Cache Invalidation:**
 /// - Does NOT invalidate when languages change (cached translations remain valid)
 /// - User can manually clear cache in Settings (future enhancement)
+///
+/// **Thread Safety:**
+/// - ⚠️ **NOT Sendable** - SwiftData `@Model` classes are not `Sendable` by default
+/// - Must remain on `@MainActor` or single actor context for thread-safe access
+/// - `QuickTranslationService` returns `QuickTranslationResult` DTO (Sendable), NOT this model
+/// - ModelContext operations must happen on the same context that created the instance
+/// - Never pass `CachedTranslation` instances across actor boundaries
+///
+/// **Correct Usage Pattern:**
+/// ```swift
+/// // ✅ CORRECT: Service returns DTO, not model
+/// actor QuickTranslationService {
+///     func translate(...) async throws -> QuickTranslationResult {
+///         // Extract values from model, return DTO struct
+///         return QuickTranslationResult(
+///             translatedText: cachedTranslation.translatedText,
+///             // ... other fields
+///         )
+///     }
+/// }
+///
+/// // ❌ AVOID: Returning model from actor
+/// actor MyActor {
+///     func getCachedTranslation() -> CachedTranslation { ... }  // DON'T DO THIS
+/// }
+/// ```
 @Model
 final class CachedTranslation {
+    // MARK: - Index
+
+    /// Compound index on (sourceWord, sourceLanguage, targetLanguage)
+    /// Optimizes cache lookup queries from O(n) to O(log n)
+    /// This is the primary query pattern for cache hits
+    #Index<CachedTranslation>([\.sourceWord, \.sourceLanguage, \.targetLanguage])
+
     // MARK: - Properties
 
     /// Unique identifier for this cache entry

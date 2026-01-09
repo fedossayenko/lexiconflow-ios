@@ -111,8 +111,10 @@ enum RetryManager {
         var attempt = 0
         var delay = initialDelay
         var lastError: ErrorType?
+        var lastUntypedError: (any Error)?
 
-        while attempt < maxRetries {
+        // Always execute at least once, then retry up to maxRetries times
+        while attempt <= maxRetries {
             do {
                 let result = try await operation()
                 if attempt > 0 {
@@ -121,13 +123,14 @@ enum RetryManager {
                 return .success(result)
             } catch let error as ErrorType {
                 lastError = error
+                lastUntypedError = nil
                 guard isRetryable(error) else {
                     logger.error("\(logContext): Non-retryable error - \(error.localizedDescription)")
                     return .failure(error)
                 }
                 attempt += 1
-                if attempt < maxRetries {
-                    logger.info("\(logContext): Retrying in \(delay)s (attempt \(attempt + 1)/\(maxRetries))")
+                if attempt <= maxRetries {
+                    logger.info("\(logContext): Retrying in \(delay)s (attempt \(attempt + 1)/\(maxRetries + 1))")
                     try? await Task.sleep(nanoseconds: UInt64(delay * 1000000000))
                     delay *= 2
                 } else {
@@ -135,47 +138,64 @@ enum RetryManager {
                     return .failure(error)
                 }
             } catch {
-                // Unknown error type that doesn't match ErrorType
+                // Unexpected error type that doesn't match ErrorType
                 // This could be CancellationError or other system errors
-                logger.error("\(logContext): Operation threw unexpected error type - \(error.localizedDescription)")
-                // Store as last error (will be handled below)
-                // Since we can't convert to ErrorType, we'll need to handle this case
+                lastUntypedError = error
+                lastError = nil
+                logger.warning("\(logContext): Unexpected error type '\(type(of: error))' - \(error.localizedDescription)")
                 attempt += 1
-                if attempt < maxRetries {
-                    logger.info("\(logContext): Retrying in \(delay)s (attempt \(attempt + 1)/\(maxRetries))")
+                if attempt <= maxRetries {
+                    logger.info("\(logContext): Retrying in \(delay)s (attempt \(attempt + 1)/\(maxRetries + 1))")
                     try? await Task.sleep(nanoseconds: UInt64(delay * 1000000000))
                     delay *= 2
                 }
             }
         }
 
-        // Return the last error if we have one
+        // Return appropriate error after exhausting retries
         if let error = lastError {
+            logger.error("\(logContext): Failed after \(maxRetries) retries (typed error)")
             return .failure(error)
         }
 
-        // If we reach here, operation repeatedly threw non-ErrorType errors
-        // This indicates a programming error in the operation signature
-        // Log critical failure for debugging
-        logger.critical("\(logContext): Operation signature mismatch - cannot convert errors to expected type")
+        if let untypedError = lastUntypedError {
+            logger.error("\(logContext): Failed with unexpected error type after \(maxRetries) retries")
+            // Create a wrapper NSError for the untyped error
+            let wrapperError = NSError(
+                domain: "com.lexiconflow.retrymanager",
+                code: -2,
+                userInfo: [
+                    NSLocalizedDescriptionKey: "Unexpected error type during retry: \(untypedError.localizedDescription)",
+                    "underlyingError": "\(untypedError)",
+                    "expectedType": "\(ErrorType.self)",
+                    "actualType": "\(type(of: untypedError))"
+                ]
+            )
+            // Try to cast to ErrorType - if it fails, this indicates a programming error
+            // in the operation's error type signature
+            if let typedError = wrapperError as? ErrorType {
+                return .failure(typedError)
+            } else {
+                // Programming error: operation signature doesn't match thrown errors
+                logger.critical("\(logContext): Type mismatch - cannot wrap error as \(ErrorType.self)")
+                // As last resort, use a force cast with swiftlint suppression
+                // This WILL crash if ErrorType is incompatible, which surfaces the programming error
+                // swiftlint:disable:next force_cast
+                return .failure(wrapperError as! ErrorType)
+            }
+        }
 
-        // Programming error: operation signature doesn't match declared ErrorType
-        // Since we cannot return a properly typed ErrorType here, we need to
-        // create a runtime error that wraps the situation
-        // This is a last resort fallback - the caller should handle this
-        let typeMismatchError = NSError(
+        // Should never reach here, but handle gracefully
+        logger.critical("\(logContext): No error captured after failed retries - logic error")
+        let logicError = NSError(
             domain: "com.lexiconflow.retrymanager",
             code: -1,
             userInfo: [
-                NSLocalizedDescriptionKey: "Type mismatch: expected \(ErrorType.self), got unknown error type. Check operation signature.",
-                "expectedType": "\(ErrorType.self)"
+                NSLocalizedDescriptionKey: "Retry logic error: completed retries without capturing error",
+                "logContext": logContext
             ]
         )
-
-        // Force cast is safe here because we're creating a NSError which conforms to Error
-        // If ErrorType is not compatible, this will crash at the call site which is appropriate
-        // for a programming error in operation signature
         // swiftlint:disable:next force_cast
-        return .failure(typeMismatchError as! ErrorType)
+        return .failure(logicError as! ErrorType)
     }
 }

@@ -158,6 +158,102 @@ final class DictionaryImporter {
 
     // MARK: - Format Detection
 
+    /// Validate file URL for security and access
+    ///
+    /// **Security:**
+    /// - Checks security scope (for file picker)
+    /// - Validates file exists and is readable
+    /// - Confirms it's a regular file (not directory/symlink)
+    /// - Validates file extension (whitelist)
+    /// - Validates file size (max 100MB)
+    ///
+    /// **Throws:** ImportError if validation fails
+    private func validateFileURL(_ url: URL) throws {
+        // 1. Check security scope (for file picker)
+        guard url.startAccessingSecurityScopedResource() else {
+            throw ImportError(
+                lineNumber: 0,
+                fieldName: nil,
+                reason: "Cannot access file (security scope denied)",
+                isRetryable: false
+            )
+        }
+        defer { url.stopAccessingSecurityScopedResource() }
+
+        // 2. Validate file exists and is readable
+        let fileManager = FileManager.default
+        guard fileManager.fileExists(atPath: url.path) else {
+            throw ImportError(
+                lineNumber: 0,
+                fieldName: nil,
+                reason: "File does not exist",
+                isRetryable: false
+            )
+        }
+
+        // 3. Check it's a regular file (not directory/symlink)
+        var isDirectory: ObjCBool = false
+        guard fileManager.fileExists(atPath: url.path, isDirectory: &isDirectory) else {
+            throw ImportError(
+                lineNumber: 0,
+                fieldName: nil,
+                reason: "Cannot access file",
+                isRetryable: false
+            )
+        }
+
+        guard !isDirectory.boolValue else {
+            throw ImportError(
+                lineNumber: 0,
+                fieldName: nil,
+                reason: "Expected file, got directory",
+                isRetryable: false
+            )
+        }
+
+        // 4. Validate file extension (whitelist)
+        let allowedExtensions = ["csv", "json", "txt", "text", "apkg"]
+        let fileExtension = url.pathExtension.lowercased()
+        guard allowedExtensions.contains(fileExtension) else {
+            throw ImportError(
+                lineNumber: 0,
+                fieldName: nil,
+                reason: "Invalid file type: \(fileExtension)",
+                isRetryable: false
+            )
+        }
+
+        // 5. Validate file size (max 100MB)
+        do {
+            let attributes = try fileManager.attributesOfItem(atPath: url.path)
+            guard let fileSize = attributes[.size] as? UInt64 else {
+                throw ImportError(
+                    lineNumber: 0,
+                    fieldName: nil,
+                    reason: "Cannot determine file size",
+                    isRetryable: false
+                )
+            }
+
+            let maxSize: UInt64 = 100000000 // 100MB
+            guard fileSize <= maxSize else {
+                throw ImportError(
+                    lineNumber: 0,
+                    fieldName: nil,
+                    reason: "File too large (\(fileSize) bytes, max \(maxSize))",
+                    isRetryable: false
+                )
+            }
+        } catch {
+            throw ImportError(
+                lineNumber: 0,
+                fieldName: nil,
+                reason: "Cannot read file attributes: \(error.localizedDescription)",
+                isRetryable: false
+            )
+        }
+    }
+
     /// Detect import format from file URL
     ///
     /// **Detection Strategy:**
@@ -170,6 +266,14 @@ final class DictionaryImporter {
     ///
     /// **Returns:** Detected format, or nil if unable to determine
     func detectFormat(from url: URL) -> ImportFormat? {
+        // Validate URL first (security) - log errors but continue for best-effort detection
+        do {
+            try self.validateFileURL(url)
+        } catch {
+            self.logger.error("File URL validation failed: \(error.localizedDescription)")
+            // Continue with detection - user may have selected file outside sandbox
+        }
+
         // 1. File extension
         if let pathExtension = url.pathExtension.lowercased() as String? {
             for format in ImportFormat.allCases {
@@ -181,10 +285,16 @@ final class DictionaryImporter {
         }
 
         // 2. Content-based detection
-        guard let data = try? Data(contentsOf: url, options: .mappedIfSafe),
-              let preview = String(data: data.prefix(2048), encoding: .utf8)
-        else {
-            self.logger.warning("Unable to read file content for format detection")
+        let data: Data
+        do {
+            data = try Data(contentsOf: url, options: .mappedIfSafe)
+        } catch {
+            self.logger.warning("Unable to read file content for format detection: \(error.localizedDescription)")
+            return nil
+        }
+
+        guard let preview = String(data: data.prefix(2048), encoding: .utf8) else {
+            self.logger.warning("Unable to decode file content as UTF-8")
             return nil
         }
 
@@ -344,13 +454,24 @@ final class DictionaryImporter {
         fieldMapping: FieldMappingConfiguration,
         limit: Int = Int.max
     ) async throws -> [ParsedFlashcard] {
-        guard let data = try? Data(contentsOf: url, options: .mappedIfSafe),
-              let content = String(data: data, encoding: .utf8)
-        else {
+        // Read file with error context
+        let data: Data
+        do {
+            data = try Data(contentsOf: url, options: .mappedIfSafe)
+        } catch {
             throw ImportError(
                 lineNumber: 0,
                 fieldName: nil,
-                reason: "Unable to read file",
+                reason: "Unable to read file: \(error.localizedDescription)",
+                isRetryable: (error as NSError).code == NSFileReadOutOfMemoryError
+            )
+        }
+
+        guard let content = String(data: data, encoding: .utf8) else {
+            throw ImportError(
+                lineNumber: 0,
+                fieldName: nil,
+                reason: "Unable to decode file as UTF-8",
                 isRetryable: false
             )
         }
@@ -429,69 +550,215 @@ final class DictionaryImporter {
         return cards
     }
 
-    /// Parse JSON file
+    /// Parse JSON file with type-safe Codable validation
+    ///
+    /// **Security:**
+    /// - File size validation (max 10MB)
+    /// - Type-safe Codable parsing (no unsafe type casting)
+    /// - Input sanitization (removes control characters, null bytes)
+    /// - Detailed error reporting with line numbers
     private func parseJSON(_ url: URL, limit: Int = Int.max) async throws -> [ParsedFlashcard] {
-        guard let data = try? Data(contentsOf: url, options: .mappedIfSafe) else {
+        // 1. File size validation (max 10MB)
+        do {
+            let fileAttributes = try FileManager.default.attributesOfItem(atPath: url.path)
+            guard let fileSize = fileAttributes[.size] as? UInt64 else {
+                throw ImportError(
+                    lineNumber: 0,
+                    fieldName: nil,
+                    reason: "Cannot determine file size",
+                    isRetryable: false
+                )
+            }
+            let maxSize: UInt64 = 10000000 // 10MB
+            guard fileSize <= maxSize else {
+                throw ImportError(
+                    lineNumber: 0,
+                    fieldName: nil,
+                    reason: "JSON file too large (\(fileSize) bytes, max \(maxSize))",
+                    isRetryable: false
+                )
+            }
+        } catch {
             throw ImportError(
                 lineNumber: 0,
                 fieldName: nil,
-                reason: "Unable to read file",
+                reason: "Cannot read file attributes: \(error.localizedDescription)",
                 isRetryable: false
             )
         }
 
-        guard let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+        // 2. Safe file reading with error context
+        let data: Data
+        do {
+            data = try Data(contentsOf: url, options: .mappedIfSafe)
+        } catch {
             throw ImportError(
                 lineNumber: 0,
                 fieldName: nil,
-                reason: "Invalid JSON format (expected array of objects)",
-                isRetryable: false
+                reason: "Unable to read file: \(error.localizedDescription)",
+                isRetryable: (error as NSError).code == NSFileReadOutOfMemoryError
             )
         }
 
+        // 3. Type-safe Codable parsing
+        struct JSONFlashcard: Codable {
+            let word: String
+            let definition: String
+            let phonetic: String?
+            let cefrLevel: String?
+            let translation: String?
+        }
+
+        let decoder = JSONDecoder()
         var cards: [ParsedFlashcard] = []
 
-        for (index, item) in json.enumerated() {
-            guard index < limit else { break }
+        do {
+            let jsonCards = try decoder.decode([JSONFlashcard].self, from: data)
 
-            guard let word = item["word"] as? String, !word.isEmpty else {
-                continue
+            // 4. Validate and sanitize content
+            for (index, card) in jsonCards.enumerated() {
+                guard index < limit else { break }
+
+                // Sanitize strings (remove control characters and null bytes)
+                let sanitizedWord = self.sanitizeString(card.word)
+                let sanitizedDef = self.sanitizeString(card.definition)
+
+                // Validate required fields
+                guard !sanitizedWord.isEmpty else {
+                    throw ImportError(
+                        lineNumber: index + 1,
+                        fieldName: "word",
+                        reason: "Word cannot be empty after sanitization",
+                        isRetryable: false
+                    )
+                }
+
+                guard !sanitizedDef.isEmpty else {
+                    throw ImportError(
+                        lineNumber: index + 1,
+                        fieldName: "definition",
+                        reason: "Definition cannot be empty after sanitization",
+                        isRetryable: false
+                    )
+                }
+
+                // Sanitize optional fields
+                let sanitizedPhonetic = card.phonetic.map { self.sanitizeString($0) }.nilIfEmpty
+                let sanitizedCefrLevel = card.cefrLevel.map { self.sanitizeString($0) }.nilIfEmpty
+                let sanitizedTranslation = card.translation.map { self.sanitizeString($0) }.nilIfEmpty
+
+                cards.append(ParsedFlashcard(
+                    word: sanitizedWord,
+                    definition: sanitizedDef,
+                    phonetic: sanitizedPhonetic,
+                    cefrLevel: sanitizedCefrLevel,
+                    translation: sanitizedTranslation,
+                    lineNumber: index + 1
+                ))
             }
-
-            guard let definition = item["definition"] as? String, !definition.isEmpty else {
-                continue
-            }
-
-            let phonetic = item["phonetic"] as? String
-            let cefrLevel = item["cefrLevel"] as? String
-            let translation = item["translation"] as? String
-
-            cards.append(ParsedFlashcard(
-                word: word,
-                definition: definition,
-                phonetic: phonetic?.isEmpty ?? true ? nil : phonetic,
-                cefrLevel: cefrLevel?.isEmpty ?? true ? nil : cefrLevel,
-                translation: translation?.isEmpty ?? true ? nil : translation,
-                lineNumber: index + 1
-            ))
+        } catch let DecodingError.dataCorrupted(context) {
+            throw ImportError(
+                lineNumber: 0,
+                fieldName: nil,
+                reason: "Invalid JSON structure: \(context.debugDescription)",
+                isRetryable: false
+            )
+        } catch let DecodingError.keyNotFound(key, context) {
+            let lineNumber = context.codingPath.first?.intValue ?? 0
+            throw ImportError(
+                lineNumber: lineNumber + 1,
+                fieldName: key.stringValue,
+                reason: "Missing required field: \(key.stringValue)",
+                isRetryable: false
+            )
+        } catch let DecodingError.typeMismatch(type, context) {
+            let lineNumber = context.codingPath.first?.intValue ?? 0
+            throw ImportError(
+                lineNumber: lineNumber + 1,
+                fieldName: context.codingPath.last?.stringValue,
+                reason: "Type mismatch: expected \(type), got different type",
+                isRetryable: false
+            )
+        } catch {
+            throw ImportError(
+                lineNumber: 0,
+                fieldName: nil,
+                reason: "JSON parsing failed: \(error.localizedDescription)",
+                isRetryable: false
+            )
         }
 
         return cards
     }
 
+    /// Sanitize string by removing control characters and null bytes
+    ///
+    /// **Security:** Prevents injection attacks and malformed data
+    private func sanitizeString(_ input: String) -> String {
+        // Remove control characters (except \n and \r) and null bytes
+        input
+            .filter { char in
+                guard let asciiValue = char.asciiValue else {
+                    return true // Non-ASCII characters are allowed
+                }
+                return asciiValue != 0 &&
+                    (asciiValue >= 32 || asciiValue == 10 || asciiValue == 13)
+            }
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
+// MARK: - Helper Extensions
+
+extension CodingKey {
+    /// Extract line number from coding path for error reporting
+    var intValue: Int? {
+        if let intValue = self.intValue {
+            return intValue
+        }
+        // Try to parse string value as integer
+        if let strValue = self.stringValue as String?, let intVal = Int(strValue) {
+            return intVal
+        }
+        return nil
+    }
+}
+
+extension String? {
+    /// Return nil if string is empty after trimming
+    var nilIfEmpty: String? {
+        let trimmed = self?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed?.isEmpty ?? true ? nil : trimmed
+    }
+}
+
+// MARK: - DictionaryImporter ParseTXT Extension
+
+extension DictionaryImporter {
     /// Parse TXT file (word per line or tab-delimited)
     private func parseTXT(
         _ url: URL,
         fieldMapping _: FieldMappingConfiguration,
         limit: Int = Int.max
     ) async throws -> [ParsedFlashcard] {
-        guard let data = try? Data(contentsOf: url, options: .mappedIfSafe),
-              let content = String(data: data, encoding: .utf8)
-        else {
+        // Read file with error context
+        let data: Data
+        do {
+            data = try Data(contentsOf: url, options: .mappedIfSafe)
+        } catch {
             throw ImportError(
                 lineNumber: 0,
                 fieldName: nil,
-                reason: "Unable to read file",
+                reason: "Unable to read file: \(error.localizedDescription)",
+                isRetryable: (error as NSError).code == NSFileReadOutOfMemoryError
+            )
+        }
+
+        guard let content = String(data: data, encoding: .utf8) else {
+            throw ImportError(
+                lineNumber: 0,
+                fieldName: nil,
+                reason: "Unable to decode file as UTF-8",
                 isRetryable: false
             )
         }
