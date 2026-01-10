@@ -63,12 +63,12 @@ struct StudySessionViewModelTests {
 
     @Test("Load cards fetches from scheduler")
     func loadCardsFetchesFromScheduler() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Create deck and card
-        let deck = self.createTestDeck(context: context)
-        _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
+        let deck = createTestDeck(context: context)
+        _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
         try context.save()
 
         let viewModel = StudySessionViewModel(modelContext: context, decks: [deck], mode: .scheduled)
@@ -79,12 +79,12 @@ struct StudySessionViewModelTests {
 
     @Test("Load cards sets correct initial state")
     func loadCardsSetsCorrectInitialState() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Create deck and card
-        let deck = self.createTestDeck(context: context)
-        _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
+        let deck = createTestDeck(context: context)
+        _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
         try context.save()
 
         let viewModel = StudySessionViewModel(modelContext: context, decks: [deck], mode: .scheduled)
@@ -97,7 +97,7 @@ struct StudySessionViewModelTests {
 
     @Test("Load cards with empty deck sets complete flag")
     func loadCardsWithEmptyDeckSetsComplete() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let viewModel = StudySessionViewModel(modelContext: context, decks: [], mode: .scheduled)
 
@@ -111,13 +111,13 @@ struct StudySessionViewModelTests {
 
     @Test("Submit rating advances to next card")
     func submitRatingAdvancesToNextCard() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Create deck and two due cards
-        let deck = self.createTestDeck(context: context)
-        _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
-        _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
+        let deck = createTestDeck(context: context)
+        _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
+        _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
         try context.save()
 
         let viewModel = StudySessionViewModel(modelContext: context, decks: [deck], mode: .scheduled)
@@ -136,11 +136,11 @@ struct StudySessionViewModelTests {
 
     @Test("Submit rating without current card is guarded")
     func submitRatingWithoutCurrentCardDoesNothing() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Create deck but no cards
-        let deck = self.createTestDeck(context: context)
+        let deck = createTestDeck(context: context)
         let viewModel = StudySessionViewModel(modelContext: context, decks: [deck], mode: .scheduled)
 
         // Don't load any cards
@@ -156,13 +156,13 @@ struct StudySessionViewModelTests {
 
     @Test("Submit rating clears error on success")
     func submitRatingClearsErrorOnSuccess() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Create deck and two due cards
-        let deck = self.createTestDeck(context: context)
-        _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
-        _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
+        let deck = createTestDeck(context: context)
+        _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
+        _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
         try context.save()
 
         let viewModel = StudySessionViewModel(modelContext: context, decks: [deck], mode: .scheduled)
@@ -186,13 +186,13 @@ struct StudySessionViewModelTests {
 
     @Test("Progress format is correct")
     func progressFormatIsCorrect() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Create deck and 5 due cards
-        let deck = self.createTestDeck(context: context)
+        let deck = createTestDeck(context: context)
         for _ in 0 ..< 5 {
-            _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
+            _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
         }
         try context.save()
 
@@ -215,12 +215,12 @@ struct StudySessionViewModelTests {
 
     @Test("Complete on last card")
     func completeOnLastCard() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Create deck and one card
-        let deck = self.createTestDeck(context: context)
-        _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
+        let deck = createTestDeck(context: context)
+        _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
         try context.save()
 
         let viewModel = StudySessionViewModel(modelContext: context, decks: [deck], mode: .scheduled)
@@ -242,12 +242,12 @@ struct StudySessionViewModelTests {
 
     @Test("IsProcessing prevents double submission")
     func isProcessingPreventsDoubleSubmission() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Create deck and card
-        let deck = self.createTestDeck(context: context)
-        _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
+        let deck = createTestDeck(context: context)
+        _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
         try context.save()
 
         let viewModel = StudySessionViewModel(modelContext: context, decks: [deck], mode: .scheduled)
@@ -275,13 +275,13 @@ struct StudySessionViewModelTests {
 
     @Test("Reset returns to start")
     func resetSessionReturnsToStart() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Create deck and cards
-        let deck = self.createTestDeck(context: context)
-        _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
-        _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
+        let deck = createTestDeck(context: context)
+        _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
+        _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
         try context.save()
 
         let viewModel = StudySessionViewModel(modelContext: context, decks: [deck], mode: .scheduled)
@@ -313,13 +313,13 @@ struct StudySessionViewModelTests {
 
     @Test("Concurrency: concurrent card mutations")
     func concurrentCardMutations() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Create deck and cards
-        let deck = self.createTestDeck(context: context)
+        let deck = createTestDeck(context: context)
         for i in 1 ... 5 {
-            _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
+            _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
         }
         try context.save()
 
@@ -352,13 +352,13 @@ struct StudySessionViewModelTests {
 
     @Test("Concurrency: session state thread safety")
     func sessionStateThreadSafety() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Create deck and cards
-        let deck = self.createTestDeck(context: context)
+        let deck = createTestDeck(context: context)
         for i in 1 ... 10 {
-            _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
+            _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
         }
         try context.save()
 
@@ -402,13 +402,13 @@ struct StudySessionViewModelTests {
 
     @Test("Concurrency: progress updates under concurrent access")
     func progressUpdatesConcurrent() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Create deck and cards
-        let deck = self.createTestDeck(context: context)
+        let deck = createTestDeck(context: context)
         for i in 1 ... 5 {
-            _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
+            _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
         }
         try context.save()
 
@@ -439,12 +439,12 @@ struct StudySessionViewModelTests {
 
     @Test("Concurrency: session completion edge cases")
     func sessionCompletionEdgeCases() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Create deck and single card
-        let deck = self.createTestDeck(context: context)
-        _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
+        let deck = createTestDeck(context: context)
+        _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
         try context.save()
 
         let viewModel = StudySessionViewModel(modelContext: context, decks: [deck], mode: .scheduled)
@@ -470,13 +470,13 @@ struct StudySessionViewModelTests {
 
     @Test("Concurrency: rapid rating submissions")
     func rapidRatingSubmissions() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Create deck and cards
-        let deck = self.createTestDeck(context: context)
+        let deck = createTestDeck(context: context)
         for i in 1 ... 10 {
-            _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
+            _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck)
         }
         try context.save()
 
@@ -513,7 +513,7 @@ struct StudySessionViewModelTests {
 
     @Test("Load cards with empty deck does not create session")
     func loadCardsEmptyDeckNoSession() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let viewModel = StudySessionViewModel(modelContext: context, decks: [], mode: .scheduled)
 
@@ -571,7 +571,7 @@ struct StudySessionViewModelMultiDeckTests {
 
     @Test("Initializer with empty deck array returns no cards")
     func emptyDeckArray() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let viewModel = StudySessionViewModel(
@@ -588,15 +588,15 @@ struct StudySessionViewModelMultiDeckTests {
 
     @Test("Initializer with multiple decks loads cards from all")
     func multiDeckCardLoading() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
-        let deck1 = self.createTestDeck(context: context)
-        let deck2 = self.createTestDeck(context: context)
+        let deck1 = createTestDeck(context: context)
+        let deck2 = createTestDeck(context: context)
 
         // Add cards to both decks
-        _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck1)
-        _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck2)
+        _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck1)
+        _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck2)
 
         let viewModel = StudySessionViewModel(
             modelContext: context,
@@ -613,11 +613,11 @@ struct StudySessionViewModelMultiDeckTests {
 
     @Test("Scheduler integration with fetchCards(for: decks)")
     func schedulerIntegration() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
-        let deck1 = self.createTestDeck(context: context)
-        _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck1)
+        let deck1 = createTestDeck(context: context)
+        _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck1)
 
         let viewModel = StudySessionViewModel(
             modelContext: context,
@@ -632,15 +632,15 @@ struct StudySessionViewModelMultiDeckTests {
 
     @Test("Statistics tracking across multiple decks")
     func multiDeckStatistics() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
-        let deck1 = self.createTestDeck(context: context)
-        let deck2 = self.createTestDeck(context: context)
+        let deck1 = createTestDeck(context: context)
+        let deck2 = createTestDeck(context: context)
 
         // Add cards with different states
-        _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.new.rawValue, dueOffset: 86400, deck: deck1)
-        _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck2)
+        _ = createTestFlashcard(context: context, stateEnum: FlashcardState.new.rawValue, dueOffset: 86400, deck: deck1)
+        _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck2)
 
         let scheduler = Scheduler(modelContext: context)
         let totalNew = scheduler.newCardCount(for: [deck1, deck2])
@@ -652,15 +652,15 @@ struct StudySessionViewModelMultiDeckTests {
 
     @Test("Session completion with multiple decks")
     func multiDeckSessionCompletion() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
-        let deck1 = self.createTestDeck(context: context)
-        let deck2 = self.createTestDeck(context: context)
+        let deck1 = createTestDeck(context: context)
+        let deck2 = createTestDeck(context: context)
 
         // Add one card to each deck
-        let card1 = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck1)
-        let card2 = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck2)
+        let card1 = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck1)
+        let card2 = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck2)
 
         let viewModel = StudySessionViewModel(
             modelContext: context,
@@ -681,7 +681,7 @@ struct StudySessionViewModelMultiDeckTests {
 
     @Test("Error handling with invalid deck array")
     func invalidDeckArrayHandling() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Pass empty deck array
@@ -700,18 +700,18 @@ struct StudySessionViewModelMultiDeckTests {
 
     @Test("Multi-deck limit enforcement")
     func multiDeckLimitEnforcement() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
-        let deck1 = self.createTestDeck(context: context)
-        let deck2 = self.createTestDeck(context: context)
+        let deck1 = createTestDeck(context: context)
+        let deck2 = createTestDeck(context: context)
 
         // Add many cards to both decks (more than default limit)
         for _ in 1 ... 15 {
-            _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck1)
+            _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck1)
         }
         for _ in 1 ... 15 {
-            _ = self.createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck2)
+            _ = createTestFlashcard(context: context, stateEnum: FlashcardState.learning.rawValue, dueOffset: -3600, deck: deck2)
         }
 
         let viewModel = StudySessionViewModel(

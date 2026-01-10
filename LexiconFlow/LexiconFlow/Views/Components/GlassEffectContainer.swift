@@ -46,8 +46,8 @@ struct GlassEffectContainer<Content: View>: View {
     // MARK: - Body
 
     var body: some View {
-        self.content
-            .glassEffect(self.thickness)
+        content
+            .glassEffect(thickness)
             .drawingGroup() // Cache rendering for performance
     }
 
@@ -119,7 +119,7 @@ struct GlassEffectPerformance {
     ///
     /// **Note:** Uses inclusive comparison (<=) because exactly 16.6ms = 60fps IS acceptable
     var isAcceptable: Bool {
-        self.fps >= 60 && self.frameTime <= 16.6
+        fps >= 60 && frameTime <= 16.6
     }
 
     /// Measure performance of a view

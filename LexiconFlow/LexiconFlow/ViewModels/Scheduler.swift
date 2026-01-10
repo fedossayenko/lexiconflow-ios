@@ -83,11 +83,11 @@ final class Scheduler {
         let effectiveLimit = limit ?? AppSettings.studyLimit
         switch mode {
         case .scheduled:
-            return self.fetchDueCards(for: deck, limit: effectiveLimit)
+            return fetchDueCards(for: deck, limit: effectiveLimit)
         case .learning:
-            return self.fetchNewCards(for: deck, limit: effectiveLimit)
+            return fetchNewCards(for: deck, limit: effectiveLimit)
         case .cram:
-            return self.fetchCramCards(for: deck, limit: effectiveLimit)
+            return fetchCramCards(for: deck, limit: effectiveLimit)
         }
     }
 
@@ -101,18 +101,18 @@ final class Scheduler {
     func fetchCards(for decks: [Deck], mode: StudyMode = .scheduled, limit: Int? = nil) -> [Flashcard] {
         // Early return: no decks selected
         guard !decks.isEmpty else {
-            self.logger.info("No decks selected, returning empty card list")
+            logger.info("No decks selected, returning empty card list")
             return []
         }
 
         let effectiveLimit = limit ?? AppSettings.studyLimit
         switch mode {
         case .scheduled:
-            return self.fetchDueCards(for: decks, limit: effectiveLimit)
+            return fetchDueCards(for: decks, limit: effectiveLimit)
         case .learning:
-            return self.fetchNewCards(for: decks, limit: effectiveLimit)
+            return fetchNewCards(for: decks, limit: effectiveLimit)
         case .cram:
-            return self.fetchCramCards(for: decks, limit: effectiveLimit)
+            return fetchCramCards(for: decks, limit: effectiveLimit)
         }
     }
 
@@ -159,7 +159,7 @@ final class Scheduler {
             return Array(cards.prefix(limit))
         } catch {
             Analytics.trackError("fetch_due_cards", error: error)
-            self.logger.error("Error fetching due cards: \(error)")
+            logger.error("Error fetching due cards: \(error)")
             return []
         }
     }
@@ -205,7 +205,7 @@ final class Scheduler {
             return Array(sorted.prefix(limit))
         } catch {
             Analytics.trackError("fetch_new_cards", error: error)
-            self.logger.error("Error fetching new cards: \(error)")
+            logger.error("Error fetching new cards: \(error)")
             return []
         }
     }
@@ -227,10 +227,10 @@ final class Scheduler {
         )
 
         do {
-            return try self.modelContext.fetchCount(stateDescriptor)
+            return try modelContext.fetchCount(stateDescriptor)
         } catch {
             Analytics.trackError("due_card_count", error: error)
-            self.logger.error("Error counting due cards: \(error)")
+            logger.error("Error counting due cards: \(error)")
             return 0
         }
     }
@@ -248,10 +248,10 @@ final class Scheduler {
         )
 
         do {
-            return try self.modelContext.fetchCount(stateDescriptor)
+            return try modelContext.fetchCount(stateDescriptor)
         } catch {
             Analytics.trackError("new_card_count", error: error)
-            self.logger.error("Error counting new cards: \(error)")
+            logger.error("Error counting new cards: \(error)")
             return 0
         }
     }
@@ -296,7 +296,7 @@ final class Scheduler {
 
         } catch {
             Analytics.trackError("deck_statistics_fetch", error: error)
-            self.logger.error("Error fetching deck statistics: \(error)")
+            logger.error("Error fetching deck statistics: \(error)")
             return DeckStatistics(due: 0, new: 0, total: 0)
         }
     }
@@ -354,7 +354,7 @@ final class Scheduler {
 
         } catch {
             Analytics.trackError("deck_statistics_batch_fetch", error: error)
-            self.logger.error("Error fetching batch deck statistics: \(error)")
+            logger.error("Error fetching batch deck statistics: \(error)")
 
             // Return zero stats for all decks on error
             var errorResults: [UUID: DeckStatistics] = [:]
@@ -370,7 +370,7 @@ final class Scheduler {
     /// - Parameter deck: The deck to count cards for
     /// - Returns: Number of cards currently due for review in the deck
     func dueCardCount(for deck: Deck) -> Int {
-        self.fetchDeckStatistics(for: deck).due
+        fetchDeckStatistics(for: deck).due
     }
 
     /// Count new cards for a specific deck
@@ -378,7 +378,7 @@ final class Scheduler {
     /// - Parameter deck: The deck to count cards for
     /// - Returns: Number of new cards awaiting initial review in the deck
     func newCardCount(for deck: Deck) -> Int {
-        self.fetchDeckStatistics(for: deck).new
+        fetchDeckStatistics(for: deck).new
     }
 
     /// Count total cards for a specific deck
@@ -386,7 +386,7 @@ final class Scheduler {
     /// - Parameter deck: The deck to count cards for
     /// - Returns: Total number of cards in the deck
     func totalCardCount(for deck: Deck) -> Int {
-        self.fetchDeckStatistics(for: deck).total
+        fetchDeckStatistics(for: deck).total
     }
 
     /// Fetch cards for cram (practice) mode from a single deck
@@ -425,7 +425,7 @@ final class Scheduler {
             return cards.randomSample(limit)
         } catch {
             Analytics.trackError("fetch_cram_cards", error: error)
-            self.logger.error("Error fetching cram cards: \(error)")
+            logger.error("Error fetching cram cards: \(error)")
             return []
         }
     }
@@ -472,7 +472,7 @@ final class Scheduler {
             return Array(cards.prefix(limit))
         } catch {
             Analytics.trackError("fetch_due_cards_multi", error: error)
-            self.logger.error("Error fetching due cards for multiple decks: \(error)")
+            logger.error("Error fetching due cards for multiple decks: \(error)")
             return []
         }
     }
@@ -515,7 +515,7 @@ final class Scheduler {
             return Array(sorted.prefix(limit))
         } catch {
             Analytics.trackError("fetch_new_cards_multi", error: error)
-            self.logger.error("Error fetching new cards for multiple decks: \(error)")
+            logger.error("Error fetching new cards for multiple decks: \(error)")
             return []
         }
     }
@@ -556,7 +556,7 @@ final class Scheduler {
             return cards.randomSample(limit)
         } catch {
             Analytics.trackError("fetch_cram_cards_multi", error: error)
-            self.logger.error("Error fetching cram cards for multiple decks: \(error)")
+            logger.error("Error fetching cram cards for multiple decks: \(error)")
             return []
         }
     }
@@ -588,7 +588,7 @@ final class Scheduler {
             })
         } catch {
             Analytics.trackError("due_card_count_multi", error: error)
-            self.logger.error("Error counting due cards for multiple decks: \(error)")
+            logger.error("Error counting due cards for multiple decks: \(error)")
             return 0
         }
     }
@@ -617,7 +617,7 @@ final class Scheduler {
             })
         } catch {
             Analytics.trackError("new_card_count_multi", error: error)
-            self.logger.error("Error counting new cards for multiple decks: \(error)")
+            logger.error("Error counting new cards for multiple decks: \(error)")
             return 0
         }
     }
@@ -644,7 +644,7 @@ final class Scheduler {
             })
         } catch {
             Analytics.trackError("total_card_count_multi", error: error)
-            self.logger.error("Error counting total cards for multiple decks: \(error)")
+            logger.error("Error counting total cards for multiple decks: \(error)")
             return 0
         }
     }
@@ -676,7 +676,7 @@ final class Scheduler {
 
         // Validate: flashcard must have FSRSState
         guard flashcard.fsrsState != nil else {
-            self.logger.error("Cannot process review: FSRSState is nil for \(flashcard.word)")
+            logger.error("Cannot process review: FSRSState is nil for \(flashcard.word)")
             return nil
         }
 
@@ -695,11 +695,11 @@ final class Scheduler {
             )
             log.card = flashcard
             log.studySession = studySession
-            self.modelContext.insert(log)
+            modelContext.insert(log)
 
             // CRITICAL: Propagate save errors instead of silent failure
             do {
-                try self.modelContext.save()
+                try modelContext.save()
                 // Invalidate statistics cache after review
                 StatisticsService.shared.invalidateCache()
                 return log
@@ -708,7 +708,7 @@ final class Scheduler {
                     "rating": "\(rating)",
                     "card": flashcard.word
                 ])
-                self.logger.error("Failed to save cram review: \(error)")
+                logger.error("Failed to save cram review: \(error)")
                 // In production: show user alert
                 return nil
             }
@@ -724,7 +724,7 @@ final class Scheduler {
             )
 
             // Apply the DTO updates to our SwiftData model
-            self.applyFSRSResult(result, to: flashcard, at: now, rating: rating)
+            applyFSRSResult(result, to: flashcard, at: now, rating: rating)
 
             // Create review log
             let log = FlashcardReview(
@@ -735,10 +735,10 @@ final class Scheduler {
             )
             log.card = flashcard
             log.studySession = studySession
-            self.modelContext.insert(log)
+            modelContext.insert(log)
 
             // Save changes
-            try self.modelContext.save()
+            try modelContext.save()
 
             // Invalidate statistics cache after review
             StatisticsService.shared.invalidateCache()
@@ -756,7 +756,7 @@ final class Scheduler {
                 "rating": "\(rating)",
                 "card": flashcard.word
             ])
-            self.logger.error("Error processing review: \(error)")
+            logger.error("Error processing review: \(error)")
             return nil
         }
     }
@@ -786,7 +786,7 @@ final class Scheduler {
                 dueDate: result.dueDate,
                 stateEnum: result.stateEnum
             )
-            self.modelContext.insert(state)
+            modelContext.insert(state)
             flashcard.fsrsState = state
         }
 
@@ -841,7 +841,7 @@ final class Scheduler {
                 state.lastReviewDate = nil // Reset last review on forget
             }
 
-            try self.modelContext.save()
+            try modelContext.save()
 
             Analytics.trackEvent("card_reset", metadata: [
                 "card": flashcard.word
@@ -852,7 +852,7 @@ final class Scheduler {
             Analytics.trackError("reset_card", error: error, metadata: [
                 "card": flashcard.word
             ])
-            self.logger.error("Failed to save reset: \(error)")
+            logger.error("Failed to save reset: \(error)")
             return false
         }
     }
@@ -876,7 +876,7 @@ extension Array {
     /// ```
     func randomSample(_ k: Int) -> [Element] {
         guard k > 0 else { return [] }
-        guard k < count else { return self.shuffled() }
+        guard k < count else { return shuffled() }
 
         var result = Array(prefix(k))
         result.reserveCapacity(k)

@@ -58,7 +58,7 @@ struct GlassEffectContainerTests {
     /// Helper to create glass container with specific thickness
     private func createContainer(thickness: GlassThickness) -> some View {
         GlassEffectContainer(thickness: thickness) {
-            self.createTestContent()
+            createTestContent()
         }
     }
 
@@ -118,7 +118,7 @@ struct GlassEffectContainerTests {
     @Test("GlassEffectContainer applies glassEffect modifier")
     func containerAppliesGlassEffect() {
         let container = GlassEffectContainer(thickness: .thin) {
-            self.createTestContent()
+            createTestContent()
         }
         // Verify .glassEffect(thickness) is applied to content
         // This creates the frosted glass visual effect
@@ -127,7 +127,7 @@ struct GlassEffectContainerTests {
     @Test("GlassEffectContainer applies drawingGroup modifier")
     func containerAppliesDrawingGroup() {
         let container = GlassEffectContainer(thickness: .regular) {
-            self.createTestContent()
+            createTestContent()
         }
         // Verify .drawingGroup() is applied after glassEffect
         // This caches rendering on GPU for performance
@@ -138,28 +138,28 @@ struct GlassEffectContainerTests {
         // Correct order: content.glassEffect().drawingGroup()
         // Incorrect order would produce different visual result
         let container = GlassEffectContainer(thickness: .thick) {
-            self.createTestContent()
+            createTestContent()
         }
         // drawingGroup() must be outermost for GPU cache to work
     }
 
     @Test("GlassEffectContainer with thin thickness")
     func containerWithThinThickness() {
-        let container = self.createContainer(thickness: .thin)
+        let container = createContainer(thickness: .thin)
         // Thin glass should have subtle blur and shadow
         // Used for delicate UI elements
     }
 
     @Test("GlassEffectContainer with regular thickness")
     func containerWithRegularThickness() {
-        let container = self.createContainer(thickness: .regular)
+        let container = createContainer(thickness: .regular)
         // Regular glass is default for most UI elements
         // Balances visibility and performance
     }
 
     @Test("GlassEffectContainer with thick thickness")
     func containerWithThickThickness() {
-        let container = self.createContainer(thickness: .thick)
+        let container = createContainer(thickness: .thick)
         // Thick glass has prominent blur and shadow
         // Used for emphasis and important content
     }
@@ -457,9 +457,9 @@ struct GlassEffectContainerTests {
 
     @Test("GlassEffectContainer multiple instances")
     func containerMultipleInstances() {
-        let container1 = self.createContainer(thickness: .thin)
-        let container2 = self.createContainer(thickness: .regular)
-        let container3 = self.createContainer(thickness: .thick)
+        let container1 = createContainer(thickness: .thin)
+        let container2 = createContainer(thickness: .regular)
+        let container3 = createContainer(thickness: .thick)
         // Multiple instances should be independent
     }
 

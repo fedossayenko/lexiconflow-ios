@@ -88,8 +88,8 @@ actor QuickTranslationService {
 
         /// Human-readable status message for UI
         var statusMessage: String {
-            if self.isCacheHit {
-                "Cached • expires \(self.cacheExpirationDate?.formatted(date: .abbreviated, time: .omitted) ?? "soon")"
+            if isCacheHit {
+                "Cached • expires \(cacheExpirationDate?.formatted(date: .abbreviated, time: .omitted) ?? "soon")"
             } else {
                 "Fresh translation"
             }

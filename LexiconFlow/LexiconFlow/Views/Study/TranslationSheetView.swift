@@ -39,12 +39,12 @@ struct TranslationSheetView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if self.isTranslating {
-                    self.loadingView
-                } else if let result = self.translationResult {
-                    self.resultView(result)
+                if isTranslating {
+                    loadingView
+                } else if let result = translationResult {
+                    resultView(result)
                 } else {
-                    self.errorView
+                    errorView
                 }
             }
             .navigationTitle("Quick Translation")
@@ -70,7 +70,7 @@ struct TranslationSheetView: View {
                 .font(.headline)
                 .foregroundStyle(.secondary)
 
-            Text(self.flashcard.word)
+            Text(flashcard.word)
                 .font(.title2)
                 .fontWeight(.semibold)
 
@@ -78,7 +78,7 @@ struct TranslationSheetView: View {
         }
         .padding()
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Translating \(self.flashcard.word)")
+        .accessibilityLabel("Translating \(flashcard.word)")
     }
 
     // MARK: - Result View
@@ -97,21 +97,21 @@ struct TranslationSheetView: View {
                         .foregroundStyle(.secondary)
                         .accessibilityHidden(true)
 
-                    Text(self.flashcard.word)
+                    Text(flashcard.word)
                         .font(.system(size: 36, weight: .bold, design: .rounded))
                         .multilineTextAlignment(.center)
-                        .accessibilityLabel("Source word: \(self.flashcard.word)")
+                        .accessibilityLabel("Source word: \(flashcard.word)")
                 }
 
                 // Language badges with arrow
                 HStack(spacing: 12) {
-                    self.languageBadge(result.sourceLanguage)
+                    languageBadge(result.sourceLanguage)
 
                     Image(systemName: "arrow.right")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
 
-                    self.languageBadge(result.targetLanguage)
+                    languageBadge(result.targetLanguage)
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("From \(result.sourceLanguage) to \(result.targetLanguage)")

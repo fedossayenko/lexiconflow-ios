@@ -560,35 +560,7 @@ Use string literals instead of enum raw values in `#Predicate`:
 ### 11. Timezone-Aware Date Math
 Use `DateMath.elapsedDays()` for calendar-aware calculations (handles DST, timezone boundaries)
 
-### 12. Safe View Initialization Pattern
-Use `@State` with lazy initialization instead of `@StateObject` with force unwrap:
-```swift
-// ❌ AVOID: Force unwrap in init
-struct MyView: View {
-    @StateObject private var viewModel = ViewModel(modelContext: ModelContext(try! container))
-}
-
-// ✅ CORRECT: Lazy initialization with @State
-struct MyView: View {
-    @State private var viewModel: ViewModel?
-
-    var body: some View {
-        Group {
-            if let viewModel = viewModel {
-                // content
-            }
-        }
-        .task {
-            if viewModel == nil {
-                viewModel = ViewModel(modelContext: modelContext)
-            }
-        }
-    }
-}
-```
-**Rationale**: Prevents app crashes if ModelContainer fails, follows iOS 26 best practices.
-
-### 13. Reactive Updates with @Query
+### 12. Reactive Updates with @Query
 Use `@Query` for automatic SwiftData updates instead of manual refresh:
 ```swift
 // ❌ AVOID: Manual refresh with .onAppear
@@ -612,7 +584,7 @@ struct MyView: View {
 ```
 **Rationale**: @Query automatically tracks SwiftData changes and updates the view.
 
-### 14. Error Handling with User Alerts
+### 13. Error Handling with User Alerts
 Always show errors to users with Analytics tracking:
 ```swift
 struct MyView: View {
@@ -640,7 +612,7 @@ struct MyView: View {
 ```
 **Rationale**: Silent failures create poor UX. Users need to know when operations fail.
 
-### 15. CoreHaptics with UIKit Fallback Pattern
+### 14. CoreHaptics with UIKit Fallback Pattern
 **Use CoreHaptics for custom haptic patterns with graceful UIKit fallback:**
 ```swift
 // HapticService.swift
@@ -678,7 +650,7 @@ class HapticService {
 
 **Rationale**: CoreHaptics enables "Liquid Glass" haptic design with custom temporal patterns, while UIKit fallback ensures compatibility.
 
-### 16. Matched Geometry Effect Pattern
+### 15. Matched Geometry Effect Pattern
 
 **Use `@Namespace` and `matchedGeometryEffect` for smooth element transitions:**
 
@@ -734,7 +706,7 @@ struct CardFrontViewMatched: View {
 
 **Performance**: Transitions complete in < 300ms on iPhone 12+
 
-### 17. Progress Ring Pattern (GlassEffectUnion)
+### 16. Glass Effects: Progress Ring Pattern
 
 **Use circular progress rings with "Liquid Glass" styling for visual feedback:**
 
@@ -768,7 +740,7 @@ Image(systemName: deck.icon)
     .glassEffectUnion(progress: progress, thickness: .regular)
 ```
 
-### 18. Interactive Glass Effect Pattern
+### 17. Interactive Glass Effect Pattern
 
 **Use `InteractiveGlassModifier` for gesture-driven visual feedback:**
 
@@ -834,7 +806,7 @@ CardContent()
     )
 ```
 
-### 19. GlassEffectContainer Pattern
+### 18. GlassEffectContainer Pattern
 
 **Use `GlassEffectContainer` for performance-optimized glass effects:**
 
@@ -890,7 +862,7 @@ let opacity = baseOpacity * config.opacityMultiplier
 - `AppSettings.glassEffectIntensity: Double` - Intensity slider (0.0 to 1.0)
 - Settings available in Appearance Settings
 
-### 20. Audio Session Lifecycle Pattern
+### 19. Audio Session Lifecycle Pattern
 
 **Manage AVAudioSession lifecycle to prevent error 4099:**
 
@@ -925,7 +897,7 @@ var body: some Scene {
 
 **Rationale**: Prevents audio session errors during app lifecycle transitions.
 
-### 21. TTS Timing Options Pattern
+### 20. TTS Timing Options Pattern
 
 **Use `AppSettings.TTSTiming` enum for flexible pronunciation playback:**
 
@@ -991,7 +963,7 @@ private func migrateTTSTiming() {
 
 **Rationale**: Enum provides more flexibility than boolean toggle, supporting multiple auto-play strategies.
 
-### 22. Statistics Data Aggregation Pattern
+### 21. Statistics Data Aggregation Pattern
 
 **Description:** Pre-aggregates daily study metrics to avoid expensive queries during dashboard viewing.
 
@@ -1036,7 +1008,7 @@ class StatisticsService {
 }
 ```
 
-### 23. Review History Filtering and Export Pattern
+### 22. Review History Filtering and Export Pattern
 
 **Description:** View, filter, sort, and export `FlashcardReview` records.
 
@@ -1074,7 +1046,7 @@ class ReviewHistoryService {
 }
 ```
 
-### 24. Gesture Sensitivity Configuration Pattern
+### 23. Gesture Sensitivity Configuration Pattern
 
 **Description:** Users can customize swipe distance required to trigger review actions.
 
@@ -1102,7 +1074,7 @@ if abs(translation.width) > threshold {
 }
 ```
 
-### 25. Quick Translation (Tap-to-Translate) Pattern
+### 24. Translation Services: Quick Translation Pattern
 
 **Description:** Instant on-device translation for selected text via context menu.
 

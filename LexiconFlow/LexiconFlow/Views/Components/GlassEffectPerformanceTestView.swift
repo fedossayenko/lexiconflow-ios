@@ -60,13 +60,13 @@
 
                 VStack(spacing: 0) {
                     // Metrics header
-                    self.metricsHeader
+                    metricsHeader
 
                     // Scrollable content with glass elements
                     ScrollView {
                         VStack(spacing: 12) {
-                            ForEach(0 ..< self.elementCount, id: \.self) { index in
-                                self.glassCard(for: index)
+                            ForEach(0 ..< elementCount, id: \.self) { index in
+                                glassCard(for: index)
                             }
                         }
                         .padding()
@@ -74,11 +74,11 @@
                 }
             }
             .onAppear {
-                self.startFPSMonitoring()
-                self.startBatteryMonitoring()
+                startFPSMonitoring()
+                startBatteryMonitoring()
             }
             .onDisappear {
-                self.stopFPSMonitoring()
+                stopFPSMonitoring()
             }
         }
 
@@ -88,25 +88,25 @@
             VStack(spacing: 12) {
                 HStack(spacing: 20) {
                     // FPS counter
-                    self.metricCard(
+                    metricCard(
                         title: "FPS",
-                        value: String(format: "%.0f", self.currentFPS),
-                        subtitle: self.frameTimeTarget,
-                        color: self.fpsColor
+                        value: String(format: "%.0f", currentFPS),
+                        subtitle: frameTimeTarget,
+                        color: fpsColor
                     )
 
                     // Frame time
-                    self.metricCard(
+                    metricCard(
                         title: "Frame Time",
-                        value: String(format: "%.1fms", self.frameTime),
+                        value: String(format: "%.1fms", frameTime),
                         subtitle: "per frame",
-                        color: self.frameTimeColor
+                        color: frameTimeColor
                     )
 
                     // Element count
-                    self.metricCard(
+                    metricCard(
                         title: "Elements",
-                        value: "\(self.elementCount)",
+                        value: "\(elementCount)",
                         subtitle: "glass cards",
                         color: .blue
                     )
@@ -114,7 +114,7 @@
                 .padding()
 
                 // Battery indicator
-                self.batteryIndicator
+                batteryIndicator
                     .padding(.horizontal)
             }
             .background(.ultraThinMaterial)
@@ -148,17 +148,17 @@
         /// Battery indicator
         private var batteryIndicator: some View {
             HStack(spacing: 8) {
-                Image(systemName: self.batteryIcon)
-                    .foregroundStyle(self.batteryColor)
+                Image(systemName: batteryIcon)
+                    .foregroundStyle(batteryColor)
 
-                Text("\(Int(self.batteryLevel * 100))%")
+                Text("\(Int(batteryLevel * 100))%")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
                 Text("•")
                     .foregroundStyle(.tertiary)
 
-                Text(self.batteryStateText)
+                Text(batteryStateText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -182,14 +182,14 @@
                     Text("Glass Card \(index + 1)")
                         .font(.headline)
 
-                    Text(self.thicknessName(for: thickness))
+                    Text(thicknessName(for: thickness))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
                 Spacer()
 
-                Image(systemName: self.iconName(for: thickness))
+                Image(systemName: iconName(for: thickness))
                     .foregroundStyle(.blue)
             }
             .padding()
@@ -201,7 +201,7 @@
         // MARK: - Supporting Properties
 
         private var frameTimeTarget: String {
-            switch self.currentFPS {
+            switch currentFPS {
             case 110...: "<9.1ms (120fps)"
             case 55...: "<16.6ms (60fps)"
             default: "<33.3ms (30fps)"
@@ -209,7 +209,7 @@
         }
 
         private var fpsColor: Color {
-            switch self.currentFPS {
+            switch currentFPS {
             case 55...: .green
             case 45 ..< 55: .yellow
             default: .red
@@ -217,7 +217,7 @@
         }
 
         private var frameTimeColor: Color {
-            switch self.frameTime {
+            switch frameTime {
             case 0 ..< 16.6: .green
             case 16.6 ..< 33.3: .yellow
             default: .red
@@ -225,8 +225,8 @@
         }
 
         private var batteryIcon: String {
-            let percentage = self.batteryLevel * 100
-            if self.batteryState == .charging {
+            let percentage = batteryLevel * 100
+            if batteryState == .charging {
                 return "battery.charging.fill"
             }
             switch percentage {
@@ -239,7 +239,7 @@
         }
 
         private var batteryColor: Color {
-            switch self.batteryLevel {
+            switch batteryLevel {
             case 0.5...: .green
             case 0.2 ..< 0.5: .yellow
             default: .red
@@ -247,7 +247,7 @@
         }
 
         private var batteryStateText: String {
-            switch self.batteryState {
+            switch batteryState {
             case .charging: "Charging"
             case .full: "Full"
             case .unplugged: "On Battery"
@@ -275,18 +275,18 @@
 
         /// Starts FPS monitoring
         private func startFPSMonitoring() {
-            guard !self.isMonitoring else { return }
-            self.isMonitoring = true
+            guard !isMonitoring else { return }
+            isMonitoring = true
 
             // Create timer-based FPS monitoring
-            Timer.scheduledTimer(withTimeInterval: self.fpsUpdateInterval, repeats: true) { _ in
-                self.updateFPSDisplay()
+            Timer.scheduledTimer(withTimeInterval: fpsUpdateInterval, repeats: true) { _ in
+                updateFPSDisplay()
             }
         }
 
         /// Stops FPS monitoring
         private func stopFPSMonitoring() {
-            self.isMonitoring = false
+            isMonitoring = false
         }
 
         /// Updates FPS display with simulated values
@@ -295,8 +295,8 @@
             // Simulate FPS for demonstration
             // In production, use Xcode Instruments → Core Animation
             let randomVariation = Double.random(in: -2 ... 2)
-            self.currentFPS = max(30, min(120, 60 + randomVariation))
-            self.frameTime = 1000 / self.currentFPS
+            currentFPS = max(30, min(120, 60 + randomVariation))
+            frameTime = 1000 / currentFPS
         }
 
         // MARK: - Battery Monitoring
@@ -306,7 +306,7 @@
             UIDevice.current.isBatteryMonitoringEnabled = true
 
             // Update battery state
-            self.updateBatteryState()
+            updateBatteryState()
 
             // Subscribe to battery state changes
             NotificationCenter.default.addObserver(
@@ -314,7 +314,7 @@
                 object: nil,
                 queue: .main
             ) { _ in
-                self.updateBatteryState()
+                updateBatteryState()
             }
 
             NotificationCenter.default.addObserver(
@@ -322,14 +322,14 @@
                 object: nil,
                 queue: .main
             ) { _ in
-                self.updateBatteryState()
+                updateBatteryState()
             }
         }
 
         /// Updates battery state from device
         private func updateBatteryState() {
-            self.batteryLevel = UIDevice.current.batteryLevel
-            self.batteryState = UIDevice.current.batteryState
+            batteryLevel = UIDevice.current.batteryLevel
+            batteryState = UIDevice.current.batteryState
         }
     }
 

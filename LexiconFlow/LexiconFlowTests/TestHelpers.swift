@@ -90,6 +90,6 @@ enum TestContainers {
     /// Creates a fresh context for a test
     /// Caller should call clearAll() before use to ensure isolation
     static func freshContext() -> ModelContext {
-        ModelContext(self.shared)
+        ModelContext(shared)
     }
 }

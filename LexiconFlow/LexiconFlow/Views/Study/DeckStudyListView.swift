@@ -18,20 +18,20 @@ struct DeckStudyListView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if self.decks.isEmpty {
-                    self.emptyStateView
+                if decks.isEmpty {
+                    emptyStateView
                 } else {
-                    self.deckList
+                    deckList
                 }
             }
             .navigationTitle("Decks")
             .task {
-                self.isLoading = true
-                await self.refreshDeckStats()
-                self.isLoading = false
+                isLoading = true
+                await refreshDeckStats()
+                isLoading = false
             }
             .overlay {
-                if self.isLoading {
+                if isLoading {
                     ProgressView("Loading statistics...")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(.ultraThinMaterial)
@@ -56,11 +56,11 @@ struct DeckStudyListView: View {
     private var deckList: some View {
         ScrollView {
             LazyVStack(spacing: 16) {
-                ForEach(self.decks) { deck in
+                ForEach(decks) { deck in
                     NavigationLink(value: deck) {
                         DeckStudyRow(
                             deck: deck,
-                            stats: self.deckStats[deck.id] ?? DeckStudyStats()
+                            stats: deckStats[deck.id] ?? DeckStudyStats()
                         )
                     }
                     .buttonStyle(.plain)
@@ -76,12 +76,12 @@ struct DeckStudyListView: View {
     private func refreshDeckStats() async {
         let scheduler = Scheduler(modelContext: modelContext)
 
-        for deck in self.decks {
+        for deck in decks {
             let newCount = scheduler.newCardCount(for: deck)
             let dueCount = scheduler.dueCardCount(for: deck)
             let totalCount = scheduler.totalCardCount(for: deck)
 
-            self.deckStats[deck.id] = DeckStudyStats(
+            deckStats[deck.id] = DeckStudyStats(
                 newCount: newCount,
                 dueCount: dueCount,
                 totalCount: totalCount
@@ -100,8 +100,8 @@ struct DeckStudyRow: View {
 
     /// Calculate progress ratio (due/total), clamped to 0-1
     private var progressRatio: Double {
-        guard self.stats.totalCount > 0 else { return 0 }
-        return min(max(Double(self.stats.dueCount) / Double(self.stats.totalCount), 0), 1)
+        guard stats.totalCount > 0 else { return 0 }
+        return min(max(Double(stats.dueCount) / Double(stats.totalCount), 0), 1)
     }
 
     // MARK: - Body
@@ -109,38 +109,38 @@ struct DeckStudyRow: View {
     var body: some View {
         HStack(spacing: 16) {
             // Deck icon with progress ring (UNIFIED)
-            Image(systemName: self.deck.icon ?? "folder.fill")
+            Image(systemName: deck.icon ?? "folder.fill")
                 .font(.system(size: 28))
                 .foregroundStyle(.blue)
                 .glassEffectUnion(
-                    progress: self.progressRatio,
+                    progress: progressRatio,
                     thickness: .regular,
                     iconSize: 50
                 )
-                .accessibilityLabel("Deck: \(self.deck.name)")
-                .accessibilityValue("\(self.stats.dueCount) of \(self.stats.totalCount) cards due")
+                .accessibilityLabel("Deck: \(deck.name)")
+                .accessibilityValue("\(stats.dueCount) of \(stats.totalCount) cards due")
 
             // Deck info
             VStack(alignment: .leading, spacing: 4) {
-                Text(self.deck.name)
+                Text(deck.name)
                     .font(.headline)
                     .foregroundStyle(.primary)
 
                 HStack(spacing: 12) {
-                    Label("\(self.stats.newCount) new", systemImage: "plus.circle.fill")
+                    Label("\(stats.newCount) new", systemImage: "plus.circle.fill")
                         .font(.caption)
                         .foregroundStyle(.green)
 
-                    Label("\(self.stats.dueCount) due", systemImage: "clock.fill")
+                    Label("\(stats.dueCount) due", systemImage: "clock.fill")
                         .font(.caption)
-                        .foregroundStyle(self.stats.dueCount > 0 ? .orange : .secondary)
+                        .foregroundStyle(stats.dueCount > 0 ? .orange : .secondary)
                 }
             }
 
             Spacer()
 
             // Total count badge (reduced emphasis since progress is now visual)
-            Text("\(self.stats.totalCount)")
+            Text("\(stats.totalCount)")
                 .font(.title2)
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
@@ -149,9 +149,9 @@ struct DeckStudyRow: View {
         .background(.ultraThinMaterial, in: .rect(cornerRadius: 12))
         .contentShape(.rect(cornerRadius: 12))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Deck: \(self.deck.name)")
+        .accessibilityLabel("Deck: \(deck.name)")
         .accessibilityHint("Tap to view deck details")
-        .accessibilityValue("\(self.stats.totalCount) cards, \(self.stats.newCount) new, \(self.stats.dueCount) due")
+        .accessibilityValue("\(stats.totalCount) cards, \(stats.newCount) new, \(stats.dueCount) due")
     }
 }
 

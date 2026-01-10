@@ -28,18 +28,18 @@ struct StudyStreakCalendarView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header with streak info
-            self.headerView
+            headerView
 
-            if self.data.calendarData.isEmpty {
+            if data.calendarData.isEmpty {
                 // Empty state
-                self.emptyView
+                emptyView
             } else {
                 // Calendar heatmap
-                self.calendarView
+                calendarView
             }
 
             // Legend
-            self.legendView
+            legendView
         }
         .padding()
         .background(Color(.systemBackground))
@@ -47,7 +47,7 @@ struct StudyStreakCalendarView: View {
         .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Study calendar heatmap")
-        .accessibilityHint(self.calendarAccessibilityHint)
+        .accessibilityHint(calendarAccessibilityHint)
     }
 
     // MARK: - Header View
@@ -61,11 +61,11 @@ struct StudyStreakCalendarView: View {
             Spacer()
 
             // Current streak badge
-            if self.data.currentStreak > 0 {
+            if data.currentStreak > 0 {
                 HStack(spacing: 4) {
                     Image(systemName: "flame.fill")
                         .foregroundStyle(.orange)
-                    Text("\(self.data.currentStreak)")
+                    Text("\(data.currentStreak)")
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundStyle(.orange)
@@ -74,7 +74,7 @@ struct StudyStreakCalendarView: View {
                 .padding(.vertical, 4)
                 .background(Color.orange.opacity(0.1))
                 .cornerRadius(8)
-                .accessibilityLabel("Current streak \(self.data.currentStreak) days")
+                .accessibilityLabel("Current streak \(data.currentStreak) days")
             }
         }
     }
@@ -84,11 +84,11 @@ struct StudyStreakCalendarView: View {
     private var calendarView: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Day labels
-            self.dayLabelsView
+            dayLabelsView
 
             // Heatmap grid
             ScrollView(.horizontal, showsIndicators: false) {
-                self.heatmapGrid
+                heatmapGrid
             }
         }
     }
@@ -96,15 +96,15 @@ struct StudyStreakCalendarView: View {
     // MARK: - Day Labels
 
     private var dayLabelsView: some View {
-        HStack(spacing: self.cellSpacing) {
+        HStack(spacing: cellSpacing) {
             Text("")
-                .frame(width: self.cellSize)
+                .frame(width: cellSize)
 
-            ForEach(self.dayLabels, id: \.self) { label in
+            ForEach(dayLabels, id: \.self) { label in
                 Text(label)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .frame(width: self.cellSize)
+                    .frame(width: cellSize)
             }
 
             Spacer()
@@ -119,30 +119,30 @@ struct StudyStreakCalendarView: View {
     // MARK: - Heatmap Grid
 
     private var heatmapGrid: some View {
-        HStack(alignment: .top, spacing: self.cellSpacing) {
+        HStack(alignment: .top, spacing: cellSpacing) {
             // Month labels (left side)
-            VStack(alignment: .trailing, spacing: self.cellSpacing) {
-                ForEach(self.monthLabels, id: \.self) { label in
+            VStack(alignment: .trailing, spacing: cellSpacing) {
+                ForEach(monthLabels, id: \.self) { label in
                     Text(label)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                        .frame(height: self.cellSize)
+                        .frame(height: cellSize)
                 }
             }
 
             // Weeks grid
-            ForEach(self.weekIndices, id: \.self) { weekIndex in
-                VStack(spacing: self.cellSpacing) {
+            ForEach(weekIndices, id: \.self) { weekIndex in
+                VStack(spacing: cellSpacing) {
                     ForEach(0 ..< 7) { dayIndex in
-                        let date = self.dateFor(week: weekIndex, day: dayIndex)
-                        let studyTime = self.data.calendarData[date]
+                        let date = dateFor(week: weekIndex, day: dayIndex)
+                        let studyTime = data.calendarData[date]
 
                         DayCell(
                             date: date,
                             studyTime: studyTime,
-                            size: self.cellSize,
-                            isToday: self.isToday(date),
-                            isInStreak: self.isInCurrentStreak(date)
+                            size: cellSize,
+                            isToday: isToday(date),
+                            isInStreak: isInCurrentStreak(date)
                         )
                     }
                 }
@@ -158,7 +158,7 @@ struct StudyStreakCalendarView: View {
 
         // Start from weeksToShow weeks ago
         let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)) ?? today
-        let endDate = calendar.date(byAdding: .day, value: -(self.weeksToShow * 7), to: startOfWeek) ?? today
+        let endDate = calendar.date(byAdding: .day, value: -(weeksToShow * 7), to: startOfWeek) ?? today
 
         // Calculate week offset
         let weeks = Int(DateMath.elapsedDays(from: endDate, to: startOfWeek) / 7.0)
@@ -173,8 +173,8 @@ struct StudyStreakCalendarView: View {
         var lastMonth = -1
 
         // Generate month labels for each week
-        for weekIndex in self.weekIndices {
-            let date = self.dateFor(week: weekIndex, day: 0)
+        for weekIndex in weekIndices {
+            let date = dateFor(week: weekIndex, day: 0)
             let month = calendar.component(.month, from: date)
 
             if month != lastMonth {
@@ -198,10 +198,10 @@ struct StudyStreakCalendarView: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 
-            ForEach(self.legendLevels, id: \.self) { level in
+            ForEach(legendLevels, id: \.self) { level in
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(self.colorForLevel(level))
-                    .frame(width: self.cellSize, height: self.cellSize)
+                    .fill(colorForLevel(level))
+                    .frame(width: cellSize, height: cellSize)
             }
 
             Text("More")
@@ -229,7 +229,7 @@ struct StudyStreakCalendarView: View {
         let firstOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)) ?? today
 
         // Calculate offset: week 0 = oldest week
-        let totalWeeks = self.weekIndices.count
+        let totalWeeks = weekIndices.count
         let weekOffset = (totalWeeks - 1 - week) * 7
 
         // Add day offset (0 = Sunday, 1 = Monday, etc.)
@@ -248,12 +248,12 @@ struct StudyStreakCalendarView: View {
     /// **Why this logic?**: Current streak counts backward from today,
     /// so any day within currentStreak days from today is part of the streak.
     private func isInCurrentStreak(_ date: Date) -> Bool {
-        guard self.data.currentStreak > 0 else { return false }
+        guard data.currentStreak > 0 else { return false }
 
         let calendar = Calendar.autoupdatingCurrent
         let today = Date()
 
-        for dayOffset in 0 ..< self.data.currentStreak {
+        for dayOffset in 0 ..< data.currentStreak {
             let streakDate = calendar.date(byAdding: .day, value: -dayOffset, to: today) ?? today
             if DateMath.isSameDay(date, streakDate) {
                 return true
@@ -291,8 +291,8 @@ struct StudyStreakCalendarView: View {
 
     /// Accessibility hint describing calendar activity
     private var calendarAccessibilityHint: String {
-        let activeDays = self.data.activeDays
-        let streak = self.data.currentStreak
+        let activeDays = data.activeDays
+        let streak = data.currentStreak
 
         if activeDays == 0 {
             return "No study activity recorded yet"
@@ -334,24 +334,24 @@ private struct DayCell: View {
     var body: some View {
         // Use optional binding instead of force unwrap
         let hasActivity = (studyTime ?? 0) > 0
-        let level = hasActivity ? self.activityLevel(for: self.studyTime ?? 0) : 0
+        let level = hasActivity ? activityLevel(for: studyTime ?? 0) : 0
 
         RoundedRectangle(cornerRadius: 2)
-            .fill(self.colorForLevel(level))
+            .fill(colorForLevel(level))
             .overlay(
                 // Streak highlight border
                 RoundedRectangle(cornerRadius: 2)
-                    .stroke(Color.orange, lineWidth: self.isInStreak ? 2 : 0)
+                    .stroke(Color.orange, lineWidth: isInStreak ? 2 : 0)
             )
             .overlay(
                 // Today indicator
                 RoundedRectangle(cornerRadius: 2)
-                    .stroke(Color.blue, lineWidth: self.isToday ? 2 : 0)
+                    .stroke(Color.blue, lineWidth: isToday ? 2 : 0)
             )
-            .frame(width: self.size, height: self.size)
+            .frame(width: size, height: size)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(self.accessibilityLabel)
-            .accessibilityHint(self.accessibilityHint)
+            .accessibilityLabel(accessibilityLabel)
+            .accessibilityHint(accessibilityHint)
     }
 
     /// Activity level (0-4) based on study time
@@ -381,7 +381,7 @@ private struct DayCell: View {
     private var accessibilityLabel: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d, yyyy"
-        let dateString = formatter.string(from: self.date)
+        let dateString = formatter.string(from: date)
 
         if let time = studyTime, time > 0 {
             let minutes = Int(time / 60.0)
@@ -393,11 +393,11 @@ private struct DayCell: View {
 
     /// Accessibility hint for day cell
     private var accessibilityHint: String {
-        if self.isToday, self.isInStreak {
+        if isToday, isInStreak {
             "Today, part of current streak"
-        } else if self.isToday {
+        } else if isToday {
             "Today"
-        } else if self.isInStreak {
+        } else if isInStreak {
             "Part of current streak"
         } else {
             ""

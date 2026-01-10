@@ -63,15 +63,15 @@ final class StatisticsViewModel: ObservableObject {
     ///   - timeRange: Initial time range selection (defaults to AppSettings)
     init(modelContext: ModelContext, timeRange: StatisticsTimeRange? = nil) {
         self.modelContext = modelContext
-        self.statisticsService = StatisticsService.shared
+        statisticsService = StatisticsService.shared
 
         // Use provided time range or load from AppSettings
         if let timeRange {
-            self.selectedTimeRange = timeRange
+            selectedTimeRange = timeRange
         } else {
             // Load from AppSettings (convert string to enum)
             let savedRange = AppSettings.statisticsTimeRange
-            self.selectedTimeRange = StatisticsTimeRange(rawValue: savedRange) ?? .sevenDays
+            selectedTimeRange = StatisticsTimeRange(rawValue: savedRange) ?? .sevenDays
         }
 
         // swiftformat:disable:next redundantSelf
@@ -92,16 +92,16 @@ final class StatisticsViewModel: ObservableObject {
     /// **Concurrency**: Creates background contexts for thread-safe parallel SwiftData access
     /// **Usage**: Call on view appear and after time range changes
     func refresh() async {
-        self.isLoading = true
-        self.errorMessage = nil
+        isLoading = true
+        errorMessage = nil
 
         // swiftformat:disable:next redundantSelf
         logger.debug("Refreshing statistics for time range: \(self.selectedTimeRange.displayName)")
 
         // Create three background ModelContext instances for parallel queries
         // SwiftData requires separate contexts for concurrent access
-        let container = self.modelContext.container
-        let timeRange = self.selectedTimeRange
+        let container = modelContext.container
+        let timeRange = selectedTimeRange
 
         // Parallel execution: All three calculations run concurrently
         // Performance: Maximum time instead of sum (500ms → 150ms for 3 calculations)
@@ -135,18 +135,18 @@ final class StatisticsViewModel: ObservableObject {
         let fsrsResult = await fsrsTask.value
 
         // Update published properties on main actor after all results arrive
-        self.retentionData = retentionResult
-        self.streakData = streakResult
-        self.fsrsMetrics = fsrsResult
+        retentionData = retentionResult
+        streakData = streakResult
+        fsrsMetrics = fsrsResult
 
-        self.logger.info("""
+        logger.info("""
         Statistics refreshed:
         - Retention: \(retentionResult.formattedPercentage)
         - Streak: \(streakResult.currentStreak) days
         - FSRS: \(fsrsResult.formattedStability) avg stability
         """)
 
-        self.isLoading = false
+        isLoading = false
     }
 
     /// Change the selected time range and refresh data
@@ -155,23 +155,23 @@ final class StatisticsViewModel: ObservableObject {
     ///
     /// **Side Effect**: Updates AppSettings.statisticsTimeRange for persistence
     func changeTimeRange(_ timeRange: StatisticsTimeRange) async {
-        guard self.selectedTimeRange != timeRange else { return }
+        guard selectedTimeRange != timeRange else { return }
 
         // swiftformat:disable:next redundantSelf
         logger.info("Changing time range from \(self.selectedTimeRange.displayName) to \(timeRange.displayName)")
 
-        self.selectedTimeRange = timeRange
+        selectedTimeRange = timeRange
 
         // Persist to AppSettings
         AppSettings.statisticsTimeRange = timeRange.rawValue
 
         // Refresh data with new time range
-        await self.refresh()
+        await refresh()
     }
 
     /// Clear error message (user dismissed error)
     func clearError() {
-        self.errorMessage = nil
+        errorMessage = nil
     }
 }
 
@@ -180,7 +180,7 @@ final class StatisticsViewModel: ObservableObject {
 extension StatisticsViewModel {
     /// Whether there is any data to display
     var hasData: Bool {
-        self.retentionData != nil || self.streakData != nil || self.fsrsMetrics != nil
+        retentionData != nil || streakData != nil || fsrsMetrics != nil
     }
 
     /// Whether dashboard is in empty state (no study activity)

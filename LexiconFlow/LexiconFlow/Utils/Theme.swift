@@ -196,12 +196,12 @@ enum Theme {
     ///   - style: The badge style (compact or standard)
     /// - Returns: A tuple of (color, opacity) for badge styling
     static func cefrBadgeStyle(for level: String, style: BadgeStyle = .standard) -> (color: Color, opacity: Double) {
-        let color = self.cefrColor(for: level)
+        let color = cefrColor(for: level)
         let opacity: Double = switch style {
         case .compact:
-            self.cefrBadgeOpacity(for: level) * 0.8 // Slightly lighter for compact
+            cefrBadgeOpacity(for: level) * 0.8 // Slightly lighter for compact
         case .standard:
-            self.cefrBadgeOpacity(for: level)
+            cefrBadgeOpacity(for: level)
         }
 
         return (color, opacity)
@@ -263,7 +263,7 @@ enum Theme {
     /// - Returns: A view builder function that creates the badge
     @ViewBuilder
     static func cefrBadge(level: String, compact: Bool = false) -> some View {
-        let style = self.cefrBadgeStyle(for: level, style: compact ? .compact : .standard)
+        let style = cefrBadgeStyle(for: level, style: compact ? .compact : .standard)
 
         HStack(spacing: compact ? 4 : 6) {
             if !compact {
@@ -278,7 +278,7 @@ enum Theme {
         .padding(.vertical, compact ? 2 : 4)
         .background(style.color.opacity(style.opacity))
         .foregroundStyle(style.color)
-        .cornerRadius(compact ? self.cornerRadiusSmall : self.cornerRadiusMedium)
+        .cornerRadius(compact ? cornerRadiusSmall : cornerRadiusMedium)
     }
 }
 

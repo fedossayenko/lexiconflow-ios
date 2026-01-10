@@ -45,7 +45,7 @@ final class ProductionAnalyticsBackend: AnalyticsBackend {
             let metadataString = metadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
             logMessage = "Event: \(name) [\(metadataString)]"
         }
-        self.logger.info("\(logMessage)")
+        logger.info("\(logMessage)")
     }
 
     func trackError(_ name: String, error: Error, metadata: [String: String] = [:]) {
@@ -55,7 +55,7 @@ final class ProductionAnalyticsBackend: AnalyticsBackend {
         fullMetadata["error_type"] = String(describing: type(of: error))
 
         let metadataString = fullMetadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
-        self.logger.error("❌ Error: \(name) [\(metadataString)]")
+        logger.error("❌ Error: \(name) [\(metadataString)]")
     }
 
     func trackIssue(_ name: String, message: String, metadata: [String: String] = [:]) {
@@ -63,16 +63,16 @@ final class ProductionAnalyticsBackend: AnalyticsBackend {
         fullMetadata["message"] = message
 
         let metadataString = fullMetadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
-        self.logger.warning("⚠️ Issue: \(name) [\(metadataString)]")
+        logger.warning("⚠️ Issue: \(name) [\(metadataString)]")
     }
 
     func setUserId(_ userId: String) {
-        self.logger.info("Set User ID: \(userId)")
+        logger.info("Set User ID: \(userId)")
     }
 
     func setUserProperties(_ properties: [String: Any]) {
         let propertyString = properties.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
-        self.logger.info("Set User Properties: [\(propertyString)]")
+        logger.info("Set User Properties: [\(propertyString)]")
     }
 
     func trackPerformance(_ name: String, duration: TimeInterval, metadata: [String: String] = [:]) {
@@ -80,7 +80,7 @@ final class ProductionAnalyticsBackend: AnalyticsBackend {
         fullMetadata["duration_ms"] = String(format: "%.2f", duration * 1000)
 
         let metadataString = fullMetadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
-        self.logger.info("⏱ Performance: \(name) [\(metadataString)]")
+        logger.info("⏱ Performance: \(name) [\(metadataString)]")
     }
 }
 
@@ -95,68 +95,68 @@ final class MockAnalyticsBackend: AnalyticsBackend, @unchecked Sendable {
     /// All recorded analytics events
     /// Thread-safe access via lock
     var events: [AnalyticsEvent] {
-        self.lock.lock()
+        lock.lock()
         defer { lock.unlock() }
-        return self._events
+        return _events
     }
 
     /// Thread-safe accessor for test verification
     /// Safe because lock protects access to _events
     func getEvents() -> [AnalyticsEvent] {
-        self.lock.lock()
+        lock.lock()
         defer { lock.unlock() }
-        return self._events
+        return _events
     }
 
     func trackEvent(_ name: String, metadata: [String: String] = [:]) {
-        self.record(AnalyticsEvent.event(name, metadata))
+        record(AnalyticsEvent.event(name, metadata))
     }
 
     func trackError(_ name: String, error: Error, metadata: [String: String] = [:]) {
         var fullMetadata = metadata
         fullMetadata["error_description"] = error.localizedDescription
         fullMetadata["error_type"] = String(describing: type(of: error))
-        self.record(AnalyticsEvent.error(name, fullMetadata))
+        record(AnalyticsEvent.error(name, fullMetadata))
     }
 
     func trackIssue(_ name: String, message: String, metadata: [String: String] = [:]) {
         var fullMetadata = metadata
         fullMetadata["message"] = message
-        self.record(AnalyticsEvent.issue(name, fullMetadata))
+        record(AnalyticsEvent.issue(name, fullMetadata))
     }
 
     func setUserId(_ userId: String) {
-        self.record(AnalyticsEvent.setUserId(userId))
+        record(AnalyticsEvent.setUserId(userId))
     }
 
     func setUserProperties(_ properties: [String: Any]) {
-        self.record(AnalyticsEvent.setUserProperties(properties))
+        record(AnalyticsEvent.setUserProperties(properties))
     }
 
     func trackPerformance(_ name: String, duration: TimeInterval, metadata: [String: String] = [:]) {
         var fullMetadata = metadata
         fullMetadata["duration_ms"] = String(format: "%.2f", duration * 1000)
-        self.record(AnalyticsEvent.performance(name, duration, fullMetadata))
+        record(AnalyticsEvent.performance(name, duration, fullMetadata))
     }
 
     /// Clear all recorded events
     func clear() {
-        self.lock.lock()
+        lock.lock()
         defer { lock.unlock() }
-        self._events.removeAll()
+        _events.removeAll()
     }
 
     private func record(_ event: AnalyticsEvent) {
-        self.lock.lock()
+        lock.lock()
         defer { lock.unlock() }
-        self._events.append(event)
+        _events.append(event)
     }
 
     // MARK: - Verification Helpers
 
     /// Check if a specific event was recorded
     func didTrackEvent(_ name: String) -> Bool {
-        self.events.contains { event in
+        events.contains { event in
             if case let .event(eventName, _) = event {
                 return eventName == name
             }
@@ -166,7 +166,7 @@ final class MockAnalyticsBackend: AnalyticsBackend, @unchecked Sendable {
 
     /// Check if a specific error was recorded
     func didTrackError(_ name: String) -> Bool {
-        self.events.contains { event in
+        events.contains { event in
             if case let .error(errorName, _) = event {
                 return errorName == name
             }
@@ -176,7 +176,7 @@ final class MockAnalyticsBackend: AnalyticsBackend, @unchecked Sendable {
 
     /// Get count of recorded events
     func eventCount(for name: String) -> Int {
-        self.events.count(where: { event in
+        events.count(where: { event in
             if case let .event(eventName, _) = event {
                 return eventName == name
             }

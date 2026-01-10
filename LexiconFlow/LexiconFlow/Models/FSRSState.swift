@@ -81,8 +81,8 @@ final class FSRSState {
 
     /// Computed property for type-safe state enum access
     var state: FlashcardState {
-        get { FlashcardState(rawValue: self.stateEnum) ?? .new }
-        set { self.stateEnum = newValue.rawValue }
+        get { FlashcardState(rawValue: stateEnum) ?? .new }
+        set { stateEnum = newValue.rawValue }
     }
 
     /// Initialize with default values for a new card

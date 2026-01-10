@@ -84,12 +84,12 @@ final class DictionaryImporter {
         let isComplete: Bool
 
         var percentage: Double {
-            guard self.totalCount > 0 else { return 0 }
-            return Double(self.completedCount) / Double(self.totalCount)
+            guard totalCount > 0 else { return 0 }
+            return Double(completedCount) / Double(totalCount)
         }
 
         var percentageText: String {
-            "\(Int(self.percentage * 100))%"
+            "\(Int(percentage * 100))%"
         }
     }
 
@@ -101,11 +101,11 @@ final class DictionaryImporter {
         let errors: [ImportError]
         let duration: TimeInterval
 
-        var successCount: Int { self.imported }
-        var errorCount: Int { self.failed }
+        var successCount: Int { imported }
+        var errorCount: Int { failed }
 
         var isSuccess: Bool {
-            self.failed == 0 || self.imported > 0
+            failed == 0 || imported > 0
         }
     }
 
@@ -119,9 +119,9 @@ final class DictionaryImporter {
 
         var localizedDescription: String {
             if let fieldName {
-                "Line \(self.lineNumber): \(fieldName) - \(self.reason)"
+                "Line \(lineNumber): \(fieldName) - \(reason)"
             } else {
-                "Line \(self.lineNumber): \(self.reason)"
+                "Line \(lineNumber): \(reason)"
             }
         }
     }
@@ -149,8 +149,8 @@ final class DictionaryImporter {
 
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
-        self.dataImporter = DataImporter(modelContext: modelContext)
-        self.logger.info("DictionaryImporter initialized")
+        dataImporter = DataImporter(modelContext: modelContext)
+        logger.info("DictionaryImporter initialized")
     }
 
     // MARK: - Format Detection
@@ -265,9 +265,9 @@ final class DictionaryImporter {
     func detectFormat(from url: URL) -> ImportFormat? {
         // Validate URL first (security) - log errors but continue for best-effort detection
         do {
-            try self.validateFileURL(url)
+            try validateFileURL(url)
         } catch {
-            self.logger.error("File URL validation failed: \(error.localizedDescription)")
+            logger.error("File URL validation failed: \(error.localizedDescription)")
             // Continue with detection - user may have selected file outside sandbox
         }
 
@@ -275,7 +275,7 @@ final class DictionaryImporter {
         if let pathExtension = url.pathExtension.lowercased() as String? {
             for format in ImportFormat.allCases {
                 if format.fileExtensions.contains(pathExtension) {
-                    self.logger.info("Detected format '\(format.rawValue)' from file extension")
+                    logger.info("Detected format '\(format.rawValue)' from file extension")
                     return format
                 }
             }
@@ -286,19 +286,19 @@ final class DictionaryImporter {
         do {
             data = try Data(contentsOf: url, options: .mappedIfSafe)
         } catch {
-            self.logger.warning("Unable to read file content for format detection: \(error.localizedDescription)")
+            logger.warning("Unable to read file content for format detection: \(error.localizedDescription)")
             return nil
         }
 
         guard let preview = String(data: data.prefix(2048), encoding: .utf8) else {
-            self.logger.warning("Unable to decode file content as UTF-8")
+            logger.warning("Unable to decode file content as UTF-8")
             return nil
         }
 
         // JSON detection
         let trimmed = preview.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.hasPrefix("{") || trimmed.hasPrefix("[") {
-            self.logger.info("Detected JSON format from content")
+            logger.info("Detected JSON format from content")
             return .json
         }
 
@@ -311,19 +311,19 @@ final class DictionaryImporter {
             let pipeCount = firstLine.count(where: { $0 == "|" })
 
             if commaCount > 0, commaCount >= max(tabCount, pipeCount) {
-                self.logger.info("Detected CSV format from content (comma-delimited)")
+                logger.info("Detected CSV format from content (comma-delimited)")
                 return .csv
             } else if tabCount > 0, tabCount >= max(commaCount, pipeCount) {
-                self.logger.info("Detected CSV format from content (tab-delimited)")
+                logger.info("Detected CSV format from content (tab-delimited)")
                 return .csv
             } else if pipeCount > 0 {
-                self.logger.info("Detected CSV format from content (pipe-delimited)")
+                logger.info("Detected CSV format from content (pipe-delimited)")
                 return .csv
             }
         }
 
         // Default to TXT
-        self.logger.info("Defaulting to TXT format")
+        logger.info("Defaulting to TXT format")
         return .txt
     }
 
@@ -344,15 +344,15 @@ final class DictionaryImporter {
         fieldMapping: FieldMappingConfiguration,
         limit: Int = 10
     ) async throws -> [ParsedFlashcard] {
-        self.logger.info("Previewing import from '\(url.lastPathComponent)' with format '\(format.rawValue)'")
+        logger.info("Previewing import from '\(url.lastPathComponent)' with format '\(format.rawValue)'")
 
         switch format {
         case .csv:
-            return try await self.parseCSV(url, fieldMapping: fieldMapping, limit: limit)
+            return try await parseCSV(url, fieldMapping: fieldMapping, limit: limit)
         case .json:
-            return try await self.parseJSON(url, limit: limit)
+            return try await parseJSON(url, limit: limit)
         case .txt:
-            return try await self.parseTXT(url, fieldMapping: fieldMapping, limit: limit)
+            return try await parseTXT(url, fieldMapping: fieldMapping, limit: limit)
         }
     }
 
@@ -370,7 +370,7 @@ final class DictionaryImporter {
         format: ImportFormat,
         limit: Int = 10
     ) async throws -> [ParsedFlashcard] {
-        try await self.previewImport(url, format: format, fieldMapping: .default, limit: limit)
+        try await previewImport(url, format: format, fieldMapping: .default, limit: limit)
     }
 
     // MARK: - Import
@@ -393,17 +393,17 @@ final class DictionaryImporter {
         progressHandler: @escaping @Sendable (ImportProgress) -> Void
     ) async throws -> ImportResult {
         let startTime = Date()
-        self.logger.info("Starting import from '\(url.lastPathComponent)' with format '\(format.rawValue)'")
+        logger.info("Starting import from '\(url.lastPathComponent)' with format '\(format.rawValue)'")
 
         // Parse all cards
-        let allCards = try await self.previewImport(url, format: format, fieldMapping: fieldMapping, limit: Int.max)
+        let allCards = try await previewImport(url, format: format, fieldMapping: fieldMapping, limit: Int.max)
 
         guard !allCards.isEmpty else {
-            self.logger.warning("No cards to import")
+            logger.warning("No cards to import")
             return ImportResult(imported: 0, skipped: 0, failed: 0, errors: [], duration: 0)
         }
 
-        self.logger.info("Parsed \(allCards.count) cards from file")
+        logger.info("Parsed \(allCards.count) cards from file")
 
         // Transform to FlashcardData format
         let cardData: [FlashcardData] = allCards.map { card in
@@ -417,7 +417,7 @@ final class DictionaryImporter {
         }
 
         // Import using DataImporter (500 cards per batch)
-        let result = await self.dataImporter.importCards(
+        let result = await dataImporter.importCards(
             cardData,
             into: deck,
             batchSize: 500,
@@ -433,7 +433,7 @@ final class DictionaryImporter {
         )
 
         let duration = Date().timeIntervalSince(startTime)
-        self.logger.info("""
+        logger.info("""
         Import complete:
         - Imported: \(result.importedCount)
         - Skipped: \(result.skippedCount)
@@ -473,7 +473,7 @@ final class DictionaryImporter {
         into deck: Deck?,
         progressHandler: @escaping @Sendable (ImportProgress) -> Void
     ) async throws -> ImportResult {
-        try await self.importDictionary(url, format: format, fieldMapping: .default, into: deck, progressHandler: progressHandler)
+        try await importDictionary(url, format: format, fieldMapping: .default, into: deck, progressHandler: progressHandler)
     }
 
     // MARK: - Parsers
@@ -567,7 +567,7 @@ final class DictionaryImporter {
             guard index < limit else { break }
 
             let lineNumber = startIndex + index + 1
-            let fields = self.parseCSVLine(String(line)).map { $0.trimmingCharacters(in: .whitespaces) }
+            let fields = parseCSVLine(String(line)).map { $0.trimmingCharacters(in: .whitespaces) }
 
             guard fields.count > max(fieldMapping.wordFieldIndex, fieldMapping.definitionFieldIndex) else {
                 errors.append(ImportError(
@@ -625,7 +625,7 @@ final class DictionaryImporter {
         }
 
         if !errors.isEmpty {
-            self.logger.warning("Encountered \(errors.count) errors during CSV parsing")
+            logger.warning("Encountered \(errors.count) errors during CSV parsing")
         }
 
         return cards
@@ -701,8 +701,8 @@ final class DictionaryImporter {
                 guard index < limit else { break }
 
                 // Sanitize strings (remove control characters and null bytes)
-                let sanitizedWord = self.sanitizeString(card.word)
-                let sanitizedDef = self.sanitizeString(card.definition)
+                let sanitizedWord = sanitizeString(card.word)
+                let sanitizedDef = sanitizeString(card.definition)
 
                 // Validate required fields
                 guard !sanitizedWord.isEmpty else {
@@ -798,7 +798,7 @@ extension CodingKey {
             return intValue
         }
         // Try to parse string value as integer
-        if let strValue = self.stringValue as String?, let intVal = Int(strValue) {
+        if let strValue = stringValue as String?, let intVal = Int(strValue) {
             return intVal
         }
         return nil

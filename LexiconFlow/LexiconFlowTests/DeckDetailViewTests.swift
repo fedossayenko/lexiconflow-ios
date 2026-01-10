@@ -53,10 +53,10 @@ struct DeckDetailViewTests {
 
     @Test("DeckDetailView can be created with deck")
     func deckDetailViewCreation() {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
-        let deck = self.createTestDeck(in: context, name: "Test Deck")
+        let deck = createTestDeck(in: context, name: "Test Deck")
         _ = DeckDetailView(deck: deck)
 
         // Verify view can be created with deck
@@ -65,10 +65,10 @@ struct DeckDetailViewTests {
 
     @Test("DeckDetailView uses Bindable for deck")
     func deckDetailViewUsesBindable() {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
-        let deck = self.createTestDeck(in: context, name: "Bindable Deck")
+        let deck = createTestDeck(in: context, name: "Bindable Deck")
         _ = DeckDetailView(deck: deck)
 
         // Verify @Bindable is used for deck mutations
@@ -79,10 +79,10 @@ struct DeckDetailViewTests {
 
     @Test("Navigation title shows deck name")
     func navigationTitleShowsDeckName() {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
-        let deck = self.createTestDeck(in: context, name: "My Vocabulary Deck")
+        let deck = createTestDeck(in: context, name: "My Vocabulary Deck")
         _ = DeckDetailView(deck: deck)
 
         // Verify navigation title is deck.name
@@ -93,10 +93,10 @@ struct DeckDetailViewTests {
 
     @Test("Empty deck shows ContentUnavailableView")
     func emptyDeckShowsEmptyState() async throws {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
-        let deck = self.createTestDeck(in: context, name: "Empty Deck")
+        let deck = createTestDeck(in: context, name: "Empty Deck")
         try context.save()
 
         _ = DeckDetailView(deck: deck)
@@ -127,12 +127,12 @@ struct DeckDetailViewTests {
 
     @Test("Cards are displayed in list")
     func cardsDisplayedInList() async throws {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
-        let deck = self.createTestDeck(in: context, name: "Test Deck")
-        _ = self.createTestCard(in: context, word: "Hello", deck: deck)
-        _ = self.createTestCard(in: context, word: "World", deck: deck)
+        let deck = createTestDeck(in: context, name: "Test Deck")
+        _ = createTestCard(in: context, word: "Hello", deck: deck)
+        _ = createTestCard(in: context, word: "World", deck: deck)
 
         try context.save()
 
@@ -168,13 +168,13 @@ struct DeckDetailViewTests {
 
     @Test("Section header shows card count")
     func sectionHeaderShowsCount() async throws {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
-        let deck = self.createTestDeck(in: context, name: "Count Test")
-        self.createTestCard(in: context, word: "Card1", deck: deck)
-        self.createTestCard(in: context, word: "Card2", deck: deck)
-        self.createTestCard(in: context, word: "Card3", deck: deck)
+        let deck = createTestDeck(in: context, name: "Count Test")
+        createTestCard(in: context, word: "Card1", deck: deck)
+        createTestCard(in: context, word: "Card2", deck: deck)
+        createTestCard(in: context, word: "Card3", deck: deck)
 
         try context.save()
 
@@ -186,13 +186,13 @@ struct DeckDetailViewTests {
 
     @Test("Delete cards at valid offsets")
     func deleteCardsAtValidOffsets() async throws {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
-        let deck = self.createTestDeck(in: context, name: "Delete Test")
-        _ = self.createTestCard(in: context, word: "Keep", deck: deck)
-        let card2 = self.createTestCard(in: context, word: "Delete", deck: deck)
-        _ = self.createTestCard(in: context, word: "Keep", deck: deck)
+        let deck = createTestDeck(in: context, name: "Delete Test")
+        _ = createTestCard(in: context, word: "Keep", deck: deck)
+        let card2 = createTestCard(in: context, word: "Delete", deck: deck)
+        _ = createTestCard(in: context, word: "Keep", deck: deck)
 
         try context.save()
 
@@ -209,11 +209,11 @@ struct DeckDetailViewTests {
 
     @Test("Delete handles out of bounds offsets")
     func deleteHandlesOutOfBounds() async throws {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
-        let deck = self.createTestDeck(in: context, name: "Bounds Test")
-        self.createTestCard(in: context, word: "Card1", deck: deck)
+        let deck = createTestDeck(in: context, name: "Bounds Test")
+        createTestCard(in: context, word: "Card1", deck: deck)
 
         try context.save()
 
@@ -246,11 +246,11 @@ struct DeckDetailViewTests {
 
     @Test("Cards belong to deck")
     func cardsBelongToDeck() async throws {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
-        let deck = self.createTestDeck(in: context, name: "Relationship Test")
-        let card = self.createTestCard(in: context, word: "Belong", deck: deck)
+        let deck = createTestDeck(in: context, name: "Relationship Test")
+        let card = createTestCard(in: context, word: "Belong", deck: deck)
 
         try context.save()
 
@@ -260,14 +260,14 @@ struct DeckDetailViewTests {
 
     @Test("Multiple decks have separate cards")
     func multipleDeckSeparateCards() async throws {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
-        let deck1 = self.createTestDeck(in: context, name: "Deck 1")
-        let deck2 = self.createTestDeck(in: context, name: "Deck 2")
+        let deck1 = createTestDeck(in: context, name: "Deck 1")
+        let deck2 = createTestDeck(in: context, name: "Deck 2")
 
-        let card1 = self.createTestCard(in: context, word: "Card1", deck: deck1)
-        let card2 = self.createTestCard(in: context, word: "Card2", deck: deck2)
+        let card1 = createTestCard(in: context, word: "Card1", deck: deck1)
+        let card2 = createTestCard(in: context, word: "Card2", deck: deck2)
 
         try context.save()
 
@@ -281,11 +281,11 @@ struct DeckDetailViewTests {
 
     @Test("View creation with single card doesn't crash")
     func viewCreationWithSingleCard() async throws {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
-        let deck = self.createTestDeck(in: context, name: "Single Card")
-        self.createTestCard(in: context, word: "Only", deck: deck)
+        let deck = createTestDeck(in: context, name: "Single Card")
+        createTestCard(in: context, word: "Only", deck: deck)
 
         try context.save()
 
@@ -296,14 +296,14 @@ struct DeckDetailViewTests {
 
     @Test("View creation with many cards doesn't crash")
     func viewCreationWithManyCards() async throws {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
-        let deck = self.createTestDeck(in: context, name: "Many Cards")
+        let deck = createTestDeck(in: context, name: "Many Cards")
 
         // Create 100 cards
         for i in 0 ..< 100 {
-            self.createTestCard(in: context, word: "Card\(i)", deck: deck)
+            createTestCard(in: context, word: "Card\(i)", deck: deck)
         }
 
         try context.save()
@@ -315,11 +315,11 @@ struct DeckDetailViewTests {
 
     @Test("Deck with special characters in name")
     func deckWithSpecialCharacters() async throws {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
-        let deck = self.createTestDeck(in: context, name: "日本語 🇯🇵Deck")
-        self.createTestCard(in: context, word: "Test", deck: deck)
+        let deck = createTestDeck(in: context, name: "日本語 🇯🇵Deck")
+        createTestCard(in: context, word: "Test", deck: deck)
 
         try context.save()
 
@@ -331,11 +331,11 @@ struct DeckDetailViewTests {
 
     @Test("Deck with very long name")
     func deckWithVeryLongName() async throws {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
         let longName = String(repeating: "A", count: 1000)
-        let deck = self.createTestDeck(in: context, name: longName)
+        let deck = createTestDeck(in: context, name: longName)
 
         try context.save()
 
@@ -347,10 +347,10 @@ struct DeckDetailViewTests {
 
     @Test("Card with empty definition")
     func cardWithEmptyDefinition() async throws {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
-        let deck = self.createTestDeck(in: context, name: "Empty Def Test")
+        let deck = createTestDeck(in: context, name: "Empty Def Test")
         let card = Flashcard(word: "Test", definition: "", phonetic: nil)
         card.deck = deck
         context.insert(card)
@@ -365,10 +365,10 @@ struct DeckDetailViewTests {
 
     @Test("Card with very long definition")
     func cardWithVeryLongDefinition() async throws {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
-        let deck = self.createTestDeck(in: context, name: "Long Def Test")
+        let deck = createTestDeck(in: context, name: "Long Def Test")
         let longDefinition = String(repeating: "Definition text. ", count: 100)
         let card = Flashcard(word: "Test", definition: longDefinition, phonetic: nil)
         card.deck = deck

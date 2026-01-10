@@ -47,13 +47,13 @@ struct ReviewHistoryListView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Filter picker header
-            self.filterPickerHeader
+            filterPickerHeader
 
             // Review list or empty state
-            if self.reviews.isEmpty {
-                self.emptyStateView
+            if reviews.isEmpty {
+                emptyStateView
             } else {
-                self.reviewList
+                reviewList
             }
         }
     }
@@ -64,15 +64,15 @@ struct ReviewHistoryListView: View {
     private var filterPickerHeader: some View {
         HStack {
             // Filter picker
-            Picker("Time Range", selection: self.$selectedFilter) {
+            Picker("Time Range", selection: $selectedFilter) {
                 ForEach(ReviewHistoryFilter.allCases, id: \.self) { filter in
                     Label(filter.displayName, systemImage: filter.icon)
                         .tag(filter)
                 }
             }
             .pickerStyle(.segmented)
-            .onChange(of: self.selectedFilter) { _, newValue in
-                self.onFilterChange(newValue)
+            .onChange(of: selectedFilter) { _, newValue in
+                onFilterChange(newValue)
 
                 // Haptic feedback for filter change
                 if AppSettings.hapticEnabled {
@@ -108,7 +108,7 @@ struct ReviewHistoryListView: View {
     private var reviewList: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
-                ForEach(self.reviews) { review in
+                ForEach(reviews) { review in
                     ReviewHistoryRow(review: review)
                 }
             }
@@ -125,11 +125,11 @@ struct ReviewHistoryListView: View {
         ContentUnavailableView {
             Label("No Reviews", systemImage: "calendar.badge.exclamationmark")
         } description: {
-            Text("No reviews found for \(self.selectedFilter.displayName.lowercased())")
+            Text("No reviews found for \(selectedFilter.displayName.lowercased())")
         } actions: {
             Button("Show All Time") {
-                self.selectedFilter = .allTime
-                self.onFilterChange(.allTime)
+                selectedFilter = .allTime
+                onFilterChange(.allTime)
             }
             .buttonStyle(.borderedProminent)
             .accessibilityLabel("Show All Time reviews")

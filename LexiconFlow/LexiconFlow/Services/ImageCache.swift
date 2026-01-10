@@ -42,13 +42,13 @@ final class ImageCache {
     /// Private initializer for singleton pattern
     private init() {
         // Configure cache limits
-        self.cache.countLimit = 100 // Maximum 100 cached images
-        self.cache.totalCostLimit = 50 * 1024 * 1024 // 50MB memory limit
+        cache.countLimit = 100 // Maximum 100 cached images
+        cache.totalCostLimit = 50 * 1024 * 1024 // 50MB memory limit
 
         // Respond to memory warnings automatically (block-based API)
         // Note: Swift 6 requires explicit @MainActor isolation for the callback
         // Using unowned self since ImageCache is a singleton that never deallocates
-        self.observerToken = NotificationCenter.default.addObserver(
+        observerToken = NotificationCenter.default.addObserver(
             forName: UIApplication.didReceiveMemoryWarningNotification,
             object: nil,
             queue: .main
@@ -83,7 +83,7 @@ final class ImageCache {
     /// - Parameter data: Image data to decode/cache
     /// - Returns: Cached or newly decoded UIImage, or nil if decode fails
     func image(for data: Data) -> UIImage? {
-        let key = self.cacheKey(for: data) as NSString
+        let key = cacheKey(for: data) as NSString
 
         // Cache hit - return immediately
         if let cached = cache.object(forKey: key) {
@@ -94,7 +94,7 @@ final class ImageCache {
         guard let image = UIImage(data: data) else { return nil }
 
         // Add to cache with cost (image data size in bytes)
-        self.cache.setObject(image, forKey: key, cost: data.count)
+        cache.setObject(image, forKey: key, cost: data.count)
 
         return image
     }
@@ -103,7 +103,7 @@ final class ImageCache {
     ///
     /// **Usage:** Call on memory warning or when user explicitly clears cache
     func clearCache() {
-        self.cache.removeAllObjects()
+        cache.removeAllObjects()
     }
 
     /// Returns the current cache size

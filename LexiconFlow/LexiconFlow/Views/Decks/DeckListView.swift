@@ -36,7 +36,7 @@ struct DeckListView: View {
         var counts: [Deck.ID: Int] = [:]
 
         // PERFORMANCE: Only process states for visible decks
-        let visibleDecks = Set(decks.prefix(self.visibleCount).map(\.id))
+        let visibleDecks = Set(decks.prefix(visibleCount).map(\.id))
 
         // PERFORMANCE: Filter by due date at DATABASE level (most important optimization)
         // This reduces the dataset from all states to only due states (typically 5-20% of total)
@@ -73,41 +73,41 @@ struct DeckListView: View {
     var body: some View {
         NavigationStack {
             List {
-                if self.decks.isEmpty {
+                if decks.isEmpty {
                     ContentUnavailableView {
                         Label("No Decks", systemImage: "book.fill")
                     } description: {
                         Text("Create your first deck to get started")
                     } actions: {
                         Button("Create Deck") {
-                            self.showingAddDeck = true
+                            showingAddDeck = true
                         }
                     }
                 } else {
                     // PERFORMANCE: Use prefix to limit initial rendering
-                    ForEach(self.decks.prefix(self.visibleCount), id: \.id) { deck in
+                    ForEach(decks.prefix(visibleCount), id: \.id) { deck in
                         NavigationLink(destination: DeckDetailView(deck: deck)) {
-                            DeckRowView(deck: deck, dueCount: self.deckDueCounts[deck.id, default: 0])
+                            DeckRowView(deck: deck, dueCount: deckDueCounts[deck.id, default: 0])
                         }
                         // PERFORMANCE: Load more when reaching end of visible list
                         .onAppear {
-                            if deck.id == self.decks.prefix(self.visibleCount).last?.id {
-                                self.loadMoreIfNeeded()
+                            if deck.id == decks.prefix(visibleCount).last?.id {
+                                loadMoreIfNeeded()
                             }
                         }
                     }
-                    .onDelete(perform: self.deleteDecks)
+                    .onDelete(perform: deleteDecks)
                 }
             }
             .navigationTitle("Decks")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    Button(action: { self.showingAddDeck = true }) {
+                    Button(action: { showingAddDeck = true }) {
                         Image(systemName: "plus")
                     }
                 }
             }
-            .sheet(isPresented: self.$showingAddDeck) {
+            .sheet(isPresented: $showingAddDeck) {
                 AddDeckView()
                     .presentationCornerRadius(24)
                     .presentationDragIndicator(.visible)
@@ -123,19 +123,19 @@ struct DeckListView: View {
     /// the last currently-visible deck. This prevents loading all 1000+
     /// decks upfront while maintaining smooth scrolling experience.
     private func loadMoreIfNeeded() {
-        let totalCount = self.decks.count
+        let totalCount = decks.count
         // Don't load more if we're already showing all decks
-        guard self.visibleCount < totalCount else { return }
+        guard visibleCount < totalCount else { return }
 
         // Load 50 more decks (or remaining if less than 50)
-        let increment = min(50, totalCount - self.visibleCount)
-        self.visibleCount += increment
+        let increment = min(50, totalCount - visibleCount)
+        visibleCount += increment
     }
 
     private func deleteDecks(at offsets: IndexSet) {
         for index in offsets {
-            guard index >= 0, index < self.decks.count else { continue }
-            self.modelContext.delete(self.decks[index])
+            guard index >= 0, index < decks.count else { continue }
+            modelContext.delete(decks[index])
         }
         // Invalidate statistics cache after deck deletion
         StatisticsService.shared.invalidateCache()

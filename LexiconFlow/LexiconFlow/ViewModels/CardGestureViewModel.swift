@@ -110,11 +110,11 @@ class CardGestureViewModel: ObservableObject {
     }
 
     /// Convenience accessors for backward compatibility with existing views
-    var offset: CGSize { self.gestureState.offset }
-    var scale: CGFloat { self.gestureState.scale }
-    var rotation: Double { self.gestureState.rotation }
-    var opacity: Double { self.gestureState.opacity }
-    var tintColor: Color { self.gestureState.tintColor }
+    var offset: CGSize { gestureState.offset }
+    var scale: CGFloat { gestureState.scale }
+    var rotation: Double { gestureState.rotation }
+    var opacity: Double { gestureState.opacity }
+    var tintColor: Color { gestureState.tintColor }
 
     // MARK: - Constants (Dynamic)
 
@@ -197,7 +197,7 @@ class CardGestureViewModel: ObservableObject {
         let horizontal = abs(translation.width)
         let vertical = abs(translation.height)
 
-        let constants = self.gestureConstants
+        let constants = gestureConstants
         guard max(horizontal, vertical) >= constants.minimumSwipeDistance else { return .none }
 
         if horizontal >= vertical {
@@ -226,13 +226,13 @@ class CardGestureViewModel: ObservableObject {
     /// - Down (Hard): Orange tint (40%), 5% swelling, 10% darkening
     /// - None: Subtle 5% swelling (drag feedback)
     func updateGestureState(translation: CGSize) {
-        let constants = self.gestureConstants
-        let direction = self.detectDirection(translation: translation)
+        let constants = gestureConstants
+        let direction = detectDirection(translation: translation)
         let distance = max(abs(translation.width), abs(translation.height))
         let progress = min(distance / constants.swipeThreshold, 1.0)
 
         // Build new state (single allocation)
-        var newState = self.gestureState
+        var newState = gestureState
         newState.offset = translation
 
         switch direction {
@@ -269,7 +269,7 @@ class CardGestureViewModel: ObservableObject {
         }
 
         // Single assignment triggers one view refresh
-        self.gestureState = newState
+        gestureState = newState
     }
 
     /// Handles gesture change and returns result for haptic feedback.
@@ -280,14 +280,14 @@ class CardGestureViewModel: ObservableObject {
     /// This method combines direction detection, progress calculation, and state update
     /// into a single call for cleaner view code.
     func handleGestureChange(_ value: DragGesture.Value) -> GestureResult? {
-        let constants = self.gestureConstants
-        let direction = self.detectDirection(translation: value.translation)
+        let constants = gestureConstants
+        let direction = detectDirection(translation: value.translation)
         guard direction != .none else { return nil }
 
         let distance = max(abs(value.translation.width), abs(value.translation.height))
         let progress = min(distance / constants.swipeThreshold, 1.0)
 
-        self.updateGestureState(translation: value.translation)
+        updateGestureState(translation: value.translation)
         return GestureResult(direction: direction, progress: progress)
     }
 
@@ -296,7 +296,7 @@ class CardGestureViewModel: ObservableObject {
     /// **PERFORMANCE**: Single assignment resets all state at once
     /// Called when gesture is cancelled or card snaps back to center.
     func resetGestureState() {
-        self.gestureState = GestureState.initial
+        gestureState = GestureState.initial
     }
 
     /// Checks if translation exceeds swipe threshold.
@@ -304,7 +304,7 @@ class CardGestureViewModel: ObservableObject {
     /// - Parameter translation: Current gesture translation vector
     /// - Returns: True if swipe should be committed
     func shouldCommitSwipe(translation: CGSize) -> Bool {
-        let constants = self.gestureConstants
+        let constants = gestureConstants
         let distance = max(abs(translation.width), abs(translation.height))
         return distance >= constants.swipeThreshold
     }

@@ -68,9 +68,9 @@ struct DeckSelectionViewTests {
 
     @Test("View initializes with persisted deck selection from AppSettings")
     func viewInitializesWithPersistedSelection() async {
-        let container = self.makeTestContainer()
+        let container = makeTestContainer()
         let context = ModelContext(container)
-        let (deck1, deck2, _) = self.insertTestData(context: context)
+        let (deck1, deck2, _) = insertTestData(context: context)
 
         // Set persisted selection
         AppSettings.selectedDeckIDs = [deck1.id, deck2.id]
@@ -85,9 +85,9 @@ struct DeckSelectionViewTests {
 
     @Test("View initializes with empty selection when nothing persisted")
     func viewInitializesWithEmptySelection() async {
-        let container = self.makeTestContainer()
+        let container = makeTestContainer()
         let context = ModelContext(container)
-        _ = self.insertTestData(context: context)
+        _ = insertTestData(context: context)
 
         // Clear persisted selection
         AppSettings.selectedDeckIDs = []
@@ -102,9 +102,9 @@ struct DeckSelectionViewTests {
 
     @Test("onAppear resyncs selection state from AppSettings")
     func onAppearResyncsSelection() async {
-        let container = self.makeTestContainer()
+        let container = makeTestContainer()
         let context = ModelContext(container)
-        let (deck1, deck2, _) = self.insertTestData(context: context)
+        let (deck1, deck2, _) = insertTestData(context: context)
 
         // Set initial selection
         AppSettings.selectedDeckIDs = [deck1.id]
@@ -125,7 +125,7 @@ struct DeckSelectionViewTests {
 
     @Test("Empty state shows when no decks available")
     func emptyStateWhenNoDecks() async {
-        let container = self.makeTestContainer()
+        let container = makeTestContainer()
         let context = ModelContext(container)
 
         // Don't insert any decks
@@ -145,9 +145,9 @@ struct DeckSelectionViewTests {
 
     @Test("Statistics load asynchronously with loading indicator")
     func statsLoadAsync() async {
-        let container = self.makeTestContainer()
+        let container = makeTestContainer()
         let context = ModelContext(container)
-        _ = self.insertTestData(context: context)
+        _ = insertTestData(context: context)
 
         // Create view
         let view = DeckSelectionView()
@@ -166,9 +166,9 @@ struct DeckSelectionViewTests {
 
     @Test("Toggling deck selection updates local state")
     func toggleDeckSelection() async {
-        let container = self.makeTestContainer()
+        let container = makeTestContainer()
         let context = ModelContext(container)
-        let (deck1, _, _) = self.insertTestData(context: context)
+        let (deck1, _, _) = insertTestData(context: context)
 
         // Start with no selection
         AppSettings.selectedDeckIDs = []
@@ -188,9 +188,9 @@ struct DeckSelectionViewTests {
 
     @Test("Select All action selects all decks")
     func selectAllAction() async {
-        let container = self.makeTestContainer()
+        let container = makeTestContainer()
         let context = ModelContext(container)
-        let (deck1, deck2, deck3) = self.insertTestData(context: context)
+        let (deck1, deck2, deck3) = insertTestData(context: context)
 
         // Start with no selection
         AppSettings.selectedDeckIDs = []
@@ -206,9 +206,9 @@ struct DeckSelectionViewTests {
 
     @Test("Deselect All action clears selection")
     func deselectAllAction() async {
-        let container = self.makeTestContainer()
+        let container = makeTestContainer()
         let context = ModelContext(container)
-        let (deck1, deck2, _) = self.insertTestData(context: context)
+        let (deck1, deck2, _) = insertTestData(context: context)
 
         // Start with selection
         AppSettings.selectedDeckIDs = [deck1.id, deck2.id]
@@ -221,9 +221,9 @@ struct DeckSelectionViewTests {
 
     @Test("Select Decks with Due Cards action")
     func selectDueDecks() async {
-        let container = self.makeTestContainer()
+        let container = makeTestContainer()
         let context = ModelContext(container)
-        let (deck1, deck2, _) = self.insertTestData(context: context)
+        let (deck1, deck2, _) = insertTestData(context: context)
 
         // Select deck1 which has due cards
         AppSettings.selectedDeckIDs = [deck1.id]
@@ -234,9 +234,9 @@ struct DeckSelectionViewTests {
 
     @Test("Select Decks with New Cards action")
     func selectNewDecks() async {
-        let container = self.makeTestContainer()
+        let container = makeTestContainer()
         let context = ModelContext(container)
-        let (deck1, deck2, _) = self.insertTestData(context: context)
+        let (deck1, deck2, _) = insertTestData(context: context)
 
         // Select deck1 which has new cards
         AppSettings.selectedDeckIDs = [deck1.id]
@@ -249,9 +249,9 @@ struct DeckSelectionViewTests {
 
     @Test("Dismiss saves selection to AppSettings")
     func dismissSavesSelection() async {
-        let container = self.makeTestContainer()
+        let container = makeTestContainer()
         let context = ModelContext(container)
-        let (deck1, deck2, _) = self.insertTestData(context: context)
+        let (deck1, deck2, _) = insertTestData(context: context)
 
         // Set selection in view (simulated)
         AppSettings.selectedDeckIDs = [deck1.id, deck2.id]
@@ -264,9 +264,9 @@ struct DeckSelectionViewTests {
 
     @Test("DeckSelectionRow displays deck name and stats")
     func deckSelectionRowRendering() async {
-        let container = self.makeTestContainer()
+        let container = makeTestContainer()
         let context = ModelContext(container)
-        let (deck1, _, _) = self.insertTestData(context: context)
+        let (deck1, _, _) = insertTestData(context: context)
 
         let stats = DeckStudyStats(newCount: 1, dueCount: 1, totalCount: 2)
         let row = DeckSelectionRow(
@@ -294,9 +294,9 @@ struct DeckSelectionViewTests {
 
     @Test("Concurrent selection updates are handled safely")
     func concurrentSelection() async {
-        let container = self.makeTestContainer()
+        let container = makeTestContainer()
         let context = ModelContext(container)
-        let (deck1, deck2, deck3) = self.insertTestData(context: context)
+        let (deck1, deck2, deck3) = insertTestData(context: context)
 
         // Simulate concurrent updates
         await withTaskGroup(of: Void.self) { group in
@@ -336,7 +336,7 @@ struct DeckSelectionViewTests {
 
     @Test("View handles large number of decks efficiently")
     func largeDeckCount() async {
-        let container = self.makeTestContainer()
+        let container = makeTestContainer()
         let context = ModelContext(container)
 
         // Insert 100 decks
@@ -354,9 +354,9 @@ struct DeckSelectionViewTests {
 
     @Test("Selection persistence across view recreations")
     func selectionPersistence() async {
-        let container = self.makeTestContainer()
+        let container = makeTestContainer()
         let context = ModelContext(container)
-        let (deck1, _, _) = self.insertTestData(context: context)
+        let (deck1, _, _) = insertTestData(context: context)
 
         // Set selection
         AppSettings.selectedDeckIDs = [deck1.id]

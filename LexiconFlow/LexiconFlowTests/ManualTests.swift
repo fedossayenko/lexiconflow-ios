@@ -70,7 +70,6 @@ struct ManualSpeechServiceAudioSessionTests {
 
     // MARK: - Lifecycle Tests
 
-    @Test("cleanup sets isAudioSessionConfigured to false")
     /// **Purpose:** Verify that `cleanup()` correctly resets the internal state flag
     /// so that the audio session is reconfigured on the next `speak()` call.
     ///
@@ -87,6 +86,7 @@ struct ManualSpeechServiceAudioSessionTests {
     /// - Audio is heard for "test" and "test2".
     ///
     /// **Verification Method:** Observe breakpoint hit count and listen for audio.
+    @Test("cleanup sets isAudioSessionConfigured to false")
     func cleanupResetsConfigurationFlag() async throws {
         // Given: Configured audio session
         service.speak("test")
@@ -100,7 +100,6 @@ struct ManualSpeechServiceAudioSessionTests {
         // In production, verify audio session reconfigures correctly
     }
 
-    @Test("restartEngine reconfigures session when app foregrounds")
     /// **Purpose:** Verify that `restartEngine()` properly reconfigures the audio
     /// session after it has been cleaned up (simulating app backgrounding/foregrounding).
     ///
@@ -115,6 +114,7 @@ struct ManualSpeechServiceAudioSessionTests {
     /// - No audio errors or glitches in the second speech.
     ///
     /// **Verification Method:** Listen for both "test" and "test2" being spoken.
+    @Test("restartEngine reconfigures session when app foregrounds")
     func restartEngineReconfiguresSession() async throws {
         // Given: Cleaned up session
         service.speak("test")
@@ -131,7 +131,6 @@ struct ManualSpeechServiceAudioSessionTests {
 
     // MARK: - Idempotency Tests
 
-    @Test("audio session configured only once (idempotent)")
     /// **Purpose:** Verify that the audio session is configured on the first `speak()`
     /// call but not reconfigured on subsequent calls (idempotent behavior).
     ///
@@ -146,6 +145,7 @@ struct ManualSpeechServiceAudioSessionTests {
     /// - No errors or crashes occur during multiple speak() calls.
     ///
     /// **Verification Method:** Breakpoint hit count should be 1.
+    @Test("audio session configured only once (idempotent)")
     func speakConfiguresAudioSessionOnce() async throws {
         // Given: Fresh audio session state
         service.cleanup()
@@ -161,7 +161,6 @@ struct ManualSpeechServiceAudioSessionTests {
 
     // MARK: - Lifecycle Cycle Tests
 
-    @Test("speak works after cleanup and restartEngine cycle")
     /// **Purpose:** Verify that speech functionality works correctly after a complete
     /// lifecycle cycle (speak → cleanup → restartEngine → speak).
     ///
@@ -176,6 +175,7 @@ struct ManualSpeechServiceAudioSessionTests {
     /// - No audio glitches or errors occur.
     ///
     /// **Verification Method:** Listen for both words being spoken successfully.
+    @Test("speak works after cleanup and restartEngine cycle")
     func speakWorksAfterLifecycleCycle() async throws {
         // Given: Audio session configured
         service.speak("test1")
@@ -189,7 +189,6 @@ struct ManualSpeechServiceAudioSessionTests {
         // Note: isSpeaking is timing-dependent
     }
 
-    @Test("multiple background/foreground transitions")
     /// **Purpose:** Verify that the audio session survives multiple rapid lifecycle
     /// transitions (background/foreground cycles).
     ///
@@ -204,6 +203,7 @@ struct ManualSpeechServiceAudioSessionTests {
     /// - No errors, crashes, or audio failures occur.
     ///
     /// **Verification Method:** Both words should be spoken successfully.
+    @Test("multiple background/foreground transitions")
     func multipleLifecycleTransitions() async throws {
         // Given: Audio session configured
         service.speak("test1")
@@ -221,7 +221,6 @@ struct ManualSpeechServiceAudioSessionTests {
 
     // MARK: - State Consistency Tests
 
-    @Test("audio session state consistency across lifecycle events")
     /// **Purpose:** Verify that the audio session state remains consistent across
     /// lifecycle events (cleanup → restartEngine).
     ///
@@ -235,6 +234,7 @@ struct ManualSpeechServiceAudioSessionTests {
     /// - Both speeches work correctly without errors.
     ///
     /// **Verification Method:** Listen for both words being spoken.
+    @Test("audio session state consistency across lifecycle events")
     func audioSessionStateRemainsConsistent() async throws {
         // Given: Initial state
         service.speak("test1")
@@ -250,7 +250,6 @@ struct ManualSpeechServiceAudioSessionTests {
 
     // MARK: - Thread Safety Tests
 
-    @Test("audio session configuration is @MainActor isolated")
     /// **Purpose:** Verify that audio session configuration is properly isolated to
     /// the main actor to prevent concurrency issues.
     ///
@@ -265,6 +264,7 @@ struct ManualSpeechServiceAudioSessionTests {
     /// - Audio is spoken successfully.
     ///
     /// **Verification Method:** Verify breakpoint is on main thread (Thread 1).
+    @Test("audio session configuration is @MainActor isolated")
     func audioSessionConfigurationIsOnMainActor() async throws {
         // Given: Service is @MainActor isolated
         // When: Calling from MainActor context
@@ -274,7 +274,6 @@ struct ManualSpeechServiceAudioSessionTests {
         // Note: isSpeaking is timing-dependent
     }
 
-    @Test("restartEngine is safe from background threads")
     /// **Purpose:** Verify that `restartEngine()` can be safely called from background
     /// threads and will properly dispatch to the main actor.
     ///
@@ -289,6 +288,7 @@ struct ManualSpeechServiceAudioSessionTests {
     /// - No thread safety errors or crashes occur.
     ///
     /// **Verification Method:** Listen for successful speech after background thread restart.
+    @Test("restartEngine is safe from background threads")
     func restartEngineIsThreadSafe() async throws {
         // Given: Cleaned up session
         service.cleanup()
@@ -296,7 +296,7 @@ struct ManualSpeechServiceAudioSessionTests {
         // When: restartEngine from background thread
         await Task.detached {
             await MainActor.run {
-                self.service.restartEngine()
+                service.restartEngine()
             }
         }.value
 
@@ -307,7 +307,6 @@ struct ManualSpeechServiceAudioSessionTests {
 
     // MARK: - Edge Case Tests
 
-    @Test("restartEngine before any speak is safe")
     /// **Purpose:** Verify that calling `restartEngine()` before any `speak()` calls
     /// is safe and properly configures the audio session.
     ///
@@ -322,6 +321,7 @@ struct ManualSpeechServiceAudioSessionTests {
     /// - No crashes or state corruption occur.
     ///
     /// **Verification Method:** Listen for successful speech after premature restart.
+    @Test("restartEngine before any speak is safe")
     func restartEngineBeforeFirstSpeakIsSafe() async throws {
         // Given: Fresh service instance
         // When: restartEngine is called before any speak()
@@ -332,7 +332,6 @@ struct ManualSpeechServiceAudioSessionTests {
         // Note: isSpeaking is timing-dependent
     }
 
-    @Test("rapid cleanup and restart cycles are safe")
     /// **Purpose:** Verify that rapid lifecycle cycles (20 iterations) don't cause
     /// state corruption or crashes.
     ///
@@ -348,6 +347,7 @@ struct ManualSpeechServiceAudioSessionTests {
     /// - No memory leaks or performance degradation.
     ///
     /// **Verification Method:** Test completes without crash and final speech works.
+    @Test("rapid cleanup and restart cycles are safe")
     func rapidLifecycleCyclesAreSafe() async throws {
         // Given: Fresh audio session
         service.cleanup()

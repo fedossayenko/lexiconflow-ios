@@ -98,7 +98,7 @@ final class DataImporter {
                 result.errors.append(contentsOf: batchStats.errors)
 
                 // Commit after each batch
-                try self.modelContext.save()
+                try modelContext.save()
 
                 // Report progress
                 let progress = ImportProgress(
@@ -236,11 +236,11 @@ final class DataImporter {
                 dueDate: Date(),
                 stateEnum: FlashcardState.new.rawValue
             )
-            self.modelContext.insert(state)
+            modelContext.insert(state)
             flashcard.fsrsState = state
 
             // Insert flashcard
-            self.modelContext.insert(flashcard)
+            modelContext.insert(flashcard)
 
             stats.success += 1
         }
@@ -293,13 +293,13 @@ struct ImportProgress: Sendable {
 
     /// Progress as percentage (0-100)
     var percentage: Int {
-        guard self.total > 0 else { return 0 }
-        return (self.current * 100) / self.total
+        guard total > 0 else { return 0 }
+        return (current * 100) / total
     }
 
     /// Human-readable progress string
     var description: String {
-        "\(self.current)/\(self.total) (\(self.percentage)%) - Batch \(self.batchNumber)/\(self.totalBatches)"
+        "\(current)/\(total) (\(percentage)%) - Batch \(batchNumber)/\(totalBatches)"
     }
 }
 
@@ -319,7 +319,7 @@ struct ImportResult: Sendable {
 
     /// Whether import was completely successful
     var isSuccess: Bool {
-        self.errors.isEmpty && self.importedCount > 0
+        errors.isEmpty && importedCount > 0
     }
 }
 

@@ -17,7 +17,7 @@ struct MainTabView: View {
     @Query(sort: \Deck.order) private var decks: [Deck]
 
     var body: some View {
-        TabView(selection: self.$selectedTab) {
+        TabView(selection: $selectedTab) {
             NavigationStack {
                 DeckListView()
             }
@@ -34,9 +34,9 @@ struct MainTabView: View {
                 Label("Study", systemImage: "brain.fill")
             }
             .tag(1)
-            .badge(self.dueCardCount)
+            .badge(dueCardCount)
             .accessibilityIdentifier("study_tab")
-            .accessibilityLabel(self.dueCardCount > 0 ? "Study, \(self.dueCardCount) cards due" : "Study")
+            .accessibilityLabel(dueCardCount > 0 ? "Study, \(dueCardCount) cards due" : "Study")
 
             NavigationStack {
                 StatisticsDashboardView()
@@ -57,29 +57,29 @@ struct MainTabView: View {
             .accessibilityIdentifier("settings_tab")
         }
         .onAppear {
-            self.refreshDueCount()
+            refreshDueCount()
         }
-        .onChange(of: self.selectedTab) { _, _ in
-            if self.selectedTab == 1 {
-                self.refreshDueCount()
+        .onChange(of: selectedTab) { _, _ in
+            if selectedTab == 1 {
+                refreshDueCount()
             }
         }
         .onChange(of: AppSettings.selectedDeckIDs) { _, _ in
-            self.refreshDueCount()
+            refreshDueCount()
         }
     }
 
     private var selectedDecks: [Deck] {
         let selectedIDs = AppSettings.selectedDeckIDs
-        return self.decks.filter { selectedIDs.contains($0.id) }
+        return decks.filter { selectedIDs.contains($0.id) }
     }
 
     private func refreshDueCount() {
         // Memoize scheduler to avoid creating new instance on every tab switch
-        if self.scheduler == nil {
-            self.scheduler = Scheduler(modelContext: self.modelContext)
+        if scheduler == nil {
+            scheduler = Scheduler(modelContext: modelContext)
         }
-        self.dueCardCount = self.scheduler?.dueCardCount(for: self.selectedDecks) ?? 0
+        dueCardCount = scheduler?.dueCardCount(for: selectedDecks) ?? 0
     }
 }
 

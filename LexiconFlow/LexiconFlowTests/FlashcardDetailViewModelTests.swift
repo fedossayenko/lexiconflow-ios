@@ -35,7 +35,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Detect first review correctly")
     func detectFirstReview() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Create flashcard with one review
@@ -66,7 +66,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Detect graduation: learning → review transition")
     func detectGraduation() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "A test word")
@@ -113,7 +113,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Detect relearning: review → relearning transition")
     func detectRelearning() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "A test word")
@@ -172,7 +172,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Handle first review with failure (rating 0)")
     func firstReviewWithFailure() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "A test word")
@@ -203,7 +203,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Handle missing previous state gracefully")
     func missingPreviousState() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "A test word")
@@ -233,7 +233,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Complex progression: new → learning → review → relearning → review")
     func complexProgression() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "complex", definition: "Complex progression test")
@@ -313,7 +313,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Filter reviews by last week")
     func filterByLastWeek() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "Test filtering")
@@ -358,7 +358,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Filter reviews by last month")
     func filterByLastMonth() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "Test month filtering")
@@ -400,7 +400,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Filter reviews by all time (default)")
     func filterByAllTime() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "Test all time filtering")
@@ -446,7 +446,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Calculate total review count")
     func totalReviewCount() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "Test stats")
@@ -474,7 +474,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Calculate average rating")
     func averageRating() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "Test average rating")
@@ -506,7 +506,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Handle empty review history for stats")
     func emptyReviewHistoryStats() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "Test empty stats")
@@ -524,7 +524,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Read FSRS state and stability")
     func fsrsStateAndStability() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "Test FSRS state")
@@ -554,7 +554,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Handle missing FSRS state")
     func missingFSRSState() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "Test missing FSRS state")
@@ -575,7 +575,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Export CSV with filtered reviews")
     func exportCSVFiltered() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "export", definition: "Export test")
@@ -620,7 +620,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Export all reviews CSV")
     func exportCSVAll() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "all", definition: "Export all test")
@@ -655,7 +655,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Export CSV with empty review history")
     func exportCSVEmpty() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "empty", definition: "Empty export test")
@@ -677,7 +677,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Export CSV with special characters in data")
     func exportCSVSpecialCharacters() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Flashcard with special characters
@@ -716,7 +716,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Performance: Load 100+ reviews efficiently")
     func loadManyReviews() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "performance", definition: "Performance test")
@@ -754,7 +754,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Performance: Filter 100+ reviews efficiently")
     func filterManyReviews() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "filterperf", definition: "Filter performance test")
@@ -799,7 +799,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Handle out-of-order reviews")
     func outOfOrderReviews() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "order", definition: "Test ordering")
@@ -851,7 +851,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Handle reviews on same day")
     func sameDayReviews() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "sameday", definition: "Same day reviews")
@@ -886,7 +886,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Handle invalid rating values")
     func invalidRatingValues() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "invalid", definition: "Invalid rating test")
@@ -917,7 +917,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Verify DTO properties are correctly set")
     func dtoProperties() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "dto", definition: "DTO property test")
@@ -953,7 +953,7 @@ struct FlashcardDetailViewModelTests {
 
     @Test("Filter selection updates selectedFilter property")
     func filterSelection() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "filter", definition: "Filter selection test")

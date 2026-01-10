@@ -40,7 +40,7 @@ final class ViewModelHolder<T: ObservableObject>: ObservableObject {
         didSet {
             // When value changes, observe its objectWillChange
             if let value {
-                self.setupObservation(for: value)
+                setupObservation(for: value)
             }
         }
     }
@@ -53,7 +53,7 @@ final class ViewModelHolder<T: ObservableObject>: ObservableObject {
     init(_ value: T? = nil) {
         self.value = value
         if let value {
-            self.setupObservation(for: value)
+            setupObservation(for: value)
         }
     }
 
@@ -66,6 +66,6 @@ final class ViewModelHolder<T: ObservableObject>: ObservableObject {
             .sink { [weak self] _ in
                 self?.objectWillChange.send()
             }
-            .store(in: &self.cancellables)
+            .store(in: &cancellables)
     }
 }

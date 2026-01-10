@@ -45,14 +45,14 @@ struct GlassEffectUnion: ViewModifier {
 
     func body(content: Content) -> some View {
         let config = AppSettings.glassConfiguration
-        let effectiveThickness = config.effectiveThickness(base: self.thickness)
+        let effectiveThickness = config.effectiveThickness(base: thickness)
         let opacityMultiplier = config.opacityMultiplier
 
         ZStack {
             // Background circle (glass base)
             Circle()
                 .fill(effectiveThickness.material)
-                .frame(width: self.iconSize + 16, height: self.iconSize + 16)
+                .frame(width: iconSize + 16, height: iconSize + 16)
                 .overlay {
                     Circle()
                         .strokeBorder(
@@ -70,10 +70,10 @@ struct GlassEffectUnion: ViewModifier {
 
             // Progress arc (liquid glass ring)
             Circle()
-                .trim(from: 0, to: self.animatedProgress)
+                .trim(from: 0, to: animatedProgress)
                 .stroke(
                     AngularGradient(
-                        colors: self.progressColors,
+                        colors: progressColors,
                         center: .center,
                         startAngle: .degrees(-90),
                         endAngle: .degrees(270)
@@ -84,12 +84,12 @@ struct GlassEffectUnion: ViewModifier {
                     )
                 )
                 .rotationEffect(.degrees(-90))
-                .frame(width: self.iconSize + 16, height: self.iconSize + 16)
+                .frame(width: iconSize + 16, height: iconSize + 16)
                 .blur(radius: 2)
                 .overlay {
                     // Specular highlight on progress arc
                     Circle()
-                        .trim(from: 0, to: self.animatedProgress)
+                        .trim(from: 0, to: animatedProgress)
                         .stroke(
                             AngularGradient(
                                 colors: [
@@ -105,11 +105,11 @@ struct GlassEffectUnion: ViewModifier {
                         .rotationEffect(.degrees(-90))
                         .blendMode(.overlay)
                 }
-                .animation(.spring(response: 0.6, dampingFraction: 0.7), value: self.animatedProgress)
+                .animation(.spring(response: 0.6, dampingFraction: 0.7), value: animatedProgress)
 
             // Icon (centered, with glass background)
             content
-                .frame(width: self.iconSize, height: self.iconSize)
+                .frame(width: iconSize, height: iconSize)
                 .background {
                     Circle()
                         .fill(.ultraThinMaterial)
@@ -119,13 +119,13 @@ struct GlassEffectUnion: ViewModifier {
         .onAppear {
             // Animate progress on appear
             withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
-                self.animatedProgress = self.progress
+                animatedProgress = progress
             }
         }
-        .onChange(of: self.progress) { _, newProgress in
+        .onChange(of: progress) { _, newProgress in
             // Animate when progress changes
             withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
-                self.animatedProgress = newProgress
+                animatedProgress = newProgress
             }
         }
     }
@@ -137,7 +137,7 @@ struct GlassEffectUnion: ViewModifier {
         let baseHue: Double
         let saturation: Double
 
-        switch self.progress {
+        switch progress {
         case 0.0 ..< 0.3:
             // Green (low due count)
             baseHue = 120 // Green

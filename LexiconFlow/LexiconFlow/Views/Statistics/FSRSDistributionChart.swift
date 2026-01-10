@@ -35,7 +35,7 @@ struct FSRSDistributionChart: View {
                         Text("Stability")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
-                        Text(self.data.formattedStability)
+                        Text(data.formattedStability)
                             .font(.caption)
                             .fontWeight(.semibold)
                             .foregroundStyle(.purple)
@@ -45,7 +45,7 @@ struct FSRSDistributionChart: View {
                         Text("Difficulty")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
-                        Text(self.data.formattedDifficulty)
+                        Text(data.formattedDifficulty)
                             .font(.caption)
                             .fontWeight(.semibold)
                             .foregroundStyle(.blue)
@@ -53,9 +53,9 @@ struct FSRSDistributionChart: View {
                 }
             }
 
-            if self.data.reviewedCards == 0 {
+            if data.reviewedCards == 0 {
                 // Empty state
-                self.emptyView
+                emptyView
             } else {
                 // Stability distribution chart
                 VStack(alignment: .leading, spacing: 8) {
@@ -63,8 +63,8 @@ struct FSRSDistributionChart: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
-                    self.stabilityChart
-                        .frame(height: self.chartHeight)
+                    stabilityChart
+                        .frame(height: chartHeight)
                 }
 
                 Divider()
@@ -76,8 +76,8 @@ struct FSRSDistributionChart: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
-                    self.difficultyChart
-                        .frame(height: self.chartHeight)
+                    difficultyChart
+                        .frame(height: chartHeight)
                 }
             }
         }
@@ -87,13 +87,13 @@ struct FSRSDistributionChart: View {
         .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("FSRS metrics distribution")
-        .accessibilityHint(self.chartAccessibilityHint)
+        .accessibilityHint(chartAccessibilityHint)
     }
 
     // MARK: - Stability Chart
 
     private var stabilityChart: some View {
-        let chartData = self.stabilityChartData
+        let chartData = stabilityChartData
 
         return Chart {
             ForEach(chartData, id: \.label) { bucket in
@@ -122,7 +122,7 @@ struct FSRSDistributionChart: View {
             AxisMarks(position: .bottom, values: .automatic) { value in
                 AxisValueLabel {
                     if let label = value.as(String.self) {
-                        Text(self.shortenedStabilityLabel(label))
+                        Text(shortenedStabilityLabel(label))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
@@ -154,7 +154,7 @@ struct FSRSDistributionChart: View {
     // MARK: - Difficulty Chart
 
     private var difficultyChart: some View {
-        let chartData = self.difficultyChartData
+        let chartData = difficultyChartData
 
         return Chart {
             ForEach(chartData, id: \.label) { bucket in
@@ -183,7 +183,7 @@ struct FSRSDistributionChart: View {
             AxisMarks(position: .bottom, values: .automatic) { value in
                 AxisValueLabel {
                     if let label = value.as(String.self) {
-                        Text(self.shortenedDifficultyLabel(label))
+                        Text(shortenedDifficultyLabel(label))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
@@ -243,7 +243,7 @@ struct FSRSDistributionChart: View {
         ]
 
         return orderedBuckets.map { label in
-            (label: label, count: self.data.stabilityDistribution[label] ?? 0)
+            (label: label, count: data.stabilityDistribution[label] ?? 0)
         }
     }
 
@@ -254,15 +254,15 @@ struct FSRSDistributionChart: View {
         ]
 
         return orderedBuckets.map { label in
-            (label: label, count: self.data.difficultyDistribution[label] ?? 0)
+            (label: label, count: data.difficultyDistribution[label] ?? 0)
         }
     }
 
     /// Accessibility hint describing the distributions
     private var chartAccessibilityHint: String {
-        let reviewed = self.data.reviewedCards
-        let avgStability = self.data.formattedStability
-        let avgDifficulty = self.data.formattedDifficulty
+        let reviewed = data.reviewedCards
+        let avgStability = data.formattedStability
+        let avgDifficulty = data.formattedDifficulty
 
         if reviewed == 0 {
             return "No FSRS metrics available yet. Review cards to see memory patterns."

@@ -33,49 +33,49 @@ struct GlassEffectUnionTests {
     @Test("Progress 0.0 shows empty ring")
     func progressZeroShowsEmpty() {
         // Verify view can be created with 0.0 progress
-        let view = self.createProgressView(progress: 0.0)
+        let view = createProgressView(progress: 0.0)
         // SwiftUI trim(from:to:) with to: 0.0 shows empty ring
     }
 
     @Test("Progress 0.25 shows quarter ring (green)")
     func progressQuarterShows() {
         let progress = 0.25
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
         // 0.25 is in green range (< 0.3)
     }
 
     @Test("Progress 0.5 shows half ring (orange)")
     func progressHalfShows() {
         let progress = 0.5
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
         // 0.5 is in orange range (0.3-0.7)
     }
 
     @Test("Progress 0.75 shows three-quarter ring (red)")
     func progressThreeQuarterShows() {
         let progress = 0.75
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
         // 0.75 is in red range (>= 0.7)
     }
 
     @Test("Progress 1.0 shows full ring")
     func progressFullShows() {
         let progress = 1.0
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
         // 1.0 shows full ring (max due count)
     }
 
     @Test("Progress handles boundary case 0.3 exactly")
     func progressBoundary0Point3() {
         let progress = 0.3
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
         // 0.3 is boundary (inclusive for orange: 0.3..<0.7)
     }
 
     @Test("Progress handles boundary case 0.7 exactly")
     func progressBoundary0Point7() {
         let progress = 0.7
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
         // 0.7 is boundary (>= 0.7 for red)
     }
 
@@ -86,26 +86,26 @@ struct GlassEffectUnionTests {
         // Green range: 0.0-0.3
         // baseHue = 120 (green), saturation = 0.8
         let progress = 0.0
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
     }
 
     @Test("Progress 0.1 uses green color")
     func progress0Point1UsesGreen() {
         let progress = 0.1
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
     }
 
     @Test("Progress 0.29 uses green color")
     func progress0Point29UsesGreen() {
         let progress = 0.29
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
         // Last value before orange boundary
     }
 
     @Test("Progress 0.3 uses orange color")
     func progress0Point3UsesOrange() {
         let progress = 0.3
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
         // First value in orange range
         // baseHue = 30 (orange), saturation = 0.9
     }
@@ -113,21 +113,21 @@ struct GlassEffectUnionTests {
     @Test("Progress 0.5 uses orange color")
     func progress0Point5UsesOrange() {
         let progress = 0.5
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
         // Middle of orange range
     }
 
     @Test("Progress 0.69 uses orange color")
     func progress0Point69UsesOrange() {
         let progress = 0.69
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
         // Last value before red boundary
     }
 
     @Test("Progress 0.7 uses red color")
     func progress0Point7UsesRed() {
         let progress = 0.7
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
         // First value in red range
         // baseHue = 0 (red), saturation = 0.9
     }
@@ -135,7 +135,7 @@ struct GlassEffectUnionTests {
     @Test("Progress 0.9 uses red color")
     func progress0Point9UsesRed() {
         let progress = 0.9
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
         // High red value
     }
 
@@ -145,7 +145,7 @@ struct GlassEffectUnionTests {
         // Each with different brightness: 0.8, 0.6, 0.4
         // Each with proper opacity: 0.8, 0.6, 0.4
         let progress = 0.5
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
     }
 
     // MARK: - C. Clamping (5 tests)
@@ -153,35 +153,35 @@ struct GlassEffectUnionTests {
     @Test("Progress clamps to 0.0 when negative")
     func progressClampsNegative() {
         let progress = -0.5
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
         // SwiftUI trim(from:to:) automatically clamps to 0-1
     }
 
     @Test("Progress clamps to 1.0 when above 1.0")
     func progressClampsAboveOne() {
         let progress = 1.5
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
         // Verify trim doesn't exceed 1.0
     }
 
     @Test("Progress handles very small positive value")
     func progressVerySmall() {
         let progress = 0.001
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
         // Verify doesn't crash
     }
 
     @Test("Progress handles very large value")
     func progressVeryLarge() {
         let progress = 1000.0
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
         // Verify clamps to 1.0
     }
 
     @Test("Progress handles NaN")
     func progressHandlesNaN() {
         let progress = Double.nan
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
         // Verify graceful handling
     }
 
@@ -190,7 +190,7 @@ struct GlassEffectUnionTests {
     @Test("Animation on appear uses spring")
     func animationOnAppear() {
         let progress = 0.5
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
         // .onAppear sets animatedProgress with spring
         // Spring parameters: response 0.6, dampingFraction 0.7
     }
@@ -198,7 +198,7 @@ struct GlassEffectUnionTests {
     @Test("Animation on progress change uses spring")
     func animationOnChange() {
         let progress = 0.5
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
         // .onChange(of: progress) animates with spring
     }
 
@@ -206,12 +206,12 @@ struct GlassEffectUnionTests {
     func animatedProgressStartsAtZero() {
         // @State private var animatedProgress: Double = 0
         // Cannot directly test @State, but can verify view creation
-        let view = self.createProgressView(progress: 0.5)
+        let view = createProgressView(progress: 0.5)
     }
 
     @Test("Progress changes trigger animation")
     func progressChangeTriggersAnimation() {
-        let view = self.createProgressView(progress: 0.5)
+        let view = createProgressView(progress: 0.5)
         // Changing progress property triggers animation
     }
 
@@ -246,20 +246,20 @@ struct GlassEffectUnionTests {
     @Test("Icon size affects frame")
     func iconSizeAffectsFrame() {
         let size: CGFloat = 60
-        let view = self.createProgressView(progress: 0.5, iconSize: size)
+        let view = createProgressView(progress: 0.5, iconSize: size)
         // Background circle should be (size + 16, size + 16) = 76x76
     }
 
     @Test("Icon size defaults to 50")
     func iconSizeDefaultsTo50() {
         // Default parameter value is 50
-        let view = self.createProgressView(progress: 0.5, iconSize: 50)
+        let view = createProgressView(progress: 0.5, iconSize: 50)
     }
 
     @Test("Icon size affects content frame")
     func iconSizeAffectsContentFrame() {
         let size: CGFloat = 50
-        let view = self.createProgressView(progress: 0.5, iconSize: size)
+        let view = createProgressView(progress: 0.5, iconSize: size)
         // Content frame is (size, size)
     }
 
@@ -267,25 +267,25 @@ struct GlassEffectUnionTests {
 
     @Test("Background circle uses material")
     func backgroundCircleUsesMaterial() {
-        let view = self.createProgressView(progress: 0.5)
+        let view = createProgressView(progress: 0.5)
         // Circle().fill(thickness.material)
     }
 
     @Test("Progress arc uses trim")
     func progressArcUsesTrim() {
-        let view = self.createProgressView(progress: 0.5)
+        let view = createProgressView(progress: 0.5)
         // Circle().trim(from: 0, to: animatedProgress)
     }
 
     @Test("Progress arc has blur")
     func progressArcHasBlur() {
-        let view = self.createProgressView(progress: 0.5)
+        let view = createProgressView(progress: 0.5)
         // .blur(radius: 2)
     }
 
     @Test("Specular highlight uses overlay blend mode")
     func specularHighlightUsesOverlay() {
-        let view = self.createProgressView(progress: 0.5)
+        let view = createProgressView(progress: 0.5)
         // .blendMode(.overlay)
     }
 
@@ -294,19 +294,19 @@ struct GlassEffectUnionTests {
     @Test("Progress 0.3 exactly uses orange")
     func progress0Point3ExactUsesOrange() {
         // Boundary test: 0.3 is inclusive for orange
-        let view = self.createProgressView(progress: 0.3)
+        let view = createProgressView(progress: 0.3)
     }
 
     @Test("Progress 0.7 exactly uses red")
     func progress0Point7ExactUsesRed() {
         // Boundary test: 0.7 is >= 0.7 for red
-        let view = self.createProgressView(progress: 0.7)
+        let view = createProgressView(progress: 0.7)
     }
 
     @Test("Progress infinity handles gracefully")
     func progressInfinity() {
         let progress = Double.infinity
-        let view = self.createProgressView(progress: progress)
+        let view = createProgressView(progress: progress)
         // Verify graceful handling
     }
 }

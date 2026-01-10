@@ -49,7 +49,7 @@ struct SchemaMigrationTests {
     @Test("Schema creation succeeds with current version")
     @MainActor
     func schemaCreation() async throws {
-        let container = self.createContainer()
+        let container = createContainer()
 
         // Verify container is valid
         #expect(
@@ -61,7 +61,7 @@ struct SchemaMigrationTests {
     @Test("Optional fields allow null values")
     @MainActor
     func optionalFields() async throws {
-        let container = self.createContainer()
+        let container = createContainer()
         let context = container.mainContext
 
         // Create flashcard with minimal required fields
@@ -86,7 +86,7 @@ struct SchemaMigrationTests {
     @Test("FSRSState relationship survives persistence")
     @MainActor
     func fsrsStateRelationship() async throws {
-        let container = self.createContainer()
+        let container = createContainer()
         let context = container.mainContext
 
         let flashcard = Flashcard(
@@ -123,7 +123,7 @@ struct SchemaMigrationTests {
     @Test("FlashcardReview persists correctly")
     @MainActor
     func flashcardReviewPersistence() async throws {
-        let container = self.createContainer()
+        let container = createContainer()
         let context = container.mainContext
 
         let flashcard = Flashcard(
@@ -157,7 +157,7 @@ struct SchemaMigrationTests {
     @Test("Multiple flashcards can share a deck")
     @MainActor
     func deckRelationship() async throws {
-        let container = self.createContainer()
+        let container = createContainer()
         let context = container.mainContext
 
         let deck = Deck(name: "Vocabulary", icon: "📚")
@@ -184,7 +184,7 @@ struct SchemaMigrationTests {
     @Test("Optional imageData field handles large data")
     @MainActor
     func optionalImageData() async throws {
-        let container = self.createContainer()
+        let container = createContainer()
         let context = container.mainContext
 
         let flashcard = Flashcard(
@@ -213,7 +213,7 @@ struct SchemaMigrationTests {
     @Test("Cascade delete removes related reviews")
     @MainActor
     func cascadeDelete() async throws {
-        let container = self.createContainer()
+        let container = createContainer()
         let context = container.mainContext
 
         let flashcard = Flashcard(
@@ -257,7 +257,7 @@ struct SchemaMigrationTests {
     @Test("StudySession persists with mode")
     @MainActor
     func studySessionPersistence() async throws {
-        let container = self.createContainer()
+        let container = createContainer()
         let context = container.mainContext
 
         let session = StudySession(startTime: Date(), mode: .scheduled)
@@ -274,7 +274,7 @@ struct SchemaMigrationTests {
     @Test("DailyStats persists with correct date normalization")
     @MainActor
     func dailyStatsPersistence() async throws {
-        let container = self.createContainer()
+        let container = createContainer()
         let context = container.mainContext
 
         let stats = DailyStats(

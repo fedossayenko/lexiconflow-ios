@@ -67,7 +67,7 @@ struct DictionaryImporterTests {
         let content = "word,definition\ntest,Test definition"
         let fileURL = try createTestFile(content: content, extension: "csv")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let format = importer.detectFormat(from: fileURL)
@@ -80,7 +80,7 @@ struct DictionaryImporterTests {
         let content = "[{\"word\":\"test\",\"definition\":\"Test\"}]"
         let fileURL = try createTestFile(content: content, extension: "json")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let format = importer.detectFormat(from: fileURL)
@@ -93,7 +93,7 @@ struct DictionaryImporterTests {
         let content = "test word"
         let fileURL = try createTestFile(content: content, extension: "txt")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let format = importer.detectFormat(from: fileURL)
@@ -106,7 +106,7 @@ struct DictionaryImporterTests {
         let content = "[{\"word\":\"test\",\"definition\":\"definition\"}]"
         let fileURL = try createTestFile(content: content, extension: "txt")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let format = importer.detectFormat(from: fileURL)
@@ -119,7 +119,7 @@ struct DictionaryImporterTests {
         let content = "just some text"
         let fileURL = try createTestFile(content: content, extension: "txt")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let format = importer.detectFormat(from: fileURL)
@@ -138,7 +138,7 @@ struct DictionaryImporterTests {
         """
         let fileURL = try createTestFile(content: content, extension: "csv")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let result = try await importer.previewImport(
@@ -161,7 +161,7 @@ struct DictionaryImporterTests {
         """
         let fileURL = try createTestFile(content: content, extension: "csv")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let result = try await importer.previewImport(
@@ -183,7 +183,7 @@ struct DictionaryImporterTests {
         """
         let fileURL = try createTestFile(content: content, extension: "csv")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let result = try await importer.previewImport(
@@ -206,7 +206,7 @@ struct DictionaryImporterTests {
         """
         let fileURL = try createTestFile(content: content, extension: "csv")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let fieldMapping = DictionaryImporter.FieldMappingConfiguration(
@@ -240,7 +240,7 @@ struct DictionaryImporterTests {
         """
         let fileURL = try createTestFile(content: content, extension: "csv")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let result = try await importer.previewImport(
@@ -262,7 +262,7 @@ struct DictionaryImporterTests {
         """
         let fileURL = try createTestFile(content: content, extension: "csv")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let withHeader = DictionaryImporter.FieldMappingConfiguration(
@@ -307,7 +307,7 @@ struct DictionaryImporterTests {
         """
         let fileURL = try createTestFile(content: content, extension: "json")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let result = try await importer.previewImport(
@@ -331,7 +331,7 @@ struct DictionaryImporterTests {
         """
         let fileURL = try createTestFile(content: content, extension: "json")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let result = try await importer.previewImport(
@@ -355,7 +355,7 @@ struct DictionaryImporterTests {
         """
         let fileURL = try createTestFile(content: content, extension: "json")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let error = await #expect(throws: DictionaryImporter.ImportError.self) {
@@ -374,7 +374,7 @@ struct DictionaryImporterTests {
         """
         let fileURL = try createTestFile(content: content, extension: "json")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let error = await #expect(throws: DictionaryImporter.ImportError.self) {
@@ -395,7 +395,7 @@ struct DictionaryImporterTests {
         """
         let fileURL = try createTestFile(content: content, extension: "txt")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let result = try await importer.previewImport(
@@ -418,7 +418,7 @@ struct DictionaryImporterTests {
         """
         let fileURL = try createTestFile(content: content, extension: "txt")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let result = try await importer.previewImport(
@@ -446,7 +446,7 @@ struct DictionaryImporterTests {
         """
         let fileURL = try createTestFile(content: content, extension: "txt")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let result = try await importer.previewImport(
@@ -467,7 +467,7 @@ struct DictionaryImporterTests {
         let content = "malicious content"
         let fileURL = try createTestFile(content: content, extension: "exe")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let result = importer.detectFormat(from: fileURL)
@@ -478,7 +478,7 @@ struct DictionaryImporterTests {
 
     @Test("detectFormat accepts allowed extensions")
     func detectFormatAcceptsAllowedExtensions() throws {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         // Test CSV
@@ -600,7 +600,7 @@ struct DictionaryImporterTests {
 
         let fileURL = try createTestFile(content: content, extension: "csv")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let result = try await importer.previewImport(
@@ -622,9 +622,9 @@ struct DictionaryImporterTests {
         """
         let fileURL = try createTestFile(content: content, extension: "csv")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
-        let deck = self.createTestDeck(context: context)
+        let deck = createTestDeck(context: context)
 
         let importer = DictionaryImporter(modelContext: context)
 
@@ -689,7 +689,7 @@ struct DictionaryImporterTests {
         """
         let fileURL = try createTestFile(content: content, extension: "csv")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let result = try await importer.previewImport(
@@ -713,7 +713,7 @@ struct DictionaryImporterTests {
         """
         let fileURL = try createTestFile(content: content, extension: "json")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let result = try await importer.previewImport(
@@ -734,7 +734,7 @@ struct DictionaryImporterTests {
         """
         let fileURL = try createTestFile(content: content, extension: "txt")
 
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
         let result = try await importer.previewImport(

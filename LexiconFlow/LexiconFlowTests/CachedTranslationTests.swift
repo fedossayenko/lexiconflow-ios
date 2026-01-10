@@ -332,7 +332,7 @@ struct CachedTranslationTests {
 
     @Test("model can be inserted and retrieved from SwiftData")
     func modelPersistsToSwiftData() throws {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
         let cached = try createValidTranslation()
@@ -350,7 +350,7 @@ struct CachedTranslationTests {
 
     @Test("model uses generated UUID as primary key")
     func modelUsesUniqueID() throws {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
         let cached1 = try createValidTranslation(sourceWord: "test1")
@@ -365,7 +365,7 @@ struct CachedTranslationTests {
 
     @Test("model fetch by compound predicate works")
     func modelFetchByCompoundPredicate() throws {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
         let cached = try createValidTranslation(
@@ -393,7 +393,7 @@ struct CachedTranslationTests {
 
     @Test("model can be deleted from SwiftData")
     func modelCanBeDeleted() throws {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
         let cached = try createValidTranslation()
@@ -558,7 +558,7 @@ struct CachedTranslationTests {
 
     @Test("model handles same word with different language pairs")
     func modelHandlesDifferentLanguagePairs() throws {
-        let container = self.createTestContainer()
+        let container = createTestContainer()
         let context = container.mainContext
 
         let cached1 = try createValidTranslation(

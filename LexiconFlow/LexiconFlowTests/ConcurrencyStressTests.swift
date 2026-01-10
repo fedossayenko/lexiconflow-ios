@@ -92,7 +92,7 @@ struct ConcurrencyStressTests {
 
         // Process 100 concurrent reviews using TaskGroup
         await withTaskGroup(of: FSRSReviewResult.self) { group in
-            for _ in 0 ..< self.concurrencyCount {
+            for _ in 0 ..< concurrencyCount {
                 group.addTask {
                     // Call actor-isolated FSRSWrapper
                     try! await FSRSWrapper.shared.processReview(
@@ -110,7 +110,7 @@ struct ConcurrencyStressTests {
 
         // Verify all operations completed successfully
         let count = await results.count
-        #expect(count == self.concurrencyCount, "All concurrent operations should complete")
+        #expect(count == concurrencyCount, "All concurrent operations should complete")
 
         // Verify consistency: all results should have valid state
         let array = await results.array
@@ -124,9 +124,9 @@ struct ConcurrencyStressTests {
     @Test("MainActor ViewModel prevents concurrent mutation")
     @MainActor
     func mainActorViewModelSafety() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         let viewModel = Scheduler(modelContext: context)
-        let flashcard = self.createTestFlashcard(in: context)
+        let flashcard = createTestFlashcard(in: context)
 
         // Track success count
         let results = LockedArray<Bool>()
@@ -169,7 +169,7 @@ struct ConcurrencyStressTests {
     @Test("DTOs are Sendable across actor boundaries")
     func sendableDTOs() async throws {
         // Create test flashcard
-        let flashcard = await self.createTestFlashcard(in: self.freshContext())
+        let flashcard = await createTestFlashcard(in: freshContext())
 
         // Get DTO from actor
         let dto = try await FSRSWrapper.shared.processReview(
@@ -236,11 +236,11 @@ struct ConcurrencyStressTests {
             private var value = 0
 
             func increment() {
-                self.value += 1
+                value += 1
             }
 
             func get() -> Int {
-                self.value
+                value
             }
         }
 
@@ -268,7 +268,7 @@ private actor LockedArray<Element> {
     private var storage: [Element] = []
 
     func append(_ element: Element) {
-        self.storage.append(element)
+        storage.append(element)
     }
 
     /// Increment counter for tracking successful operations
@@ -278,6 +278,6 @@ private actor LockedArray<Element> {
         // or by using a separate counter
     }
 
-    var array: [Element] { self.storage }
-    var count: Int { self.storage.count }
+    var array: [Element] { storage }
+    var count: Int { storage.count }
 }

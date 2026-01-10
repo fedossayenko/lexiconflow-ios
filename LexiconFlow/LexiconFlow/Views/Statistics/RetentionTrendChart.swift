@@ -30,7 +30,7 @@ struct RetentionTrendChart: View {
                 Spacer()
 
                 // Overall rate badge
-                Text(self.data.formattedPercentage)
+                Text(data.formattedPercentage)
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .foregroundStyle(.blue)
@@ -40,13 +40,13 @@ struct RetentionTrendChart: View {
                     .cornerRadius(8)
             }
 
-            if self.data.trendData.isEmpty {
+            if data.trendData.isEmpty {
                 // Empty state
-                self.emptyView
+                emptyView
             } else {
                 // Chart view
-                self.chartView
-                    .frame(height: self.chartHeight)
+                chartView
+                    .frame(height: chartHeight)
             }
         }
         .padding()
@@ -55,7 +55,7 @@ struct RetentionTrendChart: View {
         .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Retention trend chart")
-        .accessibilityHint(self.chartAccessibilityHint)
+        .accessibilityHint(chartAccessibilityHint)
     }
 
     // MARK: - Chart View
@@ -63,7 +63,7 @@ struct RetentionTrendChart: View {
     private var chartView: some View {
         Chart {
             // Area fill below line
-            ForEach(self.sortedTrendData, id: \.date) { point in
+            ForEach(sortedTrendData, id: \.date) { point in
                 AreaMark(
                     x: .value("Date", point.date),
                     y: .value("Retention Rate", point.rate * 100)
@@ -81,7 +81,7 @@ struct RetentionTrendChart: View {
             }
 
             // Main line
-            ForEach(self.sortedTrendData, id: \.date) { point in
+            ForEach(sortedTrendData, id: \.date) { point in
                 LineMark(
                     x: .value("Date", point.date),
                     y: .value("Retention Rate", point.rate * 100)
@@ -92,15 +92,15 @@ struct RetentionTrendChart: View {
             }
 
             // Data points (only show if <= 30 points to avoid clutter)
-            if self.sortedTrendData.count <= 30 {
-                ForEach(self.sortedTrendData, id: \.date) { point in
+            if sortedTrendData.count <= 30 {
+                ForEach(sortedTrendData, id: \.date) { point in
                     PointMark(
                         x: .value("Date", point.date),
                         y: .value("Retention Rate", point.rate * 100)
                     )
                     .foregroundStyle(Color.blue)
                     .annotation(position: .top) {
-                        if self.shouldShowLabel(for: point) {
+                        if shouldShowLabel(for: point) {
                             Text("\(Int(point.rate * 100))%")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
@@ -123,10 +123,10 @@ struct RetentionTrendChart: View {
             }
         }
         .chartXAxis {
-            AxisMarks(position: .bottom, values: self.xAxisValues) { value in
+            AxisMarks(position: .bottom, values: xAxisValues) { value in
                 AxisValueLabel {
                     if let dateValue = value.as(Date.self) {
-                        Text(self.formatDate(dateValue))
+                        Text(formatDate(dateValue))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -154,39 +154,39 @@ struct RetentionTrendChart: View {
                 .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: self.chartHeight)
+        .frame(height: chartHeight)
     }
 
     // MARK: - Computed Properties
 
     /// Trend data sorted by date
     private var sortedTrendData: [(date: Date, rate: Double)] {
-        self.data.trendData.sorted { $0.date < $1.date }
+        data.trendData.sorted { $0.date < $1.date }
     }
 
     /// X-axis values (show fewer labels for many data points)
     private var xAxisValues: [Date] {
-        let count = self.sortedTrendData.count
+        let count = sortedTrendData.count
         if count <= 7 {
             // Show all dates for small datasets
-            return self.sortedTrendData.map(\.date)
+            return sortedTrendData.map(\.date)
         } else if count <= 30 {
             // Show every 5th date for medium datasets
             return stride(from: 0, to: count, by: 5).map {
-                self.sortedTrendData[$0].date
+                sortedTrendData[$0].date
             }
         } else {
             // Show first, middle, last for large datasets
-            let first = self.sortedTrendData.first?.date
-            let middle = self.sortedTrendData[count / 2].date
-            let last = self.sortedTrendData.last?.date
+            let first = sortedTrendData.first?.date
+            let middle = sortedTrendData[count / 2].date
+            let last = sortedTrendData.last?.date
             return [first, middle, last].compactMap(\.self)
         }
     }
 
     /// Accessibility hint describing the trend
     private var chartAccessibilityHint: String {
-        let sorted = self.sortedTrendData
+        let sorted = sortedTrendData
         guard !sorted.isEmpty else {
             return "No retention trend data available"
         }
@@ -235,7 +235,7 @@ struct RetentionTrendChart: View {
     /// **Why selective labeling?**: Prevents visual clutter when many data points exist.
     /// Shows labels for first/last points and extrema (min/max values).
     private func shouldShowLabel(for point: (date: Date, rate: Double)) -> Bool {
-        let sorted = self.sortedTrendData
+        let sorted = sortedTrendData
         guard sorted.count > 0 else { return false }
 
         // Always show first and last points

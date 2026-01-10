@@ -80,9 +80,9 @@ struct FlashcardView: View {
     @ViewBuilder
     private var cardContent: some View {
         if AppSettings.matchedGeometryEffectEnabled {
-            FlashcardMatchedView(card: self.card, isFlipped: self.$isFlipped)
+            FlashcardMatchedView(card: card, isFlipped: $isFlipped)
         } else {
-            self.traditionalCardView
+            traditionalCardView
         }
     }
 
@@ -90,17 +90,17 @@ struct FlashcardView: View {
     @ViewBuilder
     private var traditionalCardView: some View {
         ZStack {
-            if self.isFlipped {
-                CardBackView(card: self.card)
+            if isFlipped {
+                CardBackView(card: card)
                     .glassEffectTransition(.scaleFade)
                     .zIndex(1)
             } else {
-                CardFrontView(card: self.card)
+                CardFrontView(card: card)
                     .glassEffectTransition(.scaleFade)
                     .zIndex(0)
             }
         }
-        .ttsTiming(for: self.card, isFlipped: self.$isFlipped)
+        .ttsTiming(for: card, isFlipped: $isFlipped)
     }
 
     /// Info button overlay (top-right corner)
@@ -111,7 +111,7 @@ struct FlashcardView: View {
                 Spacer()
 
                 Button {
-                    self.showingDetail = true
+                    showingDetail = true
                 } label: {
                     Image(systemName: "info.circle.fill")
                         .font(.title3)
@@ -130,14 +130,14 @@ struct FlashcardView: View {
     }
 
     var body: some View {
-        self.cardContent
-            .overlay(self.infoButtonOverlay)
+        cardContent
+            .overlay(infoButtonOverlay)
             .frame(maxWidth: .infinity)
             .frame(height: 400)
             .background(Color(.systemBackground))
-            .glassEffect(AppSettings.glassConfiguration.effectiveThickness(base: self.glassThickness))
+            .glassEffect(AppSettings.glassConfiguration.effectiveThickness(base: glassThickness))
             // Animation removed - nested in FlashcardMatchedView to avoid double animations
-            .interactive(self.gestureViewModel.offsetBinding) { dragOffset in
+            .interactive(gestureViewModel.offsetBinding) { dragOffset in
                 let horizontalProgress = min(max(dragOffset.width / 100, -1), 1)
                 let verticalProgress = min(max(dragOffset.height / 100, -1), 1)
                 let isHorizontal = abs(dragOffset.width) > abs(dragOffset.height)
@@ -157,35 +157,35 @@ struct FlashcardView: View {
                 }
             }
             // Gesture visual feedback
-            .offset(x: self.gestureViewModel.offset.width, y: self.gestureViewModel.offset.height)
-            .scaleEffect(self.gestureViewModel.scale)
-            .rotationEffect(.degrees(self.gestureViewModel.rotation))
-            .opacity(self.gestureViewModel.opacity)
+            .offset(x: gestureViewModel.offset.width, y: gestureViewModel.offset.height)
+            .scaleEffect(gestureViewModel.scale)
+            .rotationEffect(.degrees(gestureViewModel.rotation))
+            .opacity(gestureViewModel.opacity)
             // Gesture handling - use simultaneousGesture to allow tap to work
             .simultaneousGesture(
                 DragGesture(minimumDistance: 10, coordinateSpace: .local)
                     .onChanged { value in
-                        self.isDragging = true
+                        isDragging = true
 
                         guard let result = gestureViewModel.handleGestureChange(value) else { return }
 
                         let now = Date()
-                        if now.timeIntervalSince(self.lastHapticTime) >= AnimationConstants.hapticThrottleInterval {
+                        if now.timeIntervalSince(lastHapticTime) >= AnimationConstants.hapticThrottleInterval {
                             HapticService.shared.triggerSwipe(
                                 direction: result.direction.hapticDirection,
                                 progress: result.progress
                             )
-                            self.lastHapticTime = now
+                            lastHapticTime = now
                         }
                     }
                     .onEnded { value in
-                        let direction = self.gestureViewModel.detectDirection(translation: value.translation)
+                        let direction = gestureViewModel.detectDirection(translation: value.translation)
                         _ = max(abs(value.translation.width), abs(value.translation.height))
-                        let shouldCommit = self.gestureViewModel.shouldCommitSwipe(translation: value.translation)
+                        let shouldCommit = gestureViewModel.shouldCommitSwipe(translation: value.translation)
 
                         if shouldCommit {
                             // Commit swipe
-                            let rating = self.gestureViewModel.ratingForDirection(direction)
+                            let rating = gestureViewModel.ratingForDirection(direction)
 
                             // Success haptic
                             if rating == 2 || rating == 3 {
@@ -195,86 +195,86 @@ struct FlashcardView: View {
                             }
 
                             // Reset with animation
-                            self.isDragging = false
+                            isDragging = false
                             withAnimation(.spring(response: AnimationConstants.commitSpringResponse, dampingFraction: AnimationConstants.commitSpringDamping)) {
-                                self.gestureViewModel.resetGestureState()
+                                gestureViewModel.resetGestureState()
                             }
 
                             // Notify parent
-                            self.onSwipe?(rating)
+                            onSwipe?(rating)
                         } else {
                             // Cancel swipe - snap back
-                            self.isDragging = false
+                            isDragging = false
                             withAnimation(.spring(response: AnimationConstants.cancelSpringResponse, dampingFraction: AnimationConstants.cancelSpringDamping)) {
-                                self.gestureViewModel.resetGestureState()
+                                gestureViewModel.resetGestureState()
                             }
                         }
                     }
             )
-            .accessibilityLabel(self.isFlipped ? "Card back showing definition" : "Card front showing word")
+            .accessibilityLabel(isFlipped ? "Card back showing definition" : "Card front showing word")
             .accessibilityHint("Double tap to flip card, or swipe in any direction to rate")
             .accessibilityAddTraits(.isButton)
             .accessibilityIdentifier("flashcard")
             .simultaneousGesture(
                 TapGesture(count: 1)
                     .onEnded {
-                        guard !self.isDragging else { return }
+                        guard !isDragging else { return }
                         withAnimation(.easeInOut(duration: 0.3)) {
-                            self.isFlipped.toggle()
+                            isFlipped.toggle()
                         }
                     }
             )
             .simultaneousGesture(
                 TapGesture(count: 2)
                     .onEnded {
-                        guard !self.isDragging else { return }
-                        self.translationTask?.cancel()
-                        self.translationTask = Task {
-                            await self.handleDoubleTapTranslation()
+                        guard !isDragging else { return }
+                        translationTask?.cancel()
+                        translationTask = Task {
+                            await handleDoubleTapTranslation()
                         }
                     }
             )
-            .sheet(isPresented: self.$showingDetail) {
-                FlashcardDetailView(flashcard: self.card)
+            .sheet(isPresented: $showingDetail) {
+                FlashcardDetailView(flashcard: card)
                     .presentationCornerRadius(24)
                     .presentationDragIndicator(.visible)
             }
-            .sheet(isPresented: self.$showingTranslation) {
+            .sheet(isPresented: $showingTranslation) {
                 TranslationSheetView(
-                    flashcard: self.card,
-                    translationResult: self.translationResult,
-                    isTranslating: self.isTranslating
+                    flashcard: card,
+                    translationResult: translationResult,
+                    isTranslating: isTranslating
                 )
                 .presentationCornerRadius(24)
                 .presentationDragIndicator(.visible)
             }
-            .alert("Translation Error", isPresented: .constant(self.translationError != nil)) {
+            .alert("Translation Error", isPresented: .constant(translationError != nil)) {
                 Button("OK", role: .cancel) {
-                    self.translationError = nil
+                    translationError = nil
                 }
-                if case .languagePackMissing = self.translationError {
+                if case .languagePackMissing = translationError {
                     Button("Download") {
                         // Create configuration to trigger download via .translationTask()
                         let target = Locale.Language(identifier: AppSettings.translationTargetLanguage)
                         let source = Locale.Language(identifier: AppSettings.translationSourceLanguage)
-                        self.downloadConfiguration = TranslationSession.Configuration(source: source, target: target)
+                        downloadConfiguration = TranslationSession.Configuration(source: source, target: target)
                     }
                 }
             } message: {
-                Text(self.translationError?.localizedDescription ?? "")
+                Text(translationError?.localizedDescription ?? "")
             }
-            .translationTask(self.downloadConfiguration) { session in
+            .translationTask(downloadConfiguration) { session in
                 // prepareTranslation() triggers the system download prompt
                 do {
                     try await session.prepareTranslation()
-                    self.translationError = nil
+                    translationError = nil
                 } catch {
-                    self.translationError = .languagePackMissing(
+                    translationError = .languagePackMissing(
                         source: AppSettings.translationSourceLanguage,
                         target: AppSettings.translationTargetLanguage
                     )
                 }
-                self.downloadConfiguration = nil
+                downloadConfiguration = nil
             }
             .id("flashcard-base")
     }
@@ -284,16 +284,16 @@ struct FlashcardView: View {
     /// Handle double-tap gesture for translation
     @MainActor
     private func handleDoubleTapTranslation() async {
-        guard let container = self.card.modelContext?.container else { return }
+        guard let container = card.modelContext?.container else { return }
 
-        self.isTranslating = true
-        self.showingTranslation = true
+        isTranslating = true
+        showingTranslation = true
 
         do {
             // Create DTO with word to translate
             let request = QuickTranslationService.FlashcardTranslationRequest(
-                word: self.card.word,
-                flashcardID: self.card.persistentModelID
+                word: card.word,
+                flashcardID: card.persistentModelID
             )
 
             let result = try await QuickTranslationService.shared.translate(
@@ -301,8 +301,8 @@ struct FlashcardView: View {
                 container: container
             )
 
-            self.translationResult = result
-            self.isTranslating = false
+            translationResult = result
+            isTranslating = false
 
             // Haptic feedback: subtle for cache hit, strong for fresh translation
             if result.isCacheHit {
@@ -311,9 +311,9 @@ struct FlashcardView: View {
                 HapticService.shared.triggerSuccess()
             }
         } catch {
-            self.translationError = error as? QuickTranslationService.QuickTranslationError
-            self.isTranslating = false
-            self.showingTranslation = false
+            translationError = error as? QuickTranslationService.QuickTranslationError
+            isTranslating = false
+            showingTranslation = false
         }
     }
 }

@@ -50,21 +50,21 @@ struct AISettingsView: View {
                         .foregroundStyle(.secondary)
 
                     VStack(alignment: .leading, spacing: 6) {
-                        self.aiSourceDescriptionRow(
+                        aiSourceDescriptionRow(
                             icon: "cpu",
                             title: "On-Device AI",
                             description: "Uses Apple's Foundation Models (iOS 26+). Private, offline-capable."
                         )
-                        self.aiSourceDescriptionRow(
+                        aiSourceDescriptionRow(
                             icon: "arrow.down",
                             description: "Falls back to Cloud API if unavailable."
                         )
-                        self.aiSourceDescriptionRow(
+                        aiSourceDescriptionRow(
                             icon: "cloud",
                             title: "Cloud API",
                             description: "Uses Z.ai API. Requires API key and internet connection."
                         )
-                        self.aiSourceDescriptionRow(
+                        aiSourceDescriptionRow(
                             icon: "arrow.down",
                             description: "Falls back to static sentences if no API key."
                         )
@@ -113,7 +113,7 @@ struct AISettingsView: View {
             // Status Information
             Section {
                 VStack(alignment: .leading, spacing: 12) {
-                    self.statusRow(
+                    statusRow(
                         title: "Current Source",
                         value: Text(AppSettings.aiSourcePreference.displayName)
                             .fontWeight(.medium)
@@ -121,7 +121,7 @@ struct AISettingsView: View {
 
                     Divider()
 
-                    self.statusRow(
+                    statusRow(
                         title: "Foundation Models",
                         value: Group {
                             if #available(iOS 26.0, *) {
@@ -136,7 +136,7 @@ struct AISettingsView: View {
 
                     Divider()
 
-                    self.statusRow(
+                    statusRow(
                         title: "API Key",
                         value: Group {
                             if KeychainManager.hasAPIKey() {

@@ -37,7 +37,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("API key persists across re-reads")
     func keyPersistsAcrossRereads() async throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let testKey = "sk-test-\(UUID().uuidString)"
 
@@ -63,7 +63,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("API key persists after delete and re-store")
     func keyPersistsAfterDeleteAndRestore() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let key1 = "sk-first-\(UUID().uuidString)"
         let key2 = "sk-second-\(UUID().uuidString)"
@@ -91,7 +91,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("UTF-8 encoding: emoji in API key")
     func utf8EncodingEmoji() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let emojiKey = "test-🔑-café-☕️-key"
 
@@ -105,7 +105,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("UTF-8 encoding: Chinese characters")
     func utf8EncodingChinese() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let chineseKey = "sk-测试-密钥-中文"
 
@@ -119,7 +119,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("UTF-8 encoding: Japanese characters")
     func utf8EncodingJapanese() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let japaneseKey = "sk-テスト-キー-日本語"
 
@@ -133,7 +133,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("UTF-8 encoding: Arabic (RTL language)")
     func utf8EncodingArabic() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let arabicKey = "sk-مرحبا-مفتاح-عربي"
 
@@ -147,7 +147,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("UTF-8 encoding: Hebrew (RTL language)")
     func utf8EncodingHebrew() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let hebrewKey = "sk-שלום-מפתח-עברית"
 
@@ -161,7 +161,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("UTF-8 encoding: Korean")
     func utf8EncodingKorean() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let koreanKey = "sk-테스트-키-한국어"
 
@@ -175,7 +175,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("UTF-8 encoding: Cyrillic (Russian)")
     func utf8EncodingCyrillic() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let cyrillicKey = "sk-тест-ключ-русский"
 
@@ -189,7 +189,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("UTF-8 encoding: mixed scripts")
     func utf8EncodingMixedScripts() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let mixedKey = "sk-test-测试-테스트-тест-مرحبا"
 
@@ -203,7 +203,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("UTF-8 encoding: combining diacritics")
     func utf8EncodingCombiningDiacritics() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         // Using combining diacritical marks
         let combiningKey = "sk-cafe\u{0301}-na\u{0308}ve" // café + naïve
@@ -220,7 +220,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("Update existing API key")
     func updateExistingKey() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let key1 = "sk-initial-key"
         let key2 = "sk-updated-key"
@@ -244,7 +244,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("Multiple updates in sequence")
     func multipleSequentialUpdates() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let keys = (1 ... 10).map { "sk-key-\($0)" }
 
@@ -265,7 +265,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("Empty key throws emptyKey error")
     func emptyKeyThrowsError() {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         do {
             try KeychainManager.setAPIKey("")
@@ -306,7 +306,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("Delete existing API key succeeds")
     func deleteExistingKey() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let testKey = "sk-to-delete"
         try KeychainManager.setAPIKey(testKey)
@@ -322,7 +322,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("Delete non-existent API key succeeds")
     func deleteNonExistentKey() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         // Ensure key doesn't exist
         let before = try KeychainManager.getAPIKey()
@@ -338,7 +338,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("Delete and recreate API key")
     func deleteAndRecreateKey() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let key1 = "sk-first"
         let key2 = "sk-second"
@@ -358,7 +358,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("hasAPIKey returns true when key exists")
     func hasAPIKeyReturnsTrue() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         #expect(KeychainManager.hasAPIKey() == false, "Should not have key initially")
 
@@ -371,7 +371,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("hasAPIKey returns false when getAPIKey throws")
     func hasAPIKeyReturnsFalseOnError() {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         // If getAPIKey throws an unexpected error, hasAPIKey should return false
         // (In real scenarios, this would be Keychain corruption or access denial)
@@ -383,7 +383,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("Generic set and get for custom account")
     func genericSetAndGet() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let account = "test_account_1"
         let value = "test-value-123"
@@ -398,7 +398,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("Multiple accounts coexist independently")
     func multipleAccountsCoexist() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let account1 = "test_account_1"
         let account2 = "test_account_2"
@@ -427,7 +427,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("API key account is separate from generic accounts")
     func apiKeyAccountSeparateFromGeneric() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let apiKey = "sk-api-key"
         let genericAccount = "generic_storage"
@@ -455,7 +455,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("Generic account delete non-existent succeeds")
     func genericDeleteNonExistent() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let account = "non_existent_account"
 
@@ -492,7 +492,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("getAPIKey throws on invalid UTF-8 data in Keychain")
     func getAPIKeyThrowsOnInvalidUTF8() async throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         // This test verifies that if Keychain contains non-UTF8 data,
         // getAPIKey() throws KeychainError.invalidData
@@ -515,7 +515,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("Very long API key")
     func veryLongAPIKey() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let longKey = "sk-" + String(repeating: "a", count: 4000)
 
@@ -530,7 +530,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("API key with special characters")
     func apiKeyWithSpecialCharacters() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let specialKey = "sk-!@#$%^&*()_+-=[]{}|;':\",./<>?"
 
@@ -544,7 +544,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("API key with newlines and tabs")
     func apiKeyWithWhitespace() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         let whitespaceKey = "sk-key-with\nnewlines\tand\ttabs"
 
@@ -558,7 +558,7 @@ struct KeychainManagerPersistenceTests {
 
     @Test("Rapid set and delete operations")
     func rapidSetDeleteOperations() throws {
-        self.cleanupAPIKey()
+        cleanupAPIKey()
 
         // Perform rapid set/delete cycles
         for i in 0 ..< 20 {
