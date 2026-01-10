@@ -8,7 +8,6 @@ on:
 permissions:
   contents: read
   pull-requests: write
-  id-token: write
 
 jobs:
   claude-review:
@@ -66,6 +65,7 @@ jobs:
           ANTHROPIC_BASE_URL: http://localhost:3456
           ANTHROPIC_API_KEY: "any-string-is-ok"
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
