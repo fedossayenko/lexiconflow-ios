@@ -643,6 +643,66 @@ class AudioService {
 }
 ```
 
+### Audio Session Lifecycle Management
+
+SpeechService manages AVAudioSession lifecycle to prevent error 4099 during iOS shutdown sequences:
+
+**Background Transition:**
+```swift
+case .background:
+    SpeechService.shared.cleanup() // Deactivate audio session
+```
+
+**Foreground Transition:**
+```swift
+case .active:
+    SpeechService.shared.restartEngine() // Reactivate audio session
+```
+
+**Why This Matters:**
+- iOS automatically deactivates audio sessions when apps background
+- Without explicit cleanup, AVAudioSession error 4099 occurs during app termination
+- `cleanup()` stops ongoing speech and deactivates session gracefully
+- `restartEngine()` reconfigures session when app returns to foreground
+
+**Implementation:**
+- `SpeechService.cleanup()`: Stops speech, sets `AVAudioSession.setActive(false)`
+- `SpeechService.restartEngine()`: Calls `configureAudioSession()` if needed
+- Integrated in `LexiconFlowApp.swift` scene phase observer
+
+### TTS Timing Configuration
+
+Users can configure when TTS auto-plays via `AppSettings.TTSTiming`:
+
+**Options:**
+- `.onView`: Play pronunciation when card front appears (NEW DEFAULT)
+- `.onFlip`: Play when card flips to back (LEGACY BEHAVIOR)
+- `.manual`: Play only via speaker button (no auto-play)
+
+**Migration:**
+- Previous boolean `ttsAutoPlayOnFlip` migrated to enum
+- One-time migration in `TTSSettingsView.task`
+- Migration key: `"ttsTimingMigrated"`
+
+**Implementation:**
+```swift
+// FlashcardView.swift
+.onAppear {
+    switch AppSettings.ttsTiming {
+    case .onView: SpeechService.shared.speak(card.word)
+    case .onFlip, .manual: break
+    }
+}
+
+.onChange(of: isFlipped) { _, newValue in
+    switch AppSettings.ttsTiming {
+    case .onView: /* Play when returning to front */
+    case .onFlip: /* Play when flipping to back */
+    case .manual: break
+    }
+}
+```
+
 ---
 
 ## Haptic Feedback
