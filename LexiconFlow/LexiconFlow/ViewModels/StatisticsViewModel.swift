@@ -99,17 +99,17 @@ final class StatisticsViewModel: ObservableObject {
 
         // Fetch metrics sequentially to avoid capturing non-Sendable ModelContext in Sendable closure
         // Swift 6 strict concurrency requires this approach
-        let retentionResult = await statisticsService.calculateRetentionRate(
+        let retentionResult = self.statisticsService.calculateRetentionRate(
             context: self.modelContext,
             timeRange: self.selectedTimeRange
         )
 
-        let streakResult = await statisticsService.calculateStudyStreak(
+        let streakResult = self.statisticsService.calculateStudyStreak(
             context: self.modelContext,
             timeRange: self.selectedTimeRange
         )
 
-        let fsrsResult = await statisticsService.calculateFSRSMetrics(
+        let fsrsResult = self.statisticsService.calculateFSRSMetrics(
             context: self.modelContext,
             timeRange: self.selectedTimeRange
         )

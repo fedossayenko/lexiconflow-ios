@@ -360,7 +360,7 @@ struct DictionaryImportView: View {
         let importer = DictionaryImporter(modelContext: modelContext)
 
         // Detect format
-        if let format = await importer.detectFormat(from: url) {
+        if let format = importer.detectFormat(from: url) {
             self.detectedFormat = format
             self.logger.info("Detected format: \(format.rawValue)")
         } else {

@@ -66,7 +66,7 @@ final class DictionaryImporter {
         var translationFieldIndex: Int?
         var hasHeader: Bool = true
 
-        static let `default` = FieldMappingConfiguration(
+        nonisolated(unsafe) static let `default` = FieldMappingConfiguration(
             wordFieldIndex: 0,
             definitionFieldIndex: 1,
             phoneticFieldIndex: nil,

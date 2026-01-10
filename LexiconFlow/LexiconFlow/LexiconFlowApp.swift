@@ -321,6 +321,9 @@ struct LexiconFlowApp: App {
             // Reset haptic engine when app goes to background to free resources
             HapticService.shared.reset()
 
+            // Deactivate audio session to prevent AVAudioSession error 4099
+            SpeechService.shared.cleanup()
+
             // Aggregate DailyStats from completed StudySession records
             // This runs in the background to prepare pre-aggregated statistics for dashboard
             // Cancel any existing aggregation task before starting a new one
@@ -332,6 +335,9 @@ struct LexiconFlowApp: App {
             // Restart haptic engine when app returns to foreground
             if oldPhase == .background || oldPhase == .inactive {
                 HapticService.shared.restartEngine()
+
+                // Reactivate audio session for text-to-speech
+                SpeechService.shared.restartEngine()
             }
         default:
             break

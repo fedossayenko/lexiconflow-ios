@@ -114,13 +114,11 @@ final class ReviewHistoryExporter {
 
         Self.logger.info("CSV export complete: \(csv.utf8.count) bytes")
 
-        Task {
-            await Analytics.trackEvent("review_history_exported", metadata: [
-                "flashcard_word": flashcard.word,
-                "review_count": "\(reviews.count)",
-                "csv_size_bytes": "\(csv.utf8.count)"
-            ])
-        }
+        Analytics.trackEvent("review_history_exported", metadata: [
+            "flashcard_word": flashcard.word,
+            "review_count": "\(reviews.count)",
+            "csv_size_bytes": "\(csv.utf8.count)"
+        ])
 
         return csv
     }
@@ -178,14 +176,12 @@ final class ReviewHistoryExporter {
 
         Self.logger.info("Filtered CSV export complete: \(csv.utf8.count) bytes")
 
-        Task {
-            await Analytics.trackEvent("review_history_exported_filtered", metadata: [
-                "flashcard_word": flashcard.word,
-                "filter_type": filter.rawValue,
-                "review_count": "\(reviews.count)",
-                "csv_size_bytes": "\(csv.utf8.count)"
-            ])
-        }
+        Analytics.trackEvent("review_history_exported_filtered", metadata: [
+            "flashcard_word": flashcard.word,
+            "filter_type": filter.rawValue,
+            "review_count": "\(reviews.count)",
+            "csv_size_bytes": "\(csv.utf8.count)"
+        ])
 
         return csv
     }

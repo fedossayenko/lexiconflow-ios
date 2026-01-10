@@ -123,6 +123,7 @@ struct OnboardingView: View {
             // Save to persistent store
             do {
                 try self.modelContext.save()
+                AppSettings.hasCompletedOnboarding = true // Update single source of truth
                 self.hasCompletedOnboarding = true
             } catch {
                 Task { Analytics.trackError("onboarding_save", error: error) }
