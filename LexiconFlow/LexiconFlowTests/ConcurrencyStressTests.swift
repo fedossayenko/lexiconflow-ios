@@ -136,7 +136,7 @@ struct ConcurrencyStressTests {
             for _ in 0 ..< 50 {
                 group.addTask {
                     // Call @MainActor ViewModel from concurrent tasks
-                    await MainActor.run {
+                    await MainActor.run { [viewModel = viewModel, flashcard = flashcard] in
                         await (try? viewModel.processReview(
                             flashcard: flashcard,
                             rating: Int.random(in: 1 ... 5)

@@ -215,17 +215,16 @@ struct DeckSelectionView: View {
             return
         }
 
+        // Use batch API to fetch all deck statistics in a single query
+        // Performance: 1 query instead of 3 queries per deck (30 queries → 1 query for 10 decks)
+        let allStats = scheduler.fetchDeckStatistics(for: self.decks)
+
         var stats: [UUID: DeckStudyStats] = [:]
-
-        for deck in self.decks {
-            let newCount = scheduler.newCardCount(for: deck)
-            let dueCount = scheduler.dueCardCount(for: deck)
-            let totalCount = scheduler.totalCardCount(for: deck)
-
-            stats[deck.id] = DeckStudyStats(
-                newCount: newCount,
-                dueCount: dueCount,
-                totalCount: totalCount
+        for (deckID, deckStats) in allStats {
+            stats[deckID] = DeckStudyStats(
+                newCount: deckStats.new,
+                dueCount: deckStats.due,
+                totalCount: deckStats.total
             )
         }
 

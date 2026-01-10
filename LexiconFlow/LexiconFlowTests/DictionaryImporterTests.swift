@@ -144,7 +144,7 @@ struct DictionaryImporterTests {
         let result = try await importer.previewImport(
             fileURL,
             format: .csv,
-            fieldMapping: .default,
+
             limit: 10
         )
 
@@ -167,7 +167,7 @@ struct DictionaryImporterTests {
         let result = try await importer.previewImport(
             fileURL,
             format: .csv,
-            fieldMapping: .default,
+
             limit: 10
         )
 
@@ -189,7 +189,7 @@ struct DictionaryImporterTests {
         let result = try await importer.previewImport(
             fileURL,
             format: .csv,
-            fieldMapping: .default,
+
             limit: 10
         )
 
@@ -246,7 +246,7 @@ struct DictionaryImporterTests {
         let result = try await importer.previewImport(
             fileURL,
             format: .csv,
-            fieldMapping: .default,
+
             limit: 10
         )
 
@@ -358,11 +358,11 @@ struct DictionaryImporterTests {
         let container = self.createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
-        let error = #expect(throws: DictionaryImporter.ImportError.self) {
+        let error = await #expect(throws: DictionaryImporter.ImportError.self) {
             try await importer.previewImport(fileURL, format: .json, limit: 10)
         }
 
-        #expect(error.fieldName == "word")
+        #expect(error?.fieldName == "word")
     }
 
     @Test("parseJSON throws error for invalid JSON structure")
@@ -377,11 +377,11 @@ struct DictionaryImporterTests {
         let container = self.createTestContainer()
         let importer = DictionaryImporter(modelContext: container.mainContext)
 
-        let error = #expect(throws: DictionaryImporter.ImportError.self) {
+        let error = await #expect(throws: DictionaryImporter.ImportError.self) {
             try await importer.previewImport(fileURL, format: .json, limit: 10)
         }
 
-        #expect(error.reason.contains("Invalid JSON structure"))
+        #expect(error?.reason.contains("Invalid JSON structure") ?? false)
     }
 
     // MARK: - TXT Parsing Tests
@@ -401,7 +401,7 @@ struct DictionaryImporterTests {
         let result = try await importer.previewImport(
             fileURL,
             format: .txt,
-            fieldMapping: .default,
+
             limit: 10
         )
 
@@ -424,7 +424,7 @@ struct DictionaryImporterTests {
         let result = try await importer.previewImport(
             fileURL,
             format: .txt,
-            fieldMapping: .default,
+
             limit: 10
         )
 
@@ -452,7 +452,7 @@ struct DictionaryImporterTests {
         let result = try await importer.previewImport(
             fileURL,
             format: .txt,
-            fieldMapping: .default,
+
             limit: 10
         )
 
@@ -606,7 +606,7 @@ struct DictionaryImporterTests {
         let result = try await importer.previewImport(
             fileURL,
             format: .csv,
-            fieldMapping: .default,
+
             limit: 5
         )
 
@@ -631,7 +631,7 @@ struct DictionaryImporterTests {
         let result = try await importer.importDictionary(
             fileURL,
             format: .csv,
-            fieldMapping: .default,
+
             into: deck
         ) { _ in }
 
@@ -695,7 +695,7 @@ struct DictionaryImporterTests {
         let result = try await importer.previewImport(
             fileURL,
             format: .csv,
-            fieldMapping: .default,
+
             limit: 10
         )
 
@@ -740,7 +740,7 @@ struct DictionaryImporterTests {
         let result = try await importer.previewImport(
             fileURL,
             format: .txt,
-            fieldMapping: .default,
+
             limit: 10
         )
 

@@ -37,24 +37,26 @@ struct StatisticsDashboardView: View {
             }
         }
 
-        return content
-            .task {
-                await self.initializeViewModel()
+        Group {
+            content
+        }
+        .task {
+            await self.initializeViewModel()
+        }
+        .alert("Error", isPresented: self.$showError) {
+            Button("OK", role: .cancel) {
+                self.viewModelHolder.value?.clearError()
             }
-            .alert("Error", isPresented: self.$showError) {
-                Button("OK", role: .cancel) {
-                    self.viewModelHolder.value?.clearError()
-                }
-                .accessibilityLabel("Dismiss error")
-            } message: {
-                Text(self.viewModelHolder.value?.errorMessage ?? "An unknown error occurred")
+            .accessibilityLabel("Dismiss error")
+        } message: {
+            Text(self.viewModelHolder.value?.errorMessage ?? "An unknown error occurred")
+        }
+        .onChange(of: self.viewModelHolder.value?.errorMessage != nil) { _, hasError in
+            if hasError {
+                self.showError = true
             }
-            .onChange(of: self.viewModelHolder.value?.errorMessage != nil) { _, hasError in
-                if hasError {
-                    self.showError = true
-                }
-            }
-            .accessibilityHint(self.accessibilityAnnouncement)
+        }
+        .accessibilityHint(self.accessibilityAnnouncement)
     }
 
     // MARK: - Dashboard Content
@@ -169,8 +171,9 @@ struct StatisticsDashboardView: View {
         ], spacing: 16) {
             // Total Study Time
             if let streakData = viewModel.streakData {
-                let totalStudyTime = streakData.calendarData.values.reduce(0, +)
-                self.studyTimeMetricCard(totalSeconds: totalStudyTime)
+                // Use pre-computed totalStudyTime instead of computing reduce() in view body
+                // Performance: Eliminates 60fps recomputation during animations
+                self.studyTimeMetricCard(totalSeconds: streakData.totalStudyTime)
             }
 
             // Cards Analyzed

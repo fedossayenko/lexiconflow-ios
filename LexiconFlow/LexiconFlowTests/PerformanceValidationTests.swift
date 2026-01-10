@@ -4,8 +4,8 @@
 //
 //  Performance validation tests
 //
-//  NOTE: Signpost API has been disabled for iOS 26 compatibility
-//  Use Instruments Time Profiler for performance measurement
+//  Uses simple Date() time measurement for iOS 26 compatibility
+//  For detailed profiling, use Instruments Time Profiler
 //
 
 import OSLog
@@ -14,7 +14,7 @@ import Testing
 import UIKit
 @testable import LexiconFlow
 
-@Suite("Performance Validation", .disabled("API compatibility updates required"))
+@Suite("Performance Validation")
 @MainActor
 struct PerformanceValidationTests {
     // MARK: - Test Context

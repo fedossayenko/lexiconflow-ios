@@ -91,25 +91,27 @@ struct StudySessionView: View {
             }
         }
 
-        return content
-            .alert("Error", isPresented: self.$showError) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(self.viewModel?.lastError?.localizedDescription ?? "An unknown error occurred")
+        Group {
+            content
+        }
+        .alert("Error", isPresented: self.$showError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(self.viewModel?.lastError?.localizedDescription ?? "An unknown error occurred")
+        }
+        .task {
+            if viewModel == nil {
+                viewModel = StudySessionViewModel(modelContext: self.modelContext, decks: self.decks, mode: self.mode)
             }
-            .task {
-                if viewModel == nil {
-                    viewModel = StudySessionViewModel(modelContext: self.modelContext, decks: self.decks, mode: self.mode)
-                }
-                if let viewModel, viewModel.cards.isEmpty {
-                    viewModel.loadCards()
-                }
+            if let viewModel, viewModel.cards.isEmpty {
+                viewModel.loadCards()
             }
-            .onChange(of: self.viewModel?.lastError != nil) { _, hasError in
-                if hasError {
-                    self.showError = true
-                }
+        }
+        .onChange(of: self.viewModel?.lastError != nil) { _, hasError in
+            if hasError {
+                self.showError = true
             }
+        }
     }
 
     private func sessionCompleteView(vm: StudySessionViewModel) -> some View {

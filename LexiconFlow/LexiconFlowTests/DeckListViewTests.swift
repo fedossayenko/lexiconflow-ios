@@ -53,8 +53,8 @@ struct DeckListViewTests {
 
     @Test("DeckListView can be created")
     func deckListViewCreation() {
-        let container = self.createTestContainer()
-        let view = DeckListView()
+        _ = self.createTestContainer()
+        _ = DeckListView()
 
         // Verify view can be created (smoke test)
         #expect(true, "DeckListView should be instantiable")
@@ -66,9 +66,9 @@ struct DeckListViewTests {
         let context = container.mainContext
 
         // Create decks with different orders
-        let deck3 = self.createTestDeck(in: context, name: "Third", order: 2)
-        let deck1 = self.createTestDeck(in: context, name: "First", order: 0)
-        let deck2 = self.createTestDeck(in: context, name: "Second", order: 1)
+        _ = self.createTestDeck(in: context, name: "Third", order: 2)
+        _ = self.createTestDeck(in: context, name: "First", order: 0)
+        _ = self.createTestDeck(in: context, name: "Second", order: 1)
 
         try context.save()
 
@@ -86,8 +86,8 @@ struct DeckListViewTests {
 
     @Test("Empty database shows ContentUnavailableView")
     func emptyDatabaseShowsEmptyState() {
-        let container = self.createTestContainer()
-        let view = DeckListView()
+        _ = self.createTestContainer()
+        _ = DeckListView()
 
         // Verify view handles empty database
         #expect(true, "DeckListView should show empty state when no decks exist")
@@ -121,8 +121,8 @@ struct DeckListViewTests {
         let deck = self.createTestDeck(in: context, name: "Test Deck")
 
         // Create new cards (should not be counted)
-        self.createTestCard(in: context, word: "NewCard1", deck: deck, state: .new)
-        self.createTestCard(in: context, word: "NewCard2", deck: deck, state: .new)
+        _ = self.createTestCard(in: context, word: "NewCard1", deck: deck, state: .new)
+        _ = self.createTestCard(in: context, word: "NewCard2", deck: deck, state: .new)
 
         try context.save()
 
@@ -156,7 +156,7 @@ struct DeckListViewTests {
 
         // Create due review card
         let now = Date()
-        self.createTestCard(in: context, word: "ReviewCard", deck: deck, dueDate: now, state: .review)
+        _ = self.createTestCard(in: context, word: "ReviewCard", deck: deck, dueDate: now, state: .review)
 
         try context.save()
 
@@ -189,7 +189,7 @@ struct DeckListViewTests {
 
         // Create future due card
         let future = Date().addingTimeInterval(86400) // Tomorrow
-        self.createTestCard(in: context, word: "FutureCard", deck: deck, dueDate: future, state: .review)
+        _ = self.createTestCard(in: context, word: "FutureCard", deck: deck, dueDate: future, state: .review)
 
         try context.save()
 
@@ -226,7 +226,7 @@ struct DeckListViewTests {
         for i in 0 ..< 10 {
             let state: FlashcardState = i % 2 == 0 ? .review : .new
             let dueDate: Date? = state == .review ? now : Date().addingTimeInterval(86400)
-            self.createTestCard(in: context, word: "Card\(i)", deck: deck, dueDate: dueDate, state: state)
+            _ = self.createTestCard(in: context, word: "Card\(i)", deck: deck, dueDate: dueDate, state: state)
         }
 
         try context.save()
@@ -258,9 +258,9 @@ struct DeckListViewTests {
         let context = container.mainContext
 
         // Create decks
-        let deck1 = self.createTestDeck(in: context, name: "Deck1")
+        _ = self.createTestDeck(in: context, name: "Deck1")
         let deck2 = self.createTestDeck(in: context, name: "Deck2")
-        let deck3 = self.createTestDeck(in: context, name: "Deck3")
+        _ = self.createTestDeck(in: context, name: "Deck3")
 
         try context.save()
 
@@ -282,7 +282,7 @@ struct DeckListViewTests {
         let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck1 = self.createTestDeck(in: context, name: "Deck1")
+        _ = self.createTestDeck(in: context, name: "Deck1")
 
         try context.save()
 
@@ -321,8 +321,8 @@ struct DeckListViewTests {
         let context = container.mainContext
 
         // Create decks
-        self.createTestDeck(in: context, name: "Deck1")
-        self.createTestDeck(in: context, name: "Deck2")
+        _ = self.createTestDeck(in: context, name: "Deck1")
+        _ = self.createTestDeck(in: context, name: "Deck2")
 
         try context.save()
 
@@ -337,7 +337,7 @@ struct DeckListViewTests {
         let context = container.mainContext
 
         let deck = self.createTestDeck(in: context, name: "Test Deck")
-        self.createTestCard(in: context, word: "Card1", deck: deck, state: .review)
+        _ = self.createTestCard(in: context, word: "Card1", deck: deck, state: .review)
 
         try context.save()
 
@@ -353,7 +353,7 @@ struct DeckListViewTests {
         let container = self.createTestContainer()
         let context = container.mainContext
 
-        self.createTestDeck(in: context, name: "Single Deck")
+        _ = self.createTestDeck(in: context, name: "Single Deck")
 
         try context.save()
 
@@ -369,7 +369,7 @@ struct DeckListViewTests {
 
         // Create 100 decks
         for i in 0 ..< 100 {
-            self.createTestDeck(in: context, name: "Deck\(i)", order: i)
+            _ = self.createTestDeck(in: context, name: "Deck\(i)", order: i)
         }
 
         try context.save()
@@ -384,7 +384,7 @@ struct DeckListViewTests {
         let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = self.createTestDeck(in: context, name: "Empty Deck")
+        _ = self.createTestDeck(in: context, name: "Empty Deck")
 
         try context.save()
 

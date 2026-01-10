@@ -93,7 +93,16 @@ final class MockAnalyticsBackend: AnalyticsBackend, @unchecked Sendable {
     private let lock = NSLock()
 
     /// All recorded analytics events
-    nonisolated(unsafe) var events: [AnalyticsEvent] {
+    /// Thread-safe access via lock
+    var events: [AnalyticsEvent] {
+        self.lock.lock()
+        defer { lock.unlock() }
+        return self._events
+    }
+
+    /// Nonisolated accessor for test verification
+    /// Safe because tests run on @MainActor and this only reads
+    nonisolated func getEvents() -> [AnalyticsEvent] {
         self.lock.lock()
         defer { lock.unlock() }
         return self._events

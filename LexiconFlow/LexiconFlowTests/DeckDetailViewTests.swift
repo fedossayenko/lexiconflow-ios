@@ -57,7 +57,7 @@ struct DeckDetailViewTests {
         let context = container.mainContext
 
         let deck = self.createTestDeck(in: context, name: "Test Deck")
-        let view = DeckDetailView(deck: deck)
+        _ = DeckDetailView(deck: deck)
 
         // Verify view can be created with deck
         #expect(deck.name == "Test Deck", "View should be created with the deck")
@@ -69,7 +69,7 @@ struct DeckDetailViewTests {
         let context = container.mainContext
 
         let deck = self.createTestDeck(in: context, name: "Bindable Deck")
-        let view = DeckDetailView(deck: deck)
+        _ = DeckDetailView(deck: deck)
 
         // Verify @Bindable is used for deck mutations
         #expect(true, "DeckDetailView should use @Bindable for deck property")
@@ -83,7 +83,7 @@ struct DeckDetailViewTests {
         let context = container.mainContext
 
         let deck = self.createTestDeck(in: context, name: "My Vocabulary Deck")
-        let view = DeckDetailView(deck: deck)
+        _ = DeckDetailView(deck: deck)
 
         // Verify navigation title is deck.name
         #expect(deck.name == "My Vocabulary Deck", "Navigation title should match deck name")
@@ -99,7 +99,7 @@ struct DeckDetailViewTests {
         let deck = self.createTestDeck(in: context, name: "Empty Deck")
         try context.save()
 
-        let view = DeckDetailView(deck: deck)
+        _ = DeckDetailView(deck: deck)
 
         // Verify view handles empty cards array
         #expect(deck.cards.isEmpty, "Empty deck should show empty state")
@@ -131,8 +131,8 @@ struct DeckDetailViewTests {
         let context = container.mainContext
 
         let deck = self.createTestDeck(in: context, name: "Test Deck")
-        self.createTestCard(in: context, word: "Hello", deck: deck)
-        self.createTestCard(in: context, word: "World", deck: deck)
+        _ = self.createTestCard(in: context, word: "Hello", deck: deck)
+        _ = self.createTestCard(in: context, word: "World", deck: deck)
 
         try context.save()
 
@@ -190,9 +190,9 @@ struct DeckDetailViewTests {
         let context = container.mainContext
 
         let deck = self.createTestDeck(in: context, name: "Delete Test")
-        let card1 = self.createTestCard(in: context, word: "Keep", deck: deck)
+        _ = self.createTestCard(in: context, word: "Keep", deck: deck)
         let card2 = self.createTestCard(in: context, word: "Delete", deck: deck)
-        let card3 = self.createTestCard(in: context, word: "Keep", deck: deck)
+        _ = self.createTestCard(in: context, word: "Keep", deck: deck)
 
         try context.save()
 
@@ -289,7 +289,7 @@ struct DeckDetailViewTests {
 
         try context.save()
 
-        let view = DeckDetailView(deck: deck)
+        _ = DeckDetailView(deck: deck)
 
         #expect(true, "View should handle single card without crash")
     }
@@ -308,7 +308,7 @@ struct DeckDetailViewTests {
 
         try context.save()
 
-        let view = DeckDetailView(deck: deck)
+        _ = DeckDetailView(deck: deck)
 
         #expect(true, "View should handle many cards without crash")
     }
@@ -323,7 +323,7 @@ struct DeckDetailViewTests {
 
         try context.save()
 
-        let view = DeckDetailView(deck: deck)
+        _ = DeckDetailView(deck: deck)
 
         // Verify special characters are handled
         #expect(deck.name == "日本語 🇯🇵Deck", "Deck name should preserve special characters")
@@ -339,7 +339,7 @@ struct DeckDetailViewTests {
 
         try context.save()
 
-        let view = DeckDetailView(deck: deck)
+        _ = DeckDetailView(deck: deck)
 
         // Verify long names are handled
         #expect(deck.name.count == 1000, "Deck name should handle very long strings")
@@ -357,7 +357,7 @@ struct DeckDetailViewTests {
 
         try context.save()
 
-        let view = DeckDetailView(deck: deck)
+        _ = DeckDetailView(deck: deck)
 
         // Verify empty definitions are handled
         #expect(card.definition.isEmpty, "Card with empty definition should be handled")
@@ -376,7 +376,7 @@ struct DeckDetailViewTests {
 
         try context.save()
 
-        let view = DeckDetailView(deck: deck)
+        _ = DeckDetailView(deck: deck)
 
         // Verify long definitions are handled (limited to 2 lines by UI)
         #expect(card.definition.count > 0, "Card with long definition should be handled")

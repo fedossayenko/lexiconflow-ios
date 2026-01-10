@@ -95,7 +95,7 @@ jobs:
       - name: Build
         working-directory: ./LexiconFlow
         run: |
-          xcodebuild build \
+          SUPPRESS_APPINTENTS_METADATA=1 xcodebuild build \
             -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
             -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2'
@@ -142,7 +142,7 @@ jobs:
       - name: Test with Coverage
         working-directory: ./LexiconFlow
         run: |
-          xcodebuild test \
+          SUPPRESS_APPINTENTS_METADATA=1 xcodebuild test \
             -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
             -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2' \
@@ -216,7 +216,7 @@ jobs:
       - name: Run Integration Tests
         working-directory: ./LexiconFlow
         run: |
-          xcodebuild test \
+          SUPPRESS_APPINTENTS_METADATA=1 xcodebuild test \
             -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
             -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2' \

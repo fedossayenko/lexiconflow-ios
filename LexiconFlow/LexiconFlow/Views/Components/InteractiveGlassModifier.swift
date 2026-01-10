@@ -100,50 +100,54 @@ struct InteractiveGlassModifier: ViewModifier {
         let showGlow = currentProgress > 0.2
         let hasInteraction = currentProgress > 0
 
-        return content
-            .overlay(
-                ZStack {
-                    // Layer 1: Directional tint (always rendered for base feedback)
-                    effect.tint.clipShape(RoundedRectangle(cornerRadius: 20))
+        @ViewBuilder var modifiedContent: some View {
+            content
+                .overlay(
+                    ZStack {
+                        // Layer 1: Directional tint (always rendered for base feedback)
+                        effect.tint.clipShape(RoundedRectangle(cornerRadius: 20))
 
-                    // Layer 2: Specular highlight shift (essential for "Liquid" feel)
-                    if showHighlight {
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        .white.opacity(InteractiveGlassConstants.specularHighlightOpacity * currentProgress * config.opacityMultiplier),
-                                        .clear
-                                    ],
-                                    startPoint: self.offset.width > 0 ? .leading : .trailing,
-                                    endPoint: self.offset.width > 0 ? .trailing : .leading
+                        // Layer 2: Specular highlight shift (essential for "Liquid" feel)
+                        if showHighlight {
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            .white.opacity(InteractiveGlassConstants.specularHighlightOpacity * currentProgress * config.opacityMultiplier),
+                                            .clear
+                                        ],
+                                        startPoint: self.offset.width > 0 ? .leading : .trailing,
+                                        endPoint: self.offset.width > 0 ? .trailing : .leading
+                                    )
                                 )
-                            )
-                            .blendMode(.screen)
-                    }
+                                .blendMode(.screen)
+                        }
 
-                    // Layer 3: Edge glow (essential for "Liquid" feel)
-                    if showGlow {
-                        RoundedRectangle(cornerRadius: 20)
-                            .strokeBorder(
-                                effect.tint.opacity(currentProgress * InteractiveGlassConstants.edgeGlowOpacityMultiplier * config.opacityMultiplier),
-                                lineWidth: InteractiveGlassConstants.edgeGlowLineWidth
-                            )
-                            .blur(radius: InteractiveGlassConstants.edgeGlowBlurRadius)
+                        // Layer 3: Edge glow (essential for "Liquid" feel)
+                        if showGlow {
+                            RoundedRectangle(cornerRadius: 20)
+                                .strokeBorder(
+                                    effect.tint.opacity(currentProgress * InteractiveGlassConstants.edgeGlowOpacityMultiplier * config.opacityMultiplier),
+                                    lineWidth: InteractiveGlassConstants.edgeGlowLineWidth
+                                )
+                                .blur(radius: InteractiveGlassConstants.edgeGlowBlurRadius)
+                        }
                     }
-                }
-                .drawingGroup() // PERFORMANCE: Cache gesture effects as GPU bitmap
-            )
-            // KEEP all effects (essential for full "Liquid Glass" aesthetic)
-            .hueRotation(.degrees(currentProgress * InteractiveGlassConstants.hueRotationDegrees))
-            .saturation(hasInteraction ? 1.0 + (currentProgress * InteractiveGlassConstants.saturationIncreaseMultiplier) : 1.0)
-            .scaleEffect(1.0 + (currentProgress * InteractiveGlassConstants.scaleEffectMultiplier))
-            .rotation3DEffect(
-                .degrees(currentProgress * InteractiveGlassConstants.rotation3DDegrees),
-                axis: (x: 0, y: 1, z: 0),
-                anchor: .center,
-                perspective: 1.0
-            )
+                    .drawingGroup() // PERFORMANCE: Cache gesture effects as GPU bitmap
+                )
+                // KEEP all effects (essential for full "Liquid Glass" aesthetic)
+                .hueRotation(.degrees(currentProgress * InteractiveGlassConstants.hueRotationDegrees))
+                .saturation(hasInteraction ? 1.0 + (currentProgress * InteractiveGlassConstants.saturationIncreaseMultiplier) : 1.0)
+                .scaleEffect(1.0 + (currentProgress * InteractiveGlassConstants.scaleEffectMultiplier))
+                .rotation3DEffect(
+                    .degrees(currentProgress * InteractiveGlassConstants.rotation3DDegrees),
+                    axis: (x: 0, y: 1, z: 0),
+                    anchor: .center,
+                    perspective: 1.0
+                )
+        }
+
+        return modifiedContent
     }
 }
 
@@ -207,6 +211,4 @@ extension View {
             }
         }
     }
-
-    return InteractivePreview()
 }

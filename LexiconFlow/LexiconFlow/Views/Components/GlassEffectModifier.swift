@@ -76,55 +76,59 @@ struct GlassEffectModifier<S: InsettableShape>: ViewModifier {
         let config = AppSettings.glassConfiguration
         let effectiveOpacity = self.thickness.overlayOpacity * config.opacityMultiplier
 
-        return content
-            .clipShape(self.shape)
-            .background {
-                // PERFORMANCE: All layers combined in single ZStack for optimal GPU composition
-                // .drawingGroup() caches the entire ZStack as a GPU bitmap for massive performance boost
-                // This reduces composition passes from 3+ to 1 by caching the composited result
-                ZStack {
-                    // Layer 1: Base material
-                    self.shape.fill(self.thickness.material)
+        @ViewBuilder var glassContent: some View {
+            content
+                .clipShape(self.shape)
+                .background {
+                    // PERFORMANCE: All layers combined in single ZStack for optimal GPU composition
+                    // .drawingGroup() caches the entire ZStack as a GPU bitmap for massive performance boost
+                    // This reduces composition passes from 3+ to 1 by caching the composited result
+                    ZStack {
+                        // Layer 1: Base material
+                        self.shape.fill(self.thickness.material)
 
-                    // Layer 2: Refraction blur (simulates light bending through glass)
-                    self.shape
-                        .fill(.ultraThinMaterial)
-                        .blur(radius: self.thickness.refractionBlur)
+                        // Layer 2: Refraction blur (simulates light bending through glass)
+                        self.shape
+                            .fill(.ultraThinMaterial)
+                            .blur(radius: self.thickness.refractionBlur)
 
-                    // Layer 3: Specular highlight (creates "shiny" appearance)
+                        // Layer 3: Specular highlight (creates "shiny" appearance)
+                        self.shape
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        .white.opacity(self.thickness.specularOpacity * config.opacityMultiplier),
+                                        .clear,
+                                        .white.opacity(self.thickness.specularOpacity * 0.5 * config.opacityMultiplier)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .blendMode(.overlay)
+                    }
+                    .drawingGroup()
+                }
+                .overlay {
+                    // Layer 4: Inner glow for depth (essential for "Liquid Glass" aesthetic)
                     self.shape
-                        .fill(
+                        .strokeBorder(
                             LinearGradient(
                                 colors: [
-                                    .white.opacity(self.thickness.specularOpacity * config.opacityMultiplier),
-                                    .clear,
-                                    .white.opacity(self.thickness.specularOpacity * 0.5 * config.opacityMultiplier)
+                                    .white.opacity(effectiveOpacity),
+                                    .white.opacity(0)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
-                            )
+                            ),
+                            lineWidth: 1.5
                         )
-                        .blendMode(.overlay)
                 }
-                .drawingGroup()
-            }
-            .overlay {
-                // Layer 4: Inner glow for depth (essential for "Liquid Glass" aesthetic)
-                self.shape
-                    .strokeBorder(
-                        LinearGradient(
-                            colors: [
-                                .white.opacity(effectiveOpacity),
-                                .white.opacity(0)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1.5
-                    )
-            }
-            .shadow(color: .black.opacity(0.15), radius: self.thickness.shadowRadius, x: 0, y: 4)
-            .modifier(DynamicLightingModifier(thickness: self.thickness)) // KEEP - essential
+                .shadow(color: .black.opacity(0.15), radius: self.thickness.shadowRadius, x: 0, y: 4)
+                .modifier(DynamicLightingModifier(thickness: self.thickness)) // KEEP - essential
+        }
+
+        return glassContent
     }
 }
 

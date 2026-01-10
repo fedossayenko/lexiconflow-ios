@@ -90,7 +90,7 @@ struct QuickTranslationServiceTests {
 
     @Test("FlashcardTranslationRequest accepts word with flashcardID")
     func dtoWithFlashcardID() {
-        let flashcardID = PersistentIdentifier(UUID())
+        let flashcardID = PersistentIdentifier(uuidString: UUID().uuidString)
         let request = QuickTranslationService.FlashcardTranslationRequest(
             word: "test",
             flashcardID: flashcardID
@@ -537,8 +537,13 @@ struct QuickTranslationServiceTests {
             flashcardID: nil
         )
 
-        await #expect(throws: QuickTranslationService.QuickTranslationError.emptyWord) {
+        do {
             try await service.translate(request: request, container: container)
+            #expect(Bool(false), "Should have thrown emptyWord error")
+        } catch QuickTranslationService.QuickTranslationError.emptyWord {
+            // Expected error type
+        } catch {
+            #expect(Bool(false), "Wrong error type: \(error)")
         }
     }
 
@@ -552,8 +557,13 @@ struct QuickTranslationServiceTests {
             flashcardID: nil
         )
 
-        await #expect(throws: QuickTranslationService.QuickTranslationError.emptyWord) {
+        do {
             try await service.translate(request: request, container: container)
+            #expect(Bool(false), "Should have thrown emptyWord error")
+        } catch QuickTranslationService.QuickTranslationError.emptyWord {
+            // Expected error type
+        } catch {
+            #expect(Bool(false), "Wrong error type: \(error)")
         }
     }
 
@@ -588,8 +598,8 @@ struct QuickTranslationServiceTests {
         // Test the error exists
         let error = QuickTranslationService.QuickTranslationError.offlineNoCache
 
-        #expect(error.errorDescription?.contains("Offline"))
-        #expect(error.recoverySuggestion?.contains("internet"))
+        #expect(error.errorDescription?.contains("Offline") == true)
+        #expect(error.recoverySuggestion?.contains("internet") == true)
     }
 
     @Test("translationFailed has proper error metadata")
@@ -807,12 +817,13 @@ struct QuickTranslationServiceTests {
         let container = self.createTestContainer()
         let context = ModelContext(container)
 
+        let now = Date()
         let fetchDescriptor = FetchDescriptor<CachedTranslation>(
             predicate: #Predicate<CachedTranslation> {
                 $0.sourceWord == "does_not_exist" &&
                     $0.sourceLanguage == "en" &&
                     $0.targetLanguage == "es" &&
-                    $0.expiresAt > Date()
+                    $0.expiresAt > now
             }
         )
         let results = try context.fetch(fetchDescriptor)

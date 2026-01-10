@@ -58,6 +58,10 @@ struct StudyStreakData: Sendable {
 
     /// Whether user has studied today
     let hasStudiedToday: Bool
+
+    /// Pre-computed total study time across all days (performance optimization)
+    /// **Performance:** Moved reduce operation out of view body to avoid 60fps recomputation during animations
+    let totalStudyTime: TimeInterval
 }
 
 /// FSRS metrics distribution data
@@ -452,7 +456,8 @@ final class StatisticsService {
                     longestStreak: 0,
                     calendarData: [:],
                     activeDays: 0,
-                    hasStudiedToday: false
+                    hasStudiedToday: false,
+                    totalStudyTime: 0
                 )
             }
 
@@ -465,12 +470,16 @@ final class StatisticsService {
             let today = DateMath.startOfDay(for: Date())
             let hasStudiedToday = dailyStudyTime[today] ?? 0 > 0
 
+            // Pre-compute total study time (performance optimization)
+            let totalStudyTime = dailyStudyTime.values.reduce(0, +)
+
             self.logger.info("""
             Study streak calculated:
             - Current: \(currentStreak) days
             - Longest: \(longestStreak) days
             - Active days: \(dailyStudyTime.count)
             - Studied today: \(hasStudiedToday)
+            - Total time: \(Int(totalStudyTime))s
             """)
 
             return StudyStreakData(
@@ -478,7 +487,8 @@ final class StatisticsService {
                 longestStreak: longestStreak,
                 calendarData: dailyStudyTime,
                 activeDays: dailyStudyTime.count,
-                hasStudiedToday: hasStudiedToday
+                hasStudiedToday: hasStudiedToday,
+                totalStudyTime: totalStudyTime
             )
         } catch {
             self.logger.error("Failed to calculate study streak: \(error.localizedDescription)")
@@ -487,7 +497,8 @@ final class StatisticsService {
                 longestStreak: 0,
                 calendarData: [:],
                 activeDays: 0,
-                hasStudiedToday: false
+                hasStudiedToday: false,
+                totalStudyTime: 0
             )
         }
     }

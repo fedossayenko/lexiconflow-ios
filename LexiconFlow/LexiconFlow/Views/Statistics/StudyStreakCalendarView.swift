@@ -432,7 +432,8 @@ private struct DayCell: View {
         longestStreak: 15,
         calendarData: calendarData,
         activeDays: 27,
-        hasStudiedToday: true
+        hasStudiedToday: true,
+        totalStudyTime: 7 * 3600 // Example: 7 hours
     )
 
     return VStack {
@@ -448,7 +449,8 @@ private struct DayCell: View {
         longestStreak: 0,
         calendarData: [:],
         activeDays: 0,
-        hasStudiedToday: false
+        hasStudiedToday: false,
+        totalStudyTime: 0
     )
 
     return VStack {
@@ -480,7 +482,8 @@ private struct DayCell: View {
         longestStreak: 45,
         calendarData: calendarData,
         activeDays: 45,
-        hasStudiedToday: true
+        hasStudiedToday: true,
+        totalStudyTime: 65100 // ~31 days * 35min avg = 1085min = 65100s
     )
 
     return VStack {
@@ -512,7 +515,8 @@ private struct DayCell: View {
         longestStreak: 5,
         calendarData: calendarData,
         activeDays: 10,
-        hasStudiedToday: false
+        hasStudiedToday: false,
+        totalStudyTime: 4500 // 10 days * 7.5min avg = 75min = 4500s
     )
 
     return VStack {
