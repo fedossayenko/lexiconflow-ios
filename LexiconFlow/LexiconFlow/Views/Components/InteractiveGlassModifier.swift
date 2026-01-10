@@ -83,23 +83,35 @@ struct InteractiveGlassModifier: ViewModifier {
     @Binding var offset: CGSize
     let effectBuilder: (CGSize) -> InteractiveEffect
 
+    /// Pre-compute progress ONCE per frame (critical performance optimization)
+    private func progress(for offset: CGSize, config: AppSettings.GlassEffectConfiguration) -> Double {
+        let baseProgress = min(abs(offset.width) / InteractiveGlassConstants.maxDragDistance, 1.0)
+        return baseProgress * config.opacityMultiplier
+    }
+
     func body(content: Content) -> some View {
         let effect = self.effectBuilder(self.offset)
-        let progress = min(abs(offset.width) / InteractiveGlassConstants.maxDragDistance, 1.0)
+        let config = AppSettings.glassConfiguration
+        let currentProgress = self.progress(for: self.offset, config: config)
+
+        // PRE-COMPUTE all conditional states (reduces branch evaluation during animation)
+        let showHighlight = currentProgress > 0.1
+        let showGlow = currentProgress > 0.2
+        let hasInteraction = currentProgress > 0
 
         return content
             .overlay(
                 ZStack {
-                    // Layer 1: Directional tint
+                    // Layer 1: Directional tint (always rendered for base feedback)
                     effect.tint.clipShape(RoundedRectangle(cornerRadius: 20))
 
-                    // Layer 2: Specular highlight shift (simulates light refraction)
-                    if progress > 0.1 {
+                    // Layer 2: Specular highlight shift (essential for "Liquid" feel)
+                    if showHighlight {
                         RoundedRectangle(cornerRadius: 20)
                             .fill(
                                 LinearGradient(
                                     colors: [
-                                        .white.opacity(InteractiveGlassConstants.specularHighlightOpacity * progress),
+                                        .white.opacity(InteractiveGlassConstants.specularHighlightOpacity * currentProgress * config.opacityMultiplier),
                                         .clear
                                     ],
                                     startPoint: self.offset.width > 0 ? .leading : .trailing,
@@ -109,22 +121,23 @@ struct InteractiveGlassModifier: ViewModifier {
                             .blendMode(.screen)
                     }
 
-                    // Layer 3: Edge glow (creates "glowing rim" effect)
-                    if progress > 0.2 {
+                    // Layer 3: Edge glow (essential for "Liquid" feel)
+                    if showGlow {
                         RoundedRectangle(cornerRadius: 20)
                             .strokeBorder(
-                                effect.tint.opacity(progress * InteractiveGlassConstants.edgeGlowOpacityMultiplier),
+                                effect.tint.opacity(currentProgress * InteractiveGlassConstants.edgeGlowOpacityMultiplier * config.opacityMultiplier),
                                 lineWidth: InteractiveGlassConstants.edgeGlowLineWidth
                             )
                             .blur(radius: InteractiveGlassConstants.edgeGlowBlurRadius)
                     }
                 }
             )
-            .hueRotation(.degrees(progress * InteractiveGlassConstants.hueRotationDegrees))
-            .saturation(progress > 0 ? 1.0 + (progress * InteractiveGlassConstants.saturationIncreaseMultiplier) : 1.0)
-            .scaleEffect(1.0 + (progress * InteractiveGlassConstants.scaleEffectMultiplier)) // Subtle "swelling"
+            // KEEP all effects (essential for full "Liquid Glass" aesthetic)
+            .hueRotation(.degrees(currentProgress * InteractiveGlassConstants.hueRotationDegrees))
+            .saturation(hasInteraction ? 1.0 + (currentProgress * InteractiveGlassConstants.saturationIncreaseMultiplier) : 1.0)
+            .scaleEffect(1.0 + (currentProgress * InteractiveGlassConstants.scaleEffectMultiplier))
             .rotation3DEffect(
-                .degrees(progress * InteractiveGlassConstants.rotation3DDegrees),
+                .degrees(currentProgress * InteractiveGlassConstants.rotation3DDegrees),
                 axis: (x: 0, y: 1, z: 0),
                 anchor: .center,
                 perspective: 1.0

@@ -44,16 +44,23 @@ struct GlassEffectUnion: ViewModifier {
     // MARK: - Body
 
     func body(content: Content) -> some View {
+        let config = AppSettings.glassConfiguration
+        let effectiveThickness = config.effectiveThickness(base: self.thickness)
+        let opacityMultiplier = config.opacityMultiplier
+
         ZStack {
             // Background circle (glass base)
             Circle()
-                .fill(self.thickness.material)
+                .fill(effectiveThickness.material)
                 .frame(width: self.iconSize + 16, height: self.iconSize + 16)
                 .overlay {
                     Circle()
                         .strokeBorder(
                             LinearGradient(
-                                colors: [.white.opacity(self.thickness.overlayOpacity), .clear],
+                                colors: [
+                                    .white.opacity(effectiveThickness.overlayOpacity * opacityMultiplier),
+                                    .clear
+                                ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
@@ -85,7 +92,10 @@ struct GlassEffectUnion: ViewModifier {
                         .trim(from: 0, to: self.animatedProgress)
                         .stroke(
                             AngularGradient(
-                                colors: [.white.opacity(0.5), .white.opacity(0.1)],
+                                colors: [
+                                    .white.opacity(0.5 * opacityMultiplier),
+                                    .white.opacity(0.1 * opacityMultiplier)
+                                ],
                                 center: .center,
                                 startAngle: .degrees(-90),
                                 endAngle: .degrees(270)
@@ -103,7 +113,7 @@ struct GlassEffectUnion: ViewModifier {
                 .background {
                     Circle()
                         .fill(.ultraThinMaterial)
-                        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                        .shadow(color: .black.opacity(0.1 * opacityMultiplier), radius: 4, x: 0, y: 2)
                 }
         }
         .onAppear {

@@ -100,6 +100,19 @@ struct FlashcardView: View {
                     .zIndex(0)
             }
         }
+        .onAppear {
+            guard AppSettings.ttsEnabled else { return }
+
+            // Only play when viewing the front (not flipped)
+            guard !self.isFlipped else { return }
+
+            switch AppSettings.ttsTiming {
+            case .onView:
+                SpeechService.shared.speak(self.card.word)
+            case .onFlip, .manual:
+                break
+            }
+        }
     }
 
     /// Info button overlay (top-right corner)
@@ -134,8 +147,8 @@ struct FlashcardView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 400)
             .background(Color(.systemBackground))
-            .glassEffect(AppSettings.glassEffectsEnabled ? self.glassThickness : .thin)
-            .animation(.spring(response: 0.4, dampingFraction: 0.75), value: self.isFlipped)
+            .glassEffect(AppSettings.glassConfiguration.effectiveThickness(base: self.glassThickness))
+            // Animation removed - nested in FlashcardMatchedView to avoid double animations
             .interactive(self.$gestureViewModel.offset) { dragOffset in
                 let horizontalProgress = min(max(dragOffset.width / 100, -1), 1)
                 let verticalProgress = min(max(dragOffset.height / 100, -1), 1)
@@ -233,6 +246,25 @@ struct FlashcardView: View {
                         }
                     }
             )
+            .onChange(of: self.isFlipped) { _, newValue in
+                guard AppSettings.ttsEnabled else { return }
+
+                switch AppSettings.ttsTiming {
+                case .onView:
+                    // Play when returning to front (newValue == false)
+                    if !newValue {
+                        SpeechService.shared.speak(self.card.word)
+                    }
+                case .onFlip:
+                    // Play when flipping to back (newValue == true)
+                    if newValue {
+                        SpeechService.shared.speak(self.card.word)
+                    }
+                case .manual:
+                    // Don't auto-play
+                    break
+                }
+            }
             .sheet(isPresented: self.$showingDetail) {
                 FlashcardDetailView(flashcard: self.card)
                     .presentationCornerRadius(24)

@@ -22,11 +22,11 @@ struct TTSSettingsView: View {
         )
     }
 
-    /// Binding to AppSettings.ttsAutoPlayOnFlip following centralized pattern
-    private var autoPlayBinding: Binding<Bool> {
+    /// Binding to AppSettings.ttsTiming following centralized pattern
+    private var timingBinding: Binding<AppSettings.TTSTiming> {
         Binding(
-            get: { AppSettings.ttsAutoPlayOnFlip },
-            set: { AppSettings.ttsAutoPlayOnFlip = $0 }
+            get: { AppSettings.ttsTiming },
+            set: { AppSettings.ttsTiming = $0 }
         )
     }
 
@@ -60,13 +60,24 @@ struct TTSSettingsView: View {
                 Toggle("Text-to-Speech", isOn: self.isEnabledBinding)
                     .accessibilityLabel("Enable text-to-speech")
 
-                Toggle("Auto-Play on Flip", isOn: self.autoPlayBinding)
-                    .accessibilityLabel("Auto-play pronunciation on card flip")
-                    .disabled(!AppSettings.ttsEnabled)
+                Picker("Pronunciation Timing", selection: self.timingBinding) {
+                    ForEach(AppSettings.TTSTiming.allCases, id: \.self) { timing in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(timing.displayName)
+                                .font(.body)
+                            Text(timing.description)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .tag(timing)
+                    }
+                }
+                .accessibilityLabel("Pronunciation timing")
+                .disabled(!AppSettings.ttsEnabled)
             } header: {
                 Text("General")
             } footer: {
-                Text("Text-to-Speech pronounces words and sentences during study sessions. Auto-Play speaks the word when you flip a card.")
+                Text("Text-to-Speech pronounces words during study sessions. Choose when to play pronunciation automatically.")
             }
 
             if AppSettings.ttsEnabled {
@@ -171,6 +182,7 @@ struct TTSSettingsView: View {
         .navigationTitle("Text-to-Speech")
         .task {
             self.loadAvailableVoices()
+            self.migrateTTSTiming()
         }
     }
 
@@ -200,6 +212,21 @@ struct TTSSettingsView: View {
                 self.isTesting = false
             }
         }
+    }
+
+    /// Migrate from boolean ttsAutoPlayOnFlip to TTSTiming enum
+    private func migrateTTSTiming() {
+        let migrationKey = "ttsTimingMigrated"
+        guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
+
+        // Migrate existing boolean setting to enum
+        if AppSettings.ttsAutoPlayOnFlip {
+            AppSettings.ttsTiming = .onFlip
+        } else {
+            AppSettings.ttsTiming = .onView // New default
+        }
+
+        UserDefaults.standard.set(true, forKey: migrationKey)
     }
 }
 

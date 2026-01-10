@@ -81,6 +81,9 @@ struct LexiconFlowApp: App {
         #endif
     }()
 
+    /// Current dark mode setting for reactive updates
+    @AppStorage("darkMode") private var darkModeRaw: String = AppSettings.DarkModePreference.system.rawValue
+
     /// Scene phase for app lifecycle management
     @Environment(\.scenePhase) private var scenePhase
 
@@ -189,13 +192,14 @@ struct LexiconFlowApp: App {
 
     /// Returns the preferred color scheme based on user settings
     private var preferredColorScheme: ColorScheme? {
-        switch AppSettings.darkMode {
+        let mode = AppSettings.DarkModePreference(rawValue: self.darkModeRaw) ?? .system
+        switch mode {
         case .system:
-            nil // Follow system preference
+            return nil // Follow system preference
         case .light:
-            .light
+            return .light
         case .dark:
-            .dark
+            return .dark
         }
     }
 
