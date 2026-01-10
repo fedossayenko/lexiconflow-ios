@@ -150,6 +150,7 @@ jobs:
             -skip-testing:LexiconFlowTests/StatisticsDashboardE2ETests \
             -skip-testing:LexiconFlowTests/StudySessionAndDailyStatsTests \
             -skip-testing:LexiconFlowTests/ConcurrencyStressTests \
+            -parallel-testing-enabled NO \
             -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult
 
@@ -221,6 +222,7 @@ jobs:
             -scheme LexiconFlow \
             -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.1' \
             -only-testing:LexiconFlowTests \
+            -parallel-testing-enabled NO \
             -enableCodeCoverage YES \
             -resultBundlePath TestResultsIntegration.xcresult
 
