@@ -11,6 +11,7 @@
 //  - Edge cases (empty data, corrupted data, duplicates)
 //
 
+import CryptoKit
 import Foundation
 import Testing
 import UIKit
@@ -336,9 +337,11 @@ struct ImageCacheTests {
         let data1 = self.createTestImageData(color: .red)
         let data2 = self.createTestImageData(color: .blue)
 
-        // Generate keys manually (we can't access private method directly)
-        let key1 = data1.base64EncodedString().prefix(16) + String(data1.count)
-        let key2 = data2.base64EncodedString().prefix(16) + String(data2.count)
+        // Generate keys using SHA-256 (matching ImageCache implementation)
+        let hash1 = SHA256.hash(data: data1)
+        let hash2 = SHA256.hash(data: data2)
+        let key1 = hash1.compactMap { String(format: "%02x", $0) }.joined().prefix(16) + String(data1.count)
+        let key2 = hash2.compactMap { String(format: "%02x", $0) }.joined().prefix(16) + String(data2.count)
 
         #expect(key1 != key2, "Different data should generate different keys")
     }
