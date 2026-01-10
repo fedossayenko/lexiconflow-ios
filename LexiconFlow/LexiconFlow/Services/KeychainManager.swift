@@ -19,6 +19,27 @@ enum KeychainManager {
     private static let service = "com.lexiconflow"
     private static let logger = Logger(subsystem: "com.lexiconflow.keychain", category: "KeychainManager")
 
+    // MARK: - Performance Caching
+
+    /// In-memory cache for API key with 30-minute TTL
+    /// PERFORMANCE: Eliminates repeated keychain access (50-100ms per batch translation)
+    private static var apiKeyCache: String?
+    private static var cacheTimestamp: Date?
+    private static let cacheTTL: TimeInterval = 1800 // 30 minutes
+
+    /// Checks if cached API key is still valid
+    private static func isCacheValid() -> Bool {
+        guard let timestamp = cacheTimestamp else { return false }
+        return Date().timeIntervalSince(timestamp) < self.cacheTTL
+    }
+
+    /// Invalidates the API key cache (call after set/delete operations)
+    private static func invalidateCache() {
+        self.apiKeyCache = nil
+        self.cacheTimestamp = nil
+        self.logger.debug("API key cache invalidated")
+    }
+
     // MARK: - API Key Operations
 
     /// Store API key securely in Keychain
@@ -55,6 +76,8 @@ enum KeychainManager {
             throw KeychainError.unhandledError(status)
         }
 
+        // Invalidate cache after storing new key
+        self.invalidateCache()
         self.logger.info("API key stored securely in Keychain")
     }
 
@@ -64,6 +87,13 @@ enum KeychainManager {
     /// - Throws: KeychainError if retrieval fails (except not found)
     @MainActor
     static func getAPIKey() throws -> String? {
+        // PERFORMANCE: Check in-memory cache first (30-minute TTL)
+        if self.isCacheValid(), let cached = apiKeyCache {
+            self.logger.debug("API key retrieved from cache")
+            return cached
+        }
+
+        // Cache miss - fetch from keychain
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: self.service,
@@ -91,7 +121,10 @@ enum KeychainManager {
             throw KeychainError.invalidData
         }
 
-        self.logger.debug("API key retrieved from Keychain")
+        // Update cache
+        self.apiKeyCache = apiKey
+        self.cacheTimestamp = Date()
+        self.logger.debug("API key retrieved from Keychain and cached")
         return apiKey
     }
 
@@ -112,6 +145,9 @@ enum KeychainManager {
             self.logger.error("Failed to delete API key from Keychain: OSStatus \(status)")
             throw KeychainError.unhandledError(status)
         }
+
+        // Invalidate cache after deleting key
+        self.invalidateCache()
 
         if status == errSecSuccess {
             self.logger.info("API key deleted from Keychain")

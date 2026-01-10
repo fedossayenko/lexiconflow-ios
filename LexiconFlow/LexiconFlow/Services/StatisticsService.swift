@@ -145,6 +145,31 @@ enum StatisticsTimeRange: String, Sendable, CaseIterable {
 /// - Returns DTOs instead of SwiftData models
 /// - Uses ModelContext for database queries
 /// - Timezone-aware calculations via DateMath
+
+// MARK: - Metrics Caching
+
+/// Cached statistics result with timestamp for cache invalidation
+///
+/// **Performance**: Stores calculated metrics with TTL to avoid repeated expensive queries
+private struct CachedMetrics {
+    /// Retention rate calculation result
+    let retentionRate: Double
+
+    /// Total cards count
+    let totalCards: Int
+
+    /// Due cards count
+    let dueCards: Int
+
+    /// Timestamp when cache was created
+    let timestamp: Date
+
+    /// Checks if cache is still valid based on TTL
+    func isValid(ttl: TimeInterval) -> Bool {
+        Date().timeIntervalSince(self.timestamp) < ttl
+    }
+}
+
 @MainActor
 final class StatisticsService {
     // MARK: - Configuration
@@ -182,6 +207,29 @@ final class StatisticsService {
 
     /// Logger for statistics calculations
     private let logger = Logger(subsystem: "com.lexiconflow.statistics", category: "StatisticsService")
+
+    // MARK: - Performance Caching
+
+    /// PERFORMANCE: Metrics cache with 1-minute TTL
+    /// Eliminates repeated expensive calculations during dashboard viewing
+    private var cachedMetrics: CachedMetrics?
+    private var cacheTimestamp: Date?
+    private let cacheTTL: TimeInterval = 60 // 1 minute
+
+    /// Checks if metrics cache is still valid
+    private func isCacheValid() -> Bool {
+        guard let timestamp = cacheTimestamp else { return false }
+        return Date().timeIntervalSince(timestamp) < self.cacheTTL
+    }
+
+    /// Invalidates the metrics cache
+    ///
+    /// Call this after data changes (new reviews, card deletions, etc.)
+    func invalidateCache() {
+        self.cachedMetrics = nil
+        self.cacheTimestamp = nil
+        self.logger.debug("Metrics cache invalidated")
+    }
 
     /// Private initializer for singleton pattern
     private init() {
@@ -263,6 +311,63 @@ final class StatisticsService {
                 trendData: []
             )
         }
+    }
+
+    // MARK: - Cached Metrics
+
+    /// Calculate all dashboard metrics with caching
+    ///
+    /// **PERFORMANCE**: Returns cached metrics if available (1-minute TTL)
+    /// Otherwise performs full calculation and caches the result
+    ///
+    /// - Parameters:
+    ///   - context: SwiftData ModelContext for queries
+    /// - - Returns: CachedMetrics with all dashboard statistics
+    private func getCachedMetrics(context: ModelContext) -> CachedMetrics {
+        // Check cache first
+        if let cached = cachedMetrics, cached.isValid(ttl: cacheTTL) {
+            self.logger.debug("Returning cached metrics")
+            return cached
+        }
+
+        // Cache miss - calculate metrics
+        self.logger.debug("Cache miss - calculating metrics")
+
+        // Calculate retention rate
+        let retentionData = self.calculateRetentionRate(context: context, timeRange: .sevenDays)
+
+        // Calculate total and due cards
+        let totalCards: Int
+        let dueCards: Int
+
+        let cardsDescriptor = FetchDescriptor<Flashcard>()
+        do {
+            let cards = try context.fetch(cardsDescriptor)
+            totalCards = cards.count
+
+            let now = Date()
+            dueCards = cards.count(where: { card in
+                guard let state = card.fsrsState else { return false }
+                return state.stateEnum != FlashcardState.new.rawValue && state.dueDate <= now
+            })
+        } catch {
+            self.logger.error("Failed to fetch card counts: \(error.localizedDescription)")
+            totalCards = 0
+            dueCards = 0
+        }
+
+        // Create and cache metrics
+        let metrics = CachedMetrics(
+            retentionRate: retentionData.rate,
+            totalCards: totalCards,
+            dueCards: dueCards,
+            timestamp: Date()
+        )
+
+        self.cachedMetrics = metrics
+        self.cacheTimestamp = Date()
+
+        return metrics
     }
 
     /// Generate trend data points for retention rate over time

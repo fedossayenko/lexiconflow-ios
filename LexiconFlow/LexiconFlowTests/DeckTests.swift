@@ -12,6 +12,7 @@ import Testing
 @testable import LexiconFlow
 
 /// Test suite for Deck model
+@Suite(.serialized)
 @MainActor
 struct DeckTests {
     /// Get a fresh isolated context for testing

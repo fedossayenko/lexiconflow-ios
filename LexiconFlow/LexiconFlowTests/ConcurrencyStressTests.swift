@@ -9,7 +9,7 @@
 import Foundation
 import OSLog
 import SwiftData
-import Testing
+@preconcurrency import Testing
 @testable import LexiconFlow
 
 /// Concurrency stress test suite for Swift 6 strict compliance
@@ -166,7 +166,7 @@ struct ConcurrencyStressTests {
     @Test("DTOs are Sendable across actor boundaries")
     func sendableDTOs() async throws {
         // Create test flashcard
-        let flashcard = try await createTestFlashcard(in: freshContext())
+        let flashcard = self.createTestFlashcard(in: self.freshContext())
 
         // Get DTO from actor
         let dto = try await FSRSWrapper.shared.processReview(

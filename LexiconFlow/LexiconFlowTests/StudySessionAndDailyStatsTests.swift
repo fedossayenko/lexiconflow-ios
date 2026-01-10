@@ -13,6 +13,7 @@ import Testing
 
 /// Test suite for StudySession and DailyStats models
 /// Uses shared container for performance - each test clears context before use
+@Suite(.serialized)
 @MainActor
 struct StudySessionAndDailyStatsTests {
     /// Get a fresh isolated context for testing

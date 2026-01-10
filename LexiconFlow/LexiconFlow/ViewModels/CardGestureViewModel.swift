@@ -64,24 +64,57 @@ import SwiftUI
 /// - **Down (Hard):** Orange tint (40%), 5% swelling, 10% darkening
 /// - **None:** Subtle 5% swelling (drag feedback only)
 ///
+
+// MARK: - Gesture State
+
+/// Single struct containing all gesture state for efficient batching
+///
+/// **Performance**: Groups 5 separate @Published properties into one struct
+/// This reduces view update overhead from 5 triggers to 1 per frame during gestures
+struct GestureState: Equatable {
+    /// Current offset of the card from center
+    var offset: CGSize = .zero
+
+    /// Scale factor applied to the card during swipe
+    var scale: CGFloat = 1.0
+
+    /// Rotation angle in degrees during swipe
+    var rotation: Double = 0.0
+
+    /// Opacity of the card during swipe
+    var opacity: Double = 1.0
+
+    /// Tint color overlay based on swipe direction
+    var tintColor: Color = .clear
+
+    /// Default initial state
+    static let initial = GestureState()
+}
+
 @MainActor
 class CardGestureViewModel: ObservableObject {
     // MARK: - Published Properties
 
-    /// Current offset of the card from center.
-    @Published var offset: CGSize = .zero
+    /// PERFORMANCE: Single @Published struct instead of 5 separate properties
+    /// This batches all gesture state updates into a single view refresh per frame
+    /// reducing view updates from 5 to 1 during drag gestures (60-120hz)
+    @Published private(set) var gestureState: GestureState = .init()
 
-    /// Scale factor applied to the card during swipe.
-    @Published var scale: CGFloat = 1.0
+    /// Binding for InteractiveGlassModifier compatibility
+    /// Provides a binding to offset that updates the internal gestureState
+    var offsetBinding: Binding<CGSize> {
+        Binding(
+            get: { self.gestureState.offset },
+            set: { self.gestureState.offset = $0 }
+        )
+    }
 
-    /// Rotation angle in degrees during swipe.
-    @Published var rotation: Double = 0.0
-
-    /// Opacity of the card during swipe.
-    @Published var opacity: Double = 1.0
-
-    /// Tint color overlay based on swipe direction.
-    @Published var tintColor: Color = .clear
+    /// Convenience accessors for backward compatibility with existing views
+    var offset: CGSize { self.gestureState.offset }
+    var scale: CGFloat { self.gestureState.scale }
+    var rotation: Double { self.gestureState.rotation }
+    var opacity: Double { self.gestureState.opacity }
+    var tintColor: Color { self.gestureState.tintColor }
 
     // MARK: - Constants (Dynamic)
 
@@ -180,6 +213,9 @@ class CardGestureViewModel: ObservableObject {
     ///
     /// - Parameter translation: Current gesture translation vector
     ///
+    /// **PERFORMANCE**: Builds new GestureState in a single allocation and assigns once
+    /// This triggers exactly ONE view refresh instead of 5 separate updates
+    ///
     /// Calculates progress based on threshold and updates all visual properties
     /// according to the detected direction.
     ///
@@ -195,40 +231,45 @@ class CardGestureViewModel: ObservableObject {
         let distance = max(abs(translation.width), abs(translation.height))
         let progress = min(distance / constants.swipeThreshold, 1.0)
 
-        self.offset = translation
+        // Build new state (single allocation)
+        var newState = self.gestureState
+        newState.offset = translation
 
         switch direction {
         case .right:
             // Good rating - Green tint, swelling effect
-            self.scale = 1.0 + (progress * constants.goodSwipeScaleMultiplier)
-            self.tintColor = .green.opacity(progress * constants.standardTintOpacity)
-            self.rotation = Double(translation.width / constants.rotationDivisor)
+            newState.scale = 1.0 + (progress * constants.goodSwipeScaleMultiplier)
+            newState.tintColor = .green.opacity(progress * constants.standardTintOpacity)
+            newState.rotation = Double(translation.width / constants.rotationDivisor)
 
         case .left:
             // Again rating - Red tint, shrinking effect
-            self.scale = 1.0 - (progress * constants.againSwipeScaleMultiplier)
-            self.tintColor = .red.opacity(progress * constants.standardTintOpacity)
-            self.rotation = Double(translation.width / constants.rotationDivisor)
+            newState.scale = 1.0 - (progress * constants.againSwipeScaleMultiplier)
+            newState.tintColor = .red.opacity(progress * constants.standardTintOpacity)
+            newState.rotation = Double(translation.width / constants.rotationDivisor)
 
         case .up:
             // Easy rating - Blue tint, lightening effect
-            self.scale = 1.0 + (progress * constants.easySwipeScaleMultiplier)
-            self.tintColor = .blue.opacity(progress * constants.standardTintOpacity)
-            self.opacity = 1.0 - (progress * constants.easySwipeFadeMultiplier)
+            newState.scale = 1.0 + (progress * constants.easySwipeScaleMultiplier)
+            newState.tintColor = .blue.opacity(progress * constants.standardTintOpacity)
+            newState.opacity = 1.0 - (progress * constants.easySwipeFadeMultiplier)
 
         case .down:
             // Hard rating - Orange tint, heavy effect
-            self.scale = 1.0 + (progress * constants.hardSwipeScaleMultiplier)
-            self.tintColor = .orange.opacity(progress * constants.hardSwipeTintOpacity)
-            self.opacity = min(1.0 + (progress * constants.hardSwipeDarkenMultiplier), 1.0)
+            newState.scale = 1.0 + (progress * constants.hardSwipeScaleMultiplier)
+            newState.tintColor = .orange.opacity(progress * constants.hardSwipeTintOpacity)
+            newState.opacity = min(1.0 + (progress * constants.hardSwipeDarkenMultiplier), 1.0)
 
         case .none:
             // No clear direction yet - show subtle dragging feedback
             // This eliminates the dead zone feeling for small movements
-            self.scale = 1.0 + (progress * constants.dragFeedbackScaleMultiplier)
-            self.tintColor = .clear
-            self.rotation = 0
+            newState.scale = 1.0 + (progress * constants.dragFeedbackScaleMultiplier)
+            newState.tintColor = .clear
+            newState.rotation = 0
         }
+
+        // Single assignment triggers one view refresh
+        self.gestureState = newState
     }
 
     /// Handles gesture change and returns result for haptic feedback.
@@ -252,13 +293,10 @@ class CardGestureViewModel: ObservableObject {
 
     /// Resets all gesture state to default values.
     ///
+    /// **PERFORMANCE**: Single assignment resets all state at once
     /// Called when gesture is cancelled or card snaps back to center.
     func resetGestureState() {
-        self.offset = .zero
-        self.scale = 1.0
-        self.rotation = 0.0
-        self.opacity = 1.0
-        self.tintColor = .clear
+        self.gestureState = GestureState.initial
     }
 
     /// Checks if translation exceeds swipe threshold.

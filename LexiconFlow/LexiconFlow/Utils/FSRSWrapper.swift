@@ -62,8 +62,9 @@ final class FSRSWrapper {
 
     /// Convert SwiftData Flashcard to FSRS Card
     ///
-    /// **Performance**: Uses cached lastReviewDate for O(1) access instead
-    /// of O(n) scan through reviewLogs.
+    /// **Performance**: Uses cached counters for O(1) access instead
+    /// of O(n) scan through reviewLogs. Both totalReviews and totalLapses
+    /// are cached in FSRSState and updated by Scheduler on each review.
     ///
     /// - Parameters:
     ///   - flashcard: Our SwiftData Flashcard model
@@ -75,14 +76,19 @@ final class FSRSWrapper {
         // Use cached lastReviewDate if available (O(1) vs O(n) scan)
         let lastReview = fsrsState?.lastReviewDate
 
+        // PERFORMANCE: Use cached counters instead of O(n) reviewLog scan
+        // Falls back to 0 for new cards or if FSRSState is nil
+        let reps = fsrsState?.totalReviews ?? 0
+        let lapses = fsrsState?.totalLapses ?? 0
+
         return Card(
             due: fsrsState?.dueDate ?? Date(),
             stability: fsrsState?.stability ?? 0.0,
             difficulty: fsrsState?.difficulty ?? 5.0,
             elapsedDays: elapsedDays,
             scheduledDays: 0,
-            reps: flashcard.reviewLogs.count,
-            lapses: flashcard.reviewLogs.count(where: { $0.rating == 0 }),
+            reps: reps,
+            lapses: lapses,
             state: self.toFSCardState(fsrsState?.stateEnum),
             lastReview: lastReview
         )

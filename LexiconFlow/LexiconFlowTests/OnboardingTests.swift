@@ -19,6 +19,7 @@ import Testing
 /// - Deck-card relationships
 /// - Error handling when save fails (Issue 5 fix)
 /// - Retry after error (Issue 5 fix)
+@Suite(.serialized)
 @MainActor
 struct OnboardingTests {
     // MARK: - Test Fixtures

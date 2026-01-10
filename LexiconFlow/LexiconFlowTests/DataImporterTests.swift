@@ -44,6 +44,7 @@ actor BatchCounter {
 /// - Error handling for unsupported strategies
 /// - Performance with large datasets
 /// - Relationship integrity (deck associations, FSRS state)
+@Suite(.serialized)
 @MainActor
 struct DataImporterTests {
     private func freshContext() -> ModelContext {

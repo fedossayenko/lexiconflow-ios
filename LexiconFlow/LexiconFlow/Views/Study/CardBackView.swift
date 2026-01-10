@@ -70,10 +70,11 @@ struct CardBackView: View {
                     .accessibilityLabel("Definition: \(self.card.definition)")
 
                 // Image (if available)
+                // PERFORMANCE: Uses ImageCache to avoid repeated JPEG/PNG decoding
                 if let imageData = card.imageData,
-                   let uiImage = UIImage(data: imageData)
+                   let cachedImage = ImageCache.shared.image(for: imageData)
                 {
-                    Image(uiImage: uiImage)
+                    Image(uiImage: cachedImage)
                         .resizable()
                         .scaledToFit()
                         .frame(maxHeight: 200)

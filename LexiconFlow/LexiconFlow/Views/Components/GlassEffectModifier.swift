@@ -80,7 +80,8 @@ struct GlassEffectModifier<S: InsettableShape>: ViewModifier {
             .clipShape(self.shape)
             .background {
                 // PERFORMANCE: All layers combined in single ZStack for optimal GPU composition
-                // This reduces composition passes from 3 to 1 for the background layers
+                // .drawingGroup() caches the entire ZStack as a GPU bitmap for massive performance boost
+                // This reduces composition passes from 3+ to 1 by caching the composited result
                 ZStack {
                     // Layer 1: Base material
                     self.shape.fill(self.thickness.material)
@@ -105,6 +106,7 @@ struct GlassEffectModifier<S: InsettableShape>: ViewModifier {
                         )
                         .blendMode(.overlay)
                 }
+                .drawingGroup()
             }
             .overlay {
                 // Layer 4: Inner glow for depth (essential for "Liquid Glass" aesthetic)

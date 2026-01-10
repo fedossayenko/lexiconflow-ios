@@ -31,6 +31,21 @@ enum StudyMode: Sendable {
     case cram
 }
 
+/// Deck statistics containing due, new, and total card counts
+///
+/// **Performance**: Single-fetch aggregation eliminates 3 separate O(n) queries
+/// **Usage**: Returned by `fetchDeckStatistics(for:)` for efficient deck list rendering
+struct DeckStatistics: Sendable {
+    /// Number of cards currently due for review
+    let due: Int
+
+    /// Number of new cards awaiting initial review
+    let new: Int
+
+    /// Total number of cards in the deck
+    let total: Int
+}
+
 /// Scheduler for managing card reviews and study sessions
 ///
 /// This class provides the main interface for:
@@ -241,34 +256,57 @@ final class Scheduler {
         }
     }
 
+    // MARK: - Deck Statistics
+
+    /// Fetch deck statistics with single-query aggregation
+    ///
+    /// **Performance**: Eliminates 3 separate O(n) queries by aggregating in one pass
+    /// **Optimization**: Fetches all deck states once, calculates due/new/total counts in-memory
+    ///
+    /// - Parameter deck: The deck to fetch statistics for
+    /// - Returns: DeckStatistics containing due, new, and total card counts
+    func fetchDeckStatistics(for deck: Deck) -> DeckStatistics {
+        let deckID = deck.id
+        let now = Date()
+
+        // Fetch all states for this deck in a single query
+        // Note: SwiftData limitations with multi-level optionals prevent deck filtering at DB level
+        let stateDescriptor = FetchDescriptor<FSRSState>()
+
+        do {
+            let states = try modelContext.fetch(stateDescriptor)
+
+            // Filter to this deck and aggregate all counts in a single pass
+            var due = 0, new = 0, total = 0
+
+            for state in states {
+                guard let card = state.card else { continue }
+                guard card.deck?.id == deckID else { continue }
+
+                total += 1
+
+                if state.stateEnum == FlashcardState.new.rawValue {
+                    new += 1
+                } else if state.dueDate <= now {
+                    due += 1
+                }
+            }
+
+            return DeckStatistics(due: due, new: new, total: total)
+
+        } catch {
+            Analytics.trackError("deck_statistics_fetch", error: error)
+            self.logger.error("Error fetching deck statistics: \(error)")
+            return DeckStatistics(due: 0, new: 0, total: 0)
+        }
+    }
+
     /// Count due cards for a specific deck
     ///
     /// - Parameter deck: The deck to count cards for
     /// - Returns: Number of cards currently due for review in the deck
     func dueCardCount(for deck: Deck) -> Int {
-        let now = Date()
-        let deckID = deck.id
-
-        // Query FSRSState at DB level for due cards (simple predicate)
-        let stateDescriptor = FetchDescriptor<FSRSState>(
-            predicate: #Predicate<FSRSState> { state in
-                state.dueDate <= now && state.stateEnum != "new"
-            }
-        )
-
-        do {
-            let states = try modelContext.fetch(stateDescriptor)
-
-            // Filter by deck in-memory (avoid multi-level optional in predicate)
-            return states.count(where: { state in
-                guard let card = state.card else { return false }
-                return card.deck?.id == deckID
-            })
-        } catch {
-            Analytics.trackError("due_card_count_deck", error: error)
-            self.logger.error("Error counting due cards for deck: \(error)")
-            return 0
-        }
+        self.fetchDeckStatistics(for: deck).due
     }
 
     /// Count new cards for a specific deck
@@ -276,28 +314,7 @@ final class Scheduler {
     /// - Parameter deck: The deck to count cards for
     /// - Returns: Number of new cards awaiting initial review in the deck
     func newCardCount(for deck: Deck) -> Int {
-        let deckID = deck.id
-
-        // Query FSRSState at DB level for new cards (simple predicate)
-        let stateDescriptor = FetchDescriptor<FSRSState>(
-            predicate: #Predicate<FSRSState> { state in
-                state.stateEnum == "new"
-            }
-        )
-
-        do {
-            let states = try modelContext.fetch(stateDescriptor)
-
-            // Filter by deck in-memory (avoid multi-level optional in predicate)
-            return states.count(where: { state in
-                guard let card = state.card else { return false }
-                return card.deck?.id == deckID
-            })
-        } catch {
-            Analytics.trackError("new_card_count_deck", error: error)
-            self.logger.error("Error counting new cards for deck: \(error)")
-            return 0
-        }
+        self.fetchDeckStatistics(for: deck).new
     }
 
     /// Count total cards for a specific deck
@@ -305,25 +322,7 @@ final class Scheduler {
     /// - Parameter deck: The deck to count cards for
     /// - Returns: Total number of cards in the deck
     func totalCardCount(for deck: Deck) -> Int {
-        let deckID = deck.id
-
-        // Query FSRSState at DB level (all states have cards)
-        // Then filter by deck in-memory
-        let stateDescriptor = FetchDescriptor<FSRSState>()
-
-        do {
-            let states = try modelContext.fetch(stateDescriptor)
-
-            // Filter by deck in-memory
-            return states.count(where: { state in
-                guard let card = state.card else { return false }
-                return card.deck?.id == deckID
-            })
-        } catch {
-            Analytics.trackError("total_card_count_deck", error: error)
-            self.logger.error("Error counting total cards for deck: \(error)")
-            return 0
-        }
+        self.fetchDeckStatistics(for: deck).total
     }
 
     /// Fetch cards for cram (practice) mode from a single deck
@@ -657,7 +656,7 @@ final class Scheduler {
             )
 
             // Apply the DTO updates to our SwiftData model
-            self.applyFSRSResult(result, to: flashcard, at: now)
+            self.applyFSRSResult(result, to: flashcard, at: now, rating: rating)
 
             // Create review log
             let log = FlashcardReview(
@@ -693,14 +692,17 @@ final class Scheduler {
 
     /// Apply FSRS result DTO to a flashcard model
     ///
-    /// **Performance**: Updates lastReviewDate cache for O(1) future access.
+    /// **Performance**: Updates lastReviewDate and cached counters (totalReviews, totalLapses)
+    /// for O(1) future access. Eliminates O(n) reviewLog scan in FSRSWrapper.toFSCard().
+    ///
     /// **Concurrency**: Runs on @MainActor, safe to mutate SwiftData models.
     ///
     /// - Parameters:
     ///   - result: The FSRSReviewResult DTO from FSRSWrapper
     ///   - flashcard: The flashcard to update
     ///   - now: Current time (for lastReviewDate cache)
-    private func applyFSRSResult(_ result: FSRSReviewResult, to flashcard: Flashcard, at now: Date) {
+    ///   - rating: The user's rating (for incrementing lapse counter)
+    private func applyFSRSResult(_ result: FSRSReviewResult, to flashcard: Flashcard, at now: Date, rating: Int) {
         // Get or create FSRSState
         let state: FSRSState
         if let existingState = flashcard.fsrsState {
@@ -723,6 +725,13 @@ final class Scheduler {
         state.retrievability = result.retrievability
         state.dueDate = result.dueDate
         state.stateEnum = result.stateEnum
+
+        // PERFORMANCE: Update cached counters for O(1) access
+        // Eliminates O(n) reviewLog scan in FSRSWrapper.toFSCard()
+        state.totalReviews += 1
+        if rating == 0 {
+            state.totalLapses += 1
+        }
 
         // PERFORMANCE: Update cache for next time (O(1) access)
         state.lastReviewDate = now

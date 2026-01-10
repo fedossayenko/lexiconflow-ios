@@ -20,6 +20,7 @@ import Testing
 @testable import LexiconFlow
 
 /// Test suite for AddFlashcardView translation integration
+@Suite(.serialized)
 @MainActor
 struct AddFlashcardViewTests {
     // MARK: - Test Fixtures

@@ -20,6 +20,7 @@ import Testing
 @testable import LexiconFlow
 
 /// Test suite for KeychainManager persistence and edge cases
+@Suite(.serialized)
 @MainActor
 struct KeychainManagerPersistenceTests {
     // MARK: - Test Cleanup

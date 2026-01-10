@@ -21,6 +21,7 @@ import Testing
 /// - Time range filtering (7d, 30d, all time)
 /// - All study modes (scheduled, learning, cram)
 /// - Realistic user scenarios with realistic data
+@Suite(.serialized)
 @MainActor
 struct StatisticsDashboardE2ETests {
     // MARK: - Test Fixtures

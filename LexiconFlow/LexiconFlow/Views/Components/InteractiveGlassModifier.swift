@@ -32,7 +32,8 @@ private enum InteractiveGlassConstants {
 
     /// Edge glow blur radius (points)
     /// - Softness of the glowing edge
-    static let edgeGlowBlurRadius: CGFloat = 4
+    /// PERFORMANCE: Reduced from 4 to 2 for better gesture performance
+    static let edgeGlowBlurRadius: CGFloat = 2
 
     /// Hue rotation degrees at max drag
     /// - Creates subtle color shift during drag
@@ -131,6 +132,7 @@ struct InteractiveGlassModifier: ViewModifier {
                             .blur(radius: InteractiveGlassConstants.edgeGlowBlurRadius)
                     }
                 }
+                .drawingGroup() // PERFORMANCE: Cache gesture effects as GPU bitmap
             )
             // KEEP all effects (essential for full "Liquid Glass" aesthetic)
             .hueRotation(.degrees(currentProgress * InteractiveGlassConstants.hueRotationDegrees))

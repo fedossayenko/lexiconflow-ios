@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import Testing
+@preconcurrency import Testing
 @testable import LexiconFlow
 
 /// Test suite for Analytics
@@ -481,7 +481,7 @@ struct AnalyticsTests {
 
         struct TestError: Error {}
 
-        await #expect(throws: TestError.self) {
+        #expect(throws: TestError.self) {
             let startTime = Date()
             defer {
                 let duration = Date().timeIntervalSince(startTime)

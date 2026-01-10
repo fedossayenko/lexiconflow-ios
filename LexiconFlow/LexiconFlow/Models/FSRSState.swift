@@ -55,6 +55,26 @@ final class FSRSState {
     /// - Updated by: Scheduler.processReview()
     var lastReviewDate: Date?
 
+    /// Cached total review count for O(1) access
+    ///
+    /// **Performance optimization**: Eliminates O(n) scan through reviewLogs
+    /// when building FSRS Card for algorithm processing. Updated automatically
+    /// when reviews are processed.
+    ///
+    /// - Default: 0 (new card)
+    /// - Updated by: Scheduler.processReview()
+    var totalReviews: Int
+
+    /// Cached lapse count (rating == 0) for O(1) access
+    ///
+    /// **Performance optimization**: Eliminates O(n) scan through reviewLogs
+    /// when building FSRS Card for algorithm processing. Updated automatically
+    /// when reviews are processed.
+    ///
+    /// - Default: 0 (new card)
+    /// - Updated by: Scheduler.processReview()
+    var totalLapses: Int
+
     /// The card this state belongs to (one-to-one relationship)
     /// - Inverse points to Flashcard.fsrsState
     @Relationship(inverse: \Flashcard.fsrsState) var card: Flashcard?
@@ -71,13 +91,17 @@ final class FSRSState {
         difficulty: Double = 5.0,
         retrievability: Double = 0.9,
         dueDate: Date = Date(),
-        stateEnum: String = FlashcardState.new.rawValue
+        stateEnum: String = FlashcardState.new.rawValue,
+        totalReviews: Int = 0,
+        totalLapses: Int = 0
     ) {
         self.stability = stability
         self.difficulty = difficulty
         self.retrievability = retrievability
         self.dueDate = dueDate
         self.stateEnum = stateEnum
+        self.totalReviews = totalReviews
+        self.totalLapses = totalLapses
     }
 
     /// Initialize with FlashcardState enum
@@ -86,14 +110,18 @@ final class FSRSState {
         difficulty: Double = 5.0,
         retrievability: Double = 0.9,
         dueDate: Date = Date(),
-        state: FlashcardState = .new
+        state: FlashcardState = .new,
+        totalReviews: Int = 0,
+        totalLapses: Int = 0
     ) {
         self.init(
             stability: stability,
             difficulty: difficulty,
             retrievability: retrievability,
             dueDate: dueDate,
-            stateEnum: state.rawValue
+            stateEnum: state.rawValue,
+            totalReviews: totalReviews,
+            totalLapses: totalLapses
         )
     }
 }

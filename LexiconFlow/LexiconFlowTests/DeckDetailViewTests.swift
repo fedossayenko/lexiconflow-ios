@@ -14,6 +14,7 @@ import SwiftUI
 import Testing
 @testable import LexiconFlow
 
+@Suite(.serialized)
 @MainActor
 struct DeckDetailViewTests {
     // MARK: - Test Fixtures

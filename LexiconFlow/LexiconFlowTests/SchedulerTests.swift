@@ -17,6 +17,7 @@ import Testing
 /// - Due card queries
 /// - Review processing with FSRS
 /// - Study mode differences
+@Suite(.serialized)
 @MainActor
 struct SchedulerTests {
     // MARK: - Test Fixtures

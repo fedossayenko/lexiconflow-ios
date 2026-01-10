@@ -22,6 +22,7 @@ import Testing
 /// - Session reset functionality
 /// - Session completion on last card
 /// - Concurrent submission prevention
+@Suite(.serialized)
 @MainActor
 struct StudySessionViewModelTests {
     // MARK: - Test Fixtures

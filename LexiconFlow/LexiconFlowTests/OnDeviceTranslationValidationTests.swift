@@ -83,6 +83,7 @@ struct TranslationTestItem: Sendable {
 /// NOTE: These are integration tests that require iOS 26 language packs (50-200MB each).
 /// Tests are automatically disabled in CI environments where language packs aren't available.
 /// Run these tests locally on a device with language packs downloaded to verify translation quality.
+@Suite(.serialized)
 @MainActor
 struct OnDeviceTranslationValidationTests {
     // MARK: - Debug Tests

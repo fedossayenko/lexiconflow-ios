@@ -19,6 +19,7 @@ import Testing
 @testable import LexiconFlow
 
 /// Test suite for TranslationService
+@Suite(.serialized)
 @MainActor
 struct TranslationServiceTests {
     // MARK: - Singleton Tests
