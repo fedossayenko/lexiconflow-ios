@@ -46,6 +46,11 @@ class SpeechService {
     /// Whether audio session is configured
     private var isAudioSessionConfigured = false
 
+    /// Detects if running in CI environment by checking for marker file
+    private var isRunningInCI: Bool {
+        FileManager.default.fileExists(atPath: "/tmp/lexiconflow-ci-running")
+    }
+
     // MARK: - Initialization
 
     private init() {
@@ -224,6 +229,13 @@ class SpeechService {
     ///   - Logs errors to Analytics
     ///   - Does not throw (graceful degradation)
     private func configureAudioSession() {
+        // Skip AVAudioSession configuration in CI (no audio hardware available)
+        guard !isRunningInCI else {
+            logger.info("Skipping AVAudioSession configuration in CI environment")
+            isAudioSessionConfigured = true // Mark as configured to prevent retries
+            return
+        }
+
         do {
             try audioSession.setCategory(
                 .playback,
