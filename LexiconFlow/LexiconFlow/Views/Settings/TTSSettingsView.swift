@@ -182,7 +182,7 @@ struct TTSSettingsView: View {
         .navigationTitle("Text-to-Speech")
         .task {
             self.loadAvailableVoices()
-            self.migrateTTSTiming()
+            AppSettings.migrateTTSTimingIfNeeded()
         }
     }
 
@@ -212,21 +212,6 @@ struct TTSSettingsView: View {
                 self.isTesting = false
             }
         }
-    }
-
-    /// Migrate from boolean ttsAutoPlayOnFlip to TTSTiming enum
-    private func migrateTTSTiming() {
-        let migrationKey = "ttsTimingMigrated"
-        guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
-
-        // Migrate existing boolean setting to enum
-        if AppSettings.ttsAutoPlayOnFlip {
-            AppSettings.ttsTiming = .onFlip
-        } else {
-            AppSettings.ttsTiming = .onView // New default
-        }
-
-        UserDefaults.standard.set(true, forKey: migrationKey)
     }
 }
 

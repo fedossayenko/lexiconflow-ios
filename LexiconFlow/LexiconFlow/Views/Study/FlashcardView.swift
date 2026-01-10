@@ -100,19 +100,7 @@ struct FlashcardView: View {
                     .zIndex(0)
             }
         }
-        .onAppear {
-            guard AppSettings.ttsEnabled else { return }
-
-            // Only play when viewing the front (not flipped)
-            guard !self.isFlipped else { return }
-
-            switch AppSettings.ttsTiming {
-            case .onView:
-                SpeechService.shared.speak(self.card.word)
-            case .onFlip, .manual:
-                break
-            }
-        }
+        .ttsTiming(for: self.card, isFlipped: self.$isFlipped)
     }
 
     /// Info button overlay (top-right corner)
@@ -246,25 +234,6 @@ struct FlashcardView: View {
                         }
                     }
             )
-            .onChange(of: self.isFlipped) { _, newValue in
-                guard AppSettings.ttsEnabled else { return }
-
-                switch AppSettings.ttsTiming {
-                case .onView:
-                    // Play when returning to front (newValue == false)
-                    if !newValue {
-                        SpeechService.shared.speak(self.card.word)
-                    }
-                case .onFlip:
-                    // Play when flipping to back (newValue == true)
-                    if newValue {
-                        SpeechService.shared.speak(self.card.word)
-                    }
-                case .manual:
-                    // Don't auto-play
-                    break
-                }
-            }
             .sheet(isPresented: self.$showingDetail) {
                 FlashcardDetailView(flashcard: self.card)
                     .presentationCornerRadius(24)

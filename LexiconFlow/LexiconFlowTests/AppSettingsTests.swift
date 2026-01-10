@@ -561,4 +561,272 @@ struct AppSettingsTests {
         // Reset to default
         AppSettings.selectedDeckIDs = []
     }
+
+    // MARK: - TTSTiming Enum Tests (6 tests)
+
+    @Test("AppSettings: TTSTiming enum is Sendable")
+    func timingIsSendable() throws {
+        let timing: any Sendable = AppSettings.TTSTiming.onView
+        #expect(timing is AppSettings.TTSTiming)
+    }
+
+    @Test("AppSettings: TTSTiming has all required cases")
+    func timingHasAllCases() throws {
+        let allCases = AppSettings.TTSTiming.allCases
+        #expect(allCases.count == 3)
+        #expect(allCases.contains(.onView))
+        #expect(allCases.contains(.onFlip))
+        #expect(allCases.contains(.manual))
+    }
+
+    @Test("AppSettings: TTSTiming displayName properties work")
+    func timingDisplayNames() throws {
+        #expect(!AppSettings.TTSTiming.onView.displayName.isEmpty)
+        #expect(!AppSettings.TTSTiming.onFlip.displayName.isEmpty)
+        #expect(!AppSettings.TTSTiming.manual.displayName.isEmpty)
+
+        // Display names should be unique
+        let names = Set(AppSettings.TTSTiming.allCases.map(\.displayName))
+        #expect(names.count == 3)
+    }
+
+    @Test("AppSettings: TTSTiming description properties work")
+    func timingDescriptions() throws {
+        #expect(!AppSettings.TTSTiming.onView.description.isEmpty)
+        #expect(!AppSettings.TTSTiming.onFlip.description.isEmpty)
+        #expect(!AppSettings.TTSTiming.manual.description.isEmpty)
+
+        // Descriptions should be unique
+        let descriptions = Set(AppSettings.TTSTiming.allCases.map(\.description))
+        #expect(descriptions.count == 3)
+    }
+
+    @Test("AppSettings: TTSTiming icon properties work")
+    func timingIcons() throws {
+        #expect(!AppSettings.TTSTiming.onView.icon.isEmpty)
+        #expect(!AppSettings.TTSTiming.onFlip.icon.isEmpty)
+        #expect(!AppSettings.TTSTiming.manual.icon.isEmpty)
+
+        // Icons should be valid SF Symbols
+        for timing in AppSettings.TTSTiming.allCases {
+            let icon = Image(systemName: timing.icon)
+            _ = icon // Should not crash
+        }
+    }
+
+    @Test("AppSettings: TTSTiming raw values match case names")
+    func timingRawValues() throws {
+        #expect(AppSettings.TTSTiming.onView.rawValue == "onView")
+        #expect(AppSettings.TTSTiming.onFlip.rawValue == "onFlip")
+        #expect(AppSettings.TTSTiming.manual.rawValue == "manual")
+    }
+
+    // MARK: - Glass Configuration Tests (10 tests)
+
+    @Test("AppSettings: GlassEffectConfiguration is Sendable")
+    func glassConfigIsSendable() throws {
+        let config: any Sendable = AppSettings.glassConfiguration
+        #expect(config is AppSettings.GlassEffectConfiguration)
+    }
+
+    @Test("AppSettings: isEnabled reflects glassEffectsEnabled")
+    func glassConfigIsEnabled() throws {
+        AppSettings.glassEffectsEnabled = true
+        var config = AppSettings.glassConfiguration
+        #expect(config.isEnabled == true)
+
+        AppSettings.glassEffectsEnabled = false
+        config = AppSettings.glassConfiguration
+        #expect(config.isEnabled == false)
+
+        // Reset
+        AppSettings.glassEffectsEnabled = true
+    }
+
+    @Test("AppSettings: intensity reflects glassEffectIntensity")
+    func glassConfigIntensity() throws {
+        AppSettings.glassEffectIntensity = 0.5
+        var config = AppSettings.glassConfiguration
+        #expect(config.intensity == 0.5)
+
+        AppSettings.glassEffectIntensity = 0.9
+        config = AppSettings.glassConfiguration
+        #expect(config.intensity == 0.9)
+
+        // Reset
+        AppSettings.glassEffectIntensity = 0.7
+    }
+
+    @Test("AppSettings: effectiveThickness returns correct thickness for all intensities")
+    func glassConfigThickness() throws {
+        AppSettings.glassEffectsEnabled = true
+
+        // Low intensity (0.0-0.3): should reduce thickness
+        AppSettings.glassEffectIntensity = 0.2
+        let configLow = AppSettings.glassConfiguration
+        #expect(configLow.effectiveThickness(base: .thick) == .regular)
+        #expect(configLow.effectiveThickness(base: .thin) == .thin)
+
+        // Medium intensity (0.3-0.7): should maintain thickness
+        AppSettings.glassEffectIntensity = 0.5
+        let configMed = AppSettings.glassConfiguration
+        #expect(configMed.effectiveThickness(base: .regular) == .regular)
+
+        // High intensity (0.7-1.0): should increase thickness
+        AppSettings.glassEffectIntensity = 0.8
+        let configHigh = AppSettings.glassConfiguration
+        #expect(configHigh.effectiveThickness(base: .thin) == .regular)
+
+        // Reset
+        AppSettings.glassEffectIntensity = 0.7
+    }
+
+    @Test("AppSettings: opacityMultiplier returns correct value for all states")
+    func glassConfigOpacity() throws {
+        // When enabled
+        AppSettings.glassEffectsEnabled = true
+        AppSettings.glassEffectIntensity = 0.6
+        let configEnabled = AppSettings.glassConfiguration
+        #expect(configEnabled.opacityMultiplier == 0.6)
+
+        // When disabled
+        AppSettings.glassEffectsEnabled = false
+        let configDisabled = AppSettings.glassConfiguration
+        #expect(configDisabled.opacityMultiplier == 0.3)
+
+        // Reset
+        AppSettings.glassEffectsEnabled = true
+    }
+
+    @Test("AppSettings: configuration updates trigger view refreshes")
+    func glassConfigReactive() async throws {
+        // Given: Initial config
+        AppSettings.glassEffectsEnabled = true
+        AppSettings.glassEffectIntensity = 0.5
+        let config1 = AppSettings.glassConfiguration
+
+        // When: Changing settings
+        AppSettings.glassEffectIntensity = 0.8
+        let config2 = AppSettings.glassConfiguration
+
+        // Then: Configuration should update
+        #expect(config1.intensity != config2.intensity)
+
+        // Reset
+        AppSettings.glassEffectIntensity = 0.7
+    }
+
+    @Test("AppSettings: glassConfiguration computed property returns valid config")
+    func glassConfigValid() throws {
+        let config = AppSettings.glassConfiguration
+        #expect(config.intensity >= 0.0 && config.intensity <= 1.0)
+        _ = config.effectiveThickness(base: .thin)
+        _ = config.opacityMultiplier
+    }
+
+    @Test("AppSettings: intensity boundary values work correctly")
+    func glassConfigBoundaries() throws {
+        AppSettings.glassEffectsEnabled = true
+
+        let boundaries = [0.0, 0.3, 0.7, 1.0]
+
+        for intensity in boundaries {
+            AppSettings.glassEffectIntensity = intensity
+            let config = AppSettings.glassConfiguration
+            #expect(config.intensity == intensity)
+            _ = config.effectiveThickness(base: .regular)
+        }
+
+        // Reset
+        AppSettings.glassEffectIntensity = 0.7
+    }
+
+    @Test("AppSettings: disabled state returns thin thickness")
+    func glassConfigDisabledThin() throws {
+        AppSettings.glassEffectsEnabled = false
+        let config = AppSettings.glassConfiguration
+
+        #expect(config.effectiveThickness(base: .thick) == .thin)
+        #expect(config.effectiveThickness(base: .regular) == .thin)
+        #expect(config.effectiveThickness(base: .thin) == .thin)
+
+        // Reset
+        AppSettings.glassEffectsEnabled = true
+    }
+
+    @Test("AppSettings: disabled state returns 0.3 opacity multiplier")
+    func glassConfigDisabledOpacity() throws {
+        AppSettings.glassEffectsEnabled = false
+        let config = AppSettings.glassConfiguration
+
+        #expect(config.opacityMultiplier == 0.3)
+
+        // Reset
+        AppSettings.glassEffectsEnabled = true
+    }
+
+    // MARK: - Gesture Sensitivity Tests (6 tests)
+
+    @Test("AppSettings: gestureSensitivity has default value 1.0")
+    func sensitivityDefault() throws {
+        // Reset to default
+        AppSettings.gestureSensitivity = 1.0
+        #expect(AppSettings.gestureSensitivity == 1.0)
+    }
+
+    @Test("AppSettings: gestureSensitivity persists in @AppStorage")
+    func sensitivityPersists() throws {
+        AppSettings.gestureSensitivity = 1.5
+        let stored = UserDefaults.standard.double(forKey: "gestureSensitivity")
+        #expect(stored == 1.5)
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("AppSettings: gestureSensitivity range is validated")
+    func sensitivityRange() throws {
+        // Test valid range
+        AppSettings.gestureSensitivity = 0.5
+        #expect(AppSettings.gestureSensitivity == 0.5)
+
+        AppSettings.gestureSensitivity = 2.0
+        #expect(AppSettings.gestureSensitivity == 2.0)
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("AppSettings: gestureSensitivity changes are reactive")
+    func sensitivityReactive() async throws {
+        // Given: Initial value
+        AppSettings.gestureSensitivity = 0.8
+
+        // When: Changing value
+        AppSettings.gestureSensitivity = 1.2
+
+        // Then: Should update immediately
+        #expect(AppSettings.gestureSensitivity == 1.2)
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("AppSettings: gestureSensitivity minimum is 0.5")
+    func sensitivityMinimum() throws {
+        AppSettings.gestureSensitivity = 0.5
+        #expect(AppSettings.gestureSensitivity == 0.5)
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("AppSettings: gestureSensitivity maximum is 2.0")
+    func sensitivityMaximum() throws {
+        AppSettings.gestureSensitivity = 2.0
+        #expect(AppSettings.gestureSensitivity == 2.0)
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
 }

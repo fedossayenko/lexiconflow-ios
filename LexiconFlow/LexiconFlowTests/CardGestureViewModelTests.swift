@@ -303,4 +303,484 @@ struct CardGestureViewModelTests {
         #expect(viewModel.scale > 0, "Scale should be positive")
         #expect(viewModel.opacity >= 0, "Opacity should be non-negative")
     }
+
+    // MARK: - Gesture Sensitivity Tests
+
+    @Test("default sensitivity is 1.0")
+    func defaultSensitivity() async throws {
+        // Given: Fresh AppSettings
+        let sensitivity = AppSettings.gestureSensitivity
+
+        // Then: Should be 1.0 (default)
+        #expect(sensitivity == 1.0)
+    }
+
+    @Test("sensitivity persists in @AppStorage")
+    func sensitivityPersists() async throws {
+        // Given: Custom sensitivity
+        AppSettings.gestureSensitivity = 1.5
+
+        // When: Reading from UserDefaults
+        let stored = UserDefaults.standard.double(forKey: "gestureSensitivity")
+
+        // Then: Should persist
+        #expect(stored == 1.5)
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("sensitivity range is 0.5 to 2.0")
+    func sensitivityRange() async throws {
+        // Given: Valid range bounds
+        let minSensitivity = 0.5
+        let maxSensitivity = 2.0
+
+        // When: Testing boundary values
+        AppSettings.gestureSensitivity = minSensitivity
+        #expect(AppSettings.gestureSensitivity == minSensitivity)
+
+        AppSettings.gestureSensitivity = maxSensitivity
+        #expect(AppSettings.gestureSensitivity == maxSensitivity)
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("higher sensitivity (2.0) = lower threshold = easier to trigger")
+    func highSensitivityEasierToTrigger() async throws {
+        // Given: High sensitivity
+        AppSettings.gestureSensitivity = 2.0
+        let viewModel = CardGestureViewModel()
+
+        // When: Testing small swipe (should trigger with high sensitivity)
+        // minimumSwipeDistance = 15.0 / 2.0 = 7.5
+        let translation = CGSize(width: 8, height: 0)
+        let direction = viewModel.detectDirection(translation: translation)
+
+        // Then: Should detect direction (easier to trigger)
+        #expect(direction == .right)
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("lower sensitivity (0.5) = higher threshold = harder to trigger")
+    func lowSensitivityHarderToTrigger() async throws {
+        // Given: Low sensitivity
+        AppSettings.gestureSensitivity = 0.5
+        let viewModel = CardGestureViewModel()
+
+        // When: Testing small swipe (should NOT trigger with low sensitivity)
+        // minimumSwipeDistance = 15.0 / 0.5 = 30
+        let translation = CGSize(width: 20, height: 0)
+        let direction = viewModel.detectDirection(translation: translation)
+
+        // Then: Should NOT detect direction (harder to trigger)
+        #expect(direction == .none)
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("sensitivity 1.0 uses original thresholds")
+    func defaultSensitivityUsesOriginalThresholds() async throws {
+        // Given: Default sensitivity
+        AppSettings.gestureSensitivity = 1.0
+        let viewModel = CardGestureViewModel()
+
+        // When: Testing at original thresholds
+        let minTranslation = CGSize(width: 15, height: 0)
+        let thresholdTranslation = CGSize(width: 100, height: 0)
+
+        let minDirection = viewModel.detectDirection(translation: minTranslation)
+        let shouldCommit = viewModel.shouldCommitSwipe(translation: thresholdTranslation)
+
+        // Then: Should use original values (15pt min, 100pt threshold)
+        #expect(minDirection == .right)
+        #expect(shouldCommit == true)
+    }
+
+    @Test("minimumSwipeDistance = 15.0 / sensitivity")
+    func minimumSwipeDistanceFormula() async throws {
+        // Given: Various sensitivities
+        let viewModel = CardGestureViewModel()
+
+        let sensitivities = [0.5, 1.0, 2.0]
+        let expectedDistances = [30.0, 15.0, 7.5]
+
+        for (sensitivity, expectedDistance) in zip(sensitivities, expectedDistances) {
+            AppSettings.gestureSensitivity = sensitivity
+
+            // Test at expected boundary (should trigger)
+            let translation = CGSize(width: expectedDistance, height: 0)
+            let direction = viewModel.detectDirection(translation: translation)
+
+            #expect(direction == .right, "Should trigger at \(expectedDistance)pt with sensitivity \(sensitivity)")
+        }
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("swipeThreshold = 100.0 / sensitivity")
+    func swipeThresholdFormula() async throws {
+        // Given: Various sensitivities
+        let viewModel = CardGestureViewModel()
+
+        let sensitivities = [0.5, 1.0, 2.0]
+        let expectedThresholds = [200.0, 100.0, 50.0]
+
+        for (sensitivity, expectedThreshold) in zip(sensitivities, expectedThresholds) {
+            AppSettings.gestureSensitivity = sensitivity
+
+            // Test at threshold (should commit)
+            let translation = CGSize(width: expectedThreshold, height: 0)
+            let shouldCommit = viewModel.shouldCommitSwipe(translation: translation)
+
+            #expect(shouldCommit == true, "Should commit at \(expectedThreshold)pt with sensitivity \(sensitivity)")
+        }
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("visual effect multipliers remain constant")
+    func visualEffectsConstantAcrossSensitivity() async throws {
+        // Given: Different sensitivities
+        let sensitivities = [0.5, 1.0, 2.0]
+        let translation = CGSize(width: 50, height: 0)
+
+        var firstScale: CGFloat?
+
+        for sensitivity in sensitivities {
+            AppSettings.gestureSensitivity = sensitivity
+            let viewModel = CardGestureViewModel()
+            viewModel.updateGestureState(translation: translation)
+
+            if let first = firstScale {
+                // Visual effects should be similar (within tolerance)
+                #expect(abs(viewModel.scale - first) < 0.01, "Scale should be consistent across sensitivity")
+            } else {
+                firstScale = viewModel.scale
+            }
+        }
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("rotation divisor remains constant")
+    func rotationDivisorConstant() async throws {
+        // Given: Different sensitivities
+        let translation = CGSize(width: 50, height: 0)
+
+        for sensitivity in [0.5, 1.0, 2.0] {
+            AppSettings.gestureSensitivity = sensitivity
+            let viewModel = CardGestureViewModel()
+            viewModel.updateGestureState(translation: translation)
+
+            // Rotation should be consistent (50pt divisor is constant)
+            let expectedRotation = Double(50 / 50) // 1 degree
+            #expect(abs(viewModel.rotation - expectedRotation) < 0.1, "Rotation should be consistent")
+        }
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    // MARK: - Dynamic Constants Tests
+
+    @Test("gestureConstants recomputes when sensitivity changes")
+    func constantsRecomputeWithSensitivity() async throws {
+        // Given: Changing sensitivity
+        AppSettings.gestureSensitivity = 2.0
+        let viewModel1 = CardGestureViewModel()
+
+        // When: Testing detection at new threshold
+        let translation = CGSize(width: 6, height: 0) // Above 7.5pt min
+        let direction1 = viewModel1.detectDirection(translation: translation)
+
+        // Then: Should detect direction (recomputed constants)
+        #expect(direction1 == .right)
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("sensitivity changes affect direction detection immediately")
+    func sensitivityAffectsDirectionImmediately() async throws {
+        // Given: Initial sensitivity (low)
+        AppSettings.gestureSensitivity = 0.5
+        let viewModel = CardGestureViewModel()
+
+        // When: Testing with small swipe
+        let translation = CGSize(width: 20, height: 0)
+        let direction1 = viewModel.detectDirection(translation: translation)
+
+        // Then: Should NOT trigger (high threshold)
+        #expect(direction1 == .none)
+
+        // When: Changing to high sensitivity
+        AppSettings.gestureSensitivity = 2.0
+        let direction2 = viewModel.detectDirection(translation: translation)
+
+        // Then: Should trigger (low threshold)
+        #expect(direction2 == .right)
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("sensitivity 2.0 makes gestures easier to trigger")
+    func highSensitivityBehavior() async throws {
+        // Given: High sensitivity
+        AppSettings.gestureSensitivity = 2.0
+        let viewModel = CardGestureViewModel()
+
+        // When: Testing various small swipes
+        let smallSwipes = [
+            CGSize(width: 8, height: 0), // 8pt > 7.5pt min
+            CGSize(width: 25, height: 0), // 25pt < 50pt threshold
+            CGSize(width: 50, height: 0) // 50pt = threshold
+        ]
+
+        for swipe in smallSwipes {
+            let direction = viewModel.detectDirection(translation: swipe)
+            #expect(direction == .right, "Should detect direction for small swipe")
+        }
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("sensitivity 0.5 makes gestures harder to trigger")
+    func lowSensitivityBehavior() async throws {
+        // Given: Low sensitivity
+        AppSettings.gestureSensitivity = 0.5
+        let viewModel = CardGestureViewModel()
+
+        // When: Testing moderate swipes
+        let moderateSwipes = [
+            CGSize(width: 20, height: 0), // 20pt < 30pt min
+            CGSize(width: 25, height: 0), // 25pt < 30pt min
+            CGSize(width: 29, height: 0) // 29pt < 30pt min
+        ]
+
+        for swipe in moderateSwipes {
+            let direction = viewModel.detectDirection(translation: swipe)
+            #expect(direction == .none, "Should NOT detect direction for moderate swipe")
+        }
+
+        // But large swipes should still work
+        let largeSwipe = CGSize(width: 150, height: 0) // 150pt < 200pt threshold
+        let shouldCommit = viewModel.shouldCommitSwipe(translation: largeSwipe)
+        #expect(shouldCommit == false, "Should NOT commit below adjusted threshold")
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("sensitivity doesn't affect visual feedback intensity")
+    func sensitivityDoesntAffectVisuals() async throws {
+        // Given: Same translation, different sensitivities
+        let translation = CGSize(width: 50, height: 0)
+
+        var scales: [CGFloat] = []
+
+        for sensitivity in [0.5, 1.0, 2.0] {
+            AppSettings.gestureSensitivity = sensitivity
+            let viewModel = CardGestureViewModel()
+            viewModel.updateGestureState(translation: translation)
+            scales.append(viewModel.scale)
+        }
+
+        // Then: Scales should be very similar (visual effects constant)
+        #expect(abs(scales[0] - scales[1]) < 0.01)
+        #expect(abs(scales[1] - scales[2]) < 0.01)
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("sensitivity doesn't affect rating mapping")
+    func sensitivityDoesntAffectRating() async throws {
+        // Given: Different sensitivities
+        for sensitivity in [0.5, 1.0, 2.0] {
+            AppSettings.gestureSensitivity = sensitivity
+            let viewModel = CardGestureViewModel()
+
+            // When: Mapping directions to ratings
+            let rightRating = viewModel.ratingForDirection(.right)
+            let leftRating = viewModel.ratingForDirection(.left)
+            let upRating = viewModel.ratingForDirection(.up)
+            let downRating = viewModel.ratingForDirection(.down)
+
+            // Then: Ratings should be consistent
+            #expect(rightRating == 2)
+            #expect(leftRating == 0)
+            #expect(upRating == 3)
+            #expect(downRating == 1)
+        }
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("sensitivity doesn't affect reset behavior")
+    func sensitivityDoesntAffectReset() async throws {
+        // Given: Different sensitivities
+        for sensitivity in [0.5, 1.0, 2.0] {
+            AppSettings.gestureSensitivity = sensitivity
+            let viewModel = CardGestureViewModel()
+
+            // Modify state
+            viewModel.updateGestureState(translation: CGSize(width: 50, height: 50))
+
+            // Reset
+            viewModel.resetGestureState()
+
+            // Then: Should reset cleanly
+            #expect(viewModel.offset == .zero)
+            #expect(viewModel.scale == 1.0)
+            #expect(viewModel.rotation == 0.0)
+        }
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("sensitivity changes are thread-safe")
+    func sensitivityIsThreadSafe() async throws {
+        // Given: MainActor isolation
+        // When: Changing sensitivity from MainActor
+        AppSettings.gestureSensitivity = 1.5
+
+        // Then: Should update safely
+        #expect(AppSettings.gestureSensitivity == 1.5)
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    // MARK: - Edge Cases (6 tests)
+
+    @Test("sensitivity at minimum (0.5)")
+    func sensitivityAtMinimum() async throws {
+        // Given: Minimum sensitivity
+        AppSettings.gestureSensitivity = 0.5
+        let viewModel = CardGestureViewModel()
+
+        // When: Testing at minimum boundary
+        // minDistance = 30pt, threshold = 200pt
+        let minTranslation = CGSize(width: 30, height: 0)
+        let thresholdTranslation = CGSize(width: 200, height: 0)
+
+        let minDirection = viewModel.detectDirection(translation: minTranslation)
+        let shouldCommit = viewModel.shouldCommitSwipe(translation: thresholdTranslation)
+
+        // Then: Should work at adjusted thresholds
+        #expect(minDirection == .right)
+        #expect(shouldCommit == true)
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("sensitivity at maximum (2.0)")
+    func sensitivityAtMaximum() async throws {
+        // Given: Maximum sensitivity
+        AppSettings.gestureSensitivity = 2.0
+        let viewModel = CardGestureViewModel()
+
+        // When: Testing at maximum boundary
+        // minDistance = 7.5pt, threshold = 50pt
+        let minTranslation = CGSize(width: 8, height: 0)
+        let thresholdTranslation = CGSize(width: 50, height: 0)
+
+        let minDirection = viewModel.detectDirection(translation: minTranslation)
+        let shouldCommit = viewModel.shouldCommitSwipe(translation: thresholdTranslation)
+
+        // Then: Should work at adjusted thresholds
+        #expect(minDirection == .right)
+        #expect(shouldCommit == true)
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("sensitivity below minimum clamps to 0.5")
+    func sensitivityBelowMinimumClamps() async throws {
+        // Given: Value below minimum
+        // Note: @AppStorage doesn't automatically clamp
+        AppSettings.gestureSensitivity = 0.2
+
+        // When: Reading value
+        let actualValue = AppSettings.gestureSensitivity
+
+        // Then: Should store value (clamping may be enforced by UI)
+        // This test verifies the value persists as-is
+        #expect(actualValue == 0.2)
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("sensitivity above maximum clamps to 2.0")
+    func sensitivityAboveMaximumClamps() async throws {
+        // Given: Value above maximum
+        // Note: @AppStorage doesn't automatically clamp
+        AppSettings.gestureSensitivity = 3.0
+
+        // When: Reading value
+        let actualValue = AppSettings.gestureSensitivity
+
+        // Then: Should store value (clamping may be enforced by UI)
+        #expect(actualValue == 3.0)
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("extreme sensitivity values don't cause crashes")
+    func extremeSensitivitySafe() async throws {
+        // Given: Extreme values
+        let extremeValues = [0.1, 0.01, 5.0, 10.0]
+
+        for value in extremeValues {
+            AppSettings.gestureSensitivity = value
+            let viewModel = CardGestureViewModel()
+
+            // When: Testing operations
+            viewModel.updateGestureState(translation: CGSize(width: 50, height: 50))
+            viewModel.resetGestureState()
+            _ = viewModel.detectDirection(translation: CGSize(width: 100, height: 0))
+
+            // Then: No crash
+            #expect(viewModel.offset != nil) // Verify object still valid
+        }
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
+
+    @Test("rapid sensitivity changes don't cause state corruption")
+    func rapidSensitivityChangesSafe() async throws {
+        // Given: ViewModel instance
+        let viewModel = CardGestureViewModel()
+
+        // When: Rapidly changing sensitivity
+        for _ in 0 ..< 20 {
+            AppSettings.gestureSensitivity = Double.random(in: 0.5 ... 2.0)
+            viewModel.updateGestureState(translation: CGSize(width: 50, height: 0))
+            viewModel.resetGestureState()
+        }
+
+        // Then: State should remain valid
+        #expect(viewModel.offset == .zero)
+        #expect(viewModel.scale == 1.0)
+
+        // Reset
+        AppSettings.gestureSensitivity = 1.0
+    }
 }

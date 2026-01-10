@@ -51,38 +51,7 @@ struct FlashcardMatchedView: View {
         }
         // Single source of truth for flip animation (removed from FlashcardView to avoid double animations)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: self.isFlipped)
-        .onChange(of: self.isFlipped) { _, newValue in
-            guard AppSettings.ttsEnabled else { return }
-
-            switch AppSettings.ttsTiming {
-            case .onView:
-                // Play when returning to front (newValue == false)
-                if !newValue {
-                    SpeechService.shared.speak(self.card.word)
-                }
-            case .onFlip:
-                // Play when flipping to back (newValue == true)
-                if newValue {
-                    SpeechService.shared.speak(self.card.word)
-                }
-            case .manual:
-                // Don't auto-play
-                break
-            }
-        }
-        .onAppear {
-            guard AppSettings.ttsEnabled else { return }
-
-            // Only play when viewing the front (not flipped)
-            guard !self.isFlipped else { return }
-
-            switch AppSettings.ttsTiming {
-            case .onView:
-                SpeechService.shared.speak(self.card.word)
-            case .onFlip, .manual:
-                break
-            }
-        }
+        .ttsTiming(for: self.card, isFlipped: self.$isFlipped)
     }
 }
 

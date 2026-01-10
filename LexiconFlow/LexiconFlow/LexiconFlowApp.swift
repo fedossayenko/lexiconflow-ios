@@ -65,24 +65,15 @@ struct LexiconFlowApp: App {
             // In DEBUG builds, crash immediately for diagnostics
             fatalError(diagnostic)
         #else
-            // In RELEASE, log critical error and attempt one final time
-            // This will likely crash, but with better diagnostics
+            // In RELEASE, log critical error and use truly minimal container
+            // The app will launch with minimal functionality but can show error UI
             logger.critical("\(diagnostic)")
 
-            // Final attempt: this WILL crash if SwiftData is broken, but that's unavoidable
-            // The app cannot function without ANY container
-            do {
-                return try ModelContainer(for: EmptyModel.self, configurations: configuration)
-            } catch {
-                logger.critical("Final fallback attempt failed: \(error.localizedDescription)")
-                // We must return something - this will crash on first use but with clear logging
-                return try! ModelContainer(for: EmptyModel.self, configurations: configuration)
-            }
+            // Return truly minimal container that allows app to launch
+            // Models will be unavailable, but error UI can be shown
+            return ModelContainer(for: [])
         #endif
     }()
-
-    /// Current dark mode setting for reactive updates
-    @AppStorage("darkMode") private var darkModeRaw: String = AppSettings.DarkModePreference.system.rawValue
 
     /// Scene phase for app lifecycle management
     @Environment(\.scenePhase) private var scenePhase
@@ -192,14 +183,13 @@ struct LexiconFlowApp: App {
 
     /// Returns the preferred color scheme based on user settings
     private var preferredColorScheme: ColorScheme? {
-        let mode = AppSettings.DarkModePreference(rawValue: self.darkModeRaw) ?? .system
-        switch mode {
+        switch AppSettings.darkMode {
         case .system:
-            return nil // Follow system preference
+            nil // Follow system preference
         case .light:
-            return .light
+            .light
         case .dark:
-            return .dark
+            .dark
         }
     }
 

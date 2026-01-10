@@ -441,6 +441,23 @@ enum AppSettings {
         }
     }
 
+    // MARK: - Migration
+
+    /// Migrate from boolean ttsAutoPlayOnFlip to TTSTiming enum
+    ///
+    /// Called during app launch to migrate existing user preferences.
+    /// Migration is idempotent and safe to call multiple times.
+    static func migrateTTSTimingIfNeeded() {
+        let migrationKey = "ttsTimingMigrated"
+        guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
+
+        // Migrate existing boolean setting to enum
+        self.ttsTiming = self.ttsAutoPlayOnFlip ? .onFlip : .onView
+
+        // Mark migration as complete
+        UserDefaults.standard.set(true, forKey: migrationKey)
+    }
+
     // MARK: - Error Types
 
     /// Errors that can occur during deck selection encoding/decoding
