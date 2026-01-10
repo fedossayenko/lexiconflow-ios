@@ -69,21 +69,29 @@ struct AddDeckView: View {
                 } header: {
                     Text("Choose Icon")
                 }
-            }
-            .navigationTitle("New Deck")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+
+                // Inline buttons to avoid UIKitToolbar warning in sheet presentations
+                Section {
+                    Button(action: {
                         self.dismiss()
+                    }) {
+                        Text("Cancel")
+                            .frame(maxWidth: .infinity)
+                            .foregroundColor(.secondary)
                     }
-                }
-                ToolbarItem(placement: .confirmationAction) {
+                    .accessibilityLabel("Cancel")
+                    .accessibilityHint("Discard changes and close")
+
                     Button("Save") {
                         self.saveDeck()
                     }
                     .disabled(self.name.isEmpty)
+                    .frame(maxWidth: .infinity)
+                    .accessibilityLabel("Save")
+                    .accessibilityHint("Save the new deck")
                 }
             }
+            .navigationTitle("New Deck")
             .alert("Error", isPresented: .constant(self.errorMessage != nil)) {
                 Button("OK", role: .cancel) {
                     self.errorMessage = nil

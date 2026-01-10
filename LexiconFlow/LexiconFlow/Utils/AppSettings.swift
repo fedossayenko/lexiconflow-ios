@@ -137,6 +137,9 @@ enum AppSettings {
     /// Whether to auto-play pronunciation on card flip
     @AppStorage("ttsAutoPlayOnFlip") static var ttsAutoPlayOnFlip: Bool = false
 
+    /// Pronunciation timing preference
+    @AppStorage("ttsTiming") static var ttsTiming: TTSTiming = .onView
+
     /// Supported English TTS accents
     static let supportedTTSAccents: [(code: String, name: String)] = [
         ("en-US", "American English"),
@@ -288,6 +291,48 @@ enum AppSettings {
     /// Disabled by default to maintain current ZStack transition behavior.
     @AppStorage("matchedGeometryEffectEnabled") static var matchedGeometryEffectEnabled: Bool = false
 
+    // MARK: - Glass Configuration
+
+    /// Centralized glass effect configuration
+    ///
+    /// Provides consistent glass effect behavior across all components
+    /// based on user preferences set in Appearance Settings.
+    struct GlassEffectConfiguration {
+        /// Whether glass effects are enabled
+        let isEnabled: Bool
+
+        /// Current intensity multiplier (0.0 to 1.0)
+        let intensity: Double
+
+        /// Returns effective thickness based on intensity setting
+        func effectiveThickness(base: GlassThickness) -> GlassThickness {
+            guard self.isEnabled else { return .thin }
+
+            // Map intensity to thickness levels
+            switch self.intensity {
+            case 0.0 ..< 0.3:
+                return base == .thick ? .regular : .thin
+            case 0.3 ..< 0.7:
+                return base
+            default:
+                return base == .thin ? .regular : .thick
+            }
+        }
+
+        /// Opacity multiplier for visual effects
+        var opacityMultiplier: Double {
+            self.isEnabled ? self.intensity : 0.3
+        }
+    }
+
+    /// Current glass effect configuration from AppSettings
+    static var glassConfiguration: GlassEffectConfiguration {
+        GlassEffectConfiguration(
+            isEnabled: glassEffectsEnabled,
+            intensity: glassEffectIntensity
+        )
+    }
+
     // MARK: - Test Support
 
     #if DEBUG
@@ -363,6 +408,54 @@ enum AppSettings {
             case .scheduled: "Due cards based on FSRS algorithm"
             }
         }
+    }
+
+    /// Pronunciation timing options for TTS
+    enum TTSTiming: String, CaseIterable, Sendable {
+        case onView
+        case onFlip
+        case manual
+
+        var displayName: String {
+            switch self {
+            case .onView: "On View"
+            case .onFlip: "On Flip"
+            case .manual: "Manual Only"
+            }
+        }
+
+        var description: String {
+            switch self {
+            case .onView: "Play when card front appears"
+            case .onFlip: "Play when card flips to back"
+            case .manual: "Play only via speaker button"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .onView: "eye.fill"
+            case .onFlip: "rectangle.2.swap"
+            case .manual: "hand.tap.fill"
+            }
+        }
+    }
+
+    // MARK: - Migration
+
+    /// Migrate from boolean ttsAutoPlayOnFlip to TTSTiming enum
+    ///
+    /// Called during app launch to migrate existing user preferences.
+    /// Migration is idempotent and safe to call multiple times.
+    static func migrateTTSTimingIfNeeded() {
+        let migrationKey = "ttsTimingMigrated"
+        guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
+
+        // Migrate existing boolean setting to enum
+        self.ttsTiming = self.ttsAutoPlayOnFlip ? .onFlip : .onView
+
+        // Mark migration as complete
+        UserDefaults.standard.set(true, forKey: migrationKey)
     }
 
     // MARK: - Error Types

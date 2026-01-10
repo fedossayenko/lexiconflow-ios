@@ -33,32 +33,11 @@ struct DeckSelectionView: View {
                 if self.decks.isEmpty {
                     self.emptyStateView
                 } else {
-                    self.deckList
+                    self.deckListWithActions
                 }
             }
             .navigationTitle("Select Decks")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        self.dismiss()
-                    }
-                }
-
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        self.saveSelection()
-                        self.dismiss()
-                    }
-                    .fontWeight(.semibold)
-                }
-
-                ToolbarItem(placement: .topBarTrailing) {
-                    if !self.decks.isEmpty {
-                        self.quickActionsMenu
-                    }
-                }
-            }
             .task {
                 if self.scheduler == nil {
                     self.scheduler = Scheduler(modelContext: self.modelContext)
@@ -75,6 +54,59 @@ struct DeckSelectionView: View {
             } message: {
                 Text(self.errorMessage ?? "Unknown error")
             }
+        }
+    }
+
+    /// Deck list with inline action buttons to avoid UIKitToolbar warning in sheet presentations
+    private var deckListWithActions: some View {
+        VStack(spacing: 0) {
+            List {
+                ForEach(self.decks) { deck in
+                    DeckSelectionRow(
+                        deck: deck,
+                        stats: self.deckStats[deck.id] ?? DeckStudyStats(),
+                        isSelected: self.selectedDeckIDs.contains(deck.id)
+                    ) {
+                        self.toggleSelection(deck.id)
+                    }
+                }
+            }
+            .overlay {
+                if self.isLoading {
+                    LoadingView(message: "Loading deck statistics...")
+                        .background(.ultraThinMaterial)
+                }
+            }
+
+            // Inline buttons to avoid UIKitToolbar warning in sheet presentations
+            Divider()
+            HStack(spacing: 16) {
+                // Quick actions menu
+                if !self.decks.isEmpty {
+                    self.quickActionsMenu
+                }
+
+                Spacer()
+
+                // Cancel button
+                Button("Cancel") {
+                    self.dismiss()
+                }
+                .foregroundColor(.secondary)
+                .accessibilityLabel("Cancel")
+                .accessibilityHint("Discard changes and close")
+
+                // Done button
+                Button("Done") {
+                    self.saveSelection()
+                    self.dismiss()
+                }
+                .fontWeight(.semibold)
+                .accessibilityLabel("Done")
+                .accessibilityHint("Save deck selection and close")
+            }
+            .padding()
+            .background(.ultraThinMaterial)
         }
     }
 

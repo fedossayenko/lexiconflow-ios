@@ -12,6 +12,7 @@ struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var selectedTab = 0
     @State private var dueCardCount = 0
+    @State private var scheduler: Scheduler? // Memoized scheduler for performance
 
     @Query(sort: \Deck.order) private var decks: [Deck]
 
@@ -74,8 +75,11 @@ struct MainTabView: View {
     }
 
     private func refreshDueCount() {
-        let scheduler = Scheduler(modelContext: modelContext)
-        self.dueCardCount = scheduler.dueCardCount(for: self.selectedDecks)
+        // Memoize scheduler to avoid creating new instance on every tab switch
+        if self.scheduler == nil {
+            self.scheduler = Scheduler(modelContext: self.modelContext)
+        }
+        self.dueCardCount = self.scheduler?.dueCardCount(for: self.selectedDecks) ?? 0
     }
 }
 

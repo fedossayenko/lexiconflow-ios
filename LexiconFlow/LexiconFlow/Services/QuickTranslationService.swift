@@ -336,9 +336,7 @@ actor QuickTranslationService {
                 }
             } catch {
                 Self.logger.error("Failed to clear expired cache: \(error.localizedDescription)")
-                Task {
-                    await Analytics.trackError("quick_translation_cache_cleanup_failed", error: error)
-                }
+                Analytics.trackError("quick_translation_cache_cleanup_failed", error: error)
             }
         }
     }

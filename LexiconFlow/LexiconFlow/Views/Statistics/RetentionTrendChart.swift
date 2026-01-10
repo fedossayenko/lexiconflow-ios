@@ -264,7 +264,7 @@ struct RetentionTrendChart: View {
 // MARK: - Preview
 
 #Preview("Retention Trend Chart - 7 Days") {
-    let calendar = Calendar.autoupdatingCurrent
+    let _ = Calendar.autoupdatingCurrent
     let now = Date()
 
     let trendData = [
@@ -292,7 +292,7 @@ struct RetentionTrendChart: View {
 }
 
 #Preview("Retention Trend Chart - 30 Days") {
-    let calendar = Calendar.autoupdatingCurrent
+    let _ = Calendar.autoupdatingCurrent
     let now = Date()
 
     var trendData: [(date: Date, rate: Double)] = []
@@ -320,6 +320,8 @@ struct RetentionTrendChart: View {
 }
 
 #Preview("Retention Trend Chart - Empty Data") {
+    let _ = Calendar.autoupdatingCurrent
+
     let data = RetentionRateData(
         rate: 0.0,
         successfulCount: 0,
@@ -335,7 +337,7 @@ struct RetentionTrendChart: View {
 }
 
 #Preview("Retention Trend Chart - Dark Mode") {
-    let calendar = Calendar.autoupdatingCurrent
+    let _ = Calendar.autoupdatingCurrent
     let now = Date()
 
     let trendData = [
@@ -364,7 +366,7 @@ struct RetentionTrendChart: View {
 }
 
 #Preview("Retention Trend Chart - Many Data Points") {
-    let calendar = Calendar.autoupdatingCurrent
+    let _ = Calendar.autoupdatingCurrent
     let now = Date()
 
     var trendData: [(date: Date, rate: Double)] = []

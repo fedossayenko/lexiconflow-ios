@@ -862,6 +862,123 @@ ScrollView {
 - Target: 60fps with < 16.6ms frame time
 - Measured with Xcode Instruments → Core Animation
 
+**Centralized Configuration:**
+```swift
+let config = AppSettings.glassConfiguration
+
+// Dynamic thickness based on intensity
+let thickness = config.effectiveThickness(base: .regular)
+
+// Scaled opacity for intensity control
+let opacity = baseOpacity * config.opacityMultiplier
+```
+
+**User Preferences:**
+- `AppSettings.glassEffectsEnabled: Bool` - Master toggle
+- `AppSettings.glassEffectIntensity: Double` - Intensity slider (0.0 to 1.0)
+- Settings available in Appearance Settings
+
+### 20. Audio Session Lifecycle Pattern
+
+**Manage AVAudioSession lifecycle to prevent error 4099:**
+
+```swift
+// In LexiconFlowApp.swift
+@Environment(\.scenePhase) private var scenePhase
+
+var body: some Scene {
+    WindowGroup { ContentView() }
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            switch newPhase {
+            case .background:
+                // Deactivate audio session to prevent AVAudioSession error 4099
+                SpeechService.shared.cleanup()
+            case .active:
+                if oldPhase == .background || oldPhase == .inactive {
+                    // Reactivate audio session for text-to-speech
+                    SpeechService.shared.restartEngine()
+                }
+            default:
+                break
+            }
+        }
+}
+```
+
+**Key Concepts:**
+- iOS automatically deactivates audio sessions when apps background
+- Without explicit cleanup, AVAudioSession error 4099 occurs during app termination
+- `cleanup()` stops ongoing speech and deactivates session gracefully
+- `restartEngine()` reconfigures session when app returns to foreground
+
+**Rationale**: Prevents audio session errors during app lifecycle transitions.
+
+### 21. TTS Timing Options Pattern
+
+**Use `AppSettings.TTSTiming` enum for flexible pronunciation playback:**
+
+```swift
+enum AppSettings.TTSTiming: String, CaseIterable, Sendable {
+    case onView  // Play when card front appears
+    case onFlip  // Play when card flips to back
+    case manual  // Play only via speaker button
+}
+```
+
+**Usage with ViewModifier (recommended):**
+```swift
+// Extract TTS logic to shared modifier
+struct TTSViewModifier: ViewModifier {
+    let card: Flashcard
+    @Binding var isFlipped: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                guard AppSettings.ttsEnabled else { return }
+                guard !isFlipped else { return }
+                switch AppSettings.ttsTiming {
+                case .onView: SpeechService.shared.speak(card.word)
+                case .onFlip, .manual: break
+                }
+            }
+            .onChange(of: isFlipped) { _, newValue in
+                guard AppSettings.ttsEnabled else { return }
+                switch AppSettings.ttsTiming {
+                case .onView:
+                    if !newValue { SpeechService.shared.speak(card.word) }
+                case .onFlip:
+                    if newValue { SpeechService.shared.speak(card.word) }
+                case .manual: break
+                }
+            }
+    }
+}
+
+// Use in views
+FlashcardView(card: card)
+    .ttsTiming(for: card, isFlipped: $isFlipped)
+```
+
+**Migration from Boolean:**
+```swift
+// TTSSettingsView.swift
+private func migrateTTSTiming() {
+    let migrationKey = "ttsTimingMigrated"
+    guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
+
+    if AppSettings.ttsAutoPlayOnFlip {
+        AppSettings.ttsTiming = .onFlip
+    } else {
+        AppSettings.ttsTiming = .onView // New default
+    }
+
+    UserDefaults.standard.set(true, forKey: migrationKey)
+}
+```
+
+**Rationale**: Enum provides more flexibility than boolean toggle, supporting multiple auto-play strategies.
+
 ## Project Structure
 
 ```

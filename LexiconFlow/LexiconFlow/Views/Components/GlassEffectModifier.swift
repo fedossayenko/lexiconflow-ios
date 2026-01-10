@@ -73,9 +73,14 @@ struct GlassEffectModifier<S: InsettableShape>: ViewModifier {
     let shape: S
 
     func body(content: Content) -> some View {
-        content
+        let config = AppSettings.glassConfiguration
+        let effectiveOpacity = self.thickness.overlayOpacity * config.opacityMultiplier
+
+        return content
             .clipShape(self.shape)
             .background {
+                // PERFORMANCE: All layers combined in single ZStack for optimal GPU composition
+                // This reduces composition passes from 3 to 1 for the background layers
                 ZStack {
                     // Layer 1: Base material
                     self.shape.fill(self.thickness.material)
@@ -90,9 +95,9 @@ struct GlassEffectModifier<S: InsettableShape>: ViewModifier {
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    .white.opacity(self.thickness.specularOpacity),
+                                    .white.opacity(self.thickness.specularOpacity * config.opacityMultiplier),
                                     .clear,
-                                    .white.opacity(self.thickness.specularOpacity * 0.5)
+                                    .white.opacity(self.thickness.specularOpacity * 0.5 * config.opacityMultiplier)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -102,12 +107,12 @@ struct GlassEffectModifier<S: InsettableShape>: ViewModifier {
                 }
             }
             .overlay {
-                // Inner glow for depth
+                // Layer 4: Inner glow for depth (essential for "Liquid Glass" aesthetic)
                 self.shape
                     .strokeBorder(
                         LinearGradient(
                             colors: [
-                                .white.opacity(self.thickness.overlayOpacity),
+                                .white.opacity(effectiveOpacity),
                                 .white.opacity(0)
                             ],
                             startPoint: .topLeading,
@@ -117,7 +122,7 @@ struct GlassEffectModifier<S: InsettableShape>: ViewModifier {
                     )
             }
             .shadow(color: .black.opacity(0.15), radius: self.thickness.shadowRadius, x: 0, y: 4)
-            .modifier(DynamicLightingModifier(thickness: self.thickness))
+            .modifier(DynamicLightingModifier(thickness: self.thickness)) // KEEP - essential
     }
 }
 

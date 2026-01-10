@@ -178,6 +178,59 @@ func concurrentReviews() async throws {
 }
 ```
 
+### 6. Audio Session Testing
+
+Test audio session lifecycle management:
+
+```swift
+@Test("audio session cleanup on background")
+func testCleanup() async throws {
+    // Given: Active audio session
+    let service = SpeechService.shared
+    service.speak("test")
+
+    // When: Cleanup called
+    service.cleanup()
+
+    // Then: Session deactivated
+    #expect(service.isAudioSessionConfigured == false)
+}
+
+@Test("audio session restart on foreground")
+func testRestart() async throws {
+    // Given: Cleaned up session
+    let service = SpeechService.shared
+    service.cleanup()
+
+    // When: Restart called
+    service.restartEngine()
+
+    // Then: Session reconfigured
+    #expect(service.isAudioSessionConfigured == true)
+}
+
+@Test("multiple background/foreground transitions")
+func testMultipleTransitions() async throws {
+    let service = SpeechService.shared
+
+    // Simulate multiple transitions
+    for _ in 0..<5 {
+        service.speak("test")
+        service.cleanup()
+        service.restartEngine()
+    }
+
+    // Should not crash or leak
+    #expect(service.isAudioSessionConfigured == true)
+}
+```
+
+**Key Points:**
+- Test background → foreground transitions
+- Verify error 4099 prevention
+- Test multiple rapid transitions
+- Verify speech resumes after restart
+
 ## Critical Testing Patterns
 
 ### DTO Pattern for Actor Isolation

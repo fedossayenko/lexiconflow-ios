@@ -111,16 +111,20 @@ struct AddFlashcardView: View {
                 } header: {
                     Text("Image (Optional)")
                 }
-            }
-            .navigationTitle("New Flashcard")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+
+                // Inline buttons to avoid UIKitToolbar warning in sheet presentations
+                Section {
+                    Button(action: {
                         self.saveTask?.cancel()
                         self.dismiss()
+                    }) {
+                        Text("Cancel")
+                            .frame(maxWidth: .infinity)
+                            .foregroundColor(.secondary)
                     }
-                }
-                ToolbarItem(placement: .confirmationAction) {
+                    .accessibilityLabel("Cancel")
+                    .accessibilityHint("Discard changes and close")
+
                     Button(action: {
                         self.saveTask = Task { await self.saveCard() }
                     }) {
@@ -143,10 +147,14 @@ struct AddFlashcardView: View {
                                 Text("Save")
                             }
                         }
+                        .frame(maxWidth: .infinity)
                     }
                     .disabled(self.word.isEmpty || self.definition.isEmpty || self.isSaving || self.isTranslating || self.isGeneratingSentences || self.isCheckingLanguageAvailability)
+                    .accessibilityLabel("Save")
+                    .accessibilityHint("Save the new flashcard")
                 }
             }
+            .navigationTitle("New Flashcard")
             .onChange(of: self.selectedImage) { _, newItem in
                 Task {
                     guard let newItem else { return }

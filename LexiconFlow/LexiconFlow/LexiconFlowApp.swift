@@ -65,19 +65,13 @@ struct LexiconFlowApp: App {
             // In DEBUG builds, crash immediately for diagnostics
             fatalError(diagnostic)
         #else
-            // In RELEASE, log critical error and attempt one final time
-            // This will likely crash, but with better diagnostics
+            // In RELEASE, log critical error and use truly minimal container
+            // The app will launch with minimal functionality but can show error UI
             logger.critical("\(diagnostic)")
 
-            // Final attempt: this WILL crash if SwiftData is broken, but that's unavoidable
-            // The app cannot function without ANY container
-            do {
-                return try ModelContainer(for: EmptyModel.self, configurations: configuration)
-            } catch {
-                logger.critical("Final fallback attempt failed: \(error.localizedDescription)")
-                // We must return something - this will crash on first use but with clear logging
-                return try! ModelContainer(for: EmptyModel.self, configurations: configuration)
-            }
+            // Return truly minimal container that allows app to launch
+            // Models will be unavailable, but error UI can be shown
+            return ModelContainer(for: [])
         #endif
     }()
 
@@ -321,6 +315,9 @@ struct LexiconFlowApp: App {
             // Reset haptic engine when app goes to background to free resources
             HapticService.shared.reset()
 
+            // Deactivate audio session to prevent AVAudioSession error 4099
+            SpeechService.shared.cleanup()
+
             // Aggregate DailyStats from completed StudySession records
             // This runs in the background to prepare pre-aggregated statistics for dashboard
             // Cancel any existing aggregation task before starting a new one
@@ -332,6 +329,9 @@ struct LexiconFlowApp: App {
             // Restart haptic engine when app returns to foreground
             if oldPhase == .background || oldPhase == .inactive {
                 HapticService.shared.restartEngine()
+
+                // Reactivate audio session for text-to-speech
+                SpeechService.shared.restartEngine()
             }
         default:
             break

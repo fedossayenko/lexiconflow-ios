@@ -55,7 +55,7 @@ Lexicon Flow is a native iOS application for English vocabulary acquisition usin
 | **Algorithm** | FSRS v5 | Three-component model (S, D, R), superior to SM-2 |
 | **AI/ML** | Foundation Models | On-device LLM (implemented but disabled via feature flag) |
 | **Translation** | Translation API | On-device, zero-latency translation |
-| **Audio** | AVSpeechSynthesizer | Neural TTS voices, accent selection |
+| **Audio** | AVSpeechSynthesizer + AVAudioSession lifecycle management | Neural TTS voices, accent selection, background-safe audio |
 | **Haptics** | CoreHaptics | Custom vibration patterns |
 | **Widgets** | WidgetKit | Lock Screen, Live Activities |
 | **Testing** | Swift Testing | Unit + integration testing |
@@ -87,6 +87,7 @@ See [TESTING.md](docs/TESTING.md) for testing guide.
 | **Gesture-Based Grading** | Swipe right/left/up/down for rating with haptic feedback |
 | **On-Device AI** | Foundation Models (infrastructure in place, disabled via feature flag) |
 | **Neural TTS** | Four accent options (US, UK, AU, IE) with premium voices |
+| **TTS Timing Options** | Flexible pronunciation auto-play (on view, on flip, manual) |
 | **Translation API** | On-device translation with offline support |
 | **Cram Mode** | Study anytime without breaking the algorithm |
 | **Lock Screen Widgets** | AccessoryCircular and AccessoryRectangular widgets |

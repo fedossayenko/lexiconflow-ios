@@ -49,7 +49,9 @@ struct FlashcardMatchedView: View {
                     .zIndex(0)
             }
         }
-        .animation(.spring(response: 0.4, dampingFraction: 0.75), value: self.isFlipped)
+        // Single source of truth for flip animation (removed from FlashcardView to avoid double animations)
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: self.isFlipped)
+        .ttsTiming(for: self.card, isFlipped: self.$isFlipped)
     }
 }
 

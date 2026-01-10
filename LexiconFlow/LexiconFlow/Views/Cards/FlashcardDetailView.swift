@@ -72,7 +72,7 @@ struct FlashcardDetailView: View {
                     modelContext: self.modelContext
                 )
                 // Track analytics directly inline (no wrapper needed)
-                await Analytics.trackEvent("review_history_viewed", metadata: [
+                Analytics.trackEvent("review_history_viewed", metadata: [
                     "flashcard_word": self.flashcard.word,
                     "review_count": "\(self.flashcard.reviewLogs.count)",
                     "current_state": self.flashcard.fsrsState?.stateEnum ?? "none",

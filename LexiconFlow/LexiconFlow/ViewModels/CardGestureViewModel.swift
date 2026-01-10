@@ -10,8 +10,60 @@ import SwiftUI
 
 /// View model for tracking and updating flashcard swipe gesture state.
 ///
+/// **Overview:**
 /// Provides visual feedback state based on drag direction and progress.
 /// Maps 4-directional swipes to FSRS ratings with appropriate visual effects.
+///
+/// ## Design Rationale
+///
+/// **Swipe Threshold (100pt):**
+/// - Based on iOS HIG minimum touch target (44pt) × 2.5 for comfortable swipe
+/// - Requires deliberate gesture action (prevents accidental swipes)
+/// - Balanced for thumb reach on typical iPhone screen widths
+/// - Maps to FSRS rating commit point
+///
+/// **Minimum Distance (15pt):**
+/// - Filters out accidental touches while maintaining responsiveness
+/// - Below 15pt: No direction detected (dead zone for jitter)
+/// - Above 15pt: Direction detection begins
+/// - Triggers initial visual feedback (5% swelling)
+///
+/// **Rotation (5° max at threshold):**
+/// - Subtle 3D perspective without causing motion sickness
+/// - Calculated as: `translation.width / 50` (100pt / 50 = 2° for most swipes)
+/// - Provides tactile feedback through visual depth
+/// - Limited to prevent disorientation
+///
+/// **Scale Effects:**
+/// - **Good (right):** +15% swelling (positive reinforcement)
+/// - **Again (left):** -20% shrinking (negative feedback)
+/// - **Easy (up):** +10% swelling + 20% fade (levitation effect)
+/// - **Hard (down):** +5% swelling + 10% darkening (weight effect)
+/// - **Drag feedback:** +5% swelling (eliminates dead zone feel)
+///
+/// ## Sensitivity Mapping
+///
+/// Dynamic gesture constants adjust swipe thresholds based on user preference:
+///
+/// | Sensitivity | Threshold (pt) | Min Distance (pt) | Behavior |
+/// |-------------|----------------|-------------------|----------|
+/// | 0.5× (Low)  | 200            | 30                | 2× harder to trigger |
+/// | 1.0× (Default) | 100        | 15                | Original thresholds |
+/// | 2.0× (High) | 50             | 7.5               | 50% easier to trigger |
+///
+/// **Formula:** `adjustedValue = baseValue / sensitivity`
+///
+/// **Note:** Visual effects (scale multipliers, rotation, tints) remain constant
+/// across sensitivity levels to maintain consistent visual feedback.
+///
+/// ## Visual Feedback Mapping
+///
+/// - **Right (Good):** Green tint, 15% swelling, 2° tilt
+/// - **Left (Again):** Red tint, 20% shrinking, 2° tilt
+/// - **Up (Easy):** Blue tint, 10% swelling, 20% fade (levitation)
+/// - **Down (Hard):** Orange tint (40%), 5% swelling, 10% darkening
+/// - **None:** Subtle 5% swelling (drag feedback only)
+///
 @MainActor
 class CardGestureViewModel: ObservableObject {
     // MARK: - Published Properties
@@ -31,126 +83,55 @@ class CardGestureViewModel: ObservableObject {
     /// Tint color overlay based on swipe direction.
     @Published var tintColor: Color = .clear
 
-    // MARK: - Constants
+    // MARK: - Constants (Dynamic)
 
-    /// Gesture-related constants
+    /// Dynamic gesture constants based on user sensitivity preference
     ///
-    /// **Design Philosophy**: The "Liquid Glass" feel requires carefully tuned visual feedback.
-    /// Each swipe direction has unique visual characteristics that map to FSRS rating semantics:
-    /// - **Good (right)**: Swelling/growth → green, larger scale
-    /// - **Again (left)**: Shrinking/decay → red, smaller scale
-    /// - **Easy (up)**: Lightness/ascension → blue, fades out
-    /// - **Hard (down)**: Weight/difficulty → orange, darkens
-    ///
-    /// All progress-based effects use 0-1 range (0 = no effect, 1 = full effect)
-    /// to create smooth, predictable visual transitions.
-    private enum GestureConstants {
-        // MARK: - Distance Thresholds
+    /// **Sensitivity Mapping:**
+    /// - Higher sensitivity (e.g., 2.0x) = lower threshold = easier to trigger
+    /// - Lower sensitivity (e.g., 0.5x) = higher threshold = harder to trigger
+    private var gestureConstants: GestureConstants {
+        let sensitivity = AppSettings.gestureSensitivity
 
-        /// Minimum distance (points) to trigger direction-specific visual feedback
-        ///
-        /// **Rationale**: Below this threshold, only generic "dragging" feedback is shown.
-        /// Prevents accidental direction detection from small hand movements while
-        /// maintaining responsiveness to intentional swipes.
-        ///
-        /// **UX Impact**: Values < 10 feel jumpy, values > 25 feel unresponsive.
-        static let minimumSwipeDistance: CGFloat = 15
+        return GestureConstants(
+            // Adjust thresholds inversely with sensitivity:
+            // - Higher sensitivity = lower threshold (easier to trigger)
+            // - Lower sensitivity = higher threshold (harder to trigger)
+            minimumSwipeDistance: 15.0 / sensitivity,
+            swipeThreshold: 100.0 / sensitivity,
 
-        /// Threshold distance (points) for full swipe completion
-        ///
-        /// **Rationale**: At this distance, all visual effects reach maximum intensity.
-        /// Matches comfortable thumb travel distance on iPhone (approximately 1/3 screen width).
-        ///
-        /// **Accessibility**: Tested with users with varying hand sizes; 100pt works for 95th percentile.
-        static let swipeThreshold: CGFloat = 100
+            // Scale multipliers remain constant
+            goodSwipeScaleMultiplier: 0.15,
+            againSwipeScaleMultiplier: 0.2,
+            easySwipeScaleMultiplier: 0.1,
+            hardSwipeScaleMultiplier: 0.05,
+            dragFeedbackScaleMultiplier: 0.05,
 
-        // MARK: - Scale Effects (Swell/Shrink)
+            // Visual effects remain constant
+            standardTintOpacity: 0.3,
+            hardSwipeTintOpacity: 0.4,
+            easySwipeFadeMultiplier: 0.2,
+            hardSwipeDarkenMultiplier: 0.1,
 
-        /// Maximum scale increase for "Good" rating (right swipe)
-        ///
-        /// **Semantics**: 15% swelling represents positive reinforcement, growth, confidence.
-        /// Creates a "bloating" effect that feels satisfying and rewarding.
-        ///
-        /// **Visual Testing**: 0.20 feels cartoonish, 0.10 feels subtle. 0.15 is the sweet spot.
-        static let goodSwipeScaleMultiplier: CGFloat = 0.15
+            // Rotation remains constant
+            rotationDivisor: 50
+        )
+    }
 
-        /// Maximum scale decrease for "Again" rating (left swipe)
-        ///
-        /// **Semantics**: 20% shrinking represents forgetting, decay, need for repetition.
-        /// Creates a "withering" effect that matches the psychological impact of forgetting.
-        ///
-        /// **Visual Testing**: 0.30 makes card disappear, 0.10 feels weak. 0.20 provides clear feedback.
-        static let againSwipeScaleMultiplier: CGFloat = 0.2
-
-        /// Maximum scale increase for "Easy" rating (up swipe)
-        ///
-        /// **Semantics**: 10% light growth represents effortlessness, mastery, upward momentum.
-        /// Subtler than Good to distinguish "Easy" (mastery) from "Good" (recall success).
-        ///
-        /// **Visual Testing**: Paired with opacity fade for "levitation" effect.
-        static let easySwipeScaleMultiplier: CGFloat = 0.1
-
-        /// Maximum scale increase for "Hard" rating (down swipe)
-        ///
-        /// **Semantics**: 5% growth represents weight, difficulty, burden.
-        /// Very subtle to avoid conflicting with the darkening effect.
-        ///
-        /// **Visual Testing**: Paired with darkening for "heaviness" effect.
-        static let hardSwipeScaleMultiplier: CGFloat = 0.05
-
-        /// Scale increase during "no direction" dragging
-        ///
-        /// **Semantics**: 5% growth provides tactile feedback for small movements.
-        /// Eliminates the "dead zone" feeling where user input has no visual response.
-        static let dragFeedbackScaleMultiplier: CGFloat = 0.05
-
-        // MARK: - Color/Opacity Effects
-
-        /// Maximum tint color opacity for all rating directions
-        ///
-        /// **Rationale**: 30% opacity allows underlying card content to remain readable.
-        /// Higher values obscure text, lower values provide weak feedback.
-        ///
-        /// **Accessibility**: Tested with WCAG AAA contrast ratio; 0.3 maintains readability.
-        static let standardTintOpacity: Double = 0.3
-
-        /// Maximum tint color opacity for "Hard" rating (down swipe)
-        ///
-        /// **Rationale**: 40% opacity is stronger to emphasize difficulty/weight.
-        /// Orange is brighter than red/green, so higher opacity maintains visual balance.
-        static let hardSwipeTintOpacity: Double = 0.4
-
-        /// Maximum opacity reduction for "Easy" rating (up swipe)
-        ///
-        /// **Semantics**: 20% fade creates "levitation" or "disappearing into clouds" effect.
-        /// Represents effortlessness and mastery.
-        ///
-        /// **Visual Testing**: 0.3 makes card hard to read, 0.1 is too subtle.
-        static let easySwipeFadeMultiplier: Double = 0.2
-
-        /// Maximum opacity increase for "Hard" rating (down swipe)
-        ///
-        /// **Semantics**: 10% darkening creates "heaviness" or "weighing down" effect.
-        /// Represents difficulty and struggle.
-        ///
-        /// **Visual Testing**: Capped at 1.0 (max) to avoid over-darkening.
-        static let hardSwipeDarkenMultiplier: Double = 0.1
-
-        // MARK: - Rotation Effects
-
-        /// Rotation divisor for 3D tilt effect (points per degree)
-        ///
-        /// **Rationale**: At 100pt full swipe, rotation is 2° (100/50).
-        /// Creates subtle 3D perspective without making card feel unstable.
-        ///
-        /// **Visual Testing**:
-        /// - Divisor 25 → 4° rotation (too dramatic, card feels loose)
-        /// - Divisor 50 → 2° rotation (natural, like holding a physical card)
-        /// - Divisor 100 → 1° rotation (too subtle)
-        ///
-        /// **Physics Reference**: Approximates the tilt of a card held at arm's length
-        /// and tilted 15° horizontally.
-        static let rotationDivisor: CGFloat = 50
+    /// Gesture-related constants (now dynamically computed)
+    private struct GestureConstants {
+        let minimumSwipeDistance: CGFloat
+        let swipeThreshold: CGFloat
+        let goodSwipeScaleMultiplier: CGFloat
+        let againSwipeScaleMultiplier: CGFloat
+        let easySwipeScaleMultiplier: CGFloat
+        let hardSwipeScaleMultiplier: CGFloat
+        let dragFeedbackScaleMultiplier: CGFloat
+        let standardTintOpacity: Double
+        let hardSwipeTintOpacity: Double
+        let easySwipeFadeMultiplier: Double
+        let hardSwipeDarkenMultiplier: Double
+        let rotationDivisor: CGFloat
     }
 
     // MARK: - Direction Detection
@@ -183,7 +164,8 @@ class CardGestureViewModel: ObservableObject {
         let horizontal = abs(translation.width)
         let vertical = abs(translation.height)
 
-        guard max(horizontal, vertical) >= GestureConstants.minimumSwipeDistance else { return .none }
+        let constants = self.gestureConstants
+        guard max(horizontal, vertical) >= constants.minimumSwipeDistance else { return .none }
 
         if horizontal >= vertical {
             return translation.width > 0 ? .right : .left
@@ -208,41 +190,42 @@ class CardGestureViewModel: ObservableObject {
     /// - Down (Hard): Orange tint (40%), 5% swelling, 10% darkening
     /// - None: Subtle 5% swelling (drag feedback)
     func updateGestureState(translation: CGSize) {
+        let constants = self.gestureConstants
         let direction = self.detectDirection(translation: translation)
         let distance = max(abs(translation.width), abs(translation.height))
-        let progress = min(distance / GestureConstants.swipeThreshold, 1.0)
+        let progress = min(distance / constants.swipeThreshold, 1.0)
 
         self.offset = translation
 
         switch direction {
         case .right:
             // Good rating - Green tint, swelling effect
-            self.scale = 1.0 + (progress * GestureConstants.goodSwipeScaleMultiplier)
-            self.tintColor = .green.opacity(progress * GestureConstants.standardTintOpacity)
-            self.rotation = Double(translation.width / GestureConstants.rotationDivisor)
+            self.scale = 1.0 + (progress * constants.goodSwipeScaleMultiplier)
+            self.tintColor = .green.opacity(progress * constants.standardTintOpacity)
+            self.rotation = Double(translation.width / constants.rotationDivisor)
 
         case .left:
             // Again rating - Red tint, shrinking effect
-            self.scale = 1.0 - (progress * GestureConstants.againSwipeScaleMultiplier)
-            self.tintColor = .red.opacity(progress * GestureConstants.standardTintOpacity)
-            self.rotation = Double(translation.width / GestureConstants.rotationDivisor)
+            self.scale = 1.0 - (progress * constants.againSwipeScaleMultiplier)
+            self.tintColor = .red.opacity(progress * constants.standardTintOpacity)
+            self.rotation = Double(translation.width / constants.rotationDivisor)
 
         case .up:
             // Easy rating - Blue tint, lightening effect
-            self.scale = 1.0 + (progress * GestureConstants.easySwipeScaleMultiplier)
-            self.tintColor = .blue.opacity(progress * GestureConstants.standardTintOpacity)
-            self.opacity = 1.0 - (progress * GestureConstants.easySwipeFadeMultiplier)
+            self.scale = 1.0 + (progress * constants.easySwipeScaleMultiplier)
+            self.tintColor = .blue.opacity(progress * constants.standardTintOpacity)
+            self.opacity = 1.0 - (progress * constants.easySwipeFadeMultiplier)
 
         case .down:
             // Hard rating - Orange tint, heavy effect
-            self.scale = 1.0 + (progress * GestureConstants.hardSwipeScaleMultiplier)
-            self.tintColor = .orange.opacity(progress * GestureConstants.hardSwipeTintOpacity)
-            self.opacity = min(1.0 + (progress * GestureConstants.hardSwipeDarkenMultiplier), 1.0)
+            self.scale = 1.0 + (progress * constants.hardSwipeScaleMultiplier)
+            self.tintColor = .orange.opacity(progress * constants.hardSwipeTintOpacity)
+            self.opacity = min(1.0 + (progress * constants.hardSwipeDarkenMultiplier), 1.0)
 
         case .none:
             // No clear direction yet - show subtle dragging feedback
             // This eliminates the dead zone feeling for small movements
-            self.scale = 1.0 + (progress * GestureConstants.dragFeedbackScaleMultiplier)
+            self.scale = 1.0 + (progress * constants.dragFeedbackScaleMultiplier)
             self.tintColor = .clear
             self.rotation = 0
         }
@@ -256,11 +239,12 @@ class CardGestureViewModel: ObservableObject {
     /// This method combines direction detection, progress calculation, and state update
     /// into a single call for cleaner view code.
     func handleGestureChange(_ value: DragGesture.Value) -> GestureResult? {
+        let constants = self.gestureConstants
         let direction = self.detectDirection(translation: value.translation)
         guard direction != .none else { return nil }
 
         let distance = max(abs(value.translation.width), abs(value.translation.height))
-        let progress = min(distance / GestureConstants.swipeThreshold, 1.0)
+        let progress = min(distance / constants.swipeThreshold, 1.0)
 
         self.updateGestureState(translation: value.translation)
         return GestureResult(direction: direction, progress: progress)
@@ -282,8 +266,9 @@ class CardGestureViewModel: ObservableObject {
     /// - Parameter translation: Current gesture translation vector
     /// - Returns: True if swipe should be committed
     func shouldCommitSwipe(translation: CGSize) -> Bool {
+        let constants = self.gestureConstants
         let distance = max(abs(translation.width), abs(translation.height))
-        return distance >= GestureConstants.swipeThreshold
+        return distance >= constants.swipeThreshold
     }
 
     /// Converts swipe direction to FSRS rating.

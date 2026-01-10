@@ -32,93 +32,94 @@ struct CardBackViewMatched: View {
     // MARK: - Body
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                Spacer()
+        // VStack instead of ScrollView for performance with matchedGeometryEffect
+        // ScrollView causes layout thrashing during flip animations
+        VStack(spacing: 24) {
+            Spacer()
 
-                // Word reminder (matched - from front, now smaller and at top)
-                Text(self.card.word)
+            // Word reminder (matched - from front, now smaller and at top)
+            Text(self.card.word)
+                .font(.title3)
+                .foregroundStyle(.secondary)
+                .matchedGeometryEffect(id: MatchedID.word.rawValue, in: self.namespace)
+                .accessibilityLabel("Word: \(self.card.word)")
+
+            // Translation - NEW (no match - fades in)
+            if let translation = card.translation {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Translation")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Text(translation)
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding()
+                .background(Color.accentColor.opacity(0.1))
+                .cornerRadius(12)
+                .padding(.horizontal)
+                .accessibilityLabel("Translation: \(translation)")
+            }
+
+            // CEFR Level Badge (if available) (no match - fades in)
+            if let cefrLevel = card.cefrLevel {
+                HStack(spacing: 4) {
+                    Text("Level")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                    Text(cefrLevel)
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Theme.cefrColor(for: cefrLevel).opacity(0.15))
+                .foregroundStyle(Theme.cefrColor(for: cefrLevel))
+                .cornerRadius(6)
+                .accessibilityLabel("CEFR Level: \(cefrLevel)")
+            }
+
+            // Phonetic (matched - from front, same position)
+            if let phonetic = card.phonetic {
+                Text(phonetic)
                     .font(.title3)
                     .foregroundStyle(.secondary)
-                    .matchedGeometryEffect(id: MatchedID.word.rawValue, in: self.namespace)
-                    .accessibilityLabel("Word: \(self.card.word)")
+                    .matchedGeometryEffect(id: MatchedID.phonetic.rawValue, in: self.namespace)
+                    .accessibilityLabel("Pronunciation: \(phonetic)")
+            }
 
-                // Translation - NEW (no match - fades in)
-                if let translation = card.translation {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Translation")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+            // Definition (no match - fades in)
+            Text(self.card.definition)
+                .font(.body)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+                .accessibilityLabel("Definition: \(self.card.definition)")
 
-                        Text(translation)
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.primary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .padding()
-                    .background(Color.accentColor.opacity(0.1))
+            // Image (if available) (no match - fades in)
+            if let imageData = card.imageData,
+               let uiImage = UIImage(data: imageData)
+            {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxHeight: 200)
                     .cornerRadius(12)
                     .padding(.horizontal)
-                    .accessibilityLabel("Translation: \(translation)")
-                }
-
-                // CEFR Level Badge (if available) (no match - fades in)
-                if let cefrLevel = card.cefrLevel {
-                    HStack(spacing: 4) {
-                        Text("Level")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                        Text(cefrLevel)
-                            .font(.caption2)
-                            .fontWeight(.semibold)
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Theme.cefrColor(for: cefrLevel).opacity(0.15))
-                    .foregroundStyle(Theme.cefrColor(for: cefrLevel))
-                    .cornerRadius(6)
-                    .accessibilityLabel("CEFR Level: \(cefrLevel)")
-                }
-
-                // Phonetic (matched - from front, same position)
-                if let phonetic = card.phonetic {
-                    Text(phonetic)
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
-                        .matchedGeometryEffect(id: MatchedID.phonetic.rawValue, in: self.namespace)
-                        .accessibilityLabel("Pronunciation: \(phonetic)")
-                }
-
-                // Definition (no match - fades in)
-                Text(self.card.definition)
-                    .font(.body)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                    .accessibilityLabel("Definition: \(self.card.definition)")
-
-                // Image (if available) (no match - fades in)
-                if let imageData = card.imageData,
-                   let uiImage = UIImage(data: imageData)
-                {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxHeight: 200)
-                        .cornerRadius(12)
-                        .padding(.horizontal)
-                        .accessibilityLabel("Card image")
-                        .accessibilityAddTraits(.isImage)
-                }
-
-                // AI-Generated Sentences Section (no match - fades in)
-                self.sentenceSection
-
-                Spacer()
+                    .accessibilityLabel("Card image")
+                    .accessibilityAddTraits(.isImage)
             }
+
+            // AI-Generated Sentences Section (no match - fades in)
+            self.sentenceSection
+
+            Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipped() // Clip overflow content for performance
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Card back")
     }

@@ -49,16 +49,10 @@ struct TranslationSheetView: View {
             }
             .navigationTitle("Quick Translation")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        // Sheet dismisses automatically
-                    }
-                }
-            }
         }
         .presentationDetents([.medium, .large], selection: .constant(.medium))
         .presentationDragIndicator(.visible)
+        // Sheet dismisses automatically via drag indicator
     }
 
     // MARK: - Loading View
