@@ -151,13 +151,25 @@ actor MyActor {
 ```
 
 ### Key Components
+
+**Models:**
 - **Flashcard**: Core vocabulary model (word, definition, phonetic, imageData)
 - **Deck**: Container/organizer for flashcards
 - **FSRSState**: Algorithm state (stability, difficulty, retrievability, dueDate)
 - **FlashcardReview**: Historical review log for analytics
+- **DailyStats**: Pre-aggregated daily statistics for performance optimization
+- **StudySession**: Study session tracking with mode and duration
+
+**ViewModels:**
 - **Scheduler**: Main coordinator for fetching cards and processing reviews
+- **StatisticsViewModel**: @MainActor coordinator preparing data for dashboard UI
+
+**Services:**
 - **TranslationService**: Cloud-based translation with API key (requires internet)
 - **OnDeviceTranslationService**: Offline translation using iOS 26 Translation framework (no API key)
+- **QuickTranslationService**: Contextual on-device translation for selected text
+- **StatisticsService**: @MainActor service for calculating study statistics
+- **ReviewHistoryService**: Provides filtering, sorting, and export for review logs
 
 ### Study Modes
 - **scheduled**: Respects due dates, updates FSRS state after each review
@@ -978,6 +990,162 @@ private func migrateTTSTiming() {
 ```
 
 **Rationale**: Enum provides more flexibility than boolean toggle, supporting multiple auto-play strategies.
+
+### 22. Statistics Data Aggregation Pattern
+
+**Description:** Pre-aggregates daily study metrics to avoid expensive queries during dashboard viewing.
+
+**Key Features:**
+- Daily aggregation of study metrics (new cards, reviews, retention, time spent)
+- `DailyStats` SwiftData model for efficient querying
+- Calculates retention rates and FSRS distributions
+- Cache invalidation for stale metrics
+
+**Rationale:** Avoids performance issues by pre-calculating and storing daily summaries.
+
+**Usage:**
+```swift
+// StatisticsService.swift
+@MainActor
+class StatisticsService {
+    func aggregateDailyStats(context: ModelContext) async throws -> Int {
+        // Fetch completed sessions without daily stats
+        let sessions = try context.fetch(FetchDescriptor<StudySession>())
+            .filter { $0.endTime != nil && $0.dailyStats == nil }
+
+        // Group by calendar day and create/update DailyStats
+        for (day, daySessions) in sessionsByDay {
+            let dailyStats = DailyStats(
+                date: day,
+                newCards: 0,
+                studyTimeSeconds: daySessions.reduce(0) { $0 + $1.durationSeconds },
+                retentionRate: calculateRetention(daySessions)
+            )
+            context.insert(dailyStats)
+        }
+
+        try context.save()
+        return aggregatedCount
+    }
+
+    // Cache with 1-minute TTL
+    func invalidateCache() {
+        self.cachedMetrics = nil
+        self.cacheTimestamp = nil
+    }
+}
+```
+
+### 23. Review History Filtering and Export Pattern
+
+**Description:** View, filter, sort, and export `FlashcardReview` records.
+
+**Key Features:**
+- Dynamic filtering by date range, rating, card state, deck
+- Sorting options (by review date, card name)
+- CSV export functionality
+
+**Rationale:** Provides users with insights into their learning process.
+
+**Usage:**
+```swift
+// ReviewHistoryService.swift
+@MainActor
+class ReviewHistoryService {
+    func fetchReviews(
+        context: ModelContext,
+        startDate: Date?,
+        endDate: Date?,
+        ratingFilter: Rating?,
+        deckFilter: Deck?
+    ) async throws -> [FlashcardReview] {
+        // Build predicates dynamically
+        let descriptor = FetchDescriptor<FlashcardReview>(
+            predicate: finalPredicate,
+            sortBy: [SortDescriptor(\.reviewDate, order: .reverse)]
+        )
+        return try context.fetch(descriptor)
+    }
+
+    func exportReviewsToCSV(_ reviews: [FlashcardReview]) -> String {
+        // Generate CSV string
+        return "card,rating,date,scheduledDays\n..."
+    }
+}
+```
+
+### 24. Gesture Sensitivity Configuration Pattern
+
+**Description:** Users can customize swipe distance required to trigger review actions.
+
+**Key Features:**
+- AppSettings.swipeThreshold for user preference storage
+- Dynamic gesture threshold adjustment
+- Per-device sensitivity calibration
+
+**Rationale:** Accommodates different user preferences and device interaction styles.
+
+**Usage:**
+```swift
+// AppSettings.swift
+enum AppSettings {
+    static var swipeThreshold: CGFloat {
+        get { UserDefaults.standard.double(forKey: "swipeThreshold", defaultValue: 50.0) }
+        set { UserDefaults.standard.set(newValue, forKey: "swipeThreshold") }
+    }
+}
+
+// Usage in gesture handling
+let threshold = AppSettings.swipeThreshold
+if abs(translation.width) > threshold {
+    // Trigger action
+}
+```
+
+### 25. Quick Translation (Tap-to-Translate) Pattern
+
+**Description:** Instant on-device translation for selected text via context menu.
+
+**Key Features:**
+- Integration with `OnDeviceTranslationService`
+- Non-disruptive UI (popover or context menu)
+- Uses iOS 26 Translation framework
+
+**Rationale:** Enhances learning by providing immediate translation without leaving the view.
+
+**Usage:**
+```swift
+// QuickTranslationService.swift
+@MainActor
+class QuickTranslationService {
+    private let onDeviceService = OnDeviceTranslationService.shared
+
+    func translateSelectedText(_ text: String) async throws -> String {
+        let sourceLang = AppSettings.translationSourceLanguage
+        let targetLang = AppSettings.translationTargetLanguage
+        await onDeviceService.setLanguages(source: sourceLang, target: targetLang)
+
+        // Check availability
+        if onDeviceService.needsLanguageDownload(targetLang) {
+            throw OnDeviceTranslationError.languagePackNotAvailable
+        }
+
+        return try await onDeviceService.translate(text: text)
+    }
+}
+
+// View modifier for text selection
+extension View {
+    func quickTranslatable() -> some View {
+        self.textSelection(.enabled)
+            .contextMenu {
+                Button("Quick Translate") {
+                    // Handle translation
+                }
+            }
+    }
+}
+```
 
 ## Project Structure
 

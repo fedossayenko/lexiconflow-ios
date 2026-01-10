@@ -150,19 +150,8 @@ struct SpeechServiceAudioSessionTests {
         #expect(self.service.isSpeaking == false)
     }
 
-    @Test("cleanup sets isAudioSessionConfigured to false", .disabled("Timing-dependent test unreliable in CI - requires manual testing"))
-    func cleanupResetsConfigurationFlag() async throws {
-        // Given: Configured audio session
-        self.service.speak("test")
-
-        // When: cleanup is called
-        self.service.cleanup()
-
-        // Then: Next speak() should reconfigure (verify by checking behavior)
-        self.service.speak("test2")
-        // Note: isSpeaking is timing-dependent, may not be true immediately
-        // In production, verify audio session reconfigures correctly
-    }
+    // NOTE: cleanupResetsConfigurationFlag moved to ManualTests.swift
+    // This timing-dependent test requires manual verification with breakpoints.
 
     @Test("cleanup logs deactivation")
     func cleanupLogsDeactivation() async throws {
@@ -213,20 +202,8 @@ struct SpeechServiceAudioSessionTests {
         // Then: No crash
     }
 
-    @Test("restartEngine reconfigures session when app foregrounds", .disabled("Timing-dependent test unreliable in CI - requires manual testing"))
-    func restartEngineReconfiguresSession() async throws {
-        // Given: Cleaned up session
-        self.service.speak("test")
-        self.service.cleanup()
-
-        // When: restartEngine is called
-        self.service.restartEngine()
-
-        // Then: Session should be reconfigured and active
-        self.service.speak("test2")
-        // Note: isSpeaking is timing-dependent, may not be true immediately
-        // In production, verify speak() works after restartEngine
-    }
+    // NOTE: restartEngineReconfiguresSession moved to ManualTests.swift
+    // This timing-dependent test requires manual audio verification.
 
     // MARK: - Integration Tests
 
@@ -245,49 +222,14 @@ struct SpeechServiceAudioSessionTests {
         // Note: AVAudioSession.isActive is not available in iOS 26
     }
 
-    @Test("audio session configured only once (idempotent)", .disabled("Timing-dependent test unreliable in CI - requires manual testing"))
-    func speakConfiguresAudioSessionOnce() async throws {
-        // Given: Fresh audio session state
-        self.service.cleanup()
+    // NOTE: speakConfiguresAudioSessionOnce moved to ManualTests.swift
+    // This timing-dependent test requires manual breakpoint verification.
 
-        // When: speak() is called multiple times
-        self.service.speak("test1")
-        self.service.speak("test2")
-        self.service.speak("test3")
+    // NOTE: speakWorksAfterLifecycleCycle moved to ManualTests.swift
+    // This timing-dependent test requires manual audio verification.
 
-        // Then: Audio session remains configured (no errors)
-        // Note: isSpeaking is timing-dependent
-    }
-
-    @Test("speak works after cleanup and restartEngine cycle", .disabled("Timing-dependent test unreliable in CI - requires manual testing"))
-    func speakWorksAfterLifecycleCycle() async throws {
-        // Given: Audio session configured
-        self.service.speak("test1")
-
-        // When: Full lifecycle cycle
-        self.service.cleanup() // Background
-        self.service.restartEngine() // Foreground
-
-        // Then: speak() should still work
-        self.service.speak("test2")
-        // Note: isSpeaking is timing-dependent
-    }
-
-    @Test("multiple background/foreground transitions", .disabled("Timing-dependent test unreliable in CI - requires manual testing"))
-    func multipleLifecycleTransitions() async throws {
-        // Given: Audio session configured
-        self.service.speak("test1")
-
-        // When: Multiple lifecycle cycles
-        for _ in 0 ..< 5 {
-            self.service.cleanup()
-            self.service.restartEngine()
-        }
-
-        // Then: speak() should still work
-        self.service.speak("test2")
-        // Note: isSpeaking is timing-dependent
-    }
+    // NOTE: multipleLifecycleTransitions moved to ManualTests.swift
+    // This timing-dependent test requires manual audio verification.
 
     @Test("AVAudioSession error 4099 prevention")
     func preventsError4099() async throws {
@@ -302,19 +244,8 @@ struct SpeechServiceAudioSessionTests {
         #expect(true) // Test passes if no crash
     }
 
-    @Test("audio session state consistency across lifecycle events", .disabled("Timing-dependent test unreliable in CI - requires manual testing"))
-    func audioSessionStateRemainsConsistent() async throws {
-        // Given: Initial state
-        self.service.speak("test1")
-
-        // When: Lifecycle transitions
-        self.service.cleanup()
-        self.service.restartEngine()
-
-        // Then: speak() should still work
-        self.service.speak("test2")
-        // Note: isSpeaking is timing-dependent
-    }
+    // NOTE: audioSessionStateRemainsConsistent moved to ManualTests.swift
+    // This timing-dependent test requires manual audio verification.
 
     // MARK: - Error Handling Tests
 
@@ -370,15 +301,8 @@ struct SpeechServiceAudioSessionTests {
 
     // MARK: - Concurrency Tests
 
-    @Test("audio session configuration is @MainActor isolated", .disabled("Timing-dependent test unreliable in CI - requires manual testing"))
-    func audioSessionConfigurationIsOnMainActor() async throws {
-        // Given: Service is @MainActor isolated
-        // When: Calling from MainActor context
-        self.service.speak("test")
-
-        // Then: No concurrency issues
-        // Note: isSpeaking is timing-dependent
-    }
+    // NOTE: audioSessionConfigurationIsOnMainActor moved to ManualTests.swift
+    // This timing-dependent test requires manual thread verification.
 
     @Test("cleanup is safe from background threads")
     func cleanupIsThreadSafe() async throws {
@@ -398,24 +322,8 @@ struct SpeechServiceAudioSessionTests {
         #expect(true) // Test passes if no crash
     }
 
-    @Test("restartEngine is safe from background threads", .disabled("Timing-dependent test unreliable in CI - requires manual testing"))
-    func restartEngineIsThreadSafe() async throws {
-        // Given: Cleaned up session
-        await MainActor.run {
-            self.service.cleanup()
-        }
-
-        // When: restartEngine from background thread
-        await Task.detached {
-            await MainActor.run {
-                self.service.restartEngine()
-            }
-        }.value
-
-        // Then: Session reconfigured safely
-        self.service.speak("test")
-        // Note: isSpeaking is timing-dependent
-    }
+    // NOTE: restartEngineIsThreadSafe moved to ManualTests.swift
+    // This timing-dependent test requires manual audio verification.
 
     @Test("no data races when multiple speak calls happen")
     func concurrentSpeakCallsAreSafe() async throws {
@@ -503,33 +411,11 @@ struct SpeechServiceAudioSessionTests {
         // Then: No crash or error
     }
 
-    @Test("restartEngine before any speak is safe", .disabled("Timing-dependent test unreliable in CI - requires manual testing"))
-    func restartEngineBeforeFirstSpeakIsSafe() async throws {
-        // Given: Fresh service instance
-        // When: restartEngine is called before any speak()
-        self.service.restartEngine()
+    // NOTE: restartEngineBeforeFirstSpeakIsSafe moved to ManualTests.swift
+    // This timing-dependent test requires manual audio verification.
 
-        // Then: No crash or error, session configured
-        self.service.speak("test")
-        // Note: isSpeaking is timing-dependent
-    }
-
-    @Test("rapid cleanup and restart cycles are safe", .disabled("Timing-dependent test unreliable in CI - requires manual testing"))
-    func rapidLifecycleCyclesAreSafe() async throws {
-        // Given: Fresh audio session
-        self.service.cleanup()
-
-        // When: Rapid cleanup/restart cycles
-        for _ in 0 ..< 20 {
-            self.service.restartEngine()
-            self.service.cleanup()
-        }
-
-        // Then: No crash or state corruption
-        self.service.restartEngine()
-        self.service.speak("test")
-        // Note: isSpeaking is timing-dependent
-    }
+    // NOTE: rapidLifecycleCyclesAreSafe moved to ManualTests.swift
+    // This timing-dependent test requires manual audio verification.
 
     @Test("audio session survives app lifecycle simulation")
     func appLifecycleSimulation() async throws {

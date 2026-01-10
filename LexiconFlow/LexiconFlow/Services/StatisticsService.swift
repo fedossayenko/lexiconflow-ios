@@ -155,7 +155,7 @@ enum StatisticsTimeRange: String, Sendable, CaseIterable {
 /// Cached statistics result with timestamp for cache invalidation
 ///
 /// **Performance**: Stores calculated metrics with TTL to avoid repeated expensive queries
-private struct CachedMetrics {
+struct CachedMetrics {
     /// Retention rate calculation result
     let retentionRate: Double
 
@@ -216,12 +216,12 @@ final class StatisticsService {
 
     /// PERFORMANCE: Metrics cache with 1-minute TTL
     /// Eliminates repeated expensive calculations during dashboard viewing
-    private var cachedMetrics: CachedMetrics?
-    private var cacheTimestamp: Date?
-    private let cacheTTL: TimeInterval = 60 // 1 minute
+    var cachedMetrics: CachedMetrics?
+    var cacheTimestamp: Date?
+    var cacheTTL: TimeInterval = 60 // 1 minute
 
     /// Checks if metrics cache is still valid
-    private func isCacheValid() -> Bool {
+    func isCacheValid() -> Bool {
         guard let timestamp = cacheTimestamp else { return false }
         return Date().timeIntervalSince(timestamp) < self.cacheTTL
     }
@@ -327,7 +327,7 @@ final class StatisticsService {
     /// - Parameters:
     ///   - context: SwiftData ModelContext for queries
     /// - - Returns: CachedMetrics with all dashboard statistics
-    private func getCachedMetrics(context: ModelContext) -> CachedMetrics {
+    func getCachedMetrics(context: ModelContext) -> CachedMetrics {
         // Check cache first
         if let cached = cachedMetrics, cached.isValid(ttl: cacheTTL) {
             self.logger.debug("Returning cached metrics")

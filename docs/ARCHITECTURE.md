@@ -588,6 +588,188 @@ class TranslationService {
 }
 ```
 
+### Quick Translation (Tap-to-Translate)
+
+**Purpose:** Provide instant on-device translation for selected text without leaving the current view.
+
+**Architecture:**
+```
+User selects text → Context menu → QuickTranslate → OnDeviceTranslationService → Popover result
+```
+
+**Components:**
+- `QuickTranslationService` (@MainActor) - Facade over `OnDeviceTranslationService`
+- Context menu integration - Native SwiftUI `contextMenu`
+- Popover display - Non-intrusive result presentation
+
+**Code Example:**
+```swift
+struct FlashcardView: View {
+    @State private var showTranslationPopover = false
+    @State private var translatedText: String?
+    @State private var selectedText: String?
+
+    var body: some View {
+        Text(card.word)
+            .textSelection(.enabled)
+            .contextMenu {
+                Button("Quick Translate") {
+                    Task {
+                        translatedText = try? await QuickTranslationService.shared
+                            .translateSelectedText(selectedText ?? "")
+                        showTranslationPopover = true
+                    }
+                }
+            }
+            .popover(isPresented: $showTranslationPopover) {
+                VStack {
+                    Text(selectedText ?? "").font(.headline)
+                    Text(translatedText ?? "").font(.subheadline)
+                }
+                .padding()
+            }
+    }
+}
+```
+
+---
+
+## Statistics Architecture
+
+### Data Aggregation Pattern
+
+**Purpose:** Pre-aggregate daily study metrics to avoid expensive queries during dashboard viewing.
+
+**Data Flow:**
+```
+FlashcardReview + StudySession
+        ↓
+StatisticsService (Aggregation)
+        ↓
+DailyStats (Persistent Storage)
+        ↓
+StatisticsViewModel (Data Preparation)
+        ↓
+StatisticsView (UI: Charts)
+```
+
+**Components:**
+- `StatisticsService` (@MainActor) - Aggregates daily metrics
+- `StatisticsViewModel` (@MainActor) - Prepares data for UI
+- `RetentionTrendChart` - SwiftUI Chart for retention over time
+- `FSRSDistributionChart` - Histogram of stability/difficulty
+
+**DailyStats Model:**
+```swift
+@Model
+final class DailyStats {
+    var id: UUID
+    var date: Date // Start of the day
+    var newCards: Int
+    var reviewedCards: Int
+    var retentionRate: Double
+    var timeSpent: TimeInterval
+    var totalReviews: Int
+
+    init(date: Date) {
+        self.id = UUID()
+        self.date = date
+        self.newCards = 0
+        self.reviewedCards = 0
+        self.retentionRate = 0.0
+        self.timeSpent = 0.0
+        self.totalReviews = 0
+    }
+}
+```
+
+**Caching Strategy:**
+- 1-minute TTL for metrics cache
+- Manual invalidation required after data changes
+- Parallel execution for multiple calculations (retention, streak, FSRS)
+
+---
+
+## Review History Architecture
+
+### Filtering and Export
+
+**Purpose:** View, filter, sort, and export `FlashcardReview` records for learning insights.
+
+**Components:**
+- `ReviewHistoryService` (@MainActor) - Fetches, filters, sorts reviews
+- `ReviewHistoryViewModel` (@MainActor) - Manages filter state
+- `ReviewHistoryView` - SwiftUI list with filter controls
+- `ShareLink` - CSV export
+
+**Data Flow:**
+1. User sets filters (date range, rating, deck)
+2. `ReviewHistoryService` builds SwiftData query
+3. Results displayed in `ReviewHistoryView`
+4. Export triggers CSV generation and share sheet
+
+**Code Example:**
+```swift
+@MainActor
+class ReviewHistoryService {
+    func fetchReviews(
+        context: ModelContext,
+        startDate: Date?,
+        endDate: Date?,
+        ratingFilter: Rating?,
+        deckFilter: Deck?
+    ) async throws -> [FlashcardReview] {
+        // Build predicates dynamically
+        let descriptor = FetchDescriptor<FlashcardReview>(
+            predicate: finalPredicate,
+            sortBy: [SortDescriptor(\.reviewDate, order: .reverse)]
+        )
+        return try context.fetch(descriptor)
+    }
+
+    func exportReviewsToCSV(_ reviews: [FlashcardReview]) -> String {
+        // Generate CSV string
+        return "card,rating,date,scheduledDays\n..."
+    }
+}
+```
+
+---
+
+## Gesture Sensitivity Configuration
+
+### User-Configurable Swipe Threshold
+
+**Purpose:** Allow users to customize swipe distance required to trigger review actions.
+
+**Components:**
+- `AppSettings.swipeThreshold` - User preference storage
+- `InteractiveGlassModifier` - Reads threshold at runtime
+- `CardGestureViewModel` - Applies threshold to gesture handling
+
+**Configuration Flow:**
+1. User adjusts slider in Settings
+2. `AppSettings.swipeThreshold` updated (persisted in UserDefaults)
+3. Gesture handlers read threshold at runtime
+4. Swipe distance compared against threshold to trigger actions
+
+**Code Example:**
+```swift
+// CardGestureViewModel.swift
+private func handleSwipe(_ translation: CGSize) {
+    let threshold = AppSettings.swipeThreshold
+
+    switch (translation.width, translation.height) {
+    case (let x, _) where x > threshold:
+        Task { await handleRating(.good) }
+    case (let x, _) where x < -threshold:
+        Task { await handleRating(.again) }
+    default:
+        break
+    }
+}
+```
+
 ---
 
 ## Audio System

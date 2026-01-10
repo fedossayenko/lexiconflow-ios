@@ -1020,4 +1020,393 @@ struct StatisticsServiceTests {
         #expect(result.successfulCount == 4) // Ratings 1-4
         #expect(result.rate == 0.8) // 4/5
     }
+
+    // MARK: - Cache Invalidation Tests (P0)
+
+    @Test("invalidateCache clears cached metrics")
+    func invalidateCacheClearsCachedMetrics() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        // Create test data
+        let flashcard = self.createFlashcard(context: context, lastReviewDate: Date())
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: Date())
+
+        // First call should populate cache
+        _ = await StatisticsService.shared.getCachedMetrics(context: context)
+        #expect(StatisticsService.shared.cachedMetrics != nil)
+
+        // Invalidate cache
+        StatisticsService.shared.invalidateCache()
+
+        // Cache should be cleared
+        #expect(StatisticsService.shared.cachedMetrics == nil)
+        #expect(StatisticsService.shared.cacheTimestamp == nil)
+    }
+
+    @Test("getCachedMetrics respects TTL expiration")
+    func cachedMetricsExpiresAfterTTL() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        let service = StatisticsService.shared
+
+        // Set a very short TTL for testing (1 second instead of 60)
+        service.cacheTTL = 1.0
+
+        // Create test data
+        let flashcard = self.createFlashcard(context: context, lastReviewDate: Date())
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: Date())
+
+        // First call populates cache
+        let firstCall = service.getCachedMetrics(context: context)
+        #expect(firstCall.retentionRate > 0)
+
+        // Wait for TTL to expire
+        try await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+
+        // Cache should be invalid now
+        #expect(service.isCacheValid() == false)
+
+        // Second call should recalculate (not return stale cache)
+        // We can verify this by checking the timestamp changed
+        let oldTimestamp = service.cacheTimestamp
+        let secondCall = service.getCachedMetrics(context: context)
+        #expect(secondCall.timestamp > oldTimestamp!)
+    }
+
+    @Test("aggregateDailyStats does not auto-invalidate cache")
+    func aggregateDailyStatsNoAutoInvalidate() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        // Populate cache with initial data
+        let flashcard = self.createFlashcard(context: context, lastReviewDate: Date())
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: Date())
+        _ = StatisticsService.shared.getCachedMetrics(context: context)
+
+        let initialCache = StatisticsService.shared.cachedMetrics
+
+        // Aggregate daily stats (should NOT invalidate cache)
+        let session = self.createStudySession(
+            context: context,
+            startTime: Date(),
+            endTime: Date().addingTimeInterval(300),
+            cardsReviewed: 5
+        )
+        _ = try await StatisticsService.shared.aggregateDailyStats(context: context)
+
+        // Cache should still be valid (aggregation doesn't auto-invalidate)
+        // This is expected behavior - cache must be manually invalidated
+        #expect(StatisticsService.shared.cachedMetrics?.timestamp == initialCache?.timestamp)
+
+        // Manual invalidation required
+        StatisticsService.shared.invalidateCache()
+        #expect(StatisticsService.shared.cachedMetrics == nil)
+    }
+
+    @Test("manual cache invalidation prevents stale metrics")
+    func manualInvalidationPreventsStaleMetrics() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        // Create initial data
+        let flashcard = self.createFlashcard(context: context, lastReviewDate: Date())
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: Date())
+
+        // Populate cache
+        let firstMetrics = StatisticsService.shared.getCachedMetrics(context: context)
+        let firstTimestamp = firstMetrics.timestamp
+
+        // Add new data (would change metrics if recalculated)
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 0, reviewDate: Date())
+
+        // Cache still returns old data (stale)
+        let staleMetrics = StatisticsService.shared.getCachedMetrics(context: context)
+        #expect(staleMetrics.timestamp == firstTimestamp)
+
+        // Invalidate and recalculate
+        StatisticsService.shared.invalidateCache()
+        let freshMetrics = StatisticsService.shared.getCachedMetrics(context: context)
+
+        // New metrics should have different timestamp
+        #expect(freshMetrics.timestamp > firstTimestamp)
+    }
+
+    @Test("cache handles empty data gracefully")
+    func cacheHandlesFailedOperations() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        // Empty context should return default DTOs without crashing
+        let result = StatisticsService.shared.getCachedMetrics(context: context)
+        #expect(result.retentionRate == 0.0)
+        #expect(result.totalCards == 0)
+        #expect(result.dueCards == 0)
+    }
+
+    @Test("cache reuse within TTL returns same instance")
+    func cacheReuseWithinTTL() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        // Create test data
+        let flashcard = self.createFlashcard(context: context, lastReviewDate: Date())
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: Date())
+
+        // Multiple calls within TTL should return same cached instance
+        let call1 = StatisticsService.shared.getCachedMetrics(context: context)
+        let call2 = StatisticsService.shared.getCachedMetrics(context: context)
+        let call3 = StatisticsService.shared.getCachedMetrics(context: context)
+
+        // All should have same timestamp (cache hit, not recalculated)
+        #expect(call1.timestamp == call2.timestamp)
+        #expect(call2.timestamp == call3.timestamp)
+    }
+
+    // MARK: - P1 Edge Case Tests
+
+    @Test("FSRS metrics respects 7-day time range filtering")
+    func fsrsMetricsRespectsSevenDayTimeRange() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        let today = Date()
+        let sixDaysAgo = DateMath.addingDays(-6, to: today)
+        let eightDaysAgo = DateMath.addingDays(-8, to: today)
+
+        // Card reviewed 6 days ago (within 7-day range)
+        _ = self.createFlashcard(context: context, stability: 10.0, difficulty: 4.0, lastReviewDate: sixDaysAgo)
+        // Card reviewed 8 days ago (outside 7-day range)
+        _ = self.createFlashcard(context: context, stability: 20.0, difficulty: 6.0, lastReviewDate: eightDaysAgo)
+
+        let result = await StatisticsService.shared.calculateFSRSMetrics(
+            context: context,
+            timeRange: .sevenDays
+        )
+
+        #expect(result.reviewedCards == 1) // Only the card from 6 days ago
+        #expect(result.averageStability == 10.0)
+        #expect(result.averageDifficulty == 4.0)
+    }
+
+    @Test("FSRS metrics respects 30-day time range filtering")
+    func fsrsMetricsRespectsThirtyDayTimeRange() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        let today = Date()
+        let twentyDaysAgo = DateMath.addingDays(-20, to: today)
+        let fortyDaysAgo = DateMath.addingDays(-40, to: today)
+
+        // Card reviewed 20 days ago (within 30-day range)
+        _ = self.createFlashcard(context: context, stability: 10.0, difficulty: 4.0, lastReviewDate: twentyDaysAgo)
+        // Card reviewed 40 days ago (outside 30-day range)
+        _ = self.createFlashcard(context: context, stability: 20.0, difficulty: 6.0, lastReviewDate: fortyDaysAgo)
+
+        let result = await StatisticsService.shared.calculateFSRSMetrics(
+            context: context,
+            timeRange: .thirtyDays
+        )
+
+        #expect(result.reviewedCards == 1) // Only the card from 20 days ago
+        #expect(result.averageStability == 10.0)
+    }
+
+    @Test("Retention rate filters correctly at exact time range boundary")
+    func retentionRateFiltersAtExactTimeRangeBoundary() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        let today = DateMath.startOfDay(for: Date())
+        let sevenDaysAgoStart = DateMath.addingDays(-7, to: today)
+        let sevenDaysAgoEnd = sevenDaysAgoStart.addingTimeInterval(86399) // End of 7 days ago
+        let eightDaysAgo = DateMath.addingDays(-8, to: today)
+
+        let flashcard = self.createFlashcard(context: context)
+
+        // Review exactly at boundary (end of 7 days ago) - should be included
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: sevenDaysAgoEnd)
+        // Review before boundary (8 days ago) - should be excluded
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 0, reviewDate: eightDaysAgo)
+        // Review today - should be included
+        _ = self.createReview(context: context, flashcard: flashcard, rating: 3, reviewDate: today)
+
+        let result = await StatisticsService.shared.calculateRetentionRate(
+            context: context,
+            timeRange: .sevenDays
+        )
+
+        #expect(result.successfulCount == 2) // 7 days ago + today
+        #expect(result.failedCount == 0)
+        #expect(result.totalCount == 2)
+    }
+
+    @Test("Study streak crosses year boundary correctly")
+    func studyStreakCrossesYearBoundaryCorrectly() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        let calendar = Calendar.current
+        var components = DateComponents()
+        components.year = 2023
+        components.month = 12
+        components.day = 30
+        let dec30 = calendar.date(from: components)!
+
+        components.day = 31
+        let dec31 = calendar.date(from: components)!
+
+        components.year = 2024
+        components.month = 1
+        components.day = 1
+        let jan01 = calendar.date(from: components)!
+
+        // Create sessions: Dec 30, Dec 31, Jan 01 (consecutive)
+        _ = self.createStudySession(context: context, startTime: dec30.addingTimeInterval(3600), endTime: dec30.addingTimeInterval(3900))
+        _ = self.createStudySession(context: context, startTime: dec31.addingTimeInterval(3600), endTime: dec31.addingTimeInterval(3900))
+        _ = self.createStudySession(context: context, startTime: jan01.addingTimeInterval(3600), endTime: jan01.addingTimeInterval(3900))
+
+        let result = await StatisticsService.shared.calculateStudyStreak(context: context, timeRange: .allTime)
+
+        #expect(result.longestStreak == 3) // Should have 3-day streak across year boundary
+        #expect(result.activeDays == 3)
+    }
+
+    @Test("Study streak handles leap year")
+    func studyStreakHandlesLeapYear() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        let calendar = Calendar.current
+        var components = DateComponents()
+        components.year = 2024 // Leap year
+        components.month = 2
+        components.day = 28
+        let feb28 = calendar.date(from: components)!
+
+        components.day = 29
+        let feb29 = calendar.date(from: components)!
+
+        components.month = 3
+        components.day = 1
+        let mar01 = calendar.date(from: components)!
+
+        // Create sessions: Feb 28, Feb 29, Mar 01 (consecutive in leap year)
+        _ = self.createStudySession(context: context, startTime: feb28, endTime: feb28.addingTimeInterval(300))
+        _ = self.createStudySession(context: context, startTime: feb29, endTime: feb29.addingTimeInterval(300))
+        _ = self.createStudySession(context: context, startTime: mar01, endTime: mar01.addingTimeInterval(300))
+
+        let result = await StatisticsService.shared.calculateStudyStreak(context: context, timeRange: .allTime)
+
+        #expect(result.longestStreak == 3) // Should handle Feb 29 correctly
+        #expect(result.activeDays == 3)
+    }
+
+    @Test("Study streak handles DST transition")
+    func studyStreakHandlesDSTTransition() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        // DST transitions typically occur in March (spring forward) and November (fall back)
+        // Create sessions around a typical DST boundary
+        let calendar = Calendar.current
+        var components = DateComponents()
+        components.year = 2024
+        components.month = 3
+        components.day = 10 // Day before DST
+        let dayBeforeDST = calendar.date(from: components)!
+
+        components.day = 11 // DST day
+        let dstDay = calendar.date(from: components)!
+
+        // Create sessions spanning DST transition
+        _ = self.createStudySession(context: context, startTime: dayBeforeDST, endTime: dayBeforeDST.addingTimeInterval(300))
+        _ = self.createStudySession(context: context, startTime: dstDay, endTime: dstDay.addingTimeInterval(300))
+
+        let result = await StatisticsService.shared.calculateStudyStreak(context: context, timeRange: .allTime)
+
+        // Should handle DST transition correctly (consecutive days)
+        #expect(result.longestStreak == 2)
+        #expect(result.activeDays == 2)
+    }
+
+    @Test("FSRS handles zero stability")
+    func fsrsHandlesZeroStability() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        let lastReview = Date()
+        // Zero stability should fall into "0-1 days" bucket
+        _ = self.createFlashcard(context: context, stability: 0.0, difficulty: 5.0, lastReviewDate: lastReview)
+
+        let result = await StatisticsService.shared.calculateFSRSMetrics(
+            context: context,
+            timeRange: .allTime
+        )
+
+        #expect(result.stabilityDistribution["0-1 days"] == 1)
+        #expect(result.averageStability == 0.0)
+    }
+
+    @Test("FSRS handles extreme stability values")
+    func fsrsHandlesExtremeStabilityValues() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        let lastReview = Date()
+        // Very large stability (effectively "infinite" for practical purposes)
+        _ = self.createFlashcard(context: context, stability: 99999.0, difficulty: 5.0, lastReviewDate: lastReview)
+
+        let result = await StatisticsService.shared.calculateFSRSMetrics(
+            context: context,
+            timeRange: .allTime
+        )
+
+        // Should fall into "1+ years" bucket
+        #expect(result.stabilityDistribution["1+ years"] == 1)
+        #expect(result.averageStability == 99999.0)
+    }
+
+    @Test("aggregateDailyStats updates existing records")
+    func aggregateDailyStatsUpdatesExisting() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        let today = Date()
+        let todayStart = DateMath.startOfDay(for: today)
+
+        // Create existing DailyStats
+        let existingStats = DailyStats(
+            date: todayStart,
+            cardsLearned: 5,
+            studyTimeSeconds: 300.0,
+            retentionRate: 0.8
+        )
+        context.insert(existingStats)
+        try context.save()
+
+        // Create new session that should update the stats
+        _ = self.createStudySession(
+            context: context,
+            startTime: today,
+            endTime: today.addingTimeInterval(600),
+            cardsReviewed: 10
+        )
+
+        let count = try await StatisticsService.shared.aggregateDailyStats(context: context)
+
+        #expect(count == 1)
+
+        // Verify existing stats were updated, not duplicated
+        let stats = try context.fetch(FetchDescriptor<DailyStats>())
+        #expect(stats.count == 1)
+        #expect(stats[0].studyTimeSeconds == 900.0) // 300 + 600
+        #expect(stats[0].cardsLearned == 5) // Unchanged
+    }
 }
+
+// MARK: - Testable Extension for StatisticsService
+
+// Note: cacheTTL is now internal (var) and can be set directly in tests
+// No extension needed - properties are accessible directly
