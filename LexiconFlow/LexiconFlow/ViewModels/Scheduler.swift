@@ -332,7 +332,7 @@ final class Scheduler {
                 // Accumulate counts
                 var newDue = current.due
                 var newCards = current.new
-                var newTotal = current.total + 1
+                let newTotal = current.total + 1
 
                 if state.stateEnum == FlashcardState.new.rawValue {
                     newCards += 1

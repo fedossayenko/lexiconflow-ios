@@ -100,9 +100,9 @@ final class MockAnalyticsBackend: AnalyticsBackend, @unchecked Sendable {
         return self._events
     }
 
-    /// Nonisolated accessor for test verification
-    /// Safe because tests run on @MainActor and this only reads
-    nonisolated func getEvents() -> [AnalyticsEvent] {
+    /// Thread-safe accessor for test verification
+    /// Safe because lock protects access to _events
+    func getEvents() -> [AnalyticsEvent] {
         self.lock.lock()
         defer { lock.unlock() }
         return self._events

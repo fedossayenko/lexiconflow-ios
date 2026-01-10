@@ -60,7 +60,7 @@ struct FSRSWrapperTests {
         try context.save()
         let now = Date()
 
-        let result = try await FSRSWrapper.shared.processReview(
+        let result = try FSRSWrapper.shared.processReview(
             flashcard: flashcard,
             rating: 2, // Good
             now: now
@@ -88,7 +88,7 @@ struct FSRSWrapperTests {
             try context.clearAll()
             let flashcard = self.createTestFlashcard(context: context, word: "card\(rating)")
             try context.save()
-            let result = try await FSRSWrapper.shared.processReview(
+            let result = try FSRSWrapper.shared.processReview(
                 flashcard: flashcard,
                 rating: rating,
                 now: baseDate
@@ -114,7 +114,7 @@ struct FSRSWrapperTests {
         // FSRS should increase stability for a well-learned card rated Easy
         let initialStability = flashcard.fsrsState!.stability
 
-        let result = try await FSRSWrapper.shared.processReview(
+        let result = try FSRSWrapper.shared.processReview(
             flashcard: flashcard,
             rating: 3, // Easy
             now: Date()
@@ -133,7 +133,7 @@ struct FSRSWrapperTests {
         try context.save()
         let initialDifficulty = flashcard1.fsrsState!.difficulty
 
-        let resultAgain = try await FSRSWrapper.shared.processReview(
+        let resultAgain = try FSRSWrapper.shared.processReview(
             flashcard: flashcard1,
             rating: 0, // Again
             now: Date()
@@ -145,7 +145,7 @@ struct FSRSWrapperTests {
         try context.clearAll()
         let flashcard2 = self.createTestFlashcard(context: context, word: "easy_test", withState: true)
         try context.save()
-        let resultEasy = try await FSRSWrapper.shared.processReview(
+        let resultEasy = try FSRSWrapper.shared.processReview(
             flashcard: flashcard2,
             rating: 3, // Easy
             now: Date()
@@ -162,7 +162,7 @@ struct FSRSWrapperTests {
         try context.clearAll()
         let flashcard1 = self.createTestFlashcard(context: context, word: "new_to_learning", withState: false)
         try context.save()
-        let result1 = try await FSRSWrapper.shared.processReview(
+        let result1 = try FSRSWrapper.shared.processReview(
             flashcard: flashcard1,
             rating: 0, // Again
             now: Date()
@@ -176,7 +176,7 @@ struct FSRSWrapperTests {
         flashcard2.fsrsState!.stateEnum = FlashcardState.review.rawValue
         try context.save()
 
-        let result2 = try await FSRSWrapper.shared.processReview(
+        let result2 = try FSRSWrapper.shared.processReview(
             flashcard: flashcard2,
             rating: 0, // Again
             now: Date()
@@ -196,7 +196,7 @@ struct FSRSWrapperTests {
         flashcard.fsrsState!.difficulty = 8.0
         try context.save()
 
-        let result = await FSRSWrapper.shared.resetFlashcard(flashcard, now: Date())
+        let result = FSRSWrapper.shared.resetFlashcard(flashcard, now: Date())
 
         #expect(result.stateEnum == FlashcardState.new.rawValue)
         #expect(result.dueDate <= Date()) // Should be due now
@@ -245,7 +245,7 @@ struct FSRSWrapperTests {
         let flashcard = self.createTestFlashcard(context: context, withState: false)
         try context.save()
 
-        let result = try await FSRSWrapper.shared.processReview(
+        let result = try FSRSWrapper.shared.processReview(
             flashcard: flashcard,
             rating: 99, // Invalid
             now: Date()
@@ -267,7 +267,7 @@ struct FSRSWrapperTests {
         flashcard.fsrsState!.lastReviewDate = futureDate
         try context.save()
 
-        let result = try await FSRSWrapper.shared.processReview(
+        let result = try FSRSWrapper.shared.processReview(
             flashcard: flashcard,
             rating: 2,
             now: Date()
@@ -286,7 +286,7 @@ struct FSRSWrapperTests {
         flashcard.fsrsState!.stability = 0.0
         try context.save()
 
-        let result = try await FSRSWrapper.shared.processReview(
+        let result = try FSRSWrapper.shared.processReview(
             flashcard: flashcard,
             rating: 2,
             now: Date()
@@ -310,7 +310,7 @@ struct FSRSWrapperTests {
         flashcard.fsrsState!.lastReviewDate = Date().addingTimeInterval(-5 * 86400) // 5 days ago
         try context.save()
 
-        let result = try await FSRSWrapper.shared.processReview(
+        let result = try FSRSWrapper.shared.processReview(
             flashcard: flashcard,
             rating: 2, // Good
             now: Date()
@@ -338,7 +338,7 @@ struct FSRSWrapperTests {
         flashcard.fsrsState!.lastReviewDate = Date().addingTimeInterval(-100 * 86400) // 100 days ago
         try context.save()
 
-        let result = try await FSRSWrapper.shared.processReview(
+        let result = try FSRSWrapper.shared.processReview(
             flashcard: flashcard,
             rating: 2,
             now: Date()
@@ -362,7 +362,7 @@ struct FSRSWrapperTests {
         flashcard.fsrsState!.stability = 10.0
         try context.save()
 
-        let result = try await FSRSWrapper.shared.processReview(
+        let result = try FSRSWrapper.shared.processReview(
             flashcard: flashcard,
             rating: 2,
             now: Date()
@@ -389,7 +389,7 @@ struct FSRSWrapperTests {
         flashcard.fsrsState!.stability = 10.0
         try context.save()
 
-        let result = try await FSRSWrapper.shared.processReview(
+        let result = try FSRSWrapper.shared.processReview(
             flashcard: flashcard,
             rating: 2,
             now: now

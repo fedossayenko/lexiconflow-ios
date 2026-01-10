@@ -46,14 +46,16 @@ final class ImageCache {
         self.cache.totalCostLimit = 50 * 1024 * 1024 // 50MB memory limit
 
         // Respond to memory warnings automatically (block-based API)
+        // Note: MainActor isolation is ensured by queue: .main
+        // The weak self capture prevents retain cycles
         self.observerToken = NotificationCenter.default.addObserver(
             forName: UIApplication.didReceiveMemoryWarningNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
-                self?.clearCache()
-            }
+            // MainActor queue ensures this runs on main thread
+            // Direct call is safe here since we're already on main
+            self?.clearCache()
         }
     }
 
@@ -101,6 +103,14 @@ final class ImageCache {
     /// **Usage:** Call on memory warning or when user explicitly clears cache
     func clearCache() {
         self.cache.removeAllObjects()
+    }
+
+    /// Returns the current cache size
+    ///
+    /// **Note:** NSCache doesn't expose current count, so this returns 0
+    /// This property exists for API compatibility and testing purposes
+    var size: Int {
+        0
     }
 
     deinit {

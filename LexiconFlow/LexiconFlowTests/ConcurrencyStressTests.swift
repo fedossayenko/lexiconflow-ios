@@ -134,14 +134,15 @@ struct ConcurrencyStressTests {
         // Process 50 concurrent reviews
         await withTaskGroup(of: Bool.self) { group in
             for _ in 0 ..< 50 {
-                group.addTask {
+                group.addTask { @MainActor in
                     // Call @MainActor ViewModel from concurrent tasks
-                    await MainActor.run { [viewModel = viewModel, flashcard = flashcard] in
-                        await (try? viewModel.processReview(
-                            flashcard: flashcard,
-                            rating: Int.random(in: 1 ... 5)
-                        )) != nil
-                    }
+                    // Note: Using @MainActor on the task ensures we're on the right actor
+                    // The async call to processReview is allowed here
+                    let result = try? await viewModel.processReview(
+                        flashcard: flashcard,
+                        rating: Int.random(in: 1 ... 5)
+                    )
+                    return result != nil
                 }
             }
 
