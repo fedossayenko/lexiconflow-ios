@@ -176,41 +176,35 @@ extension View {
 }
 
 #Preview("Interactive Effect") {
-    InteractivePreview()
-}
-
-struct InteractivePreview: View {
     @State private var offset: CGSize = .zero
 
-    var body: some View {
-        VStack(spacing: 40) {
-            RoundedRectangle(cornerRadius: 20)
-                .fill(.blue.opacity(0.3))
-                .frame(width: 200, height: 200)
-                .overlay(Text("Drag Me"))
-                .interactive(self.$offset) { dragOffset in
-                    let progress = min(max(dragOffset.width / 100, -1), 1)
+    return VStack(spacing: 40) {
+        RoundedRectangle(cornerRadius: 20)
+            .fill(.blue.opacity(0.3))
+            .frame(width: 200, height: 200)
+            .overlay(Text("Drag Me"))
+            .interactive($offset) { dragOffset in
+                let progress = min(max(dragOffset.width / 100, -1), 1)
 
-                    if progress > 0 {
-                        return .tint(.green.opacity(0.3 * progress))
-                    } else {
-                        return .tint(.red.opacity(0.3 * abs(progress)))
-                    }
+                if progress > 0 {
+                    return .tint(.green.opacity(0.3 * progress))
+                } else {
+                    return .tint(.red.opacity(0.3 * abs(progress)))
                 }
-                .offset(x: self.offset.width, y: self.offset.height)
-                .gesture(
-                    DragGesture()
-                        .onChanged { value in
-                            self.offset = value.translation
+            }
+            .offset(x: offset.width, y: offset.height)
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        offset = value.translation
+                    }
+                    .onEnded { _ in
+                        withAnimation(.spring()) {
+                            offset = .zero
                         }
-                        .onEnded { _ in
-                            withAnimation(.spring()) {
-                                self.offset = .zero
-                            }
-                        }
-                )
+                    }
+            )
 
-            Text("Offset: \(self.offset.width)")
-        }
+        Text("Offset: \(offset.width)")
     }
 }
