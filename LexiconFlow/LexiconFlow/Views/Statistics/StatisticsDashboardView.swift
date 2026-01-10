@@ -29,16 +29,12 @@ struct StatisticsDashboardView: View {
     // MARK: - Body
 
     var body: some View {
-        @ViewBuilder var content: some View {
+        Group {
             if let viewModel = viewModelHolder.value {
-                dashboardContent(viewModel: viewModel)
+                self.dashboardContent(viewModel: viewModel)
             } else {
                 LoadingView(message: "Loading statistics...")
             }
-        }
-
-        Group {
-            content
         }
         .task {
             await self.initializeViewModel()
