@@ -8,7 +8,7 @@
 import SwiftUI
 
 /// Defines the transition style for glass morphism effects.
-enum GlassTransitionStyle: Equatable {
+enum GlassTransitionStyle: Equatable, Sendable {
     /// Scale + fade in/out (card flip)
     case scaleFade
     /// Fade with distortion (navigation)

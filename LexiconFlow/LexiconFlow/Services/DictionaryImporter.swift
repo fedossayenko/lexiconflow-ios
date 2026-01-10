@@ -681,6 +681,20 @@ final class DictionaryImporter {
             )
         }
 
+        // 2.5. Pre-sanitize raw JSON to remove control characters before JSONDecoder
+        // (JSONDecoder rejects null bytes before we can sanitize parsed values)
+        let sanitizedData: Data
+        if let jsonString = String(data: data, encoding: .utf8) {
+            let sanitizedJSONString = sanitizeString(jsonString)
+            if let dataFromString = sanitizedJSONString.data(using: .utf8) {
+                sanitizedData = dataFromString
+            } else {
+                sanitizedData = data
+            }
+        } else {
+            sanitizedData = data
+        }
+
         // 3. Type-safe Codable parsing
         struct JSONFlashcard: Codable {
             let word: String
@@ -694,7 +708,7 @@ final class DictionaryImporter {
         var cards: [ParsedFlashcard] = []
 
         do {
-            let jsonCards = try decoder.decode([JSONFlashcard].self, from: data)
+            let jsonCards = try decoder.decode([JSONFlashcard].self, from: sanitizedData)
 
             // 4. Validate and sanitize content
             for (index, card) in jsonCards.enumerated() {
