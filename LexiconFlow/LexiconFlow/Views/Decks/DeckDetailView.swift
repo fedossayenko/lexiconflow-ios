@@ -23,15 +23,15 @@ struct DeckDetailView: View {
     @State private var showingTranslationResult = false
     @State private var translationTask: Task<Void, Never>?
 
+    // MARK: - Cached State
+
+    /// Cached list of untranslated cards to avoid O(n) scans during animations
+    /// Performance: Eliminates redundant filter operations during view redraws
+    @State private var untranslatedCards: [Flashcard] = []
+    @State private var lastCardCount: Int = 0
+
     private let logger = Logger(subsystem: "com.lexiconflow.deckdetail", category: "BatchTranslation")
     private let translationService = TranslationService.shared
-
-    // MARK: - Computed Properties
-
-    /// Cards that don't have a translation yet (cached for efficiency)
-    private var untranslatedCards: [Flashcard] {
-        self.deck.cards.filter { $0.translation == nil }
-    }
 
     var body: some View {
         List {
@@ -166,6 +166,18 @@ struct DeckDetailView: View {
                 Text(result.summary)
             }
         }
+        .onAppear {
+            // Initialize cached untranslated cards on view appear
+            self.updateUntranslatedCards()
+        }
+        .onChange(of: self.deck.cards.count) { _, _ in
+            // Update cache when cards are added or deleted
+            self.updateUntranslatedCards()
+        }
+        .onChange(of: self.deck.cards.compactMap(\.translation).count) { _, _ in
+            // Update cache when translations change
+            self.updateUntranslatedCards()
+        }
         .onDisappear {
             // Cancel any ongoing translation when view disappears
             self.translationTask?.cancel()
@@ -182,7 +194,8 @@ struct DeckDetailView: View {
         self.isTranslating = true
         self.translationResult = nil
 
-        let cardsToTranslate = self.untranslatedCards // Use computed property
+        // Use cached untranslated cards (updated via onChange modifiers)
+        let cardsToTranslate = self.untranslatedCards
         let total = cardsToTranslate.count
 
         self.logger.info("Starting batch translation of \(total) cards")
@@ -242,6 +255,9 @@ struct DeckDetailView: View {
         do {
             try self.modelContext.save()
             self.logger.info("Successfully saved on-device translations: \(result.successCount) cards")
+
+            // Update cache after translations are saved
+            self.updateUntranslatedCards()
 
             // Create result for UI
             self.translationResult = TranslationResult(
@@ -331,6 +347,17 @@ struct DeckDetailView: View {
             guard index >= 0, index < self.deck.cards.count else { continue }
             self.modelContext.delete(self.deck.cards[index])
         }
+    }
+
+    // MARK: - Cache Management
+
+    /// Updates the cached untranslated cards list
+    ///
+    /// Called on view appear and when card translations change.
+    /// Performance: O(n) scan only when necessary, not during every redraw
+    private func updateUntranslatedCards() {
+        self.lastCardCount = self.deck.cards.count
+        self.untranslatedCards = self.deck.cards.filter { $0.translation == nil }
     }
 }
 

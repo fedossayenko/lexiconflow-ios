@@ -126,7 +126,7 @@ struct OnboardingView: View {
                 AppSettings.hasCompletedOnboarding = true // Update single source of truth
                 self.hasCompletedOnboarding = true
             } catch {
-                Task { Analytics.trackError("onboarding_save", error: error) }
+                Analytics.trackError("onboarding_save", error: error)
                 self.errorMessage = "Failed to create sample deck: \(error.localizedDescription)"
                 self.isCreatingSampleDeck = false
             }

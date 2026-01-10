@@ -848,7 +848,7 @@ final class StatisticsService {
             return aggregatedCount
         } catch {
             self.logger.error("Failed to aggregate daily stats: \(error.localizedDescription)")
-            Task.detached { await Analytics.trackError("aggregate_daily_stats", error: error) }
+            Analytics.trackError("aggregate_daily_stats", error: error)
             throw error
         }
     }

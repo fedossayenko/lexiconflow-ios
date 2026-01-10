@@ -114,7 +114,7 @@ struct AddDeckView: View {
             try self.modelContext.save()
             self.dismiss()
         } catch {
-            Task { Analytics.trackError("save_deck", error: error) }
+            Analytics.trackError("save_deck", error: error)
             self.errorMessage = "Failed to save deck: \(error.localizedDescription)"
         }
     }

@@ -2,7 +2,8 @@
 //  InteractiveGlassModifier.swift
 //  LexiconFlow
 //
-//  Reactive glass refraction based on drag gestures.
+//  Created by Claude on 2025-01-08.
+//  Copyright © 2025 LexiconFlow. All rights reserved.
 //
 
 import SwiftUI
@@ -98,75 +99,114 @@ struct InteractiveGlassModifier: ViewModifier {
         // PRE-COMPUTE all conditional states (reduces branch evaluation during animation)
         let showHighlight = currentProgress > 0.1
         let showGlow = currentProgress > 0.2
-        let hasInteraction = currentProgress > 0
 
+        // PRE-COMPUTE all visual effect values (expensive calculations done once)
+        let hueRotation = InteractiveGlassConstants.hueRotationDegrees * currentProgress
+        let saturationIncrease = 1.0 + (InteractiveGlassConstants.saturationIncreaseMultiplier * currentProgress)
+        let scaleIncrease = 1.0 + (InteractiveGlassConstants.scaleEffectMultiplier * currentProgress)
+        let rotationAngle = InteractiveGlassConstants.rotation3DDegrees * currentProgress
+        let rotationYAxis: CGFloat = self.offset.width > 0 ? 1 : -1
+
+        // BUILD view hierarchy with pre-computed values
         @ViewBuilder var modifiedContent: some View {
             content
-                .overlay(
-                    ZStack {
-                        // Layer 1: Directional tint (always rendered for base feedback)
-                        effect.tint.clipShape(RoundedRectangle(cornerRadius: 20))
-
-                        // Layer 2: Specular highlight shift (essential for "Liquid" feel)
-                        if showHighlight {
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [
-                                            .white.opacity(InteractiveGlassConstants.specularHighlightOpacity * currentProgress * config.opacityMultiplier),
-                                            .clear
-                                        ],
-                                        startPoint: self.offset.width > 0 ? .leading : .trailing,
-                                        endPoint: self.offset.width > 0 ? .trailing : .leading
-                                    )
-                                )
-                                .blendMode(.screen)
-                        }
-
-                        // Layer 3: Edge glow (essential for "Liquid" feel)
-                        if showGlow {
-                            RoundedRectangle(cornerRadius: 20)
-                                .strokeBorder(
-                                    effect.tint.opacity(currentProgress * InteractiveGlassConstants.edgeGlowOpacityMultiplier * config.opacityMultiplier),
-                                    lineWidth: InteractiveGlassConstants.edgeGlowLineWidth
-                                )
-                                .blur(radius: InteractiveGlassConstants.edgeGlowBlurRadius)
-                        }
+                .overlay(effect.tint.opacity(0.3 * currentProgress))
+                .overlay {
+                    if showHighlight {
+                        self.specularHighlight(for: self.offset)
+                            .opacity(InteractiveGlassConstants.specularHighlightOpacity * currentProgress)
                     }
-                    .drawingGroup() // PERFORMANCE: Cache gesture effects as GPU bitmap
-                )
-                // KEEP all effects (essential for full "Liquid Glass" aesthetic)
-                .hueRotation(.degrees(currentProgress * InteractiveGlassConstants.hueRotationDegrees))
-                .saturation(hasInteraction ? 1.0 + (currentProgress * InteractiveGlassConstants.saturationIncreaseMultiplier) : 1.0)
-                .scaleEffect(1.0 + (currentProgress * InteractiveGlassConstants.scaleEffectMultiplier))
+                }
+                .overlay {
+                    if showGlow {
+                        self.edgeGlow(for: self.offset)
+                            .opacity(InteractiveGlassConstants.edgeGlowOpacityMultiplier * currentProgress)
+                    }
+                }
+                .hueRotation(.degrees(hueRotation))
+                .saturation(saturationIncrease)
+                .scaleEffect(scaleIncrease)
                 .rotation3DEffect(
-                    .degrees(currentProgress * InteractiveGlassConstants.rotation3DDegrees),
-                    axis: (x: 0, y: 1, z: 0),
-                    anchor: .center,
-                    perspective: 1.0
+                    .degrees(rotationAngle),
+                    axis: (x: 0, y: rotationYAxis, z: 0)
                 )
         }
 
         return modifiedContent
     }
+
+    // MARK: - Effect Helpers
+
+    /// Generates specular highlight based on drag direction.
+    ///
+    /// - Parameter offset: Current drag offset
+    /// - Returns: Linear gradient simulating light refraction
+    private func specularHighlight(for offset: CGSize) -> some View {
+        let isDraggingRight = offset.width > 0
+
+        return LinearGradient(
+            colors: [
+                .white.opacity(isDraggingRight ? 0.5 : 0),
+                .white.opacity(isDraggingRight ? 0 : 0.5)
+            ],
+            startPoint: isDraggingRight ? .topLeading : .topTrailing,
+            endPoint: isDraggingRight ? .bottomTrailing : .bottomLeading
+        )
+    }
+
+    /// Generates edge glow based on drag direction.
+    ///
+    /// - Parameter offset: Current drag offset
+    /// - Returns: Glowing border with blur effect
+    private func edgeGlow(for offset: CGSize) -> some View {
+        let isDraggingRight = offset.width > 0
+        let glowColor: Color = isDraggingRight ? .green : .red
+
+        return RoundedRectangle(cornerRadius: 16)
+            .stroke(glowColor, lineWidth: InteractiveGlassConstants.edgeGlowLineWidth)
+            .blur(radius: InteractiveGlassConstants.edgeGlowBlurRadius)
+    }
 }
 
+// MARK: - View Extension
+
 extension View {
-    /// Applies reactive glass refraction based on drag offset.
+    /// Applies interactive glass effects based on drag offset.
     ///
-    /// - Parameters:
-    ///   - offset: Binding to the gesture offset
-    ///   - effect: Closure that returns an InteractiveEffect based on current offset
-    /// - Returns: A view with interactive glass effects applied
+    /// **Parameters**:
+    ///   - offset: Binding to drag offset from gesture
+    ///   - effect: Closure returning `InteractiveEffect` for given offset
     ///
-    /// Example:
+    /// **Performance**: Pre-computes all values once per frame for smooth 60fps animations.
+    /// Avoids repeated calculations during gesture updates.
+    ///
+    /// **Example**:
     /// ```swift
-    /// .interactive($offset) { dragOffset in
-    ///     let progress = dragOffset.width / 100
-    ///     if progress > 0 {
-    ///         return .tint(.green.opacity(0.3 * progress))
-    ///     } else {
-    ///         return .tint(.red.opacity(0.3 * abs(progress)))
+    /// struct CardView: View {
+    ///     @State private var offset: CGSize = .zero
+    ///
+    ///     var body: some View {
+    ///         RoundedRectangle(cornerRadius: 20)
+    ///             .fill(.ultraThinMaterial)
+    ///             .interactive($offset) { dragOffset in
+    ///                 let progress = min(max(dragOffset.width / 100, -1), 1)
+    ///                 if progress > 0 {
+    ///                     return .tint(.green.opacity(0.3 * progress))
+    ///                 } else {
+    ///                     return .tint(.red.opacity(0.3 * abs(progress)))
+    ///                 }
+    ///             }
+    ///             .gesture(
+    ///                 DragGesture()
+    ///                     .onChanged { value in
+    ///                         offset = value.translation
+    ///                     }
+    ///                     .onEnded { _ in
+    ///                         withAnimation(.spring()) {
+    ///                             offset = .zero
+    ///                         }
+    ///                     }
+    ///             )
     ///     }
     /// }
     /// ```
@@ -175,36 +215,44 @@ extension View {
     }
 }
 
-#Preview("Interactive Effect") {
+// MARK: - Preview
+
+struct InteractiveGlassModifierPreview: View {
     @State private var offset: CGSize = .zero
 
-    return VStack(spacing: 40) {
-        RoundedRectangle(cornerRadius: 20)
-            .fill(.blue.opacity(0.3))
-            .frame(width: 200, height: 200)
-            .overlay(Text("Drag Me"))
-            .interactive($offset) { dragOffset in
-                let progress = min(max(dragOffset.width / 100, -1), 1)
+    var body: some View {
+        VStack(spacing: 40) {
+            RoundedRectangle(cornerRadius: 20)
+                .fill(.blue.opacity(0.3))
+                .frame(width: 200, height: 200)
+                .overlay(Text("Drag Me"))
+                .interactive(self.$offset) { dragOffset in
+                    let progress = min(max(dragOffset.width / 100, -1), 1)
 
-                if progress > 0 {
-                    return .tint(.green.opacity(0.3 * progress))
-                } else {
-                    return .tint(.red.opacity(0.3 * abs(progress)))
+                    if progress > 0 {
+                        return .tint(.green.opacity(0.3 * progress))
+                    } else {
+                        return .tint(.red.opacity(0.3 * abs(progress)))
+                    }
                 }
-            }
-            .offset(x: offset.width, y: offset.height)
-            .gesture(
-                DragGesture()
-                    .onChanged { value in
-                        offset = value.translation
-                    }
-                    .onEnded { _ in
-                        withAnimation(.spring()) {
-                            offset = .zero
+                .offset(x: self.offset.width, y: self.offset.height)
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            self.offset = value.translation
                         }
-                    }
-            )
+                        .onEnded { _ in
+                            withAnimation(.spring()) {
+                                self.offset = .zero
+                            }
+                        }
+                )
 
-        Text("Offset: \(offset.width)")
+            Text("Offset: \(self.offset.width)")
+        }
     }
+}
+
+#Preview("Interactive Effect") {
+    InteractiveGlassModifierPreview()
 }
