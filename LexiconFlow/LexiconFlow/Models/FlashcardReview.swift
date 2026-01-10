@@ -45,9 +45,10 @@ final class FlashcardReview {
     var elapsedDays: Double
 
     /// The card that was reviewed
-    /// - Deleting flashcard sets this to nil (orphaned logs kept for analytics)
+    /// - Deleting flashcard cascades to delete this review log
     /// - Inverse points to Flashcard.reviewLogs
-    @Relationship(deleteRule: .nullify, inverse: \Flashcard.reviewLogs) var card: Flashcard?
+    /// - Cascade delete rule matches Flashcard.reviewLogs to avoid constraint violations
+    @Relationship(deleteRule: .cascade, inverse: \Flashcard.reviewLogs) var card: Flashcard?
 
     /// The study session this review belongs to (optional)
     /// - Deleting study session sets this to nil (review kept for card analytics)

@@ -67,7 +67,7 @@ struct GlassEffectContainerTests {
     @Test("GlassEffectContainer struct exists and is generic over Content")
     func containerIsGeneric() {
         // Verify generic container can be created
-        let container = GlassEffectContainer(thickness: .regular) {
+        _ = GlassEffectContainer(thickness: .regular) {
             Text("Test")
         }
         // Generic constraint Content: View is implicit
@@ -77,7 +77,7 @@ struct GlassEffectContainerTests {
     func containerHasThicknessProperty() {
         // Verify thickness property is stored
         let thickness = GlassThickness.regular
-        let container = GlassEffectContainer(thickness: thickness) {
+        _ = GlassEffectContainer(thickness: thickness) {
             Text("Test")
         }
         // Property is stored via initializer
@@ -86,7 +86,7 @@ struct GlassEffectContainerTests {
     @Test("GlassEffectContainer has content property")
     func containerHasContentProperty() {
         // Verify content property is stored via ViewBuilder
-        let container = GlassEffectContainer(thickness: .regular) {
+        _ = GlassEffectContainer(thickness: .regular) {
             Text("Test")
             Image(systemName: "star")
         }
@@ -96,7 +96,7 @@ struct GlassEffectContainerTests {
     @Test("GlassEffectContainer uses ViewBuilder for content")
     func containerUsesViewBuilder() {
         // Verify ViewBuilder allows multiple children
-        let container = GlassEffectContainer(thickness: .regular) {
+        _ = GlassEffectContainer(thickness: .regular) {
             Text("Line 1")
             Text("Line 2")
             Text("Line 3")
@@ -107,7 +107,7 @@ struct GlassEffectContainerTests {
     @Test("GlassEffectContainer body returns some View")
     func containerBodyReturnsSomeView() {
         // Verify body property returns View
-        let container = GlassEffectContainer(thickness: .regular) {
+        _ = GlassEffectContainer(thickness: .regular) {
             Text("Test")
         }
         // Body is accessed implicitly when rendered
@@ -117,7 +117,7 @@ struct GlassEffectContainerTests {
 
     @Test("GlassEffectContainer applies glassEffect modifier")
     func containerAppliesGlassEffect() {
-        let container = GlassEffectContainer(thickness: .thin) {
+        _ = GlassEffectContainer(thickness: .thin) {
             createTestContent()
         }
         // Verify .glassEffect(thickness) is applied to content
@@ -126,7 +126,7 @@ struct GlassEffectContainerTests {
 
     @Test("GlassEffectContainer applies drawingGroup modifier")
     func containerAppliesDrawingGroup() {
-        let container = GlassEffectContainer(thickness: .regular) {
+        _ = GlassEffectContainer(thickness: .regular) {
             createTestContent()
         }
         // Verify .drawingGroup() is applied after glassEffect
@@ -137,7 +137,7 @@ struct GlassEffectContainerTests {
     func containerModifierOrder() {
         // Correct order: content.glassEffect().drawingGroup()
         // Incorrect order would produce different visual result
-        let container = GlassEffectContainer(thickness: .thick) {
+        _ = GlassEffectContainer(thickness: .thick) {
             createTestContent()
         }
         // drawingGroup() must be outermost for GPU cache to work
@@ -145,28 +145,28 @@ struct GlassEffectContainerTests {
 
     @Test("GlassEffectContainer with thin thickness")
     func containerWithThinThickness() {
-        let container = createContainer(thickness: .thin)
+        _ = createContainer(thickness: .thin)
         // Thin glass should have subtle blur and shadow
         // Used for delicate UI elements
     }
 
     @Test("GlassEffectContainer with regular thickness")
     func containerWithRegularThickness() {
-        let container = createContainer(thickness: .regular)
+        _ = createContainer(thickness: .regular)
         // Regular glass is default for most UI elements
         // Balances visibility and performance
     }
 
     @Test("GlassEffectContainer with thick thickness")
     func containerWithThickThickness() {
-        let container = createContainer(thickness: .thick)
+        _ = createContainer(thickness: .thick)
         // Thick glass has prominent blur and shadow
         // Used for emphasis and important content
     }
 
     @Test("GlassEffectContainer content renders correctly")
     func containerContentRenders() {
-        let container = GlassEffectContainer(thickness: .regular) {
+        _ = GlassEffectContainer(thickness: .regular) {
             Text("Visible Content")
                 .foregroundStyle(.primary)
         }
@@ -176,7 +176,7 @@ struct GlassEffectContainerTests {
 
     @Test("GlassEffectContainer supports complex content")
     func containerSupportsComplexContent() {
-        let container = GlassEffectContainer(thickness: .regular) {
+        _ = GlassEffectContainer(thickness: .regular) {
             VStack(spacing: 16) {
                 HStack {
                     Image(systemName: "star.fill")
@@ -261,7 +261,7 @@ struct GlassEffectContainerTests {
 
     @Test("GlassEffectPerformance struct exists")
     func performanceStructExists() {
-        let metrics = GlassEffectPerformance(
+        _ = GlassEffectPerformance(
             fps: 60,
             frameTime: 16.6,
             memoryUsage: 1024 * 1024
@@ -331,7 +331,7 @@ struct GlassEffectContainerTests {
 
     @Test("GlassEffectPerformance measure static method exists")
     func performanceMeasureExists() {
-        let metrics = GlassEffectPerformance.measure {
+        _ = GlassEffectPerformance.measure {
             Text("Performance Test")
         }
         // Verify static measure method exists
@@ -342,7 +342,7 @@ struct GlassEffectContainerTests {
 
     @Test("GlassEffectContainer withRadius static method exists")
     func withRadiusStaticMethodExists() {
-        let view = GlassEffectContainer.withRadius(.regular, cornerRadius: 16) {
+        _ = GlassEffectContainer.withRadius(.regular, cornerRadius: 16) {
             Text("Test Content")
         }
         // Verify static convenience method exists
@@ -350,7 +350,7 @@ struct GlassEffectContainerTests {
 
     @Test("GlassEffectContainer withRadius applies clipShape")
     func withRadiusAppliesClipShape() {
-        let view = GlassEffectContainer.withRadius(.regular, cornerRadius: 20) {
+        _ = GlassEffectContainer.withRadius(.regular, cornerRadius: 20) {
             Text("Test Content")
         }
         // Verify .clipShape(RoundedRectangle(cornerRadius:)) is applied
@@ -358,7 +358,7 @@ struct GlassEffectContainerTests {
 
     @Test("GlassEffectContainer withRadius has default corner radius")
     func withRadiusDefaultCornerRadius() {
-        let view = GlassEffectContainer.withRadius(.regular) {
+        _ = GlassEffectContainer.withRadius(.regular) {
             Text("Test Content")
         }
         // Default corner radius is 16
@@ -366,7 +366,7 @@ struct GlassEffectContainerTests {
 
     @Test("GlassEffectContainer withRadius applies drawingGroup")
     func withRadiusAppliesDrawingGroup() {
-        let view = GlassEffectContainer.withRadius(.regular) {
+        _ = GlassEffectContainer.withRadius(.regular) {
             Text("Test Content")
         }
         // Verify .drawingGroup() is applied for performance

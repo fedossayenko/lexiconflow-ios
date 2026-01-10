@@ -59,7 +59,8 @@ final class Flashcard {
     /// The deck this card belongs to (optional for CloudKit compatibility)
     /// - Inverse defined on Deck.cards to avoid circular reference
     /// - SwiftData auto-initializes this property
-    @Relationship(deleteRule: .nullify) var deck: Deck?
+    /// - Note: Cascade delete rule matches Deck.cards to avoid constraint violations
+    @Relationship(deleteRule: .cascade) var deck: Deck?
 
     /// All review logs for this card
     /// - Deleting card cascades to delete all logs
