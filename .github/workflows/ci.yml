@@ -98,7 +98,7 @@ jobs:
           SUPPRESS_APPINTENTS_METADATA=1 xcodebuild build \
             -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
-            -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2'
+            -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.1'
 
   # Test with Coverage
   test:
@@ -145,7 +145,7 @@ jobs:
           SUPPRESS_APPINTENTS_METADATA=1 xcodebuild test \
             -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
-            -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2' \
+            -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.1' \
             -only-testing:LexiconFlowTests \
             -skip-testing:LexiconFlowTests/StatisticsDashboardE2ETests \
             -skip-testing:LexiconFlowTests/StudySessionAndDailyStatsTests \
@@ -219,7 +219,7 @@ jobs:
           SUPPRESS_APPINTENTS_METADATA=1 xcodebuild test \
             -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
-            -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2' \
+            -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.1' \
             -only-testing:LexiconFlowTests \
             -enableCodeCoverage YES \
             -resultBundlePath TestResultsIntegration.xcresult
