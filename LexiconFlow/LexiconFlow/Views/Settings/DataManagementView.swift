@@ -28,7 +28,7 @@ struct DataManagementView: View {
         Form {
             // Export Section
             Section {
-                if self.isExporting {
+                if isExporting {
                     HStack(spacing: 12) {
                         ProgressView()
                             .controlSize(.small)
@@ -37,11 +37,11 @@ struct DataManagementView: View {
                     }
                 } else {
                     Button("Export All Data") {
-                        self.exportAllData()
+                        exportAllData()
                     }
 
                     Button("Export as JSON") {
-                        self.exportAsJSON()
+                        exportAsJSON()
                     }
                 }
             } header: {
@@ -52,7 +52,7 @@ struct DataManagementView: View {
 
             // Import Section
             Section {
-                if self.isImporting {
+                if isImporting {
                     HStack(spacing: 12) {
                         ProgressView()
                             .controlSize(.small)
@@ -61,11 +61,11 @@ struct DataManagementView: View {
                     }
                 } else {
                     Button("Import Data") {
-                        self.showingImportPicker = true
+                        showingImportPicker = true
                     }
 
                     Button("Import Dictionary") {
-                        self.showingDictionaryImport = true
+                        showingDictionaryImport = true
                     }
                 }
             } header: {
@@ -74,17 +74,17 @@ struct DataManagementView: View {
                 Text("Import flashcards from a backup file or dictionary (CSV, JSON, TXT)")
             }
             .fileImporter(
-                isPresented: self.$showingImportPicker,
+                isPresented: $showingImportPicker,
                 allowedContentTypes: [.json],
                 allowsMultipleSelection: false
             ) { result in
-                self.handleImport(result)
+                handleImport(result)
             }
 
             // Data Management Section
             Section {
                 Button("Reset Progress", role: .destructive) {
-                    self.showingClearAlert = true
+                    showingClearAlert = true
                 }
             } header: {
                 Text("Data Management")
@@ -97,21 +97,21 @@ struct DataManagementView: View {
                 HStack {
                     Text("Total Cards")
                     Spacer()
-                    Text("\(self.cardCount)")
+                    Text("\(cardCount)")
                         .foregroundStyle(.secondary)
                 }
 
                 HStack {
                     Text("Total Decks")
                     Spacer()
-                    Text("\(self.deckCount)")
+                    Text("\(deckCount)")
                         .foregroundStyle(.secondary)
                 }
 
                 HStack {
                     Text("Database Size")
                     Spacer()
-                    Text("~\(self.estimatedSize) MB")
+                    Text("~\(estimatedSize) MB")
                         .foregroundStyle(.secondary)
                 }
             } header: {
@@ -119,29 +119,29 @@ struct DataManagementView: View {
             }
         }
         .navigationTitle("Data Management")
-        .confirmationDialog("Reset All Progress", isPresented: self.$showingClearAlert, titleVisibility: .visible) {
+        .confirmationDialog("Reset All Progress", isPresented: $showingClearAlert, titleVisibility: .visible) {
             Button("Cancel", role: .cancel) {}
             Button("Reset Progress", role: .destructive) {
-                self.resetProgress()
+                resetProgress()
             }
         } message: {
             Text("This will reset all card progress to \"new\" state but keep your cards. This action cannot be undone.")
         }
-        .alert("Import Complete", isPresented: self.$showingImportResult) {
+        .alert("Import Complete", isPresented: $showingImportResult) {
             Button("OK") {}
         } message: {
             if let result = importResult {
-                Text(self.importSummary(result))
+                Text(importSummary(result))
             }
         }
-        .sheet(isPresented: self.$showingShareSheet) {
+        .sheet(isPresented: $showingShareSheet) {
             if let url = exportURL {
                 ShareSheet(items: [url])
                     .presentationCornerRadius(24)
                     .presentationDragIndicator(.visible)
             }
         }
-        .sheet(isPresented: self.$showingDictionaryImport) {
+        .sheet(isPresented: $showingDictionaryImport) {
             DictionaryImportView()
                 .presentationCornerRadius(24)
                 .presentationDragIndicator(.visible)
@@ -151,43 +151,43 @@ struct DataManagementView: View {
     // MARK: - Export
 
     private func exportAllData() {
-        self.isExporting = true
+        isExporting = true
 
         Task {
             do {
                 let url = try await generateExportFile(includeProgress: true)
                 await MainActor.run {
-                    self.exportURL = url
-                    self.showingShareSheet = true
-                    self.isExporting = false
+                    exportURL = url
+                    showingShareSheet = true
+                    isExporting = false
                 }
-                self.logger.info("Exported all data successfully")
+                logger.info("Exported all data successfully")
             } catch {
                 await MainActor.run {
-                    self.isExporting = false
+                    isExporting = false
                 }
-                self.logger.error("Export failed: \(error)")
+                logger.error("Export failed: \(error)")
             }
         }
     }
 
     private func exportAsJSON() {
-        self.isExporting = true
+        isExporting = true
 
         Task {
             do {
                 let url = try await generateExportFile(includeProgress: false)
                 await MainActor.run {
-                    self.exportURL = url
-                    self.showingShareSheet = true
-                    self.isExporting = false
+                    exportURL = url
+                    showingShareSheet = true
+                    isExporting = false
                 }
-                self.logger.info("Exported JSON successfully")
+                logger.info("Exported JSON successfully")
             } catch {
                 await MainActor.run {
-                    self.isExporting = false
+                    isExporting = false
                 }
-                self.logger.error("JSON export failed: \(error)")
+                logger.error("JSON export failed: \(error)")
             }
         }
     }
@@ -240,13 +240,13 @@ struct DataManagementView: View {
     // MARK: - Import
 
     private func handleImport(_ result: Result<[URL], Error>) {
-        self.isImporting = true
+        isImporting = true
 
         Task {
             do {
                 guard let fileURL = try result.get().first else {
                     await MainActor.run {
-                        self.isImporting = false
+                        isImporting = false
                     }
                     return
                 }
@@ -261,7 +261,7 @@ struct DataManagementView: View {
                 var deckMap: [String: Deck] = [:]
                 for deckData in importData.decks {
                     let deck = Deck(name: deckData.name, icon: deckData.icon)
-                    self.modelContext.insert(deck)
+                    modelContext.insert(deck)
                     deckMap[deckData.id] = deck
                 }
 
@@ -280,18 +280,18 @@ struct DataManagementView: View {
                 let result = await importer.importCards(cardsData, batchSize: 500)
 
                 await MainActor.run {
-                    self.importResult = result
-                    self.showingImportResult = true
-                    self.isImporting = false
+                    importResult = result
+                    showingImportResult = true
+                    isImporting = false
                 }
 
-                self.logger.info("Import completed: \(result.importedCount) imported, \(result.skippedCount) skipped")
+                logger.info("Import completed: \(result.importedCount) imported, \(result.skippedCount) skipped")
 
             } catch {
                 await MainActor.run {
-                    self.isImporting = false
+                    isImporting = false
                 }
-                self.logger.error("Import failed: \(error)")
+                logger.error("Import failed: \(error)")
             }
         }
     }
@@ -327,11 +327,11 @@ struct DataManagementView: View {
                     state.lastReviewDate = nil
                 }
 
-                try self.modelContext.save()
+                try modelContext.save()
 
-                self.logger.info("Reset progress for \(states.count) cards")
+                logger.info("Reset progress for \(states.count) cards")
             } catch {
-                self.logger.error("Failed to reset progress: \(error)")
+                logger.error("Failed to reset progress: \(error)")
             }
         }
     }
@@ -339,16 +339,16 @@ struct DataManagementView: View {
     // MARK: - Statistics
 
     private var cardCount: Int {
-        (try? self.modelContext.fetchCount(FetchDescriptor<Flashcard>())) ?? 0
+        (try? modelContext.fetchCount(FetchDescriptor<Flashcard>())) ?? 0
     }
 
     private var deckCount: Int {
-        (try? self.modelContext.fetchCount(FetchDescriptor<Deck>())) ?? 0
+        (try? modelContext.fetchCount(FetchDescriptor<Deck>())) ?? 0
     }
 
     private var estimatedSize: String {
         // Rough estimate based on card count
-        let cards = self.cardCount
+        let cards = cardCount
         let estimatedBytes = cards * 500 // Approximate 500 bytes per card
         let mb = Double(estimatedBytes) / 1000000
         return String(format: "%.2f", mb)
@@ -364,8 +364,8 @@ struct ExportData: Codable {
     let cards: [ExportCard]
 
     init(decks: [ExportDeck], cards: [ExportCard]) {
-        self.version = "1.0"
-        self.exportDate = ISO8601DateFormatter().string(from: Date())
+        version = "1.0"
+        exportDate = ISO8601DateFormatter().string(from: Date())
         self.decks = decks
         self.cards = cards
     }
@@ -400,7 +400,7 @@ struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
 
     func makeUIViewController(context _: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: self.items, applicationActivities: nil)
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
     }
 
     func updateUIViewController(_: UIActivityViewController, context _: Context) {}

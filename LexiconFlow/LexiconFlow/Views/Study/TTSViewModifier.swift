@@ -44,10 +44,10 @@ struct TTSViewModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onAppear {
-                self.handleOnAppear()
+                handleOnAppear()
             }
-            .onChange(of: self.isFlipped) { _, newValue in
-                self.handleFlipChange(to: newValue)
+            .onChange(of: isFlipped) { _, newValue in
+                handleFlipChange(to: newValue)
             }
     }
 
@@ -61,11 +61,11 @@ struct TTSViewModifier: ViewModifier {
     /// - Only speaks for `.onView` timing mode
     private func handleOnAppear() {
         guard AppSettings.ttsEnabled else { return }
-        guard !self.isFlipped else { return }
+        guard !isFlipped else { return }
 
         switch AppSettings.ttsTiming {
         case .onView:
-            SpeechService.shared.speak(self.card.word)
+            SpeechService.shared.speak(card.word)
         case .onFlip, .manual:
             break
         }
@@ -85,12 +85,12 @@ struct TTSViewModifier: ViewModifier {
         case .onView:
             // Play when returning to front
             if !newValue {
-                SpeechService.shared.speak(self.card.word)
+                SpeechService.shared.speak(card.word)
             }
         case .onFlip:
             // Play when flipping to back
             if newValue {
-                SpeechService.shared.speak(self.card.word)
+                SpeechService.shared.speak(card.word)
             }
         case .manual:
             // Never auto-play
@@ -117,7 +117,7 @@ extension View {
     /// ```
     @MainActor
     func ttsTiming(for card: Flashcard, isFlipped: Binding<Bool>) -> some View {
-        self.modifier(TTSViewModifier(card: card, isFlipped: isFlipped))
+        modifier(TTSViewModifier(card: card, isFlipped: isFlipped))
     }
 }
 

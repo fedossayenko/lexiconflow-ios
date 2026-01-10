@@ -15,38 +15,38 @@ struct ReviewHistoryRow: View {
     var body: some View {
         HStack(spacing: 16) {
             // Rating badge (left)
-            self.ratingBadge
+            ratingBadge
 
             // Review details (center)
             VStack(alignment: .leading, spacing: 6) {
                 // Primary info: rating label + state change
                 HStack(spacing: 8) {
-                    Text(self.review.ratingLabel)
+                    Text(review.ratingLabel)
                         .font(.headline)
-                        .foregroundStyle(self.ratingColor)
+                        .foregroundStyle(ratingColor)
 
                     // State change badge (if applicable)
                     if let stateBadge = review.stateChangeBadge {
-                        self.stateChangeBadge(stateBadge)
+                        stateChangeBadge(stateBadge)
                     }
                 }
 
                 // Secondary info: relative date + timing details
                 HStack(spacing: 6) {
-                    Text(self.review.relativeDateString)
+                    Text(review.relativeDateString)
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
                     Text("·")
                         .foregroundStyle(.secondary)
 
-                    Text(self.review.elapsedTimeDescription)
+                    Text(review.elapsedTimeDescription)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
                 // Tertiary info: scheduled interval
-                Text(self.review.scheduledIntervalDescription)
+                Text(review.scheduledIntervalDescription)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -61,8 +61,8 @@ struct ReviewHistoryRow: View {
                 .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
         )
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(self.accessibilityLabel)
-        .accessibilityHint("Review from \(self.review.fullDateString)")
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityHint("Review from \(review.fullDateString)")
     }
 
     // MARK: - Rating Badge
@@ -71,19 +71,19 @@ struct ReviewHistoryRow: View {
     private var ratingBadge: some View {
         ZStack {
             Circle()
-                .fill(self.ratingColor.opacity(0.15))
+                .fill(ratingColor.opacity(0.15))
                 .frame(width: 44, height: 44)
 
-            Image(systemName: self.review.ratingIcon)
+            Image(systemName: review.ratingIcon)
                 .font(.title3)
-                .foregroundStyle(self.ratingColor)
+                .foregroundStyle(ratingColor)
         }
         .accessibilityHidden(true) // Part of combined label
     }
 
     /// SwiftUI Color for rating
     private var ratingColor: Color {
-        switch self.review.rating {
+        switch review.rating {
         case 0: .red
         case 1: .orange
         case 2: .blue
@@ -102,8 +102,8 @@ struct ReviewHistoryRow: View {
             .fontWeight(.semibold)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(self.stateChangeColor(for: text).opacity(0.15))
-            .foregroundStyle(self.stateChangeColor(for: text))
+            .background(stateChangeColor(for: text).opacity(0.15))
+            .foregroundStyle(stateChangeColor(for: text))
             .clipShape(Capsule())
             .accessibilityLabel(text)
     }
@@ -129,7 +129,7 @@ struct ReviewHistoryRow: View {
         var parts: [String] = []
 
         // Rating
-        parts.append("Rated \(self.review.ratingLabel.lowercased())")
+        parts.append("Rated \(review.ratingLabel.lowercased())")
 
         // State change (if any)
         if let stateBadge = review.stateChangeBadge {
@@ -137,11 +137,11 @@ struct ReviewHistoryRow: View {
         }
 
         // Timing
-        parts.append(self.review.relativeDateString)
-        parts.append(self.review.elapsedTimeDescription)
+        parts.append(review.relativeDateString)
+        parts.append(review.elapsedTimeDescription)
 
         // Scheduled info
-        parts.append("Next review \(self.review.scheduledIntervalDescription)")
+        parts.append("Next review \(review.scheduledIntervalDescription)")
 
         return parts.joined(separator: ", ")
     }

@@ -80,7 +80,7 @@ enum DateMath {
     /// - Parameter date: The past date to calculate from
     /// - Returns: Days elapsed (non-negative)
     static func elapsedDays(since date: Date) -> Double {
-        self.elapsedDays(from: date, to: Date())
+        elapsedDays(from: date, to: Date())
     }
 
     /// Add days to a date, respecting calendar boundaries
@@ -120,7 +120,7 @@ enum DateMath {
     /// - Parameter date: Date to check
     /// - Returns: True if date is within current calendar day
     static func isToday(_ date: Date) -> Bool {
-        self.currentCalendar.isDateInToday(date)
+        currentCalendar.isDateInToday(date)
     }
 
     /// Check if a date is in the past (before today in user's timezone)
@@ -152,7 +152,7 @@ enum DateMath {
         // Determine if date is in the past or future
         let isPast = date < now
         // Compute elapsed days in the correct direction to avoid clamp issues
-        let days = isPast ? self.elapsedDays(from: date, to: now) : self.elapsedDays(from: now, to: date)
+        let days = isPast ? elapsedDays(from: date, to: now) : elapsedDays(from: now, to: date)
 
         // Handle past dates
         if isPast {
@@ -229,7 +229,7 @@ enum DateMath {
     /// - Parameter date: Date to get start of day for
     /// - Returns: Midnight of the given date
     static func startOfDay(for date: Date) -> Date {
-        self.currentCalendar.startOfDay(for: date)
+        currentCalendar.startOfDay(for: date)
     }
 
     /// Get the end of day for a date in user's timezone
@@ -248,7 +248,7 @@ enum DateMath {
     ///   - date2: Second date
     /// - Returns: True if dates are in same day/month/year
     static func isSameDay(_ date1: Date, _ date2: Date) -> Bool {
-        self.currentCalendar.isDate(date1, inSameDayAs: date2)
+        currentCalendar.isDate(date1, inSameDayAs: date2)
     }
 }
 

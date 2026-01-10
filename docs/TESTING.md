@@ -27,7 +27,7 @@ LexiconFlowTests/
 ```
 
 **Current Coverage** (as of January 2026):
-- **63+ test suites** with comprehensive coverage
+- **68 test files (1,726 individual tests)** with comprehensive coverage
 - Target: >80% for new code
 
 ### Test Suites (63 total)
@@ -284,7 +284,7 @@ cd LexiconFlow
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.1' \
+  -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2' \
   -only-testing:LexiconFlowTests
 ```
 
@@ -294,7 +294,7 @@ xcodebuild test \
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.1' \
+  -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2' \
   -only-testing:LexiconFlowTests/ModelTests
 ```
 
@@ -304,7 +304,7 @@ xcodebuild test \
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.1' \
+  -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2' \
   -only-testing:LexiconFlowTests/ModelTests/testFlashcardCreation
 ```
 

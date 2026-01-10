@@ -16,8 +16,8 @@ struct DeckRowView: View {
 
     /// Calculate progress ratio (due/total), clamped to 0-1
     private var progressRatio: Double {
-        guard self.deck.cards.count > 0 else { return 0 }
-        return min(max(Double(self.dueCount) / Double(self.deck.cards.count), 0), 1)
+        guard deck.cards.count > 0 else { return 0 }
+        return min(max(Double(dueCount) / Double(deck.cards.count), 0), 1)
     }
 
     // MARK: - Body
@@ -25,33 +25,33 @@ struct DeckRowView: View {
     var body: some View {
         HStack(spacing: 16) {
             // Deck icon with progress ring (UNIFIED)
-            Image(systemName: self.deck.icon ?? "folder.fill")
+            Image(systemName: deck.icon ?? "folder.fill")
                 .font(.system(size: 24))
                 .foregroundStyle(Theme.Colors.primary)
                 .glassEffectUnion(
-                    progress: self.progressRatio,
+                    progress: progressRatio,
                     thickness: .thin,
                     iconSize: 50
                 )
                 .accessibilityLabel("Deck icon")
-                .accessibilityValue("\(self.dueCount) of \(self.deck.cards.count) cards due")
-                .accessibilityHint("Circular progress showing \(Int(self.progressRatio * 100))% complete")
+                .accessibilityValue("\(dueCount) of \(deck.cards.count) cards due")
+                .accessibilityHint("Circular progress showing \(Int(progressRatio * 100))% complete")
 
             // Deck info
             VStack(alignment: .leading, spacing: 4) {
-                Text(self.deck.name)
+                Text(deck.name)
                     .font(.headline)
 
                 HStack(spacing: 8) {
-                    Text("\(self.deck.cards.count) cards")
+                    Text("\(deck.cards.count) cards")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
-                    if self.dueCount > 0 {
+                    if dueCount > 0 {
                         Text("·")
                             .foregroundStyle(.secondary)
 
-                        Text("\(self.dueCount) due")
+                        Text("\(dueCount) due")
                             .font(.caption)
                             .foregroundStyle(Theme.Colors.error)
                             .fontWeight(.semibold)

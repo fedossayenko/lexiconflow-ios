@@ -20,11 +20,11 @@ struct DynamicLightingModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .overlay {
-                RoundedRectangle(cornerRadius: self.thickness.cornerRadius)
+                RoundedRectangle(cornerRadius: thickness.cornerRadius)
                     .fill(
                         RadialGradient(
                             colors: [
-                                .white.opacity(self.isPressed ? 0.1 : 0.05),
+                                .white.opacity(isPressed ? 0.1 : 0.05),
                                 .clear
                             ],
                             center: .topLeading,
@@ -33,7 +33,7 @@ struct DynamicLightingModifier: ViewModifier {
                         )
                     )
             }
-            .animation(.easeOut(duration: 0.2), value: self.isPressed)
+            .animation(.easeOut(duration: 0.2), value: isPressed)
     }
 }
 

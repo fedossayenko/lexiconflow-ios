@@ -88,8 +88,8 @@ actor QuickTranslationService {
 
         /// Human-readable status message for UI
         var statusMessage: String {
-            if self.isCacheHit {
-                "Cached • expires \(self.cacheExpirationDate?.formatted(date: .abbreviated, time: .omitted) ?? "soon")"
+            if isCacheHit {
+                "Cached • expires \(cacheExpirationDate?.formatted(date: .abbreviated, time: .omitted) ?? "soon")"
             } else {
                 "Fresh translation"
             }
@@ -207,25 +207,12 @@ actor QuickTranslationService {
         try Task.checkCancellation()
 
         // Step 1: Check cache (on MainActor for SwiftData safety)
-        let cachedResult = await MainActor.run {
-            let context = ModelContext(container)
-            return self.findCachedTranslation(
-                word: word,
-                source: sourceLanguage,
-                target: targetLanguage,
-                modelContext: context
-            ).map { cached in
-                QuickTranslationResult(
-                    translatedText: cached.translatedText,
-                    sourceLanguage: sourceLanguage,
-                    targetLanguage: targetLanguage,
-                    isCacheHit: true,
-                    cacheExpirationDate: cached.expiresAt
-                )
-            }
-        }
-
-        if let cachedResult {
+        if let cachedResult = await checkCache(
+            word: word,
+            source: sourceLanguage,
+            target: targetLanguage,
+            container: container
+        ) {
             Self.logger.info("Cache HIT for '\(word)'")
             return cachedResult
         }
@@ -236,54 +223,20 @@ actor QuickTranslationService {
         try Task.checkCancellation()
 
         // Step 2: Fresh translation
-        let translatedText: String
-        do {
-            translatedText = try await OnDeviceTranslationService.shared.translate(
-                text: word,
-                from: sourceLanguage,
-                to: targetLanguage
-            )
-        } catch let error as OnDeviceTranslationError {
-            // Map OnDeviceTranslationError to QuickTranslationError
-            switch error {
-            case .languagePackNotAvailable:
-                Self.logger.error("Language pack not available")
-                throw QuickTranslationError.languagePackMissing(
-                    source: sourceLanguage,
-                    target: targetLanguage
-                )
-            case .unsupportedLanguagePair:
-                Self.logger.error("Unsupported language pair")
-                throw QuickTranslationError.languagePackMissing(
-                    source: sourceLanguage,
-                    target: targetLanguage
-                )
-            case .translationFailed:
-                Self.logger.error("Translation failed: \(error.localizedDescription)")
-                throw QuickTranslationError.translationFailed(reason: error.localizedDescription)
-            case .languagePackDownloadFailed, .emptyInput:
-                Self.logger.error("Translation error: \(error.localizedDescription)")
-                throw QuickTranslationError.translationFailed(reason: error.localizedDescription)
-            }
-        } catch {
-            Self.logger.error("Unexpected translation error: \(error.localizedDescription)")
-            throw QuickTranslationError.translationFailed(reason: error.localizedDescription)
-        }
+        let translatedText = try await performFreshTranslation(
+            word: word,
+            source: sourceLanguage,
+            target: targetLanguage
+        )
 
         // Step 3: Save to cache (on MainActor for SwiftData safety)
-        await MainActor.run {
-            let context = ModelContext(container)
-            // Fire and forget - cache save is non-critical for the result
-            Task {
-                await self.saveToCache(
-                    word: word,
-                    translatedText: translatedText,
-                    source: sourceLanguage,
-                    target: targetLanguage,
-                    modelContext: context
-                )
-            }
-        }
+        await saveTranslationToCacheInBackground(
+            word: word,
+            translatedText: translatedText,
+            source: sourceLanguage,
+            target: targetLanguage,
+            container: container
+        )
 
         return QuickTranslationResult(
             translatedText: translatedText,
@@ -292,6 +245,92 @@ actor QuickTranslationService {
             isCacheHit: false,
             cacheExpirationDate: nil
         )
+    }
+
+    // MARK: - Private Translation Helpers
+
+    /// Check cache for existing translation
+    private nonisolated func checkCache(
+        word: String,
+        source: String,
+        target: String,
+        container: ModelContainer
+    ) async -> QuickTranslationResult? {
+        await MainActor.run {
+            let context = ModelContext(container)
+            return self.findCachedTranslation(
+                word: word,
+                source: source,
+                target: target,
+                modelContext: context
+            ).map { cached in
+                QuickTranslationResult(
+                    translatedText: cached.translatedText,
+                    sourceLanguage: source,
+                    targetLanguage: target,
+                    isCacheHit: true,
+                    cacheExpirationDate: cached.expiresAt
+                )
+            }
+        }
+    }
+
+    /// Perform fresh translation with error mapping
+    private func performFreshTranslation(
+        word: String,
+        source: String,
+        target: String
+    ) async throws -> String {
+        do {
+            return try await OnDeviceTranslationService.shared.translate(
+                text: word,
+                from: source,
+                to: target
+            )
+        } catch let error as OnDeviceTranslationError {
+            throw mapTranslationError(error, source: source, target: target)
+        } catch {
+            Self.logger.error("Unexpected translation error: \(error.localizedDescription)")
+            throw QuickTranslationError.translationFailed(reason: error.localizedDescription)
+        }
+    }
+
+    /// Map OnDeviceTranslationError to QuickTranslationError
+    private func mapTranslationError(
+        _ error: OnDeviceTranslationError,
+        source: String,
+        target: String
+    ) -> QuickTranslationError {
+        switch error {
+        case .languagePackNotAvailable, .unsupportedLanguagePair:
+            Self.logger.error("Language pack not available")
+            return .languagePackMissing(source: source, target: target)
+        case .translationFailed, .languagePackDownloadFailed, .emptyInput:
+            Self.logger.error("Translation error: \(error.localizedDescription)")
+            return .translationFailed(reason: error.localizedDescription)
+        }
+    }
+
+    /// Save translation to cache in background (fire and forget)
+    private nonisolated func saveTranslationToCacheInBackground(
+        word: String,
+        translatedText: String,
+        source: String,
+        target: String,
+        container: ModelContainer
+    ) async {
+        await MainActor.run {
+            let context = ModelContext(container)
+            Task {
+                await self.saveToCache(
+                    word: word,
+                    translatedText: translatedText,
+                    source: source,
+                    target: target,
+                    modelContext: context
+                )
+            }
+        }
     }
 
     /// Check if language packs are available for quick translation

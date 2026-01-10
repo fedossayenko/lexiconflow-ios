@@ -18,11 +18,11 @@ final class TestViewModel: ObservableObject {
     var nonPublishedValue: String = "not published"
 
     func increment() {
-        self.count += 1
+        count += 1
     }
 
     func updateText(_ newText: String) {
-        self.text = newText
+        text = newText
     }
 }
 
@@ -454,15 +454,15 @@ struct ViewModelHolderTests {
             @Published var error: String?
 
             func addItem(_ item: String) {
-                self.items.append(item)
+                items.append(item)
             }
 
             func startLoading() {
-                self.isLoading = true
+                isLoading = true
             }
 
             func stopLoading() {
-                self.isLoading = false
+                isLoading = false
             }
 
             func setError(_ error: String?) {

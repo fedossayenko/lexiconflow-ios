@@ -80,37 +80,37 @@ class HapticService {
     }
 
     private init() {
-        self.setupHapticEngine()
+        setupHapticEngine()
     }
 
     /// Sets up the CoreHaptics engine with graceful failure handling.
     private func setupHapticEngine() {
         // Skip CoreHaptics in CI (no haptic hardware available)
-        guard !self.isRunningInCI else {
+        guard !isRunningInCI else {
             logger.info("Skipping CoreHaptics initialization in CI environment")
             return
         }
 
-        guard self.supportsHaptics else { return }
-        guard !self.isSettingUpEngine else { return }
-        self.isSettingUpEngine = true
+        guard supportsHaptics else { return }
+        guard !isSettingUpEngine else { return }
+        isSettingUpEngine = true
         defer { isSettingUpEngine = false }
 
         do {
-            self.hapticEngine = try CHHapticEngine()
-            self.hapticEngine?.stoppedHandler = { reason in
+            hapticEngine = try CHHapticEngine()
+            hapticEngine?.stoppedHandler = { reason in
                 logger.info("Haptic engine stopped: \(reason.rawValue)")
             }
-            self.hapticEngine?.resetHandler = { [weak self] in
+            hapticEngine?.resetHandler = { [weak self] in
                 logger.info("Haptic engine reset handler triggered")
                 self?.setupHapticEngine()
             }
-            try self.hapticEngine?.start()
+            try hapticEngine?.start()
             logger.info("CoreHaptics engine started successfully")
         } catch {
             logger.error("Failed to create haptic engine: \(error)")
             Analytics.trackError("haptic_engine_failed", error: error)
-            self.hapticEngine = nil
+            hapticEngine = nil
         }
     }
 
@@ -276,19 +276,19 @@ class HapticService {
             if let g = lightGenerator { return g }
             let g = UIImpactFeedbackGenerator(style: .light)
             g.prepare()
-            self.lightGenerator = g
+            lightGenerator = g
             return g
         case .medium:
             if let g = mediumGenerator { return g }
             let g = UIImpactFeedbackGenerator(style: .medium)
             g.prepare()
-            self.mediumGenerator = g
+            mediumGenerator = g
             return g
         case .heavy:
             if let g = heavyGenerator { return g }
             let g = UIImpactFeedbackGenerator(style: .heavy)
             g.prepare()
-            self.heavyGenerator = g
+            heavyGenerator = g
             return g
         case .soft, .rigid:
             // Handle iOS 26+ styles
@@ -314,10 +314,10 @@ class HapticService {
 
         // Try CoreHaptics first
         if let engine = hapticEngine {
-            self.triggerCoreHapticSwipe(direction: direction, progress: progress, engine: engine)
+            triggerCoreHapticSwipe(direction: direction, progress: progress, engine: engine)
         } else {
             // Fall back to UIKit
-            self.triggerUIKitSwipe(direction: direction, progress: progress)
+            triggerUIKitSwipe(direction: direction, progress: progress)
         }
     }
 
@@ -326,13 +326,13 @@ class HapticService {
         do {
             let pattern: CHHapticPattern = switch direction {
             case .right:
-                try self.createSwipeRightPattern(intensity: progress)
+                try createSwipeRightPattern(intensity: progress)
             case .left:
-                try self.createSwipeLeftPattern(intensity: progress)
+                try createSwipeLeftPattern(intensity: progress)
             case .up:
-                try self.createSwipeUpPattern(intensity: progress)
+                try createSwipeUpPattern(intensity: progress)
             case .down:
-                try self.createSwipeDownPattern(intensity: progress)
+                try createSwipeDownPattern(intensity: progress)
             }
 
             let player = try engine.makePlayer(with: pattern)
@@ -341,7 +341,7 @@ class HapticService {
             logger.error("Failed to play CoreHaptics swipe: \(error)")
             Analytics.trackError("haptic_swipe_failed", error: error)
             // Fallback to UIKit on failure
-            self.triggerUIKitSwipe(direction: direction, progress: progress)
+            triggerUIKitSwipe(direction: direction, progress: progress)
         }
     }
 
@@ -354,7 +354,7 @@ class HapticService {
         case .down: .medium
         }
 
-        let generator = self.getGenerator(style: style)
+        let generator = getGenerator(style: style)
         generator.prepare()
         generator.impactOccurred(intensity: progress)
     }
@@ -373,10 +373,10 @@ class HapticService {
             } catch {
                 logger.error("Failed to play CoreHaptics success: \(error)")
                 Analytics.trackError("haptic_success_failed", error: error)
-                self.triggerUIKitSuccess()
+                triggerUIKitSuccess()
             }
         } else {
-            self.triggerUIKitSuccess()
+            triggerUIKitSuccess()
         }
     }
 
@@ -394,10 +394,10 @@ class HapticService {
             } catch {
                 logger.error("Failed to play CoreHaptics warning: \(error)")
                 Analytics.trackError("haptic_warning_failed", error: error)
-                self.triggerUIKitWarning()
+                triggerUIKitWarning()
             }
         } else {
-            self.triggerUIKitWarning()
+            triggerUIKitWarning()
         }
     }
 
@@ -415,10 +415,10 @@ class HapticService {
             } catch {
                 logger.error("Failed to play CoreHaptics error: \(error)")
                 Analytics.trackError("haptic_error_failed", error: error)
-                self.triggerUIKitError()
+                triggerUIKitError()
             }
         } else {
-            self.triggerUIKitError()
+            triggerUIKitError()
         }
     }
 
@@ -438,10 +438,10 @@ class HapticService {
             } catch {
                 logger.error("Failed to play CoreHaptics streak chime: \(error)")
                 Analytics.trackError("streak_chime_failed", error: error)
-                self.triggerUIKitStreakChime(streakCount: streakCount)
+                triggerUIKitStreakChime(streakCount: streakCount)
             }
         } else {
-            self.triggerUIKitStreakChime(streakCount: streakCount)
+            triggerUIKitStreakChime(streakCount: streakCount)
         }
     }
 
@@ -453,7 +453,7 @@ class HapticService {
         guard AppSettings.hapticEnabled else { return }
 
         // Use UIKit light impact (simple and efficient)
-        let generator = self.getGenerator(style: .light)
+        let generator = getGenerator(style: .light)
         generator.prepare()
         generator.impactOccurred()
     }
@@ -495,13 +495,13 @@ class HapticService {
     /// a memory warning or when the app backgrounds.
     func reset() {
         // Stop and release haptic engine
-        self.hapticEngine?.stop()
-        self.hapticEngine = nil
+        hapticEngine?.stop()
+        hapticEngine = nil
 
         // Release cached UIKit generators
-        self.lightGenerator = nil
-        self.mediumGenerator = nil
-        self.heavyGenerator = nil
+        lightGenerator = nil
+        mediumGenerator = nil
+        heavyGenerator = nil
 
         logger.info("HapticService reset completed")
     }
@@ -510,12 +510,12 @@ class HapticService {
     ///
     /// Call this when the app is terminating to clean up resources.
     func shutdown() {
-        self.hapticEngine?.stop()
-        self.hapticEngine = nil
+        hapticEngine?.stop()
+        hapticEngine = nil
     }
 
     /// Restarts the haptic engine after it was stopped (e.g., app returns from background).
     func restartEngine() {
-        self.setupHapticEngine()
+        setupHapticEngine()
     }
 }

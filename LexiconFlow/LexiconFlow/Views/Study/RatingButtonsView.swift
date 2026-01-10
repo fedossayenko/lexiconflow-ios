@@ -13,7 +13,7 @@ struct RatingButtonsView: View {
     var body: some View {
         HStack(spacing: 12) {
             ForEach(CardRating.allCases.reversed(), id: \.self) { rating in
-                Button(action: { self.onRating(rating) }) {
+                Button(action: { onRating(rating) }) {
                     VStack(spacing: 6) {
                         Image(systemName: rating.iconName)
                             .font(.title2)

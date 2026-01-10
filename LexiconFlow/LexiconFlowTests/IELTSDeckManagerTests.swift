@@ -33,7 +33,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager creates A1 deck with correct name and icon")
     func createA1Deck() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -46,7 +46,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager creates A2 deck with correct name and icon")
     func createA2Deck() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -59,7 +59,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager creates B1 deck with correct name and icon")
     func createB1Deck() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -72,7 +72,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager creates B2 deck with correct name and icon")
     func createB2Deck() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -85,7 +85,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager creates C1 deck with correct name and icon")
     func createC1Deck() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -98,7 +98,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager creates C2 deck with correct name and icon")
     func createC2Deck() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -111,7 +111,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager creates deck with empty cards array")
     func createDeckHasEmptyCards() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -124,7 +124,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager persists deck to ModelContext")
     func createDeckPersists() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -140,7 +140,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager returns existing deck on second call")
     func getExistingDeck() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -153,7 +153,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager handles multiple calls for different levels")
     func getMultipleDifferentDecks() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -168,7 +168,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager creates all six decks in order")
     func createAllDecksInOrder() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -187,7 +187,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager throws error for invalid CEFR level")
     func throwsForInvalidLevel() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -198,7 +198,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager throws error for empty level string")
     func throwsForEmptyLevel() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -209,7 +209,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager throws error for case-sensitive level")
     func throwsForCaseSensitiveLevel() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -220,7 +220,7 @@ struct IELTSDeckManagerTests {
 
     @Test("DeckManagerError has correct error description")
     func errorDescription() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -234,7 +234,7 @@ struct IELTSDeckManagerTests {
 
     @Test("DeckManagerError has recovery suggestion")
     func errorRecoverySuggestion() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -250,7 +250,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager deckExists returns true for created deck")
     func deckExistsTrue() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -261,7 +261,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager deckExists returns false for non-existent deck")
     func deckExistsFalse() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -270,7 +270,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager deckExists returns false for invalid level")
     func deckExistsInvalidLevel() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -281,7 +281,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager getAllDecks returns all six decks")
     func getAllDecks() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -293,7 +293,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager getAllDecks returns decks in correct order")
     func getAllDecksInOrder() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -312,7 +312,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager deleteDeck removes deck from context")
     func deleteDeck() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -327,7 +327,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager deleteDeck is idempotent")
     func deleteDeckIdempotent() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -343,7 +343,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager deleteDeck throws error for invalid level")
     func deleteDeckInvalidLevel() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -356,7 +356,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager deckName returns correct name for valid level")
     func deckNameValid() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -367,7 +367,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager deckName returns nil for invalid level")
     func deckNameInvalid() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -380,7 +380,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager handles complete workflow")
     func completeWorkflow() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -405,7 +405,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager persists after context save")
     func persistsAfterSave() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 
@@ -423,7 +423,7 @@ struct IELTSDeckManagerTests {
 
     @Test("IELTSDeckManager handles rapid deck creation")
     func rapidDeckCreation() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
         let manager = IELTSDeckManager(modelContext: context)
 

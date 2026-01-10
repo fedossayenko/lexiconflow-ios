@@ -28,11 +28,11 @@ struct CardFrontView: View {
             }
 
             // Word
-            Text(self.card.word)
+            Text(card.word)
                 .font(.system(size: 42, weight: .bold, design: .rounded))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
-                .accessibilityLabel("Word: \(self.card.word)")
+                .accessibilityLabel("Word: \(card.word)")
 
             // Phonetic with speaker button
             if let phonetic = card.phonetic {
@@ -45,12 +45,12 @@ struct CardFrontView: View {
                     // Speaker button
                     if AppSettings.ttsEnabled {
                         Button {
-                            self.speakWord()
+                            speakWord()
                         } label: {
-                            Image(systemName: self.isSpeaking ? "speaker.wave.3.fill" : "speaker.wave.2.fill")
+                            Image(systemName: isSpeaking ? "speaker.wave.3.fill" : "speaker.wave.2.fill")
                                 .font(.title3)
                                 .foregroundStyle(.secondary)
-                                .symbolEffect(.pulse, options: .repeating, isActive: self.isSpeaking)
+                                .symbolEffect(.pulse, options: .repeating, isActive: isSpeaking)
                         }
                         .accessibilityLabel("Play pronunciation")
                     }
@@ -75,15 +75,15 @@ struct CardFrontView: View {
 
     /// Speak the word using text-to-speech
     private func speakWord() {
-        self.isSpeaking = true
-        SpeechService.shared.speak(self.card.word)
+        isSpeaking = true
+        SpeechService.shared.speak(card.word)
 
         // Reset after estimated duration (roughly 0.1s per character)
-        let estimatedDuration = Double(self.card.word.count) * 0.1
+        let estimatedDuration = Double(card.word.count) * 0.1
         Task {
             try? await Task.sleep(nanoseconds: UInt64(estimatedDuration * 1000000000))
             await MainActor.run {
-                self.isSpeaking = false
+                isSpeaking = false
             }
         }
     }

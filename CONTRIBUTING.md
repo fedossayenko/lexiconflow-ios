@@ -41,7 +41,7 @@ Thank you for your interest in contributing to LexiconFlow! This document provid
 6. **Run tests**
    ```bash
    xcodebuild test -project LexiconFlow.xcodeproj -scheme LexiconFlow \
-     -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1'
+     -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2'
    ```
 
 ## Development Workflow
@@ -296,11 +296,11 @@ LexiconFlow/
 ```bash
 # Run all tests
 xcodebuild test -project LexiconFlow.xcodeproj -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1'
+  -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2'
 
 # Run specific test suite
 xcodebuild test -project LexiconFlow.xcodeproj -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1' \
+  -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2' \
   -only-testing:LexiconFlowTests/ModelTests
 ```
 

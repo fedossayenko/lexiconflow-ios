@@ -87,9 +87,9 @@ actor SentenceGenerationService {
 
     /// Set source and target languages
     func setLanguages(source: String, target: String) {
-        self.sourceLanguage = source
-        self.targetLanguage = target
-        self.logger.info("Languages set: \(source) -> \(target)")
+        sourceLanguage = source
+        targetLanguage = target
+        logger.info("Languages set: \(source) -> \(target)")
     }
 
     // MARK: - Sentence Generation Types
@@ -134,7 +134,7 @@ actor SentenceGenerationService {
         let successfulGenerations: [SuccessfulGeneration]
 
         var isSuccess: Bool {
-            self.failedCount == 0 && self.successCount > 0
+            failedCount == 0 && successCount > 0
         }
     }
 
@@ -181,12 +181,12 @@ actor SentenceGenerationService {
         }
 
         func get() -> Task<SentenceBatchResult, Error>? {
-            self.task
+            task
         }
 
         func cancel() {
-            self.task?.cancel()
-            self.task = nil
+            task?.cancel()
+            task = nil
         }
     }
 
@@ -232,14 +232,14 @@ actor SentenceGenerationService {
                 cardCEFR: cardCEFR,
                 count: count
             )
-            self.logger.info("Generated sentences using cloud API for '\(cardWord)'")
+            logger.info("Generated sentences using cloud API for '\(cardWord)'")
             return response
         } catch {
-            self.logger.warning("Cloud generation failed: \(error.localizedDescription)")
+            logger.warning("Cloud generation failed: \(error.localizedDescription)")
 
             // Final fallback: static sentences
-            self.logger.info("Using static fallback sentences for '\(cardWord)'")
-            return self.generateStaticFallback(cardWord: cardWord, cardCEFR: cardCEFR, count: count)
+            logger.info("Using static fallback sentences for '\(cardWord)'")
+            return generateStaticFallback(cardWord: cardWord, cardCEFR: cardCEFR, count: count)
         }
     }
 
@@ -272,7 +272,7 @@ actor SentenceGenerationService {
         // Get API key from Keychain (awaits MainActor)
         let key = await getAPIKey()
         guard !key.isEmpty else {
-            self.logger.error("Sentence generation failed: API key not configured")
+            logger.error("Sentence generation failed: API key not configured")
             throw SentenceGenerationError.missingAPIKey
         }
 
@@ -336,13 +336,13 @@ actor SentenceGenerationService {
         urlRequest.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         urlRequest.httpBody = try JSONEncoder().encode(request)
 
-        self.logger.debug("Sending sentence generation request for '\(cardWord)'")
+        logger.debug("Sending sentence generation request for '\(cardWord)'")
 
         let (data, urlResponse) = try await URLSession.shared.data(for: urlRequest)
 
         guard let httpResponse = urlResponse as? HTTPURLResponse else {
             let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
-            self.logger.error("Generation API error: Invalid HTTP response - \(String(errorBody.prefix(200)))")
+            logger.error("Generation API error: Invalid HTTP response - \(String(errorBody.prefix(200)))")
             throw SentenceGenerationError.apiFailed
         }
 
@@ -351,19 +351,19 @@ actor SentenceGenerationService {
 
             switch httpResponse.statusCode {
             case 401:
-                self.logger.error("Generation failed: Invalid credentials (401)")
+                logger.error("Generation failed: Invalid credentials (401)")
                 throw SentenceGenerationError.clientError(statusCode: 401, message: "Invalid API key")
             case 429:
-                self.logger.warning("Rate limit hit for '\(cardWord)'")
+                logger.warning("Rate limit hit for '\(cardWord)'")
                 throw SentenceGenerationError.rateLimit
             case 400 ... 499:
-                self.logger.error("Client error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
+                logger.error("Client error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
                 throw SentenceGenerationError.clientError(statusCode: httpResponse.statusCode, message: errorBody)
             case 500 ... 599:
-                self.logger.error("Server error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
+                logger.error("Server error \(httpResponse.statusCode): \(String(errorBody.prefix(500)))")
                 throw SentenceGenerationError.serverError(statusCode: httpResponse.statusCode, message: errorBody)
             default:
-                self.logger.error("Unexpected HTTP status: \(httpResponse.statusCode)")
+                logger.error("Unexpected HTTP status: \(httpResponse.statusCode)")
                 throw SentenceGenerationError.apiFailed
             }
         }
@@ -373,7 +373,7 @@ actor SentenceGenerationService {
 
         // Extract and decode JSON synchronously without Logger to avoid @MainActor isolation
         let response = try decodeJSONResponseSynchronously(from: content)
-        self.logger.info("Successfully generated \(response.items.count) sentences for '\(cardWord)'")
+        logger.info("Successfully generated \(response.items.count) sentences for '\(cardWord)'")
         return response
     }
 
@@ -444,7 +444,7 @@ actor SentenceGenerationService {
         progressHandler: (@Sendable (BatchGenerationProgress) -> Void)? = nil
     ) async throws -> SentenceBatchResult {
         guard !cards.isEmpty else {
-            self.logger.warning("Batch generation called with empty array")
+            logger.warning("Batch generation called with empty array")
             return SentenceBatchResult(
                 successCount: 0,
                 failedCount: 0,
@@ -457,11 +457,11 @@ actor SentenceGenerationService {
         // Check for existing task BEFORE starting new one to prevent re-entrancy
         let existingTask = await taskStorage.get()
         if existingTask != nil, !Task.isCancelled {
-            self.logger.warning("Batch generation already in progress")
+            logger.warning("Batch generation already in progress")
             throw SentenceGenerationError.invalidConfiguration
         }
 
-        self.logger.info("Starting batch generation: \(cards.count) cards, \(sentencesPerCard) sentences/card")
+        logger.info("Starting batch generation: \(cards.count) cards, \(sentencesPerCard) sentences/card")
 
         let task = Task<SentenceBatchResult, Error> {
             try await self.performBatchGeneration(
@@ -477,7 +477,7 @@ actor SentenceGenerationService {
         do {
             return try await task.value
         } catch is CancellationError {
-            self.logger.info("Batch generation cancelled")
+            logger.info("Batch generation cancelled")
             return SentenceBatchResult(
                 successCount: 0,
                 failedCount: cards.count,
@@ -597,7 +597,7 @@ actor SentenceGenerationService {
 
     /// Log batch completion
     private func logBatchCompletion(_ result: SentenceBatchResult) {
-        self.logger.info("""
+        logger.info("""
         Batch generation complete:
         - Success: \(result.successCount)
         - Failed: \(result.failedCount)
@@ -633,14 +633,14 @@ actor SentenceGenerationService {
                 error.isRetryable
             },
             logContext: "Sentence generation for '\(cardWord)'",
-            logger: self.logger
+            logger: logger
         )
 
         let duration = Date().timeIntervalSince(startTime)
 
         switch result {
         case let .success(response):
-            self.logger.debug("Generation succeeded: \(cardWord)")
+            logger.debug("Generation succeeded: \(cardWord)")
             return SentenceGenerationResult(
                 cardId: cardId,
                 cardWord: cardWord,
@@ -648,7 +648,7 @@ actor SentenceGenerationService {
                 duration: duration
             )
         case let .failure(error):
-            self.logger.error("Generation failed: \(cardWord) - \(error.localizedDescription)")
+            logger.error("Generation failed: \(cardWord) - \(error.localizedDescription)")
             return SentenceGenerationResult(
                 cardId: cardId,
                 cardWord: cardWord,
@@ -681,13 +681,13 @@ actor SentenceGenerationService {
         count: Int
     ) -> SentenceGenerationResponse {
         let cefrLevel = cardCEFR ?? "B1"
-        self.logger.debug("Generating \(count) static fallback sentences for '\(cardWord)' at \(cefrLevel) level")
+        logger.debug("Generating \(count) static fallback sentences for '\(cardWord)' at \(cefrLevel) level")
 
         // Use static fallback library for common words
         var sentences: [SentenceGenerationResponse.GeneratedSentenceItem] = []
         sentences.reserveCapacity(count)
 
-        let fallbacks = self.staticFallbackLibrary[cardWord.lowercased()] ?? self.defaultFallbackSentences
+        let fallbacks = staticFallbackLibrary[cardWord.lowercased()] ?? defaultFallbackSentences
 
         for i in 0 ..< count {
             let sentenceText = fallbacks[i % fallbacks.count]
@@ -699,13 +699,13 @@ actor SentenceGenerationService {
             )
         }
 
-        self.logger.info("Generated \(sentences.count) static fallback sentences for '\(cardWord)'")
+        logger.info("Generated \(sentences.count) static fallback sentences for '\(cardWord)'")
         return SentenceGenerationResponse(items: sentences)
     }
 
     /// Get static fallback sentences for offline mode
     func getStaticFallbackSentences(for word: String) -> [SentenceGenerationResponse.GeneratedSentenceItem] {
-        let fallbacks = self.staticFallbackLibrary[word.lowercased()] ?? self.defaultFallbackSentences
+        let fallbacks = staticFallbackLibrary[word.lowercased()] ?? defaultFallbackSentences
 
         return fallbacks.map { sentence in
             SentenceGenerationResponse.GeneratedSentenceItem(

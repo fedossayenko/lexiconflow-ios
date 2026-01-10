@@ -28,6 +28,7 @@ import Translation
 /// - Language pack download flow
 /// - Input validation
 /// - Edge cases
+@Suite(.serialized)
 @MainActor
 struct OnDeviceTranslationServiceTests {
     // MARK: - Singleton Tests

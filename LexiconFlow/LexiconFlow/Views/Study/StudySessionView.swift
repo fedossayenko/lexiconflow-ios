@@ -24,7 +24,7 @@ struct StudySessionView: View {
     }
 
     var body: some View {
-        @ViewBuilder var content: some View {
+        Group {
             if let viewModel {
                 if viewModel.isComplete {
                     sessionCompleteView(vm: viewModel)
@@ -90,26 +90,24 @@ struct StudySessionView: View {
                 ProgressView("Loading session...")
             }
         }
-
-        return content
-            .alert("Error", isPresented: self.$showError) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(self.viewModel?.lastError?.localizedDescription ?? "An unknown error occurred")
+        .alert("Error", isPresented: $showError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(viewModel?.lastError?.localizedDescription ?? "An unknown error occurred")
+        }
+        .task {
+            if viewModel == nil {
+                viewModel = StudySessionViewModel(modelContext: modelContext, decks: decks, mode: mode)
             }
-            .task {
-                if viewModel == nil {
-                    viewModel = StudySessionViewModel(modelContext: self.modelContext, decks: self.decks, mode: self.mode)
-                }
-                if let viewModel, viewModel.cards.isEmpty {
-                    viewModel.loadCards()
-                }
+            if let viewModel, viewModel.cards.isEmpty {
+                viewModel.loadCards()
             }
-            .onChange(of: self.viewModel?.lastError != nil) { _, hasError in
-                if hasError {
-                    self.showError = true
-                }
+        }
+        .onChange(of: viewModel?.lastError != nil) { _, hasError in
+            if hasError {
+                showError = true
             }
+        }
     }
 
     private func sessionCompleteView(vm: StudySessionViewModel) -> some View {
@@ -125,7 +123,7 @@ struct StudySessionView: View {
                 .foregroundStyle(.secondary)
 
             Button("Done") {
-                self.onComplete()
+                onComplete()
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)

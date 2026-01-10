@@ -180,7 +180,7 @@ struct TimeoutExtensionsTests {
     @Test("withTimeout handles concurrent operations")
     func concurrentOperations() async throws {
         // Run multiple timeout operations concurrently
-        func operation(_ id: Int) async throws -> Int {
+        @Sendable func operation(_ id: Int) async throws -> Int {
             try await withTimeout(seconds: 1.0) {
                 try await Task.sleep(nanoseconds: 10000000)
                 return id

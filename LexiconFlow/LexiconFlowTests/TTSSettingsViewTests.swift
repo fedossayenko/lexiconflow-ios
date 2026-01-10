@@ -91,9 +91,9 @@ struct TTSSettingsViewTests {
         #expect(!onViewIcon.isEmpty)
         #expect(!onFlipIcon.isEmpty)
         #expect(!manualIcon.isEmpty)
-        #expect(onViewIcon.hasPrefix("icloud")) // onView: "icloud"
-        #expect(onFlipIcon.hasPrefix("arrow")) // onFlip: "arrow.left.arrow.right"
-        #expect(manualIcon.hasPrefix("speaker")) // manual: "speaker.wave.2.fill"
+        #expect(onViewIcon.hasPrefix("eye")) // onView: "eye.fill"
+        #expect(onFlipIcon.hasPrefix("rectangle")) // onFlip: "rectangle.2.swap"
+        #expect(manualIcon.hasPrefix("hand")) // manual: "hand.tap.fill"
     }
 
     @Test("enum is Sendable for Swift 6 concurrency")

@@ -28,13 +28,13 @@ struct AddDeckView: View {
         NavigationStack {
             Form {
                 Section("Deck Info") {
-                    TextField("Deck Name", text: self.$name)
+                    TextField("Deck Name", text: $name)
                         .textInputAutocapitalization(.words)
                         .accessibilityLabel("Deck Name")
                         .accessibilityHint("Enter a name for the new deck")
 
-                    Picker("Icon", selection: self.$selectedIcon) {
-                        ForEach(self.deckIcons, id: \.self) { icon in
+                    Picker("Icon", selection: $selectedIcon) {
+                        ForEach(deckIcons, id: \.self) { icon in
                             HStack {
                                 Image(systemName: icon)
                                     .frame(width: 30)
@@ -48,19 +48,19 @@ struct AddDeckView: View {
 
                 Section {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 60))], spacing: 16) {
-                        ForEach(self.deckIcons, id: \.self) { icon in
-                            Button(action: { self.selectedIcon = icon }) {
+                        ForEach(deckIcons, id: \.self) { icon in
+                            Button(action: { selectedIcon = icon }) {
                                 Image(systemName: icon)
                                     .font(.title2)
-                                    .foregroundStyle(self.selectedIcon == icon ? .white : .blue)
+                                    .foregroundStyle(selectedIcon == icon ? .white : .blue)
                                     .frame(width: 50, height: 50)
-                                    .background(self.selectedIcon == icon ? Color.blue : Color.blue.opacity(0.1))
+                                    .background(selectedIcon == icon ? Color.blue : Color.blue.opacity(0.1))
                                     .cornerRadius(10)
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel("Icon \(icon)")
-                            .accessibilityHint(self.selectedIcon == icon ? "Currently selected" : "Select this icon")
-                            .accessibilityAddTraits(self.selectedIcon == icon ? .isSelected : [])
+                            .accessibilityHint(selectedIcon == icon ? "Currently selected" : "Select this icon")
+                            .accessibilityAddTraits(selectedIcon == icon ? .isSelected : [])
                         }
                     }
                     .padding(.vertical, 8)
@@ -73,7 +73,7 @@ struct AddDeckView: View {
                 // Inline buttons to avoid UIKitToolbar warning in sheet presentations
                 Section {
                     Button(action: {
-                        self.dismiss()
+                        dismiss()
                     }) {
                         Text("Cancel")
                             .frame(maxWidth: .infinity)
@@ -83,21 +83,21 @@ struct AddDeckView: View {
                     .accessibilityHint("Discard changes and close")
 
                     Button("Save") {
-                        self.saveDeck()
+                        saveDeck()
                     }
-                    .disabled(self.name.isEmpty)
+                    .disabled(name.isEmpty)
                     .frame(maxWidth: .infinity)
                     .accessibilityLabel("Save")
                     .accessibilityHint("Save the new deck")
                 }
             }
             .navigationTitle("New Deck")
-            .alert("Error", isPresented: .constant(self.errorMessage != nil)) {
+            .alert("Error", isPresented: .constant(errorMessage != nil)) {
                 Button("OK", role: .cancel) {
-                    self.errorMessage = nil
+                    errorMessage = nil
                 }
             } message: {
-                Text(self.errorMessage ?? "An unknown error occurred")
+                Text(errorMessage ?? "An unknown error occurred")
             }
         }
     }
@@ -108,14 +108,14 @@ struct AddDeckView: View {
             icon: selectedIcon,
             order: existingDecks.count
         )
-        self.modelContext.insert(newDeck)
+        modelContext.insert(newDeck)
 
         do {
-            try self.modelContext.save()
-            self.dismiss()
+            try modelContext.save()
+            dismiss()
         } catch {
-            Task { Analytics.trackError("save_deck", error: error) }
-            self.errorMessage = "Failed to save deck: \(error.localizedDescription)"
+            Analytics.trackError("save_deck", error: error)
+            errorMessage = "Failed to save deck: \(error.localizedDescription)"
         }
     }
 }

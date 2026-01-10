@@ -55,15 +55,16 @@ final class FSRSWrapper {
     private init() {
         // Create FSRS instance with default parameters
         let params = FSRSParameters()
-        self.fsrs = FSRS(parameters: params)
+        fsrs = FSRS(parameters: params)
     }
 
     // MARK: - Type Conversions
 
     /// Convert SwiftData Flashcard to FSRS Card
     ///
-    /// **Performance**: Uses cached lastReviewDate for O(1) access instead
-    /// of O(n) scan through reviewLogs.
+    /// **Performance**: Uses cached counters for O(1) access instead
+    /// of O(n) scan through reviewLogs. Both totalReviews and totalLapses
+    /// are cached in FSRSState and updated by Scheduler on each review.
     ///
     /// - Parameters:
     ///   - flashcard: Our SwiftData Flashcard model
@@ -75,15 +76,20 @@ final class FSRSWrapper {
         // Use cached lastReviewDate if available (O(1) vs O(n) scan)
         let lastReview = fsrsState?.lastReviewDate
 
+        // PERFORMANCE: Use cached counters instead of O(n) reviewLog scan
+        // Falls back to 0 for new cards or if FSRSState is nil
+        let reps = fsrsState?.totalReviews ?? 0
+        let lapses = fsrsState?.totalLapses ?? 0
+
         return Card(
             due: fsrsState?.dueDate ?? Date(),
             stability: fsrsState?.stability ?? 0.0,
             difficulty: fsrsState?.difficulty ?? 5.0,
             elapsedDays: elapsedDays,
             scheduledDays: 0,
-            reps: flashcard.reviewLogs.count,
-            lapses: flashcard.reviewLogs.count(where: { $0.rating == 0 }),
-            state: self.toFSCardState(fsrsState?.stateEnum),
+            reps: reps,
+            lapses: lapses,
+            state: toFSCardState(fsrsState?.stateEnum),
             lastReview: lastReview
         )
     }
@@ -138,7 +144,7 @@ final class FSRSWrapper {
             0.0
         }
 
-        let fsrsCard = self.toFSCard(flashcard, elapsedDays: elapsedDays)
+        let fsrsCard = toFSCard(flashcard, elapsedDays: elapsedDays)
 
         // Convert our rating (0-3) to FSRS Rating (again=1, hard=2, good=3, easy=4)
         let fsrsRating = switch rating {
@@ -161,7 +167,7 @@ final class FSRSWrapper {
         }
 
         // Use shared helper to convert state
-        let stateEnum = self.toFlashcardStateEnum(result.card.state)
+        let stateEnum = toFlashcardStateEnum(result.card.state)
 
         let scheduledDays = result.card.due.timeIntervalSince(now) / 86400.0
 
@@ -193,8 +199,8 @@ final class FSRSWrapper {
             0.0
         }
 
-        let fsrsCard = self.toFSCard(flashcard, elapsedDays: elapsedDays)
-        let preview = self.fsrs.repeat(card: fsrsCard, now: now)
+        let fsrsCard = toFSCard(flashcard, elapsedDays: elapsedDays)
+        let preview = fsrs.repeat(card: fsrsCard, now: now)
 
         // Use the public subscript to access preview for each rating
         return [
@@ -224,11 +230,11 @@ final class FSRSWrapper {
             0.0
         }
 
-        let fsrsCard = self.toFSCard(flashcard, elapsedDays: elapsedDays)
-        let result = self.fsrs.forget(card: fsrsCard, now: now)
+        let fsrsCard = toFSCard(flashcard, elapsedDays: elapsedDays)
+        let result = fsrs.forget(card: fsrsCard, now: now)
 
         // Use shared helper to convert state
-        let stateEnum = self.toFlashcardStateEnum(result.card.state)
+        let stateEnum = toFlashcardStateEnum(result.card.state)
 
         return FSRSReviewResult(
             stability: result.card.stability,

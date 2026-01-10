@@ -65,7 +65,7 @@ final class StudySession {
     /// Type-safe access to study mode enum
     var mode: StudyMode {
         get {
-            switch self.modeEnum {
+            switch modeEnum {
             case "scheduled": .scheduled
             case "learning": .learning
             case "cram": .cram
@@ -74,9 +74,9 @@ final class StudySession {
         }
         set {
             switch newValue {
-            case .scheduled: self.modeEnum = "scheduled"
-            case .learning: self.modeEnum = "learning"
-            case .cram: self.modeEnum = "cram"
+            case .scheduled: modeEnum = "scheduled"
+            case .learning: modeEnum = "learning"
+            case .cram: modeEnum = "cram"
             }
         }
     }
@@ -85,7 +85,7 @@ final class StudySession {
     /// - Returns 0 if session hasn't ended yet
     var durationSeconds: TimeInterval {
         guard let end = endTime else { return 0 }
-        return end.timeIntervalSince(self.startTime)
+        return end.timeIntervalSince(startTime)
     }
 
     /// Human-readable duration (e.g., "5m 23s")
@@ -105,7 +105,7 @@ final class StudySession {
 
     /// Whether this session is currently active
     var isActive: Bool {
-        self.endTime == nil
+        endTime == nil
     }
 
     // MARK: - Initialization

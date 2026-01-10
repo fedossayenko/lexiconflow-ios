@@ -46,19 +46,19 @@ struct CardFrontViewMatched: View {
             }
 
             // Word (matched - moves to top-right on back)
-            Text(self.card.word)
+            Text(card.word)
                 .font(.system(size: 42, weight: .bold, design: .rounded))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
-                .matchedGeometryEffect(id: MatchedID.word.rawValue, in: self.namespace)
-                .accessibilityLabel("Word: \(self.card.word)")
+                .matchedGeometryEffect(id: MatchedID.word.rawValue, in: namespace)
+                .accessibilityLabel("Word: \(card.word)")
 
             // Phonetic (matched - stays in similar position on back)
             if let phonetic = card.phonetic {
                 Text(phonetic)
                     .font(.title3)
                     .foregroundStyle(.secondary)
-                    .matchedGeometryEffect(id: MatchedID.phonetic.rawValue, in: self.namespace)
+                    .matchedGeometryEffect(id: MatchedID.phonetic.rawValue, in: namespace)
                     .accessibilityLabel("Pronunciation: \(phonetic)")
             }
 

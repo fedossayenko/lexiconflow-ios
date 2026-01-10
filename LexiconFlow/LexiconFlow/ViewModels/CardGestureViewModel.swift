@@ -8,80 +8,114 @@
 import Combine
 import SwiftUI
 
-/// View model for tracking and updating flashcard swipe gesture state.
+// MARK: - Card Gesture ViewModel
+
+// View model for tracking and updating flashcard swipe gesture state.
+//
+// **Overview:**
+// Provides visual feedback state based on drag direction and progress.
+// Maps 4-directional swipes to FSRS ratings with appropriate visual effects.
+//
+// ## Design Rationale
+//
+// **Swipe Threshold (100pt):**
+// - Based on iOS HIG minimum touch target (44pt) × 2.5 for comfortable swipe
+// - Requires deliberate gesture action (prevents accidental swipes)
+// - Balanced for thumb reach on typical iPhone screen widths
+// - Maps to FSRS rating commit point
+//
+// **Minimum Distance (15pt):**
+// - Filters out accidental touches while maintaining responsiveness
+// - Below 15pt: No direction detected (dead zone for jitter)
+// - Above 15pt: Direction detection begins
+// - Triggers initial visual feedback (5% swelling)
+//
+// **Rotation (5° max at threshold):**
+// - Subtle 3D perspective without causing motion sickness
+// - Calculated as: `translation.width / 50` (100pt / 50 = 2° for most swipes)
+// - Provides tactile feedback through visual depth
+// - Limited to prevent disorientation
+//
+// **Scale Effects:**
+// - **Good (right):** +15% swelling (positive reinforcement)
+// - **Again (left):** -20% shrinking (negative feedback)
+// - **Easy (up):** +10% swelling + 20% fade (levitation effect)
+// - **Hard (down):** +5% swelling + 10% darkening (weight effect)
+// - **Drag feedback:** +5% swelling (eliminates dead zone feel)
+//
+// ## Sensitivity Mapping
+//
+// Dynamic gesture constants adjust swipe thresholds based on user preference:
+//
+// | Sensitivity | Threshold (pt) | Min Distance (pt) | Behavior |
+// |-------------|----------------|-------------------|----------|
+// | 0.5× (Low)  | 200            | 30                | 2× harder to trigger |
+// | 1.0× (Default) | 100        | 15                | Original thresholds |
+// | 2.0× (High) | 50             | 7.5               | 50% easier to trigger |
+//
+// **Formula:** `adjustedValue = baseValue / sensitivity`
+//
+// **Note:** Visual effects (scale multipliers, rotation, tints) remain constant
+// across sensitivity levels to maintain consistent visual feedback.
+//
+// ## Visual Feedback Mapping
+//
+// - **Right (Good):** Green tint, 15% swelling, 2° tilt
+// - **Left (Again):** Red tint, 20% shrinking, 2° tilt
+// - **Up (Easy):** Blue tint, 10% swelling, 20% fade (levitation)
+// - **Down (Hard):** Orange tint (40%), 5% swelling, 10% darkening
+// - **None:** Subtle 5% swelling (drag feedback only)
+
+// MARK: - Gesture State
+
+/// Single struct containing all gesture state for efficient batching
 ///
-/// **Overview:**
-/// Provides visual feedback state based on drag direction and progress.
-/// Maps 4-directional swipes to FSRS ratings with appropriate visual effects.
-///
-/// ## Design Rationale
-///
-/// **Swipe Threshold (100pt):**
-/// - Based on iOS HIG minimum touch target (44pt) × 2.5 for comfortable swipe
-/// - Requires deliberate gesture action (prevents accidental swipes)
-/// - Balanced for thumb reach on typical iPhone screen widths
-/// - Maps to FSRS rating commit point
-///
-/// **Minimum Distance (15pt):**
-/// - Filters out accidental touches while maintaining responsiveness
-/// - Below 15pt: No direction detected (dead zone for jitter)
-/// - Above 15pt: Direction detection begins
-/// - Triggers initial visual feedback (5% swelling)
-///
-/// **Rotation (5° max at threshold):**
-/// - Subtle 3D perspective without causing motion sickness
-/// - Calculated as: `translation.width / 50` (100pt / 50 = 2° for most swipes)
-/// - Provides tactile feedback through visual depth
-/// - Limited to prevent disorientation
-///
-/// **Scale Effects:**
-/// - **Good (right):** +15% swelling (positive reinforcement)
-/// - **Again (left):** -20% shrinking (negative feedback)
-/// - **Easy (up):** +10% swelling + 20% fade (levitation effect)
-/// - **Hard (down):** +5% swelling + 10% darkening (weight effect)
-/// - **Drag feedback:** +5% swelling (eliminates dead zone feel)
-///
-/// ## Sensitivity Mapping
-///
-/// Dynamic gesture constants adjust swipe thresholds based on user preference:
-///
-/// | Sensitivity | Threshold (pt) | Min Distance (pt) | Behavior |
-/// |-------------|----------------|-------------------|----------|
-/// | 0.5× (Low)  | 200            | 30                | 2× harder to trigger |
-/// | 1.0× (Default) | 100        | 15                | Original thresholds |
-/// | 2.0× (High) | 50             | 7.5               | 50% easier to trigger |
-///
-/// **Formula:** `adjustedValue = baseValue / sensitivity`
-///
-/// **Note:** Visual effects (scale multipliers, rotation, tints) remain constant
-/// across sensitivity levels to maintain consistent visual feedback.
-///
-/// ## Visual Feedback Mapping
-///
-/// - **Right (Good):** Green tint, 15% swelling, 2° tilt
-/// - **Left (Again):** Red tint, 20% shrinking, 2° tilt
-/// - **Up (Easy):** Blue tint, 10% swelling, 20% fade (levitation)
-/// - **Down (Hard):** Orange tint (40%), 5% swelling, 10% darkening
-/// - **None:** Subtle 5% swelling (drag feedback only)
-///
+/// **Performance**: Groups 5 separate @Published properties into one struct
+/// This reduces view update overhead from 5 triggers to 1 per frame during gestures
+struct GestureState: Equatable {
+    /// Current offset of the card from center
+    var offset: CGSize = .zero
+
+    /// Scale factor applied to the card during swipe
+    var scale: CGFloat = 1.0
+
+    /// Rotation angle in degrees during swipe
+    var rotation: Double = 0.0
+
+    /// Opacity of the card during swipe
+    var opacity: Double = 1.0
+
+    /// Tint color overlay based on swipe direction
+    var tintColor: Color = .clear
+
+    /// Default initial state
+    static let initial = GestureState()
+}
+
 @MainActor
 class CardGestureViewModel: ObservableObject {
     // MARK: - Published Properties
 
-    /// Current offset of the card from center.
-    @Published var offset: CGSize = .zero
+    /// PERFORMANCE: Single @Published struct instead of 5 separate properties
+    /// This batches all gesture state updates into a single view refresh per frame
+    /// reducing view updates from 5 to 1 during drag gestures (60-120hz)
+    @Published private(set) var gestureState: GestureState = .init()
 
-    /// Scale factor applied to the card during swipe.
-    @Published var scale: CGFloat = 1.0
+    /// Binding for InteractiveGlassModifier compatibility
+    /// Provides a binding to offset that updates the internal gestureState
+    var offsetBinding: Binding<CGSize> {
+        Binding(
+            get: { self.gestureState.offset },
+            set: { self.gestureState.offset = $0 }
+        )
+    }
 
-    /// Rotation angle in degrees during swipe.
-    @Published var rotation: Double = 0.0
-
-    /// Opacity of the card during swipe.
-    @Published var opacity: Double = 1.0
-
-    /// Tint color overlay based on swipe direction.
-    @Published var tintColor: Color = .clear
+    /// Convenience accessors for backward compatibility with existing views
+    var offset: CGSize { gestureState.offset }
+    var scale: CGFloat { gestureState.scale }
+    var rotation: Double { gestureState.rotation }
+    var opacity: Double { gestureState.opacity }
+    var tintColor: Color { gestureState.tintColor }
 
     // MARK: - Constants (Dynamic)
 
@@ -164,7 +198,7 @@ class CardGestureViewModel: ObservableObject {
         let horizontal = abs(translation.width)
         let vertical = abs(translation.height)
 
-        let constants = self.gestureConstants
+        let constants = gestureConstants
         guard max(horizontal, vertical) >= constants.minimumSwipeDistance else { return .none }
 
         if horizontal >= vertical {
@@ -180,6 +214,9 @@ class CardGestureViewModel: ObservableObject {
     ///
     /// - Parameter translation: Current gesture translation vector
     ///
+    /// **PERFORMANCE**: Builds new GestureState in a single allocation and assigns once
+    /// This triggers exactly ONE view refresh instead of 5 separate updates
+    ///
     /// Calculates progress based on threshold and updates all visual properties
     /// according to the detected direction.
     ///
@@ -190,45 +227,50 @@ class CardGestureViewModel: ObservableObject {
     /// - Down (Hard): Orange tint (40%), 5% swelling, 10% darkening
     /// - None: Subtle 5% swelling (drag feedback)
     func updateGestureState(translation: CGSize) {
-        let constants = self.gestureConstants
-        let direction = self.detectDirection(translation: translation)
+        let constants = gestureConstants
+        let direction = detectDirection(translation: translation)
         let distance = max(abs(translation.width), abs(translation.height))
         let progress = min(distance / constants.swipeThreshold, 1.0)
 
-        self.offset = translation
+        // Build new state (single allocation)
+        var newState = gestureState
+        newState.offset = translation
 
         switch direction {
         case .right:
             // Good rating - Green tint, swelling effect
-            self.scale = 1.0 + (progress * constants.goodSwipeScaleMultiplier)
-            self.tintColor = .green.opacity(progress * constants.standardTintOpacity)
-            self.rotation = Double(translation.width / constants.rotationDivisor)
+            newState.scale = 1.0 + (progress * constants.goodSwipeScaleMultiplier)
+            newState.tintColor = .green.opacity(progress * constants.standardTintOpacity)
+            newState.rotation = Double(translation.width / constants.rotationDivisor)
 
         case .left:
             // Again rating - Red tint, shrinking effect
-            self.scale = 1.0 - (progress * constants.againSwipeScaleMultiplier)
-            self.tintColor = .red.opacity(progress * constants.standardTintOpacity)
-            self.rotation = Double(translation.width / constants.rotationDivisor)
+            newState.scale = 1.0 - (progress * constants.againSwipeScaleMultiplier)
+            newState.tintColor = .red.opacity(progress * constants.standardTintOpacity)
+            newState.rotation = Double(translation.width / constants.rotationDivisor)
 
         case .up:
             // Easy rating - Blue tint, lightening effect
-            self.scale = 1.0 + (progress * constants.easySwipeScaleMultiplier)
-            self.tintColor = .blue.opacity(progress * constants.standardTintOpacity)
-            self.opacity = 1.0 - (progress * constants.easySwipeFadeMultiplier)
+            newState.scale = 1.0 + (progress * constants.easySwipeScaleMultiplier)
+            newState.tintColor = .blue.opacity(progress * constants.standardTintOpacity)
+            newState.opacity = 1.0 - (progress * constants.easySwipeFadeMultiplier)
 
         case .down:
             // Hard rating - Orange tint, heavy effect
-            self.scale = 1.0 + (progress * constants.hardSwipeScaleMultiplier)
-            self.tintColor = .orange.opacity(progress * constants.hardSwipeTintOpacity)
-            self.opacity = min(1.0 + (progress * constants.hardSwipeDarkenMultiplier), 1.0)
+            newState.scale = 1.0 + (progress * constants.hardSwipeScaleMultiplier)
+            newState.tintColor = .orange.opacity(progress * constants.hardSwipeTintOpacity)
+            newState.opacity = min(1.0 + (progress * constants.hardSwipeDarkenMultiplier), 1.0)
 
         case .none:
             // No clear direction yet - show subtle dragging feedback
             // This eliminates the dead zone feeling for small movements
-            self.scale = 1.0 + (progress * constants.dragFeedbackScaleMultiplier)
-            self.tintColor = .clear
-            self.rotation = 0
+            newState.scale = 1.0 + (progress * constants.dragFeedbackScaleMultiplier)
+            newState.tintColor = .clear
+            newState.rotation = 0
         }
+
+        // Single assignment triggers one view refresh
+        gestureState = newState
     }
 
     /// Handles gesture change and returns result for haptic feedback.
@@ -239,26 +281,23 @@ class CardGestureViewModel: ObservableObject {
     /// This method combines direction detection, progress calculation, and state update
     /// into a single call for cleaner view code.
     func handleGestureChange(_ value: DragGesture.Value) -> GestureResult? {
-        let constants = self.gestureConstants
-        let direction = self.detectDirection(translation: value.translation)
+        let constants = gestureConstants
+        let direction = detectDirection(translation: value.translation)
         guard direction != .none else { return nil }
 
         let distance = max(abs(value.translation.width), abs(value.translation.height))
         let progress = min(distance / constants.swipeThreshold, 1.0)
 
-        self.updateGestureState(translation: value.translation)
+        updateGestureState(translation: value.translation)
         return GestureResult(direction: direction, progress: progress)
     }
 
     /// Resets all gesture state to default values.
     ///
+    /// **PERFORMANCE**: Single assignment resets all state at once
     /// Called when gesture is cancelled or card snaps back to center.
     func resetGestureState() {
-        self.offset = .zero
-        self.scale = 1.0
-        self.rotation = 0.0
-        self.opacity = 1.0
-        self.tintColor = .clear
+        gestureState = GestureState.initial
     }
 
     /// Checks if translation exceeds swipe threshold.
@@ -266,7 +305,7 @@ class CardGestureViewModel: ObservableObject {
     /// - Parameter translation: Current gesture translation vector
     /// - Returns: True if swipe should be committed
     func shouldCommitSwipe(translation: CGSize) -> Bool {
-        let constants = self.gestureConstants
+        let constants = gestureConstants
         let distance = max(abs(translation.width), abs(translation.height))
         return distance >= constants.swipeThreshold
     }

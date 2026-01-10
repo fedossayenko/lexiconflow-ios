@@ -54,11 +54,11 @@ struct LoadingView: View {
             .accessibilityLabel("Loading")
 
             // Message
-            Text(self.message)
+            Text(message)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .accessibilityLabel(self.message)
+                .accessibilityLabel(message)
 
             // Progress percentage (if determinate)
             if let progress {

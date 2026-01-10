@@ -19,6 +19,27 @@ enum KeychainManager {
     private static let service = "com.lexiconflow"
     private static let logger = Logger(subsystem: "com.lexiconflow.keychain", category: "KeychainManager")
 
+    // MARK: - Performance Caching
+
+    /// In-memory cache for API key with 30-minute TTL
+    /// PERFORMANCE: Eliminates repeated keychain access (50-100ms per batch translation)
+    private static var apiKeyCache: String?
+    private static var cacheTimestamp: Date?
+    private static let cacheTTL: TimeInterval = 1800 // 30 minutes
+
+    /// Checks if cached API key is still valid
+    private static func isCacheValid() -> Bool {
+        guard let timestamp = cacheTimestamp else { return false }
+        return Date().timeIntervalSince(timestamp) < cacheTTL
+    }
+
+    /// Invalidates the API key cache (call after set/delete operations)
+    private static func invalidateCache() {
+        apiKeyCache = nil
+        cacheTimestamp = nil
+        logger.debug("API key cache invalidated")
+    }
+
     // MARK: - API Key Operations
 
     /// Store API key securely in Keychain
@@ -28,18 +49,18 @@ enum KeychainManager {
     @MainActor
     static func setAPIKey(_ key: String) throws {
         guard !key.isEmpty else {
-            self.logger.warning("Attempted to store empty API key")
+            logger.warning("Attempted to store empty API key")
             throw KeychainError.emptyKey
         }
 
         guard let data = key.data(using: .utf8) else {
-            self.logger.error("Failed to encode API key as UTF-8")
+            logger.error("Failed to encode API key as UTF-8")
             throw KeychainError.invalidData
         }
 
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: self.service,
+            kSecAttrService as String: service,
             kSecAttrAccount as String: "zai_api_key",
             kSecValueData as String: data
         ]
@@ -51,11 +72,13 @@ enum KeychainManager {
         let status = SecItemAdd(query as CFDictionary, nil)
 
         guard status == errSecSuccess else {
-            self.logger.error("Failed to store API key in Keychain: OSStatus \(status)")
+            logger.error("Failed to store API key in Keychain: OSStatus \(status)")
             throw KeychainError.unhandledError(status)
         }
 
-        self.logger.info("API key stored securely in Keychain")
+        // Invalidate cache after storing new key
+        invalidateCache()
+        logger.info("API key stored securely in Keychain")
     }
 
     /// Retrieve API key from Keychain
@@ -64,9 +87,16 @@ enum KeychainManager {
     /// - Throws: KeychainError if retrieval fails (except not found)
     @MainActor
     static func getAPIKey() throws -> String? {
+        // PERFORMANCE: Check in-memory cache first (30-minute TTL)
+        if isCacheValid(), let cached = apiKeyCache {
+            logger.debug("API key retrieved from cache")
+            return cached
+        }
+
+        // Cache miss - fetch from keychain
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: self.service,
+            kSecAttrService as String: service,
             kSecAttrAccount as String: "zai_api_key",
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne
@@ -79,19 +109,22 @@ enum KeychainManager {
               let data = result as? Data
         else {
             if status == errSecItemNotFound {
-                self.logger.debug("No API key found in Keychain")
+                logger.debug("No API key found in Keychain")
                 return nil
             }
-            self.logger.error("Failed to retrieve API key from Keychain: OSStatus \(status)")
+            logger.error("Failed to retrieve API key from Keychain: OSStatus \(status)")
             throw KeychainError.unhandledError(status)
         }
 
         guard let apiKey = String(data: data, encoding: .utf8) else {
-            self.logger.error("Failed to decode API key data as UTF-8")
+            logger.error("Failed to decode API key data as UTF-8")
             throw KeychainError.invalidData
         }
 
-        self.logger.debug("API key retrieved from Keychain")
+        // Update cache
+        apiKeyCache = apiKey
+        cacheTimestamp = Date()
+        logger.debug("API key retrieved from Keychain and cached")
         return apiKey
     }
 
@@ -102,21 +135,24 @@ enum KeychainManager {
     static func deleteAPIKey() throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: self.service,
+            kSecAttrService as String: service,
             kSecAttrAccount as String: "zai_api_key"
         ]
 
         let status = SecItemDelete(query as CFDictionary)
 
         guard status == errSecSuccess || status == errSecItemNotFound else {
-            self.logger.error("Failed to delete API key from Keychain: OSStatus \(status)")
+            logger.error("Failed to delete API key from Keychain: OSStatus \(status)")
             throw KeychainError.unhandledError(status)
         }
 
+        // Invalidate cache after deleting key
+        invalidateCache()
+
         if status == errSecSuccess {
-            self.logger.info("API key deleted from Keychain")
+            logger.info("API key deleted from Keychain")
         } else {
-            self.logger.debug("No API key to delete (item not found)")
+            logger.debug("No API key to delete (item not found)")
         }
     }
 
@@ -126,7 +162,7 @@ enum KeychainManager {
     @MainActor
     static func hasAPIKey() -> Bool {
         do {
-            return try self.getAPIKey() != nil
+            return try getAPIKey() != nil
         } catch {
             return false
         }
@@ -147,13 +183,13 @@ enum KeychainManager {
         }
 
         guard let data = value.data(using: .utf8) else {
-            self.logger.error("Failed to encode value as UTF-8 for account '\(account)'")
+            logger.error("Failed to encode value as UTF-8 for account '\(account)'")
             throw KeychainError.invalidData
         }
 
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: self.service,
+            kSecAttrService as String: service,
             kSecAttrAccount as String: account,
             kSecValueData as String: data
         ]
@@ -176,7 +212,7 @@ enum KeychainManager {
     static func get(forAccount account: String) throws -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: self.service,
+            kSecAttrService as String: service,
             kSecAttrAccount as String: account,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne
@@ -206,7 +242,7 @@ enum KeychainManager {
     static func delete(forAccount account: String) throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: self.service,
+            kSecAttrService as String: service,
             kSecAttrAccount as String: account
         ]
 

@@ -79,7 +79,7 @@ struct ProductionSentenceGenerator: SentenceGenerationProtocol {
         cefrLevel: String? = nil,
         count: Int = 3
     ) async throws -> SentenceGenerationResponse {
-        try await self.service.generateSentences(
+        try await service.generateSentences(
             cardWord: word,
             cardDefinition: definition,
             cardTranslation: translation,
@@ -94,7 +94,7 @@ struct ProductionSentenceGenerator: SentenceGenerationProtocol {
         maxConcurrency: Int = 3,
         progressHandler: (@Sendable (SentenceGenerationService.BatchGenerationProgress) -> Void)? = nil
     ) async throws -> SentenceGenerationService.SentenceBatchResult {
-        try await self.service.generateBatch(
+        try await service.generateBatch(
             cards,
             sentencesPerCard: sentencesPerCard,
             maxConcurrency: maxConcurrency,
@@ -103,6 +103,6 @@ struct ProductionSentenceGenerator: SentenceGenerationProtocol {
     }
 
     func cancelBatchGeneration() async {
-        await self.service.cancelBatchGeneration()
+        await service.cancelBatchGeneration()
     }
 }

@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import Testing
+@preconcurrency import Testing
 @testable import LexiconFlow
 
 /// Test suite for Analytics
@@ -16,14 +16,16 @@ import Testing
 /// - Error tracking with context
 /// - Performance measurement
 /// - User property management
+@Suite(.serialized)
+@MainActor
 struct AnalyticsTests {
     /// Shared mock backend for all tests (reset before each test)
     private static let mockBackend = MockAnalyticsBackend()
 
     /// Setup mock backend before each test
     private static func setupMockBackend() {
-        Analytics.setBackend(self.mockBackend)
-        self.mockBackend.clear()
+        Analytics.setBackend(mockBackend)
+        mockBackend.clear()
     }
 
     /// Teardown after each test
@@ -481,7 +483,7 @@ struct AnalyticsTests {
 
         struct TestError: Error {}
 
-        await #expect(throws: TestError.self) {
+        #expect(throws: TestError.self) {
             let startTime = Date()
             defer {
                 let duration = Date().timeIntervalSince(startTime)

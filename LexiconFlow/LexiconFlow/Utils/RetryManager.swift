@@ -19,11 +19,11 @@ public struct RetryManagerError: Error {
 
     /// Human-readable description
     public var localizedDescription: String {
-        "Retry operation failed with unexpected error type: \(self.underlyingError.localizedDescription)"
+        "Retry operation failed with unexpected error type: \(underlyingError.localizedDescription)"
     }
 
     init(_ error: any Error) {
-        self.underlyingError = error
+        underlyingError = error
     }
 
     /// Create a type mismatch error with expected and actual type information

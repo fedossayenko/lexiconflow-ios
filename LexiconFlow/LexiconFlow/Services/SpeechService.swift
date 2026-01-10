@@ -46,10 +46,15 @@ class SpeechService {
     /// Whether audio session is configured
     private var isAudioSessionConfigured = false
 
+    /// Detects if running in CI environment by checking for marker file
+    private var isRunningInCI: Bool {
+        FileManager.default.fileExists(atPath: "/tmp/lexiconflow-ci-running")
+    }
+
     // MARK: - Initialization
 
     private init() {
-        self.logger.info("SpeechService initialized")
+        logger.info("SpeechService initialized")
     }
 
     // MARK: - Public API
@@ -67,36 +72,36 @@ class SpeechService {
     func speak(_ text: String) {
         // Check if TTS is enabled
         guard AppSettings.ttsEnabled else {
-            self.logger.debug("TTS disabled, skipping speech")
+            logger.debug("TTS disabled, skipping speech")
             return
         }
 
         // Validate input
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty else {
-            self.logger.warning("Attempted to speak empty text")
+            logger.warning("Attempted to speak empty text")
             return
         }
 
         // Configure audio session if needed
-        if !self.isAudioSessionConfigured {
-            self.configureAudioSession()
+        if !isAudioSessionConfigured {
+            configureAudioSession()
         }
 
         // Stop any ongoing speech
-        if self.synthesizer.isSpeaking {
-            self.synthesizer.stopSpeaking(at: .immediate)
+        if synthesizer.isSpeaking {
+            synthesizer.stopSpeaking(at: .immediate)
         }
 
         // Create utterance
         let utterance = AVSpeechUtterance(string: trimmedText)
 
         // Configure voice
-        if let voice = self.voiceForLanguage(AppSettings.ttsVoiceLanguage) {
+        if let voice = voiceForLanguage(AppSettings.ttsVoiceLanguage) {
             utterance.voice = voice
         } else {
             // Fallback to default voice
-            self.logger.warning("Voice not found for '\(AppSettings.ttsVoiceLanguage)', using default")
+            logger.warning("Voice not found for '\(AppSettings.ttsVoiceLanguage)', using default")
             utterance.voice = AVSpeechSynthesisVoice(language: AppSettings.ttsVoiceLanguage)
         }
 
@@ -107,29 +112,29 @@ class SpeechService {
         utterance.pitchMultiplier = Float(AppSettings.ttsPitchMultiplier)
 
         // Speak
-        self.synthesizer.speak(utterance)
-        self.logger.info("Speaking: '\(trimmedText)'")
+        synthesizer.speak(utterance)
+        logger.info("Speaking: '\(trimmedText)'")
     }
 
     /// Stop speaking immediately
     func stop() {
-        guard self.synthesizer.isSpeaking else { return }
-        self.synthesizer.stopSpeaking(at: .immediate)
-        self.logger.debug("Stopped speaking")
+        guard synthesizer.isSpeaking else { return }
+        synthesizer.stopSpeaking(at: .immediate)
+        logger.debug("Stopped speaking")
     }
 
     /// Pause speech (can be resumed with `continueSpeaking`)
     func pause() {
-        guard self.synthesizer.isSpeaking, !self.synthesizer.isPaused else { return }
-        self.synthesizer.pauseSpeaking(at: .immediate)
-        self.logger.debug("Paused speaking")
+        guard synthesizer.isSpeaking, !synthesizer.isPaused else { return }
+        synthesizer.pauseSpeaking(at: .immediate)
+        logger.debug("Paused speaking")
     }
 
     /// Continue paused speech
     func continueSpeaking() {
-        guard self.synthesizer.isPaused else { return }
-        self.synthesizer.continueSpeaking()
-        self.logger.debug("Continued speaking")
+        guard synthesizer.isPaused else { return }
+        synthesizer.continueSpeaking()
+        logger.debug("Continued speaking")
     }
 
     /// Get available voices for a specific language
@@ -151,12 +156,12 @@ class SpeechService {
 
     /// Check if speech is currently in progress
     var isSpeaking: Bool {
-        self.synthesizer.isSpeaking
+        synthesizer.isSpeaking
     }
 
     /// Check if speech is currently paused
     var isPaused: Bool {
-        self.synthesizer.isPaused
+        synthesizer.isPaused
     }
 
     // MARK: - Lifecycle Management
@@ -166,19 +171,19 @@ class SpeechService {
     /// Call this method when the app enters the background to release audio resources.
     /// This prevents AVAudioSession error 4099 during iOS shutdown sequences.
     func cleanup() {
-        guard self.isAudioSessionConfigured else { return }
+        guard isAudioSessionConfigured else { return }
 
         // Stop any ongoing speech before deactivating
-        if self.synthesizer.isSpeaking {
-            self.synthesizer.stopSpeaking(at: .immediate)
+        if synthesizer.isSpeaking {
+            synthesizer.stopSpeaking(at: .immediate)
         }
 
         do {
-            try self.audioSession.setActive(false)
-            self.isAudioSessionConfigured = false
-            self.logger.info("Audio session deactivated")
+            try audioSession.setActive(false)
+            isAudioSessionConfigured = false
+            logger.info("Audio session deactivated")
         } catch {
-            self.logger.error("Failed to deactivate audio session: \(error.localizedDescription)")
+            logger.error("Failed to deactivate audio session: \(error.localizedDescription)")
             Analytics.trackError("speech_audio_session_deactivate_failed", error: error)
         }
     }
@@ -187,8 +192,8 @@ class SpeechService {
     ///
     /// Call this method when the app returns from background to restore audio functionality.
     func restartEngine() {
-        if !self.isAudioSessionConfigured {
-            self.configureAudioSession()
+        if !isAudioSessionConfigured {
+            configureAudioSession()
         }
     }
 
@@ -201,7 +206,7 @@ class SpeechService {
     ///
     /// **Returns:** Voice matching the language code, or nil if not found
     private func voiceForLanguage(_ languageCode: String) -> AVSpeechSynthesisVoice? {
-        let voices = self.availableVoices(for: languageCode)
+        let voices = availableVoices(for: languageCode)
 
         // Prefer premium voices (enhanced quality)
         let premiumVoices = voices.filter { $0.quality == .enhanced }
@@ -224,17 +229,24 @@ class SpeechService {
     ///   - Logs errors to Analytics
     ///   - Does not throw (graceful degradation)
     private func configureAudioSession() {
+        // Skip AVAudioSession configuration in CI (no audio hardware available)
+        guard !isRunningInCI else {
+            logger.info("Skipping AVAudioSession configuration in CI environment")
+            isAudioSessionConfigured = true // Mark as configured to prevent retries
+            return
+        }
+
         do {
-            try self.audioSession.setCategory(
+            try audioSession.setCategory(
                 .playback,
                 mode: .spokenAudio,
                 options: .duckOthers
             )
-            try self.audioSession.setActive(true)
-            self.isAudioSessionConfigured = true
-            self.logger.info("Audio session configured successfully")
+            try audioSession.setActive(true)
+            isAudioSessionConfigured = true
+            logger.info("Audio session configured successfully")
         } catch {
-            self.logger.error("Failed to configure audio session: \(error.localizedDescription)")
+            logger.error("Failed to configure audio session: \(error.localizedDescription)")
             Analytics.trackError("speech_audio_session_failed", error: error)
         }
     }

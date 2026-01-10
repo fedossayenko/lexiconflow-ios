@@ -29,32 +29,30 @@ struct StatisticsDashboardView: View {
     // MARK: - Body
 
     var body: some View {
-        @ViewBuilder var content: some View {
+        Group {
             if let viewModel = viewModelHolder.value {
                 dashboardContent(viewModel: viewModel)
             } else {
                 LoadingView(message: "Loading statistics...")
             }
         }
-
-        return content
-            .task {
-                await self.initializeViewModel()
+        .task {
+            await initializeViewModel()
+        }
+        .alert("Error", isPresented: $showError) {
+            Button("OK", role: .cancel) {
+                viewModelHolder.value?.clearError()
             }
-            .alert("Error", isPresented: self.$showError) {
-                Button("OK", role: .cancel) {
-                    self.viewModelHolder.value?.clearError()
-                }
-                .accessibilityLabel("Dismiss error")
-            } message: {
-                Text(self.viewModelHolder.value?.errorMessage ?? "An unknown error occurred")
+            .accessibilityLabel("Dismiss error")
+        } message: {
+            Text(viewModelHolder.value?.errorMessage ?? "An unknown error occurred")
+        }
+        .onChange(of: viewModelHolder.value?.errorMessage != nil) { _, hasError in
+            if hasError {
+                showError = true
             }
-            .onChange(of: self.viewModelHolder.value?.errorMessage != nil) { _, hasError in
-                if hasError {
-                    self.showError = true
-                }
-            }
-            .accessibilityHint(self.accessibilityAnnouncement)
+        }
+        .accessibilityHint(accessibilityAnnouncement)
     }
 
     // MARK: - Dashboard Content
@@ -68,37 +66,37 @@ struct StatisticsDashboardView: View {
                 Section {
                     EmptyView()
                 } header: {
-                    self.dashboardHeader(viewModel: viewModel)
+                    dashboardHeader(viewModel: viewModel)
                 }
 
                 // MARK: - Error State (highest priority check)
 
                 if viewModel.errorMessage != nil {
-                    self.errorView
+                    errorView
                 }
 
                 // MARK: - Loading State
 
                 else if viewModel.isLoading {
-                    self.loadingView
+                    loadingView
                 }
 
                 // MARK: - Empty State
 
                 else if viewModel.isEmpty {
-                    self.emptyStateView
+                    emptyStateView
                 }
 
                 // MARK: - Metrics Display
 
                 else if viewModel.hasData {
-                    self.metricsContent(viewModel: viewModel)
+                    metricsContent(viewModel: viewModel)
                 }
 
                 // MARK: - Fallback (should never reach)
 
                 else {
-                    self.loadingView
+                    loadingView
                 }
             }
             .padding()
@@ -169,13 +167,14 @@ struct StatisticsDashboardView: View {
         ], spacing: 16) {
             // Total Study Time
             if let streakData = viewModel.streakData {
-                let totalStudyTime = streakData.calendarData.values.reduce(0, +)
-                self.studyTimeMetricCard(totalSeconds: totalStudyTime)
+                // Use pre-computed totalStudyTime instead of computing reduce() in view body
+                // Performance: Eliminates 60fps recomputation during animations
+                studyTimeMetricCard(totalSeconds: streakData.totalStudyTime)
             }
 
             // Cards Analyzed
             if let fsrsMetrics = viewModel.fsrsMetrics {
-                self.cardsMetricCard(totalCards: fsrsMetrics.totalCards, reviewedCards: fsrsMetrics.reviewedCards)
+                cardsMetricCard(totalCards: fsrsMetrics.totalCards, reviewedCards: fsrsMetrics.reviewedCards)
             }
         }
 
@@ -267,7 +266,7 @@ struct StatisticsDashboardView: View {
 
             Button("Retry") {
                 Task {
-                    await self.viewModelHolder.value?.refresh()
+                    await viewModelHolder.value?.refresh()
                 }
             }
             .buttonStyle(.borderedProminent)
@@ -286,15 +285,15 @@ struct StatisticsDashboardView: View {
     /// **Why lazy initialization?**: Prevents app crashes if ModelContainer fails.
     /// Follows iOS 26 best practices for view initialization.
     private func initializeViewModel() async {
-        guard self.viewModelHolder.value == nil else { return }
+        guard viewModelHolder.value == nil else { return }
 
         // Initialize on MainActor (ViewModel is @MainActor)
         await MainActor.run {
-            self.viewModelHolder.value = StatisticsViewModel(modelContext: self.modelContext)
+            viewModelHolder.value = StatisticsViewModel(modelContext: modelContext)
         }
 
         // Initial data refresh
-        await self.viewModelHolder.value?.refresh()
+        await viewModelHolder.value?.refresh()
     }
 }
 

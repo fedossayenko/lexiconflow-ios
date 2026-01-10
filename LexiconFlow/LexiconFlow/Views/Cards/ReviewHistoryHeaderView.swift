@@ -24,13 +24,13 @@ struct ReviewHistoryHeaderView: View {
     var body: some View {
         HStack(spacing: 20) {
             // Total reviews stat
-            self.reviewCountStat
+            reviewCountStat
 
             // Average rating stat
-            self.averageRatingStat
+            averageRatingStat
 
             // FSRS state stat
-            self.fsrsStateStat
+            fsrsStateStat
 
             Spacer()
         }
@@ -42,7 +42,7 @@ struct ReviewHistoryHeaderView: View {
                 .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 2)
         )
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(self.accessibilityLabel)
+        .accessibilityLabel(accessibilityLabel)
     }
 
     // MARK: - Stats
@@ -54,26 +54,26 @@ struct ReviewHistoryHeaderView: View {
                 .font(.title3)
                 .foregroundStyle(.blue)
 
-            Text("\(self.totalReviews)")
+            Text("\(totalReviews)")
                 .font(.headline)
                 .foregroundStyle(.primary)
 
-            Text(self.totalReviews == 1 ? "Review" : "Reviews")
+            Text(totalReviews == 1 ? "Review" : "Reviews")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(self.totalReviews) \(self.totalReviews == 1 ? "review" : "reviews")")
+        .accessibilityLabel("\(totalReviews) \(totalReviews == 1 ? "review" : "reviews")")
     }
 
     /// Average rating display with emoji
     private var averageRatingStat: some View {
         VStack(spacing: 6) {
-            Text(self.ratingEmoji)
+            Text(ratingEmoji)
                 .font(.title3)
 
-            Text(self.averageRating.map { String(format: "%.1f", $0) } ?? "--")
+            Text(averageRating.map { String(format: "%.1f", $0) } ?? "--")
                 .font(.headline)
                 .foregroundStyle(.primary)
 
@@ -83,21 +83,21 @@ struct ReviewHistoryHeaderView: View {
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(self.averageRatingAccessibilityLabel)
+        .accessibilityLabel(averageRatingAccessibilityLabel)
     }
 
     /// FSRS state and stability display
     private var fsrsStateStat: some View {
         VStack(spacing: 6) {
-            Image(systemName: self.currentStateIcon)
+            Image(systemName: currentStateIcon)
                 .font(.title3)
-                .foregroundStyle(self.stateColor)
+                .foregroundStyle(stateColor)
 
-            Text(self.stabilityText)
+            Text(stabilityText)
                 .font(.headline)
                 .foregroundStyle(.primary)
 
-            Text(self.stateLabel)
+            Text(stateLabel)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
@@ -105,7 +105,7 @@ struct ReviewHistoryHeaderView: View {
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(self.stateAccessibilityLabel)
+        .accessibilityLabel(stateAccessibilityLabel)
     }
 
     // MARK: - Computed Properties
@@ -125,7 +125,7 @@ struct ReviewHistoryHeaderView: View {
 
     /// SF Symbol icon for current FSRS state
     private var currentStateIcon: String {
-        switch self.currentState {
+        switch currentState {
         case .new: "sparkles"
         case .learning: "graduationcap.fill"
         case .review: "checkmark.circle.fill"
@@ -136,7 +136,7 @@ struct ReviewHistoryHeaderView: View {
 
     /// Color for FSRS state
     private var stateColor: Color {
-        switch self.currentState {
+        switch currentState {
         case .new: .purple
         case .learning: .blue
         case .review: .green
@@ -166,7 +166,7 @@ struct ReviewHistoryHeaderView: View {
 
     /// Human-readable state label
     private var stateLabel: String {
-        switch self.currentState {
+        switch currentState {
         case .new: "New"
         case .learning: "Learning"
         case .review: "Review"
@@ -182,13 +182,13 @@ struct ReviewHistoryHeaderView: View {
         var parts: [String] = []
 
         // Review count
-        parts.append("\(self.totalReviews) \(self.totalReviews == 1 ? "review" : "reviews")")
+        parts.append("\(totalReviews) \(totalReviews == 1 ? "review" : "reviews")")
 
         // Average rating
-        parts.append(self.averageRatingAccessibilityLabel)
+        parts.append(averageRatingAccessibilityLabel)
 
         // State and stability
-        parts.append(self.stateAccessibilityLabel)
+        parts.append(stateAccessibilityLabel)
 
         return parts.joined(separator: ", ")
     }
@@ -203,12 +203,12 @@ struct ReviewHistoryHeaderView: View {
 
     /// Accessibility label for state and stability
     private var stateAccessibilityLabel: String {
-        guard self.currentState != nil else {
+        guard currentState != nil else {
             return "No FSRS state"
         }
 
         guard let stability else {
-            return self.stateLabel
+            return stateLabel
         }
 
         // Format stability for accessibility
@@ -227,7 +227,7 @@ struct ReviewHistoryHeaderView: View {
             stabilityText = months == 1 ? "1 month" : "\(months) months"
         }
 
-        return "\(self.stateLabel) state, \(stabilityText) stability"
+        return "\(stateLabel) state, \(stabilityText) stability"
     }
 }
 

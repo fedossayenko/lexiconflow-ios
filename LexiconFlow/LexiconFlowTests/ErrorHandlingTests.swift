@@ -35,7 +35,7 @@ struct ErrorHandlingTests {
 
     @Test("AddDeckView save failure shows error")
     func addDeckSaveFailureShowsError() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Create a deck
@@ -63,9 +63,9 @@ struct ErrorHandlingTests {
 
     @Test("AddFlashcardView save failure shows error")
     func addFlashcardSaveFailureShowsError() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
-        let deck = self.createTestDeck(context: context)
+        let deck = createTestDeck(context: context)
 
         // Create a flashcard
         let card = Flashcard(
@@ -132,11 +132,11 @@ struct ErrorHandlingTests {
 
     @Test("DeckRowView dueCount updates with query")
     func deckRowViewDueCountUpdatesWithQuery() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Create a deck
-        let deck = self.createTestDeck(context: context, name: "Test Deck")
+        let deck = createTestDeck(context: context, name: "Test Deck")
         try context.save()
 
         // Initially, no cards, so due count should be 0
@@ -186,11 +186,11 @@ struct ErrorHandlingTests {
 
     @Test("DeckRowView dueCount excludes new cards")
     func deckRowViewDueCountExcludesNewCards() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Create a deck
-        let deck = self.createTestDeck(context: context, name: "Test Deck")
+        let deck = createTestDeck(context: context, name: "Test Deck")
         try context.save()
 
         // Add a new card (not due)

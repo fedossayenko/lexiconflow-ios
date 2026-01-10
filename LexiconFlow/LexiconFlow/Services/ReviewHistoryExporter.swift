@@ -97,7 +97,7 @@ final class ReviewHistoryExporter {
 
         // Add data rows
         for review in reviews {
-            let row = self.buildRow(for: review, flashcard: flashcard)
+            let row = buildRow(for: review, flashcard: flashcard)
             rows.append(row)
         }
 
@@ -161,7 +161,7 @@ final class ReviewHistoryExporter {
 
         // Add data rows from DTOs
         for dto in reviews {
-            let row = self.buildRow(for: dto, flashcard: flashcard)
+            let row = buildRow(for: dto, flashcard: flashcard)
             rows.append(row)
         }
 

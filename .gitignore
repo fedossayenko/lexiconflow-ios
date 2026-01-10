@@ -110,3 +110,7 @@ iOSInjectionProject/
 # Auto Claude build artifacts (per-worktree)
 .auto-claude-status
 .claude_settings.json
+
+# CI/CD log files (should be artifacts, not committed)
+logs.log
+*.log

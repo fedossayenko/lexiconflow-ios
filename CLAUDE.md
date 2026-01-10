@@ -14,6 +14,51 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **On-device translation** (iOS 26 Translation framework) - 100% offline, no API costs
 - Two study modes: Scheduled (respects due dates) and Cram (for practice)
 
+## MCP Memory for LexiconFlow
+
+Project-specific memory using semantic search (see Global CLAUDE.md for tool reference)
+
+### Project Usage
+
+**Search project context:**
+```
+mcp__memory__search_nodes({query: "LexiconFlow architecture SwiftData"})
+```
+
+**Add project entity:**
+```
+mcp__memory__create_entities({
+  entities: [{
+    name: "StudyStreakFeature",
+    entityType: "feature",
+    observations: ["Study streak tracking", "@Observable state", "DailyStats integration"]
+  }]
+})
+```
+
+**Update LexiconFlow entity:**
+```
+mcp__memory__add_observations({
+  observations: [{
+    entityName: "LexiconFlow",
+    contents: ["Added Quick Translation (Pattern 24) - Jan 2026"]
+  }]
+})
+```
+
+### Current Entities
+
+- **LexiconFlow** (project) - iOS vocabulary app: Swift 6, SwiftUI, SwiftData, FSRS v5
+- **Fedir** (developer) - iOS developer, MacBook M2 Pro 16GB
+- **FSRS** (algorithm) - Free Spaced Repetition Scheduler v5
+
+### Project Best Practices
+
+- Always search memory before asking user
+- Name entities with "LexiconFlow" prefix for project-specific items
+- Store architectural decisions as they're made
+- Add bug fixes and their resolutions
+
 ## Build and Test Commands
 
 ### Build
@@ -22,7 +67,7 @@ cd LexiconFlow
 xcodebuild build \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.1'
+  -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2'
 ```
 
 ### Run Tests
@@ -32,7 +77,7 @@ cd LexiconFlow
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.1' \
+  -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2' \
   -only-testing:LexiconFlowTests \
   -parallel-testing-enabled NO
 
@@ -40,7 +85,7 @@ xcodebuild test \
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.1' \
+  -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2' \
   -only-testing:LexiconFlowTests/TranslationServiceTests \
   -parallel-testing-enabled NO
 ```
@@ -49,6 +94,13 @@ xcodebuild test \
 - **SwiftFSRS**: `https://github.com/open-spaced-repetition/swift-fsrs` (v5.0.0)
 - **Translation**: iOS 26 Translation framework (on-device translation, no package dependency)
 - Resolve with: `xcodebuild -resolvePackageDependencies` (from `LexiconFlow/` directory)
+
+### External Documentation
+- **SwiftData**: [Apple SwiftData Documentation](https://developer.apple.com/documentation/swiftdata)
+- **Swift Concurrency**: [Swift Concurrency Guide](https://docs.swift.org/swift-book/LanguageGuide/Concurrency.html)
+- **Translation Framework**: [Translation API Reference](https://developer.apple.com/documentation/translation)
+- **CoreHaptics**: [CoreHaptics Framework](https://developer.apple.com/documentation/corehaptics)
+- **Swift Testing**: [Swift Testing Package](https://developer.apple.com/documentation/testing)
 
 ### Bundle Resource Paths
 
@@ -79,87 +131,22 @@ if let resourcePath = Bundle.main.resourcePath {
 
 ## Architecture
 
-### MVVM with SwiftData
-- **Models**: `@Model` classes in `Models/` (Flashcard, Deck, FSRSState, FlashcardReview)
-- **ViewModels**: `@MainActor` classes in `ViewModels/` (Scheduler)
-- **Views**: SwiftUI views in `Views/` observing `@Bindable` models
+**See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed technical specifications including:**
+- Complete MVVM + SwiftData architecture
+- Swift 6 concurrency model and actor isolation
+- DTO pattern for cross-actor safety
+- Complete data flow diagrams
 
-### Actor-Based Concurrency
-- **FSRSWrapper**: `@MainActor`-isolated wrapper for FSRS algorithm operations (returns DTOs)
-  - Uses `@MainActor` (not `actor`) because FSRS requires access to SwiftData models and DateMath
-  - All algorithm operations run on main thread to ensure thread-safe SwiftData access
-- **Scheduler**: `@MainActor` view model that applies DTO updates to SwiftData models
-- **DTO Pattern**: Data transfer objects prevent cross-actor concurrency issues
+**Quick Reference:**
 
-### SwiftData Concurrency Architecture
+**Pattern**: MVVM with SwiftData
+- **Models**: `@Model` classes in `Models/` (Flashcard, Deck, FSRSState, FlashcardReview, DailyStats, StudySession)
+- **ViewModels**: `@MainActor` classes in `ViewModels/` (Scheduler, StatisticsViewModel)
+- **Views**: SwiftUI views in `Views/` observing via `@Bindable` and `@Query`
 
-**Why SwiftData Models Cannot Be Actor-Isolated:**
+**Concurrency**: All ViewModels use `@MainActor` for thread-safe SwiftData access. DTO pattern (Pattern 6) prevents cross-actor mutations.
 
-SwiftData `@Model` classes handle their own concurrency internally via `ModelContext`. Adding `actor` to a SwiftData model would break persistence and cause compile errors. The current architecture is the CORRECT approach for Swift 6 + SwiftData.
-
-**Data Flow:**
-```
-@MainActor (FSRSWrapper) → DTO (FSRSReviewResult) → @MainActor (Scheduler) → SwiftData Models
-```
-
-**Key Principles:**
-1. **Models**: Standard `@Model` classes (no actor isolation)
-   - SwiftData handles model concurrency internally
-   - All model mutations must happen through a `ModelContext`
-
-2. **Business Logic**: `@MainActor` isolated for safe SwiftData access
-   - FSRSWrapper: `@MainActor` - thread-safe algorithm wrapper
-   - Scheduler: `@MainActor` - safe SwiftData mutations
-   - StudySessionViewModel: `@MainActor` - session state management
-
-3. **DTO Pattern**: Return `Sendable` structs from actors, not models
-   - `FSRSReviewResult`: `Sendable` struct with updated values
-   - Prevents cross-actor model mutations
-   - Caller (Scheduler) applies DTO updates on `@MainActor`
-
-4. **Pure Functions**: No actor isolation needed
-   - DateMath: Pure functions using `Calendar.autoupdatingCurrent`
-   - Safe to call from any context
-
-**Example:**
-```swift
-// ✅ CORRECT: Actor returns DTO, MainActor applies updates
-@MainActor
-func processReview(flashcard: Flashcard, rating: Int) async -> FlashcardReview? {
-    // 1. Call actor (returns DTO)
-    let dto = try FSRSWrapper.shared.processReview(
-        flashcard: flashcard,
-        rating: rating
-    )
-
-    // 2. Apply DTO updates to model (safe on @MainActor)
-    flashcard.fsrsState?.stability = dto.stability
-    flashcard.fsrsState?.difficulty = dto.difficulty
-    flashcard.fsrsState?.dueDate = dto.dueDate
-    flashcard.fsrsState?.stateEnum = dto.stateEnum
-
-    // 3. Save to SwiftData
-    try modelContext.save()
-
-    return review
-}
-
-// ❌ AVOID: Returning models from actors
-actor MyActor {
-    func getFlashcard() -> Flashcard { ... }  // DON'T DO THIS
-}
-```
-
-### Key Components
-- **Flashcard**: Core vocabulary model (word, definition, phonetic, imageData)
-- **Deck**: Container/organizer for flashcards
-- **FSRSState**: Algorithm state (stability, difficulty, retrievability, dueDate)
-- **FlashcardReview**: Historical review log for analytics
-- **Scheduler**: Main coordinator for fetching cards and processing reviews
-- **TranslationService**: Cloud-based translation with API key (requires internet)
-- **OnDeviceTranslationService**: Offline translation using iOS 26 Translation framework (no API key)
-
-### Study Modes
+**Study Modes**:
 - **scheduled**: Respects due dates, updates FSRS state after each review
 - **cram**: Ignores due dates, logs reviews only (doesn't update FSRS)
 
@@ -250,259 +237,70 @@ struct MyView: View {
 ```
 **Rationale**: Single source of truth, easier to test, centralized defaults.
 
-### 5. TranslationService Batch Pattern (Cloud Translation)
-**Use TranslationService for concurrent batch translation**:
-```swift
-// Configure with API key
-try KeychainManager.setAPIKey("sk-test-...")
+### 5. Translation Services
 
-// Batch translate with concurrency control
-let service = TranslationService.shared
-let result = try await service.translateBatch(
-    cards,
-    maxConcurrency: 5,
-    progressHandler: { progress in
-        print("Progress: \(progress.completedCount)/\(progress.totalCount)")
-    }
-)
+**Two translation options are available:**
 
-// Result contains success/failure counts
-print("Success: \(result.successCount)")
-print("Failed: \(result.failedCount)")
-```
-**Key Features**:
-- Rate limiting with adaptive concurrency
-- Progress handler callbacks
-- Individual card failure handling
-- Structured concurrency for thread safety (internal actor for task storage)
-- Requires API key (stored in Keychain)
+**Cloud Translation** (`TranslationService`): Requires API key, provides CEFR levels and context sentences.
+**On-Device Translation** (`OnDeviceTranslationService`): 100% offline, iOS 26 Translation framework, no API key needed.
 
-### 5a. OnDeviceTranslationService Pattern (On-Device Translation)
-**Use actor-isolated OnDeviceTranslationService for offline, private translation**:
-```swift
-// Configure source and target languages
-await OnDeviceTranslationService.shared.setLanguages(source: "en", target: "es")
-
-// Check if language pair is supported
-guard OnDeviceTranslationService.shared.isLanguagePairSupported() else {
-    // Handle unsupported language pair
-    return
-}
-
-// Check if language packs need download
-if OnDeviceTranslationService.shared.needsLanguageDownload("es") {
-    // Prompt user to download language pack
-    try await OnDeviceTranslationService.shared.requestLanguageDownload("es")
-}
-
-// Translate single text
-let translation = try await OnDeviceTranslationService.shared.translate(
-    text: "Hello, world!"
-)
-
-// Batch translate with progress updates
-let result = try await OnDeviceTranslationService.shared.translateBatch(
-    ["Hello", "Goodbye", "Thank you"],
-    maxConcurrency: 5,
-    progressHandler: { progress in
-        print("Progress: \(progress.current)/\(progress.total)")
-        print("Current word: \(progress.currentWord)")
-    }
-)
-
-print("Success: \(result.successCount), Failed: \(result.failedCount)")
-
-// Access successful translations with full context
-for translation in result.successfulTranslations {
-    print("\(translation.sourceText) -> \(translation.translatedText)")
-    print("From: \(translation.sourceLanguage), To: \(translation.targetLanguage)")
-}
-
-// Cancel batch translation if needed
-OnDeviceTranslationService.shared.cancelBatchTranslation()
-```
-
-**Key Differences: Cloud vs On-Device Translation**
+**Cloud vs On-Device Comparison:**
 
 | Feature | Cloud Translation | On-Device Translation |
 |---------|------------------|----------------------|
 | **Privacy** | Data sent to external API | 100% local, no data leaves device |
 | **Internet** | Required | Not required after language packs downloaded |
 | **Cost** | API costs | Free (iOS framework) |
-| **Setup** | Requires API key in Keychain | Requires language pack download (one-time) |
-| **Latency** | Network-dependent | < 1s per translation |
-| **Languages** | Depends on provider | 20+ languages (iOS 26 Translation framework) |
-| **Offline** | Not available | Full offline capability |
-| **Quality** | Provider-dependent | iOS Translation framework quality |
+| **Setup** | Requires API key in Keychain | Language pack download (50-200MB each, one-time) |
+| **Languages** | Depends on provider | 24 languages (iOS 26 framework) |
 | **CEFR Levels** | Supported | Not supported (text-only) |
 | **Context Sentences** | Supported | Not supported (text-only) |
 
-**On-Device Translation Usage**:
+**On-Device Translation Usage:**
 ```swift
-// Configure on-device translation
+// Configure and translate
 let service = OnDeviceTranslationService.shared
 await service.setLanguages(source: "en", target: "es")
 
-// Check language pack availability first
+// Check language pack availability
 if service.needsLanguageDownload("es") {
-    try await service.requestLanguageDownload("es")
+    try await service.requestLanguageDownload("es")  // System prompts user
 }
 
+// Single translation
 let translation = try await service.translate(text: "Hello")
-```
 
-**Key Setup Requirements**:
-1. **Language Pack Check**: Must check `needsLanguageDownload()` before first use
-2. **User Prompt**: System prompts user to download language packs (50-200MB each)
-3. **Language Configuration**: Must call `setLanguages()` before translating
-4. **Error Handling**: Use OnDeviceTranslationError for proper error handling
-
-**Language Pack Management**:
-```swift
-let service = OnDeviceTranslationService.shared
-
-// Check available languages
-let languages = service.availableLanguages()
-for language in languages {
-    print("Available: \(language.identifier)")
-}
-
-// Check if specific language is available
-if service.isLanguageAvailable("es") {
-    print("Spanish is ready for offline translation")
-}
-
-// Check if download needed
-if service.needsLanguageDownload("es") {
-    print("Spanish pack needs download")
-}
-
-// Request language pack download
-try await service.requestLanguageDownload("es")
-// System will prompt user to confirm download (50-200MB per language)
-```
-
-**Cancellation Support**:
-```swift
-// Start batch translation
-Task {
-    let result = try await service.translateBatch(words, maxConcurrency: 5)
-    print("Batch complete: \(result.successCount) succeeded")
-}
-
-// User cancels (e.g., taps "Cancel" button)
-service.cancelBatchTranslation()
-
-// Cancellation behavior:
-// - In-flight translations complete (can't interrupt framework)
-// - Pending translations don't start
-// - New batch can start immediately after cancellation
-// - No crash or state corruption
-```
-
-**Batch Translation Result Structure**:
-```swift
-let result = try await service.translateBatch(words, maxConcurrency: 5)
-
-// Check overall success
-if result.isSuccess {
-    print("All translations succeeded!")
-}
-
-// Access counts
-print("Success: \(result.successCount)")
-print("Failed: \(result.failedCount)")
-print("Duration: \(result.totalDuration)s")
-
-// Access successful translations
-for translation in result.successfulTranslations {
-    print("\(translation.sourceText) -> \(translation.translatedText)")
-}
-
-// Handle errors
-for error in result.errors {
-    print("Error: \(error.localizedDescription)")
-    print("Recovery: \(error.recoverySuggestion ?? "None")")
-}
-```
-
-**Concurrency Control**:
-```swift
-// Concurrency limits prevent overwhelming the system
-// Recommended values: 3-10 (default: 5)
-
-// Low concurrency (slower but safe)
-let result1 = try await service.translateBatch(words, maxConcurrency: 3)
-
-// High concurrency (faster but may degrade performance)
-let result2 = try await service.translateBatch(words, maxConcurrency: 10)
-
-// Concurrency control algorithm:
-// 1. Tasks added sequentially to TaskGroup
-// 2. After maxConcurrency tasks added, wait for one to complete
-// 3. Once a task completes, add the next task
-// 4. This ensures no more than maxConcurrency tasks run simultaneously
-```
-
-**Error Handling**:
-```swift
-do {
-    let translation = try await OnDeviceTranslationService.shared.translate(
-        text: "Hello"
-    )
-} catch let error as OnDeviceTranslationError {
-    // Check if error is retryable
-    if error.isRetryable {
-        // Implement retry with exponential backoff
-        print("Retrying: \(error.localizedDescription)")
-    } else {
-        // Show user-friendly error with recovery suggestion
-        print("Error: \(error.localizedDescription)")
-        print("Recovery: \(error.recoverySuggestion ?? "None")")
+// Batch translation with progress
+let result = try await service.translateBatch(
+    words,
+    maxConcurrency: 5,
+    progressHandler: { progress in
+        print("Progress: \(progress.current)/\(progress.total)")
     }
-}
+)
 ```
 
-**Error Types**:
-- `unsupportedLanguagePair`: Language pair not supported by iOS framework (not retryable)
-- `languagePackNotAvailable`: Required language pack not downloaded (not retryable)
-- `languagePackDownloadFailed`: Network issue during download (retryable)
-- `translationFailed`: Framework error during translation (retryable)
-- `emptyInput`: Input validation error (not retryable)
-
-**Thread Safety**:
-- Service is actor-isolated (safe concurrent access)
-- Progress handler dispatched to @MainActor (UI-safe)
-- Cancellation safe to call from any context (UI, background)
-- Swift 6 strict concurrency compliance
-
-**AppSettings Integration**:
+**Cloud Translation Usage:**
 ```swift
-// On-device translation is enabled by default
-AppSettings.isTranslationEnabled = true
-
-// Configure source and target languages
-AppSettings.translationSourceLanguage = "en"
-AppSettings.translationTargetLanguage = "es"
-
-// Use OnDeviceTranslationService directly (no mode switching needed)
-let service = OnDeviceTranslationService.shared
+// Requires API key in Keychain
+try KeychainManager.setAPIKey("sk-test-...")
+let result = try await TranslationService.shared.translateBatch(
+    cards,
+    maxConcurrency: 5,
+    progressHandler: { progress in
+        print("Progress: \(progress.completedCount)/\(progress.totalCount)")
+    }
+)
 ```
 
-**Supported Languages** (24 languages in AppSettings.supportedLanguages):
-- Arabic (ar), Chinese Simplified (zh-Hans), Chinese Traditional (zh-Hant)
-- Dutch (nl), English (en), French (fr), German (de), Greek (el)
-- Hebrew (he), Hindi (hi), Hungarian (hu), Indonesian (id)
-- Italian (it), Japanese (ja), Korean (ko), Polish (pl)
-- Portuguese (pt), Russian (ru), Spanish (es), Swedish (sv)
-- Thai (th), Turkish (tr), Ukrainian (uk), Vietnamese (vi)
+**Error Types** (OnDeviceTranslationError):
+- `unsupportedLanguagePair`: Not supported by iOS framework (not retryable)
+- `languagePackNotAvailable`: Pack not downloaded (not retryable)
+- `translationFailed`: Framework error (retryable)
 
-**Performance Characteristics**:
-- Single translation: < 1 second
-- Batch throughput: 10-20 translations/second
-- Language pack size: 50-200MB per language
-- Progress updates maintain UI responsiveness
-- Actor-isolated for thread safety
+**Supported Languages** (24): ar, zh-Hans, zh-Hant, nl, en, fr, de, el, he, hi, hu, id, it, ja, ko, pl, pt, ru, es, sv, th, tr, uk, vi
+
+**Quick Translation** (Pattern 24): Instant on-device translation for selected text via context menu. See `QuickTranslationService` for implementation details.
 
 ### 6. DTO Pattern for Concurrency
 ```swift
@@ -548,35 +346,7 @@ Use string literals instead of enum raw values in `#Predicate`:
 ### 11. Timezone-Aware Date Math
 Use `DateMath.elapsedDays()` for calendar-aware calculations (handles DST, timezone boundaries)
 
-### 12. Safe View Initialization Pattern
-Use `@State` with lazy initialization instead of `@StateObject` with force unwrap:
-```swift
-// ❌ AVOID: Force unwrap in init
-struct MyView: View {
-    @StateObject private var viewModel = ViewModel(modelContext: ModelContext(try! container))
-}
-
-// ✅ CORRECT: Lazy initialization with @State
-struct MyView: View {
-    @State private var viewModel: ViewModel?
-
-    var body: some View {
-        Group {
-            if let viewModel = viewModel {
-                // content
-            }
-        }
-        .task {
-            if viewModel == nil {
-                viewModel = ViewModel(modelContext: modelContext)
-            }
-        }
-    }
-}
-```
-**Rationale**: Prevents app crashes if ModelContainer fails, follows iOS 26 best practices.
-
-### 13. Reactive Updates with @Query
+### 12. Reactive Updates with @Query
 Use `@Query` for automatic SwiftData updates instead of manual refresh:
 ```swift
 // ❌ AVOID: Manual refresh with .onAppear
@@ -600,7 +370,7 @@ struct MyView: View {
 ```
 **Rationale**: @Query automatically tracks SwiftData changes and updates the view.
 
-### 14. Error Handling with User Alerts
+### 13. Error Handling with User Alerts
 Always show errors to users with Analytics tracking:
 ```swift
 struct MyView: View {
@@ -628,7 +398,7 @@ struct MyView: View {
 ```
 **Rationale**: Silent failures create poor UX. Users need to know when operations fail.
 
-### 15. CoreHaptics with UIKit Fallback Pattern
+### 14. CoreHaptics with UIKit Fallback Pattern
 **Use CoreHaptics for custom haptic patterns with graceful UIKit fallback:**
 ```swift
 // HapticService.swift
@@ -666,7 +436,7 @@ class HapticService {
 
 **Rationale**: CoreHaptics enables "Liquid Glass" haptic design with custom temporal patterns, while UIKit fallback ensures compatibility.
 
-### 16. Matched Geometry Effect Pattern
+### 15. Matched Geometry Effect Pattern
 
 **Use `@Namespace` and `matchedGeometryEffect` for smooth element transitions:**
 
@@ -722,7 +492,7 @@ struct CardFrontViewMatched: View {
 
 **Performance**: Transitions complete in < 300ms on iPhone 12+
 
-### 17. Progress Ring Pattern (GlassEffectUnion)
+### 16. Glass Effects: Progress Ring Pattern
 
 **Use circular progress rings with "Liquid Glass" styling for visual feedback:**
 
@@ -756,7 +526,7 @@ Image(systemName: deck.icon)
     .glassEffectUnion(progress: progress, thickness: .regular)
 ```
 
-### 18. Interactive Glass Effect Pattern
+### 17. Interactive Glass Effect Pattern
 
 **Use `InteractiveGlassModifier` for gesture-driven visual feedback:**
 
@@ -822,7 +592,7 @@ CardContent()
     )
 ```
 
-### 19. GlassEffectContainer Pattern
+### 18. GlassEffectContainer Pattern
 
 **Use `GlassEffectContainer` for performance-optimized glass effects:**
 
@@ -878,7 +648,7 @@ let opacity = baseOpacity * config.opacityMultiplier
 - `AppSettings.glassEffectIntensity: Double` - Intensity slider (0.0 to 1.0)
 - Settings available in Appearance Settings
 
-### 20. Audio Session Lifecycle Pattern
+### 19. Audio Session Lifecycle Pattern
 
 **Manage AVAudioSession lifecycle to prevent error 4099:**
 
@@ -913,7 +683,7 @@ var body: some Scene {
 
 **Rationale**: Prevents audio session errors during app lifecycle transitions.
 
-### 21. TTS Timing Options Pattern
+### 20. TTS Timing Options Pattern
 
 **Use `AppSettings.TTSTiming` enum for flexible pronunciation playback:**
 
@@ -979,6 +749,117 @@ private func migrateTTSTiming() {
 
 **Rationale**: Enum provides more flexibility than boolean toggle, supporting multiple auto-play strategies.
 
+### 21. Statistics Data Aggregation Pattern
+
+**Description:** Pre-aggregates daily study metrics to avoid expensive queries during dashboard viewing.
+
+**Key Features:**
+- Daily aggregation of study metrics (new cards, reviews, retention, time spent)
+- `DailyStats` SwiftData model for efficient querying
+- Calculates retention rates and FSRS distributions
+- Cache invalidation for stale metrics
+
+**Rationale:** Avoids performance issues by pre-calculating and storing daily summaries.
+
+**Usage:**
+```swift
+// StatisticsService.swift
+@MainActor
+class StatisticsService {
+    func aggregateDailyStats(context: ModelContext) async throws -> Int {
+        // Fetch completed sessions without daily stats
+        let sessions = try context.fetch(FetchDescriptor<StudySession>())
+            .filter { $0.endTime != nil && $0.dailyStats == nil }
+
+        // Group by calendar day and create/update DailyStats
+        for (day, daySessions) in sessionsByDay {
+            let dailyStats = DailyStats(
+                date: day,
+                newCards: 0,
+                studyTimeSeconds: daySessions.reduce(0) { $0 + $1.durationSeconds },
+                retentionRate: calculateRetention(daySessions)
+            )
+            context.insert(dailyStats)
+        }
+
+        try context.save()
+        return aggregatedCount
+    }
+
+    // Cache with 1-minute TTL
+    func invalidateCache() {
+        self.cachedMetrics = nil
+        self.cacheTimestamp = nil
+    }
+}
+```
+
+### 22. Review History Filtering and Export Pattern
+
+**Description:** View, filter, sort, and export `FlashcardReview` records.
+
+**Key Features:**
+- Dynamic filtering by date range, rating, card state, deck
+- Sorting options (by review date, card name)
+- CSV export functionality
+
+**Rationale:** Provides users with insights into their learning process.
+
+**Usage:**
+```swift
+// ReviewHistoryService.swift
+@MainActor
+class ReviewHistoryService {
+    func fetchReviews(
+        context: ModelContext,
+        startDate: Date?,
+        endDate: Date?,
+        ratingFilter: Rating?,
+        deckFilter: Deck?
+    ) async throws -> [FlashcardReview] {
+        // Build predicates dynamically
+        let descriptor = FetchDescriptor<FlashcardReview>(
+            predicate: finalPredicate,
+            sortBy: [SortDescriptor(\.reviewDate, order: .reverse)]
+        )
+        return try context.fetch(descriptor)
+    }
+
+    func exportReviewsToCSV(_ reviews: [FlashcardReview]) -> String {
+        // Generate CSV string
+        return "card,rating,date,scheduledDays\n..."
+    }
+}
+```
+
+### 23. Gesture Sensitivity Configuration Pattern
+
+**Description:** Users can customize swipe distance required to trigger review actions.
+
+**Key Features:**
+- AppSettings.swipeThreshold for user preference storage
+- Dynamic gesture threshold adjustment
+- Per-device sensitivity calibration
+
+**Rationale:** Accommodates different user preferences and device interaction styles.
+
+**Usage:**
+```swift
+// AppSettings.swift
+enum AppSettings {
+    static var swipeThreshold: CGFloat {
+        get { UserDefaults.standard.double(forKey: "swipeThreshold", defaultValue: 50.0) }
+        set { UserDefaults.standard.set(newValue, forKey: "swipeThreshold") }
+    }
+}
+
+// Usage in gesture handling
+let threshold = AppSettings.swipeThreshold
+if abs(translation.width) > threshold {
+    // Trigger action
+}
+```
+
 ## Project Structure
 
 ```
@@ -993,7 +874,7 @@ LexiconFlow/
 │   ├── Decks/              # DeckDetailView
 │   └── Settings/           # TranslationSettingsView, AppearanceSettingsView, etc.
 ├── Assets.xcassets/        # Images, colors
-└── LexiconFlowTests/       # Unit tests (63+ test suites)
+└── LexiconFlowTests/       # Unit tests (72+ test files with comprehensive coverage)
 ```
 
 ## Concurrency Guidelines
@@ -1007,7 +888,7 @@ LexiconFlow/
 ## Testing
 
 - **Framework**: Swift Testing (`import Testing`)
-- **Structure**: 63 test suites in `LexiconFlowTests/` with comprehensive coverage:
+- **Structure**: 72+ test files with comprehensive coverage in `LexiconFlowTests/`:
   - ModelTests, SchedulerTests, DataImporterTests
   - StudySessionViewModelTests, OnboardingTests, ErrorHandlingTests
   - FSRSWrapperTests, DateMathTests, AnalyticsTests
@@ -1172,10 +1053,9 @@ Comprehensive documentation in `/docs/`:
 
 ## Known Limitations
 
-- "Liquid Glass" UI not yet implemented (planned for Phase 2)
 - On-device translation provides text-only translation (no CEFR levels or context sentences like cloud service)
 - Language packs require 50-200MB per language (one-time download)
-- SwiftData migration strategy not yet defined (translation fields added as optional)
+- SwiftData migration strategy: See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for complete migration guidelines
 
 ## Common Pitfalls
 

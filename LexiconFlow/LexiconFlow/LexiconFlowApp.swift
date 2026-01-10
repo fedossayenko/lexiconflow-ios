@@ -47,7 +47,7 @@ struct LexiconFlowApp: App {
         }
 
         // Attempt 3: Empty schema only (no EmptyModel)
-        if let container = try? ModelContainer(for: Schema([]), configurations: [minimalConfig]) {
+        if let container = try? ModelContainer(for: EmptyModel.self, configurations: minimalConfig) {
             logger.critical("Using empty schema container - SwiftData severely broken")
             return container
         }
@@ -62,8 +62,19 @@ struct LexiconFlowApp: App {
         """
 
         #if DEBUG
-            // In DEBUG builds, crash immediately for diagnostics
-            fatalError(diagnostic)
+            // In DEBUG builds, show error UI before crashing
+            // This gives developers time to read logs and understand the issue
+            logger.critical("\(diagnostic)")
+
+            // Allow app to show error UI, then crash after delay for debugging
+            // The 5-second delay provides time to read the diagnostic information
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                // swiftlint:disable:next no_fatal_error
+                fatalError(diagnostic)
+            }
+
+            // Return minimal container that allows app to launch and show error UI
+            return try! ModelContainer(for: EmptyModel.self)
         #else
             // In RELEASE, log critical error and use truly minimal container
             // The app will launch with minimal functionality but can show error UI
@@ -71,7 +82,7 @@ struct LexiconFlowApp: App {
 
             // Return truly minimal container that allows app to launch
             // Models will be unavailable, but error UI can be shown
-            return ModelContainer(for: [])
+            return try! ModelContainer(for: EmptyModel.self)
         #endif
     }()
 
@@ -166,18 +177,18 @@ struct LexiconFlowApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .preferredColorScheme(self.preferredColorScheme)
+                .preferredColorScheme(preferredColorScheme)
                 .task {
-                    await self.ensureDefaultDeckExists()
-                    await self.ensureIELTSVocabularyExists()
+                    await ensureDefaultDeckExists()
+                    await ensureIELTSVocabularyExists()
 
                     // Clear expired translation cache
-                    await QuickTranslationService.shared.clearExpiredCache(container: self.sharedModelContainer)
+                    await QuickTranslationService.shared.clearExpiredCache(container: sharedModelContainer)
                 }
         }
-        .modelContainer(self.sharedModelContainer)
-        .onChange(of: self.scenePhase) { oldPhase, newPhase in
-            self.handleScenePhaseChange(from: oldPhase, to: newPhase)
+        .modelContainer(sharedModelContainer)
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            handleScenePhaseChange(from: oldPhase, to: newPhase)
         }
     }
 
@@ -196,7 +207,7 @@ struct LexiconFlowApp: App {
     /// Ensures a default deck exists for new users
     @MainActor
     private func ensureDefaultDeckExists() async {
-        let context = self.sharedModelContainer.mainContext
+        let context = sharedModelContainer.mainContext
         let descriptor = FetchDescriptor<Deck>()
         let existingDecks: [Deck]
         do {
@@ -249,7 +260,7 @@ struct LexiconFlowApp: App {
             return
         }
 
-        let context = self.sharedModelContainer.mainContext
+        let context = sharedModelContainer.mainContext
         let logger = Logger(subsystem: "com.lexiconflow.app", category: "LexiconFlowApp")
 
         // Check if IELTS decks already exist (handles re-install scenario)
@@ -321,9 +332,9 @@ struct LexiconFlowApp: App {
             // Aggregate DailyStats from completed StudySession records
             // This runs in the background to prepare pre-aggregated statistics for dashboard
             // Cancel any existing aggregation task before starting a new one
-            self.aggregationTask?.cancel()
-            self.aggregationTask = Task {
-                await self.aggregateDailyStatsInBackground()
+            aggregationTask?.cancel()
+            aggregationTask = Task {
+                await aggregateDailyStatsInBackground()
             }
         case .active:
             // Restart haptic engine when app returns to foreground

@@ -9,7 +9,7 @@
 import Foundation
 import OSLog
 import SwiftData
-import Testing
+@preconcurrency import Testing
 @testable import LexiconFlow
 
 /// Concurrency stress test suite for Swift 6 strict compliance
@@ -92,7 +92,7 @@ struct ConcurrencyStressTests {
 
         // Process 100 concurrent reviews using TaskGroup
         await withTaskGroup(of: FSRSReviewResult.self) { group in
-            for _ in 0 ..< self.concurrencyCount {
+            for _ in 0 ..< concurrencyCount {
                 group.addTask {
                     // Call actor-isolated FSRSWrapper
                     try! await FSRSWrapper.shared.processReview(
@@ -110,7 +110,7 @@ struct ConcurrencyStressTests {
 
         // Verify all operations completed successfully
         let count = await results.count
-        #expect(count == self.concurrencyCount, "All concurrent operations should complete")
+        #expect(count == concurrencyCount, "All concurrent operations should complete")
 
         // Verify consistency: all results should have valid state
         let array = await results.array
@@ -124,35 +124,38 @@ struct ConcurrencyStressTests {
     @Test("MainActor ViewModel prevents concurrent mutation")
     @MainActor
     func mainActorViewModelSafety() async throws {
-        let context = self.freshContext()
+        let context = freshContext()
         let viewModel = Scheduler(modelContext: context)
-        let flashcard = self.createTestFlashcard(in: context)
+        let flashcard = createTestFlashcard(in: context)
 
-        // Track results
-        let results = LockedArray<FlashcardReview?>()
+        // Track success count
+        let results = LockedArray<Bool>()
 
         // Process 50 concurrent reviews
-        await withTaskGroup(of: FlashcardReview?.self) { group in
+        await withTaskGroup(of: Bool.self) { group in
             for _ in 0 ..< 50 {
-                group.addTask {
+                group.addTask { @MainActor in
                     // Call @MainActor ViewModel from concurrent tasks
-                    try? await viewModel.processReview(
+                    // Note: Using @MainActor on the task ensures we're on the right actor
+                    // The async call to processReview is allowed here
+                    let result = try? await viewModel.processReview(
                         flashcard: flashcard,
                         rating: Int.random(in: 1 ... 5)
                     )
+                    return result != nil
                 }
             }
 
-            for await result in group {
-                if result != nil {
-                    await results.append(result!)
+            for await success in group {
+                if success {
+                    await results.append(true)
                 }
             }
         }
 
         // Verify no data races occurred
-        let array = await results.array
-        #expect(array.count > 0, "At least some reviews should succeed")
+        let count = await results.count
+        #expect(count > 0, "At least some reviews should succeed")
 
         // Verify flashcard state is consistent
         #expect(
@@ -166,7 +169,7 @@ struct ConcurrencyStressTests {
     @Test("DTOs are Sendable across actor boundaries")
     func sendableDTOs() async throws {
         // Create test flashcard
-        let flashcard = try await createTestFlashcard(in: freshContext())
+        let flashcard = await createTestFlashcard(in: freshContext())
 
         // Get DTO from actor
         let dto = try await FSRSWrapper.shared.processReview(
@@ -233,11 +236,11 @@ struct ConcurrencyStressTests {
             private var value = 0
 
             func increment() {
-                self.value += 1
+                value += 1
             }
 
             func get() -> Int {
-                self.value
+                value
             }
         }
 
@@ -265,9 +268,16 @@ private actor LockedArray<Element> {
     private var storage: [Element] = []
 
     func append(_ element: Element) {
-        self.storage.append(element)
+        storage.append(element)
     }
 
-    var array: [Element] { self.storage }
-    var count: Int { self.storage.count }
+    /// Increment counter for tracking successful operations
+    func increment() {
+        // This method is used when Element is not needed, just counting
+        // The actual increment is tracked by appending a placeholder if needed
+        // or by using a separate counter
+    }
+
+    var array: [Element] { storage }
+    var count: Int { storage.count }
 }

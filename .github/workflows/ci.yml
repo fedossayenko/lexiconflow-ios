@@ -77,7 +77,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/Library/Developer/Xcode/DerivedData
-          key: ${{ runner.os }}-deriveddata-${{ hashFiles('**/*.swift') }}
+          key: ${{ runner.os }}-deriveddata-${{ hashFiles('Package.resolved', '*.xcodeproj') }}
           restore-keys: |
             ${{ runner.os }}-deriveddata-
 
@@ -95,10 +95,10 @@ jobs:
       - name: Build
         working-directory: ./LexiconFlow
         run: |
-          xcodebuild build \
+          SUPPRESS_APPINTENTS_METADATA=1 xcodebuild build \
             -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1'
+            -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.1'
 
   # Test with Coverage
   test:
@@ -124,7 +124,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/Library/Developer/Xcode/DerivedData
-          key: ${{ runner.os }}-deriveddata-${{ hashFiles('**/*.swift') }}
+          key: ${{ runner.os }}-deriveddata-${{ hashFiles('Package.resolved', '*.xcodeproj') }}
           restore-keys: |
             ${{ runner.os }}-deriveddata-
 
@@ -142,10 +142,10 @@ jobs:
       - name: Test with Coverage
         working-directory: ./LexiconFlow
         run: |
-          xcodebuild test \
+          SUPPRESS_APPINTENTS_METADATA=1 xcodebuild test \
             -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1' \
+            -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.1' \
             -only-testing:LexiconFlowTests \
             -skip-testing:LexiconFlowTests/StatisticsDashboardE2ETests \
             -skip-testing:LexiconFlowTests/StudySessionAndDailyStatsTests \
@@ -196,7 +196,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/Library/Developer/Xcode/DerivedData
-          key: ${{ runner.os }}-deriveddata-${{ hashFiles('**/*.swift') }}
+          key: ${{ runner.os }}-deriveddata-${{ hashFiles('Package.resolved', '*.xcodeproj') }}
           restore-keys: |
             ${{ runner.os }}-deriveddata-
 
@@ -217,10 +217,10 @@ jobs:
       - name: Run Integration Tests
         working-directory: ./LexiconFlow
         run: |
-          xcodebuild test \
+          SUPPRESS_APPINTENTS_METADATA=1 xcodebuild test \
             -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1' \
+            -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.1' \
             -only-testing:LexiconFlowTests \
             -parallel-testing-enabled NO \
             -enableCodeCoverage YES \

@@ -65,18 +65,18 @@ final class StudySessionViewModel: ObservableObject {
 
     /// The current card being displayed
     var currentCard: Flashcard? {
-        guard self.currentIndex < self.cards.count else { return nil }
-        return self.cards[self.currentIndex]
+        guard currentIndex < cards.count else { return nil }
+        return cards[currentIndex]
     }
 
     /// Progress through the session (e.g., "3 / 20")
     var progress: String {
-        "\(self.currentIndex + 1) / \(self.cards.count)"
+        "\(currentIndex + 1) / \(cards.count)"
     }
 
     /// Whether there are more cards to review
     var hasMoreCards: Bool {
-        self.currentIndex < self.cards.count
+        currentIndex < cards.count
     }
 
     /// Initialize with multiple decks for study session
@@ -88,33 +88,33 @@ final class StudySessionViewModel: ObservableObject {
         self.mode = mode
         self.modelContext = modelContext
         self.decks = decks
-        self.scheduler = Scheduler(modelContext: modelContext)
+        scheduler = Scheduler(modelContext: modelContext)
     }
 
     /// Load cards for the study session
     func loadCards() {
-        self.cards = self.scheduler.fetchCards(for: self.decks, mode: self.mode, limit: AppSettings.studyLimit)
-        self.currentIndex = 0
-        self.isComplete = self.cards.isEmpty
+        cards = scheduler.fetchCards(for: decks, mode: mode, limit: AppSettings.studyLimit)
+        currentIndex = 0
+        isComplete = cards.isEmpty
 
         // Create study session record if cards were loaded
-        if !self.cards.isEmpty {
-            self.createStudySession()
+        if !cards.isEmpty {
+            createStudySession()
         }
     }
 
     /// Create a new StudySession record
     private func createStudySession() {
         let session = StudySession(startTime: Date(), mode: mode)
-        self.modelContext.insert(session)
+        modelContext.insert(session)
 
         do {
-            try self.modelContext.save()
-            self.currentStudySession = session
-            self.logger.info("Created study session: \(session.id)")
+            try modelContext.save()
+            currentStudySession = session
+            logger.info("Created study session: \(session.id)")
         } catch {
             Analytics.trackError("create_study_session", error: error)
-            self.logger.error("Failed to create study session: \(error)")
+            logger.error("Failed to create study session: \(error)")
             // Continue without session tracking - don't block study
         }
     }
@@ -126,33 +126,33 @@ final class StudySessionViewModel: ObservableObject {
         }
 
         session.endTime = Date()
-        session.cardsReviewed = self.currentIndex
+        session.cardsReviewed = currentIndex
 
         do {
-            try self.modelContext.save()
+            try modelContext.save()
             // swiftformat:disable:next redundantSelf
             logger.info("Finalized study session: \(session.id) with \(self.currentIndex) cards")
         } catch {
             Analytics.trackError("finalize_study_session", error: error)
-            self.logger.error("Failed to finalize study session: \(error)")
+            logger.error("Failed to finalize study session: \(error)")
         }
 
-        self.currentStudySession = nil
+        currentStudySession = nil
     }
 
     /// Submit a rating for a specific card
     func submitRating(_ rating: Int, card: Flashcard) async {
-        guard !self.isProcessing else {
+        guard !isProcessing else {
             return
         }
 
         // Validate rating is within FSRS range (0-3)
         guard (0 ... 3).contains(rating) else {
-            self.lastError = StudySessionError.invalidRating(rating)
+            lastError = StudySessionError.invalidRating(rating)
             return
         }
 
-        self.isProcessing = true
+        isProcessing = true
         defer {
             isProcessing = false
         }
@@ -161,47 +161,47 @@ final class StudySessionViewModel: ObservableObject {
         let result = await scheduler.processReview(
             flashcard: card,
             rating: rating,
-            mode: self.mode,
-            studySession: self.currentStudySession
+            mode: mode,
+            studySession: currentStudySession
         )
 
         // Only advance if the review was saved successfully
         guard result != nil else {
-            self.lastError = StudySessionError.reviewSaveFailed(
+            lastError = StudySessionError.reviewSaveFailed(
                 underlying: "Review processing failed - check logs for details"
             )
             return
         }
 
         // Clear any previous error on success
-        self.lastError = nil
-        self.currentIndex += 1
+        lastError = nil
+        currentIndex += 1
 
-        if self.currentIndex >= self.cards.count {
-            self.isComplete = true
+        if currentIndex >= cards.count {
+            isComplete = true
             // Auto-finalize when session completes
-            self.finalizeSession()
+            finalizeSession()
         }
     }
 
     /// Preview the due dates for all rating options
     func previewRatings() async -> [Int: Date] {
         guard let card = currentCard else { return [:] }
-        return await self.scheduler.previewRatings(for: card)
+        return await scheduler.previewRatings(for: card)
     }
 
     /// Reset the session (e.g., to start over)
     func reset() {
         // Finalize existing session if active
-        self.finalizeSession()
+        finalizeSession()
 
         // Reset state
-        self.currentIndex = 0
-        self.isComplete = false
+        currentIndex = 0
+        isComplete = false
     }
 
     /// Clean up when view is dismissed (finalizes session if still active)
     func cleanup() {
-        self.finalizeSession()
+        finalizeSession()
     }
 }

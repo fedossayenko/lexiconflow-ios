@@ -19,6 +19,7 @@ import Testing
 @testable import LexiconFlow
 
 /// Test suite for TranslationService
+@Suite(.serialized)
 @MainActor
 struct TranslationServiceTests {
     // MARK: - Singleton Tests
@@ -357,11 +358,11 @@ struct TranslationServiceTests {
     // MARK: - Cancellation Tests
 
     @Test("cancelBatchTranslation can be called without crash")
-    func testCancelBatchTranslation() {
+    func testCancelBatchTranslation() async throws {
         let service = TranslationService.shared
 
         // Should not crash even with no active task
-        service.cancelBatchTranslation()
+        await service.cancelBatchTranslation()
         // Test passes if no crash occurs
     }
 
@@ -538,10 +539,9 @@ struct TranslationServiceTests {
     func concurrentSingletonAccess() async {
         await withTaskGroup(of: Void.self) { group in
             for _ in 0 ..< 10 {
-                group.addTask {
-                    let service = TranslationService.shared
-                    // Access singleton from multiple tasks
-                    _ = service.isConfigured
+                group.addTask { @MainActor in
+                    // Access @MainActor singleton from multiple tasks
+                    _ = TranslationService.shared.isConfigured
                 }
             }
         }
@@ -627,7 +627,7 @@ struct TranslationServiceTests {
 
         // Cancel immediately
         try await Task.sleep(nanoseconds: 10000000) // 0.01 seconds
-        service.cancelBatchTranslation()
+        await service.cancelBatchTranslation()
         translationTask.cancel()
 
         // Wait for task to complete

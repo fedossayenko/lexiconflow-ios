@@ -44,7 +44,7 @@ jobs:
           xcodebuild build \
             -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.1'
+            -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2'
 
       - name: Scan for Dead Code
         run: ./scripts/scan-dead-code.sh

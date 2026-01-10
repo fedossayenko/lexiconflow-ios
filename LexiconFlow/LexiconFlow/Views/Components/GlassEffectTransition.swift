@@ -8,7 +8,7 @@
 import SwiftUI
 
 /// Defines the transition style for glass morphism effects.
-enum GlassTransitionStyle {
+enum GlassTransitionStyle: Equatable, Sendable {
     /// Scale + fade in/out (card flip)
     case scaleFade
     /// Fade with distortion (navigation)
@@ -83,7 +83,7 @@ extension View {
     ///     .accessibleMaterialize()
     /// ```
     func accessibleMaterialize() -> some View {
-        self.transition(.asymmetric(
+        transition(.asymmetric(
             insertion: .opacity.combined(with: .scale(scale: 0.98)),
             removal: .opacity.combined(with: .scale(scale: 1.02))
         ))

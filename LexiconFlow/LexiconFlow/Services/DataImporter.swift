@@ -45,8 +45,9 @@ final class DataImporter {
     /// - UI blocking during long operations
     /// - SQLite lock contention
     ///
-    /// **Optimization**: Batch processing with periodic saves maintains
-    /// UI responsiveness even for large imports (500+ cards).
+    /// **Optimization**: Pre-fetches all existing words ONCE before batch processing.
+    /// This achieves true O(n) complexity instead of O(n²) where n = total cards.
+    /// For importing 1000 cards with 10,000 existing cards: 1 query instead of 10 queries.
     ///
     /// - Parameters:
     ///   - cards: Array of flashcard data to import
@@ -61,82 +62,159 @@ final class DataImporter {
         progressHandler: (@Sendable (ImportProgress) -> Void)? = nil
     ) async -> ImportResult {
         let startTime = Date()
-        var result = ImportResult()
-
         let totalCount = cards.count
         Self.logger.info("Starting import of \(totalCount) cards in batches of \(batchSize)")
 
+        // Pre-fetch existing words for O(1) duplicate checking
+        let allExistingWords = prefetchExistingWords()
+
         // Process in batches
-        let batches = cards.chunked(into: batchSize)
+        let config = BatchProcessingConfig(
+            cards: cards,
+            deck: deck,
+            batchSize: batchSize,
+            totalCount: totalCount,
+            existingWords: allExistingWords,
+            startTime: startTime,
+            progressHandler: progressHandler
+        )
+        let result = await processBatches(config)
+
+        // Log completion and analytics
+        logImportCompletion(result, duration: result.duration)
+
+        // Invalidate statistics cache after data import
+        StatisticsService.shared.invalidateCache()
+
+        return result
+    }
+
+    // MARK: - Private Helpers
+
+    /// Parameters for batch processing configuration
+    private struct BatchProcessingConfig: Sendable {
+        let cards: [FlashcardData]
+        let deck: Deck?
+        let batchSize: Int
+        let totalCount: Int
+        let existingWords: Set<String>
+        let startTime: Date
+        let progressHandler: (@Sendable (ImportProgress) -> Void)?
+    }
+
+    /// Pre-fetch all existing words for O(1) duplicate checking
+    private func prefetchExistingWords() -> Set<String> {
+        do {
+            let allCards = try modelContext.fetch(FetchDescriptor<Flashcard>())
+            let words = Set(allCards.map(\.word))
+            Self.logger.info("Pre-fetched \(words.count) existing words for duplicate checking")
+            return words
+        } catch {
+            Self.logger.error("Failed to pre-fetch existing words: \(error)")
+            return []
+        }
+    }
+
+    /// Process cards in batches with progress tracking
+    private func processBatches(_ config: BatchProcessingConfig) async -> ImportResult {
+        var result = ImportResult()
+        let batches = config.cards.chunked(into: config.batchSize)
+        let totalBatches = (config.totalCount + config.batchSize - 1) / config.batchSize
+
         for (index, batch) in batches.enumerated() {
             let batchNumber = index + 1
-            let totalBatches = (totalCount + batchSize - 1) / batchSize
 
             Self.logger.info("Processing batch \(batchNumber)/\(totalBatches) (\(batch.count) cards)")
 
             do {
-                // Import this batch
-                let batchStats = try importBatch(batch, into: deck)
+                let batchStats = try importBatch(batch, into: config.deck, existingWords: config.existingWords)
 
-                // Update result
                 result.importedCount += batchStats.success
                 result.skippedCount += batchStats.skipped
                 result.errors.append(contentsOf: batchStats.errors)
 
-                // Commit after each batch
-                try self.modelContext.save()
+                try modelContext.save()
 
-                // Report progress
-                let progress = ImportProgress(
-                    current: result.importedCount,
-                    total: totalCount,
+                reportProgress(
+                    result.importedCount,
+                    total: config.totalCount,
                     batchNumber: batchNumber,
-                    totalBatches: totalBatches
+                    totalBatches: totalBatches,
+                    handler: config.progressHandler
                 )
-                progressHandler?(progress)
 
-                // Analytics for performance monitoring
-                // FIX: Capture current values explicitly to avoid mutable capture
-                let currentImportedCount = result.importedCount
-                let batchCount = batch.count
-
-                Task {
-                    Analytics.trackPerformance(
-                        "import_batch_\(batchNumber)",
-                        duration: Date().timeIntervalSince(startTime),
-                        metadata: [
-                            "batch_size": "\(batchCount)",
-                            "total_processed": "\(currentImportedCount)"
-                        ]
-                    )
-                }
+                trackBatchPerformance(batchNumber, batchCount: batch.count, startTime: config.startTime)
 
             } catch {
-                Self.logger.error("❌ Batch \(batchNumber) failed: \(error)")
-                result.errors.append(
-                    ImportError(
-                        batchNumber: batchNumber,
-                        error: error,
-                        cardWord: nil
-                    )
-                )
-
-                Task {
-                    Analytics.trackError(
-                        "import_batch_failed",
-                        error: error,
-                        metadata: [
-                            "batch_number": "\(batchNumber)",
-                            "batch_size": "\(batch.count)"
-                        ]
-                    )
-                }
+                handleBatchError(error, batchNumber: batchNumber, batchCount: batch.count, result: &result)
             }
         }
 
-        let duration = Date().timeIntervalSince(startTime)
-        result.duration = duration
+        result.duration = Date().timeIntervalSince(config.startTime)
+        return result
+    }
 
+    /// Report import progress
+    private func reportProgress(
+        _ current: Int,
+        total: Int,
+        batchNumber: Int,
+        totalBatches: Int,
+        handler: (@Sendable (ImportProgress) -> Void)?
+    ) {
+        let progress = ImportProgress(
+            current: current,
+            total: total,
+            batchNumber: batchNumber,
+            totalBatches: totalBatches
+        )
+        handler?(progress)
+    }
+
+    /// Track batch performance analytics
+    private func trackBatchPerformance(_ batchNumber: Int, batchCount: Int, startTime: Date) {
+        Task {
+            Analytics.trackPerformance(
+                "import_batch_\(batchNumber)",
+                duration: Date().timeIntervalSince(startTime),
+                metadata: [
+                    "batch_size": "\(batchCount)",
+                    "total_processed": "\(batchNumber * batchCount)"
+                ]
+            )
+        }
+    }
+
+    /// Handle batch import error
+    private func handleBatchError(
+        _ error: Error,
+        batchNumber: Int,
+        batchCount: Int,
+        result: inout ImportResult
+    ) {
+        Self.logger.error("❌ Batch \(batchNumber) failed: \(error)")
+        result.errors.append(
+            ImportError(
+                batchNumber: batchNumber,
+                error: error,
+                cardWord: nil
+            )
+        )
+
+        Task {
+            Analytics.trackError(
+                "import_batch_failed",
+                error: error,
+                metadata: [
+                    "batch_number": "\(batchNumber)",
+                    "batch_size": "\(batchCount)"
+                ]
+            )
+        }
+    }
+
+    /// Log import completion and track final analytics
+    private func logImportCompletion(_ result: ImportResult, duration: TimeInterval) {
         Self.logger.info("""
         Import complete:
         - Imported: \(result.importedCount)
@@ -153,32 +231,29 @@ final class DataImporter {
                 "duration_seconds": String(format: "%.2f", duration)
             ])
         }
-
-        return result
     }
 
     /// Import a single batch of cards
     ///
-    /// **Performance**: Fetches existing cards ONCE per batch (O(n) total vs O(n²)).
+    /// **Performance**: Uses pre-fetched existing words Set for O(1) duplicate checking.
+    /// **Optimization**: True O(n) complexity - fetches all existing words ONCE in importCards(),
+    /// then each batch simply checks against the pre-fetched Set.
     /// **Thread Safety**: Uses Set for O(1) duplicate checks, no race conditions.
     ///
     /// - Parameters:
     ///   - cards: Cards in this batch
     ///   - deck: Optional deck to associate with
+    ///   - existingWords: Pre-fetched Set of all existing words (passed from importCards)
     /// - Returns: Batch statistics
     private func importBatch(
         _ cards: [FlashcardData],
-        into deck: Deck?
+        into deck: Deck?,
+        existingWords: Set<String>
     ) throws -> BatchStats {
         var stats = BatchStats()
 
-        // PERFORMANCE: Fetch existing cards ONCE per batch, not per card
-        // This changes from O(n²) to O(n) complexity
-        let allCards = try modelContext.fetch(FetchDescriptor<Flashcard>())
-        let existingWords = Set(allCards.map(\.word))
-
         for cardData in cards {
-            // O(1) duplicate check using Set
+            // O(1) duplicate check using pre-fetched Set
             if existingWords.contains(cardData.word) {
                 stats.skipped += 1
                 continue
@@ -220,11 +295,11 @@ final class DataImporter {
                 dueDate: Date(),
                 stateEnum: FlashcardState.new.rawValue
             )
-            self.modelContext.insert(state)
+            modelContext.insert(state)
             flashcard.fsrsState = state
 
             // Insert flashcard
-            self.modelContext.insert(flashcard)
+            modelContext.insert(flashcard)
 
             stats.success += 1
         }
@@ -277,13 +352,13 @@ struct ImportProgress: Sendable {
 
     /// Progress as percentage (0-100)
     var percentage: Int {
-        guard self.total > 0 else { return 0 }
-        return (self.current * 100) / self.total
+        guard total > 0 else { return 0 }
+        return (current * 100) / total
     }
 
     /// Human-readable progress string
     var description: String {
-        "\(self.current)/\(self.total) (\(self.percentage)%) - Batch \(self.batchNumber)/\(self.totalBatches)"
+        "\(current)/\(total) (\(percentage)%) - Batch \(batchNumber)/\(totalBatches)"
     }
 }
 
@@ -303,7 +378,7 @@ struct ImportResult: Sendable {
 
     /// Whether import was completely successful
     var isSuccess: Bool {
-        self.errors.isEmpty && self.importedCount > 0
+        errors.isEmpty && importedCount > 0
     }
 }
 

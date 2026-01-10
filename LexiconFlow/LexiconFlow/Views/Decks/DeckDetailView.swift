@@ -23,31 +23,31 @@ struct DeckDetailView: View {
     @State private var showingTranslationResult = false
     @State private var translationTask: Task<Void, Never>?
 
+    // MARK: - Cached State
+
+    /// Cached list of untranslated cards to avoid O(n) scans during animations
+    /// Performance: Eliminates redundant filter operations during view redraws
+    @State private var untranslatedCards: [Flashcard] = []
+    @State private var lastCardCount: Int = 0
+
     private let logger = Logger(subsystem: "com.lexiconflow.deckdetail", category: "BatchTranslation")
     private let translationService = TranslationService.shared
 
-    // MARK: - Computed Properties
-
-    /// Cards that don't have a translation yet (cached for efficiency)
-    private var untranslatedCards: [Flashcard] {
-        self.deck.cards.filter { $0.translation == nil }
-    }
-
     var body: some View {
         List {
-            if self.deck.cards.isEmpty {
+            if deck.cards.isEmpty {
                 ContentUnavailableView {
                     Label("No Cards", systemImage: "rectangle.on.rectangle")
                 } description: {
                     Text("Add flashcards to this deck to get started")
                 } actions: {
                     Button("Add Card") {
-                        self.showingAddCard = true
+                        showingAddCard = true
                     }
                 }
             } else {
                 // Inline progress banner
-                if self.isTranslating, let progress = translationProgress {
+                if isTranslating, let progress = translationProgress {
                     Section {
                         HStack(spacing: 12) {
                             ProgressView()
@@ -68,7 +68,7 @@ struct DeckDetailView: View {
                             Spacer()
 
                             Button("Cancel") {
-                                self.cancelTranslation()
+                                cancelTranslation()
                             }
                             .buttonStyle(.borderless)
                             .font(.caption)
@@ -78,7 +78,7 @@ struct DeckDetailView: View {
                 }
 
                 Section {
-                    ForEach(self.deck.cards) { card in
+                    ForEach(deck.cards) { card in
                         NavigationLink(destination: FlashcardDetailView(flashcard: card)) {
                             VStack(alignment: .leading, spacing: 4) {
                                 // Word
@@ -112,64 +112,76 @@ struct DeckDetailView: View {
                         .accessibilityLabel("Card: \(card.word)")
                         .accessibilityHint("Double tap to view card details and review history")
                     }
-                    .onDelete(perform: self.deleteCards)
+                    .onDelete(perform: deleteCards)
                 } header: {
-                    Text("Flashcards (\(self.deck.cards.count))")
+                    Text("Flashcards (\(deck.cards.count))")
                 }
             }
         }
-        .navigationTitle(self.deck.name)
+        .navigationTitle(deck.name)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button(action: { self.showingAddCard = true }) {
+                Button(action: { showingAddCard = true }) {
                     Image(systemName: "plus")
                 }
             }
 
             ToolbarItem(placement: .secondaryAction) {
                 Button("Translate All") {
-                    self.showingTranslateConfirmation = true
+                    showingTranslateConfirmation = true
                 }
-                .disabled(self.deck.cards.isEmpty || !AppSettings.isTranslationEnabled || !self.translationService.isConfigured || self.isTranslating)
+                .disabled(deck.cards.isEmpty || !AppSettings.isTranslationEnabled || !translationService.isConfigured || isTranslating)
             }
         }
-        .sheet(isPresented: self.$showingAddCard) {
-            AddFlashcardView(deck: self.deck)
+        .sheet(isPresented: $showingAddCard) {
+            AddFlashcardView(deck: deck)
                 .presentationCornerRadius(24)
                 .presentationDragIndicator(.visible)
         }
         .confirmationDialog(
             "Translate All Cards",
-            isPresented: self.$showingTranslateConfirmation,
+            isPresented: $showingTranslateConfirmation,
             titleVisibility: .visible
         ) {
-            let count = self.untranslatedCards.count
+            let count = untranslatedCards.count
 
             Button("Translate \(count) Cards") {
-                self.translateAllCards()
+                translateAllCards()
             }
             .disabled(count == 0)
 
             Button("Cancel", role: .cancel) {}
         } message: {
-            let count = self.untranslatedCards.count
+            let count = untranslatedCards.count
             if count > 0 {
                 Text("Translate \(count) cards without translation using Z.ai API.")
             } else {
                 Text("All cards already have translations.")
             }
         }
-        .alert("Translation Complete", isPresented: self.$showingTranslationResult) {
+        .alert("Translation Complete", isPresented: $showingTranslationResult) {
             Button("OK") {}
         } message: {
             if let result = translationResult {
                 Text(result.summary)
             }
         }
+        .onAppear {
+            // Initialize cached untranslated cards on view appear
+            updateUntranslatedCards()
+        }
+        .onChange(of: deck.cards.count) { _, _ in
+            // Update cache when cards are added or deleted
+            updateUntranslatedCards()
+        }
+        .onChange(of: deck.cards.compactMap(\.translation).count) { _, _ in
+            // Update cache when translations change
+            updateUntranslatedCards()
+        }
         .onDisappear {
             // Cancel any ongoing translation when view disappears
-            self.translationTask?.cancel()
-            self.translationService.cancelBatchTranslation()
+            translationTask?.cancel()
+            Task { await translationService.cancelBatchTranslation() }
         }
     }
 
@@ -177,24 +189,25 @@ struct DeckDetailView: View {
 
     private func translateAllCards() {
         // Cancel existing task if running
-        self.translationTask?.cancel()
+        translationTask?.cancel()
 
-        self.isTranslating = true
-        self.translationResult = nil
+        isTranslating = true
+        translationResult = nil
 
-        let cardsToTranslate = self.untranslatedCards // Use computed property
+        // Use cached untranslated cards (updated via onChange modifiers)
+        let cardsToTranslate = untranslatedCards
         let total = cardsToTranslate.count
 
-        self.logger.info("Starting batch translation of \(total) cards")
+        logger.info("Starting batch translation of \(total) cards")
 
         // Background task - non-blocking but still can update @State
-        self.translationTask = Task(priority: .userInitiated) { @MainActor in
+        translationTask = Task(priority: .userInitiated) { @MainActor in
             let startTime = Date()
 
             do {
                 // Branch based on device capability
                 // Use on-device translation (iOS 26+)
-                self.logger.info("Using on-device translation (iOS 26 Translation framework)")
+                logger.info("Using on-device translation (iOS 26 Translation framework)")
                 let result = try await OnDeviceTranslationService.shared.translateBatch(
                     cardsToTranslate.map(\.word),
                     maxConcurrency: 5,
@@ -207,19 +220,19 @@ struct DeckDetailView: View {
                         )
                         // Explicit main actor dispatch for @State mutation
                         Task { @MainActor in
-                            self.translationProgress = currentProgress
+                            translationProgress = currentProgress
                         }
                     }
                 )
                 // Apply on-device translation results
-                self.applyOnDeviceTranslationResults(result, cards: cardsToTranslate, startTime: startTime)
+                applyOnDeviceTranslationResults(result, cards: cardsToTranslate, startTime: startTime)
 
             } catch let error as TranslationService.TranslationError {
                 handleTranslationError(error)
             } catch let error as OnDeviceTranslationError {
                 handleOnDeviceTranslationError(error)
             } catch {
-                self.handleTranslationError(.apiFailed)
+                handleTranslationError(.apiFailed)
             }
         }
     }
@@ -240,11 +253,14 @@ struct DeckDetailView: View {
 
         // Save all changes with proper error handling
         do {
-            try self.modelContext.save()
-            self.logger.info("Successfully saved on-device translations: \(result.successCount) cards")
+            try modelContext.save()
+            logger.info("Successfully saved on-device translations: \(result.successCount) cards")
+
+            // Update cache after translations are saved
+            updateUntranslatedCards()
 
             // Create result for UI
-            self.translationResult = TranslationResult(
+            translationResult = TranslationResult(
                 translatedCount: result.successCount,
                 skippedCount: 0,
                 failedCount: result.failedCount,
@@ -264,13 +280,13 @@ struct DeckDetailView: View {
                 }
             )
 
-            self.logger.info("On-device batch translation complete: \(result.successCount) success, \(result.failedCount) failed, \(String(format: "%.2f", result.totalDuration))s")
+            logger.info("On-device batch translation complete: \(result.successCount) success, \(result.failedCount) failed, \(String(format: "%.2f", result.totalDuration))s")
 
         } catch {
-            self.logger.error("Failed to save on-device translations: \(error.localizedDescription)")
+            logger.error("Failed to save on-device translations: \(error.localizedDescription)")
 
             // Update result to reflect failure
-            self.translationResult = TranslationResult(
+            translationResult = TranslationResult(
                 translatedCount: 0,
                 skippedCount: 0,
                 failedCount: cards.count,
@@ -281,56 +297,67 @@ struct DeckDetailView: View {
         }
 
         // Clear state
-        self.isTranslating = false
-        self.translationProgress = nil
-        self.showingTranslationResult = true
+        isTranslating = false
+        translationProgress = nil
+        showingTranslationResult = true
     }
 
     private func handleTranslationError(_ error: TranslationService.TranslationError) {
-        self.logger.error("Batch translation failed: \(error.localizedDescription)")
+        logger.error("Batch translation failed: \(error.localizedDescription)")
 
-        self.translationResult = TranslationResult(
+        translationResult = TranslationResult(
             translatedCount: 0,
             skippedCount: 0,
-            failedCount: self.deck.cards.count(where: { $0.translation == nil }),
+            failedCount: deck.cards.count(where: { $0.translation == nil }),
             failedWords: []
         )
 
         // Clear state
-        self.isTranslating = false
-        self.translationProgress = nil
-        self.showingTranslationResult = true
+        isTranslating = false
+        translationProgress = nil
+        showingTranslationResult = true
     }
 
     private func handleOnDeviceTranslationError(_ error: OnDeviceTranslationError) {
-        self.logger.error("On-device translation failed: \(error.localizedDescription)")
+        logger.error("On-device translation failed: \(error.localizedDescription)")
 
-        self.translationResult = TranslationResult(
+        translationResult = TranslationResult(
             translatedCount: 0,
             skippedCount: 0,
-            failedCount: self.deck.cards.count(where: { $0.translation == nil }),
+            failedCount: deck.cards.count(where: { $0.translation == nil }),
             failedWords: []
         )
 
         // Clear state
-        self.isTranslating = false
-        self.translationProgress = nil
-        self.showingTranslationResult = true
+        isTranslating = false
+        translationProgress = nil
+        showingTranslationResult = true
     }
 
     private func cancelTranslation() {
-        self.translationTask?.cancel()
-        TranslationService.shared.cancelBatchTranslation()
-        self.isTranslating = false
-        self.translationProgress = nil
-        self.logger.info("Translation cancelled by user")
+        translationTask?.cancel()
+        Task { await TranslationService.shared.cancelBatchTranslation() }
+        isTranslating = false
+        translationProgress = nil
+        logger.info("Translation cancelled by user")
     }
 
     private func deleteCards(at offsets: IndexSet) {
         for index in offsets {
-            guard index >= 0, index < self.deck.cards.count else { continue }
-            self.modelContext.delete(self.deck.cards[index])
+            guard index >= 0, index < deck.cards.count else { continue }
+            modelContext.delete(deck.cards[index])
         }
+    }
+
+    // MARK: - Cache Management
+
+    /// Updates the cached untranslated cards list
+    ///
+    /// Called on view appear and when card translations change.
+    /// Performance: O(n) scan only when necessary, not during every redraw
+    private func updateUntranslatedCards() {
+        lastCardCount = deck.cards.count
+        untranslatedCards = deck.cards.filter { $0.translation == nil }
     }
 }
 
@@ -349,12 +376,12 @@ struct TranslationResult {
     let failedWords: [String]
 
     var summary: String {
-        if self.failedCount == 0 {
-            return "Successfully translated \(self.translatedCount) card\(self.translatedCount == 1 ? "" : "s")."
+        if failedCount == 0 {
+            return "Successfully translated \(translatedCount) card\(translatedCount == 1 ? "" : "s")."
         } else {
-            let failedList = self.failedWords.prefix(3).joined(separator: ", ")
-            let more = self.failedWords.count > 3 ? " and \(self.failedWords.count - 3) more" : ""
-            return "Translated \(self.translatedCount) card\(self.translatedCount == 1 ? "" : "s").\n\nFailed: \(failedList)\(more)"
+            let failedList = failedWords.prefix(3).joined(separator: ", ")
+            let more = failedWords.count > 3 ? " and \(failedWords.count - 3) more" : ""
+            return "Translated \(translatedCount) card\(translatedCount == 1 ? "" : "s").\n\nFailed: \(failedList)\(more)"
         }
     }
 }

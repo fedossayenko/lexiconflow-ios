@@ -60,23 +60,23 @@ struct FlashcardDetailView: View {
     var body: some View {
         Group {
             if let viewModel {
-                self.mainContent(viewModel: viewModel)
+                mainContent(viewModel: viewModel)
             } else {
                 ProgressView("Loading...")
             }
         }
         .task {
-            if self.viewModel == nil {
-                self.viewModel = FlashcardDetailViewModel(
-                    flashcard: self.flashcard,
-                    modelContext: self.modelContext
+            if viewModel == nil {
+                viewModel = FlashcardDetailViewModel(
+                    flashcard: flashcard,
+                    modelContext: modelContext
                 )
                 // Track analytics directly inline (no wrapper needed)
                 Analytics.trackEvent("review_history_viewed", metadata: [
-                    "flashcard_word": self.flashcard.word,
-                    "review_count": "\(self.flashcard.reviewLogs.count)",
-                    "current_state": self.flashcard.fsrsState?.stateEnum ?? "none",
-                    "stability": self.flashcard.fsrsState.map { String(format: "%.2f", $0.stability) } ?? "0.0"
+                    "flashcard_word": flashcard.word,
+                    "review_count": "\(flashcard.reviewLogs.count)",
+                    "current_state": flashcard.fsrsState?.stateEnum ?? "none",
+                    "stability": flashcard.fsrsState.map { String(format: "%.2f", $0.stability) } ?? "0.0"
                 ])
             }
         }
@@ -86,14 +86,14 @@ struct FlashcardDetailView: View {
     private func mainContent(viewModel: FlashcardDetailViewModel) -> some View {
         ScrollView {
             VStack(spacing: 0) {
-                self.cardInfoSection
-                self.reviewHistoryHeader
+                cardInfoSection
+                reviewHistoryHeader
                 ReviewHistoryListView(
                     reviews: viewModel.filteredReviews,
                     selectedFilter: Binding(
                         get: { viewModel.selectedFilter },
                         set: { newFilter in
-                            self.currentFilter = newFilter
+                            currentFilter = newFilter
                             viewModel.selectFilter(newFilter)
                         }
                     ),
@@ -102,36 +102,36 @@ struct FlashcardDetailView: View {
                     },
                     onExport: {
                         Task {
-                            await self.exportReviewHistory()
+                            await exportReviewHistory()
                         }
                     }
                 )
             }
         }
         .background(Color(.systemGroupedBackground))
-        .navigationTitle(self.flashcard.word)
+        .navigationTitle(flashcard.word)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                self.exportToolbarItem(viewModel: viewModel)
+                exportToolbarItem(viewModel: viewModel)
             }
         }
-        .alert("Export Failed", isPresented: self.$showingExportError) {
+        .alert("Export Failed", isPresented: $showingExportError) {
             Button("OK", role: .cancel) {
                 viewModel.exportError = nil
-                self.showingExportError = false
+                showingExportError = false
             }
         } message: {
             Text(viewModel.exportError?.localizedDescription ?? "An unknown error occurred")
         }
         .onChange(of: viewModel.exportError != nil) { _, hasError in
-            self.showingExportError = hasError
+            showingExportError = hasError
         }
-        .onChange(of: self.currentFilter) { _, newFilter in
+        .onChange(of: currentFilter) { _, newFilter in
             // Track filter changes for analytics
             Analytics.trackEvent("review_history_filter_changed", metadata: [
                 "filter": newFilter.rawValue,
-                "flashcard_word": self.flashcard.word
+                "flashcard_word": flashcard.word
             ])
         }
     }
@@ -140,7 +140,7 @@ struct FlashcardDetailView: View {
     @ViewBuilder
     private func exportToolbarItem(viewModel: FlashcardDetailViewModel) -> some View {
         if let csvString = viewModel.exportCSVString,
-           let _ = viewModel.exportFilename
+           viewModel.exportFilename != nil
         {
             ShareLink(
                 item: csvString,
@@ -158,11 +158,11 @@ struct FlashcardDetailView: View {
     /// Card information header showing word, definition, translation, phonetic, and CEFR
     @ViewBuilder
     private var cardInfoSection: some View {
-        if self.viewModel != nil {
+        if viewModel != nil {
             VStack(alignment: .leading, spacing: 20) {
                 // Word and CEFR badge row
                 HStack(alignment: .top, spacing: 12) {
-                    Text(self.flashcard.word)
+                    Text(flashcard.word)
                         .font(.system(size: 32, weight: .bold, design: .rounded))
                         .foregroundStyle(.primary)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -200,17 +200,17 @@ struct FlashcardDetailView: View {
                         .font(.caption)
                         .foregroundStyle(.tertiary)
 
-                    Text(self.flashcard.definition)
+                    Text(flashcard.definition)
                         .font(.body)
                         .foregroundStyle(.primary)
                 }
-                .accessibilityLabel("Definition: \(self.flashcard.definition)")
+                .accessibilityLabel("Definition: \(flashcard.definition)")
 
                 // FSRS State info (if available)
                 if let state = flashcard.fsrsState?.state,
                    let stability = flashcard.fsrsState?.stability
                 {
-                    self.fsrsStateInfo(state: state, stability: stability)
+                    fsrsStateInfo(state: state, stability: stability)
                 }
             }
             .padding(20)
@@ -231,17 +231,17 @@ struct FlashcardDetailView: View {
     /// code organization and reusability.
     private func fsrsStateInfo(state: FlashcardState, stability: Double) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: self.stateIcon(for: state))
+            Image(systemName: stateIcon(for: state))
                 .font(.callout)
-                .foregroundStyle(self.stateColor(for: state))
+                .foregroundStyle(stateColor(for: state))
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(self.stateLabel(for: state))
+                Text(stateLabel(for: state))
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .foregroundStyle(.primary)
 
-                Text("Stability: \(self.stabilityText(stability))")
+                Text("Stability: \(stabilityText(stability))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -249,9 +249,9 @@ struct FlashcardDetailView: View {
             Spacer()
         }
         .padding()
-        .background(self.stateColor(for: state).opacity(0.1))
+        .background(stateColor(for: state).opacity(0.1))
         .cornerRadius(12)
-        .accessibilityLabel("FSRS state: \(self.stateLabel(for: state)), Stability: \(self.stabilityText(stability))")
+        .accessibilityLabel("FSRS state: \(stateLabel(for: state)), Stability: \(stabilityText(stability))")
     }
 
     /// Review history header with statistics
@@ -295,7 +295,7 @@ struct FlashcardDetailView: View {
     private func exportReviewHistory() async {
         guard let viewModel else { return }
 
-        Self.logger.info("Exporting review history for '\(self.flashcard.word)'")
+        Self.logger.info("Exporting review history for '\(flashcard.word)'")
 
         await viewModel.exportCSV()
 
@@ -373,14 +373,40 @@ struct FlashcardDetailView: View {
 private extension Preview {
     static func makePreviewContainer() -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
+
+        // Try creating container with Flashcard model first
         do {
             return try ModelContainer(for: Flashcard.self, configurations: config)
         } catch {
-            // Preview failure indicates a real problem - log and use minimal fallback
+            // Preview failure indicates a real problem
             assertionFailure("Failed to create preview container: \(error.localizedDescription)")
-            // Fallback: return empty container to prevent preview crash
-            // EmptyModel.self is guaranteed to succeed as it has no persistent properties
-            return try! ModelContainer(for: EmptyModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+
+            // Try minimal fallback (no persistent properties)
+            if let fallbackContainer = try? ModelContainer(for: EmptyModel.self, configurations: config) {
+                return fallbackContainer
+            }
+
+            // Last resort: truly minimal container
+            // This should never fail under normal circumstances
+            let minimalConfig = ModelConfiguration(isStoredInMemoryOnly: true)
+            do {
+                return try ModelContainer(for: EmptyModel.self, configurations: minimalConfig)
+            } catch {
+                // If even this fails, return a placeholder that will show an error in preview
+                // The preview will fail to render, but the app won't crash
+                assertionFailure("Critical: Cannot create even minimal ModelContainer: \(error.localizedDescription)")
+
+                // Absolute last resort: return empty container
+                // Preview will be empty but won't crash the app
+                let minimalConfig = ModelConfiguration(isStoredInMemoryOnly: true)
+                do {
+                    return try ModelContainer(for: EmptyModel.self, configurations: minimalConfig)
+                } catch {
+                    // This should never happen - empty schema always works
+                    // If it does, something is fundamentally broken with the system
+                    return try! ModelContainer(for: EmptyModel.self)
+                }
+            }
         }
     }
 }

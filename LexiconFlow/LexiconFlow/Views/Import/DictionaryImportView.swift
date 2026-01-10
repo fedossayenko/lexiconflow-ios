@@ -57,13 +57,13 @@ struct DictionaryImportView: View {
                             Spacer()
 
                             Button("Change") {
-                                self.showingFileImporter = true
+                                showingFileImporter = true
                             }
                             .buttonStyle(.bordered)
                         }
                     } else {
                         Button {
-                            self.showingFileImporter = true
+                            showingFileImporter = true
                         } label: {
                             HStack {
                                 Image(systemName: "doc.badge.plus")
@@ -82,18 +82,18 @@ struct DictionaryImportView: View {
                 if let format = detectedFormat, format == .csv || format == .txt {
                     Section {
                         Toggle("Has Header Row", isOn: Binding(
-                            get: { self.fieldMapping.hasHeader },
+                            get: { fieldMapping.hasHeader },
                             set: {
-                                self.fieldMapping.hasHeader = $0
-                                Task { await self.refreshPreview() }
+                                fieldMapping.hasHeader = $0
+                                Task { await refreshPreview() }
                             }
                         ))
 
                         Picker("Word Field", selection: Binding(
-                            get: { self.fieldMapping.wordFieldIndex },
+                            get: { fieldMapping.wordFieldIndex },
                             set: {
-                                self.fieldMapping.wordFieldIndex = $0
-                                Task { await self.refreshPreview() }
+                                fieldMapping.wordFieldIndex = $0
+                                Task { await refreshPreview() }
                             }
                         )) {
                             ForEach(0 ..< 10) { index in
@@ -102,10 +102,10 @@ struct DictionaryImportView: View {
                         }
 
                         Picker("Definition Field", selection: Binding(
-                            get: { self.fieldMapping.definitionFieldIndex },
+                            get: { fieldMapping.definitionFieldIndex },
                             set: {
-                                self.fieldMapping.definitionFieldIndex = $0
-                                Task { await self.refreshPreview() }
+                                fieldMapping.definitionFieldIndex = $0
+                                Task { await refreshPreview() }
                             }
                         )) {
                             ForEach(0 ..< 10) { index in
@@ -114,10 +114,10 @@ struct DictionaryImportView: View {
                         }
 
                         Picker("Phonetic Field", selection: Binding(
-                            get: { self.fieldMapping.phoneticFieldIndex ?? -1 },
+                            get: { fieldMapping.phoneticFieldIndex ?? -1 },
                             set: {
-                                self.fieldMapping.phoneticFieldIndex = $0 == -1 ? nil : $0
-                                Task { await self.refreshPreview() }
+                                fieldMapping.phoneticFieldIndex = $0 == -1 ? nil : $0
+                                Task { await refreshPreview() }
                             }
                         )) {
                             Text("None").tag(-1)
@@ -127,10 +127,10 @@ struct DictionaryImportView: View {
                         }
 
                         Picker("CEFR Field", selection: Binding(
-                            get: { self.fieldMapping.cefrFieldIndex ?? -1 },
+                            get: { fieldMapping.cefrFieldIndex ?? -1 },
                             set: {
-                                self.fieldMapping.cefrFieldIndex = $0 == -1 ? nil : $0
-                                Task { await self.refreshPreview() }
+                                fieldMapping.cefrFieldIndex = $0 == -1 ? nil : $0
+                                Task { await refreshPreview() }
                             }
                         )) {
                             Text("None").tag(-1)
@@ -140,10 +140,10 @@ struct DictionaryImportView: View {
                         }
 
                         Picker("Translation Field", selection: Binding(
-                            get: { self.fieldMapping.translationFieldIndex ?? -1 },
+                            get: { fieldMapping.translationFieldIndex ?? -1 },
                             set: {
-                                self.fieldMapping.translationFieldIndex = $0 == -1 ? nil : $0
-                                Task { await self.refreshPreview() }
+                                fieldMapping.translationFieldIndex = $0 == -1 ? nil : $0
+                                Task { await refreshPreview() }
                             }
                         )) {
                             Text("None").tag(-1)
@@ -159,9 +159,9 @@ struct DictionaryImportView: View {
                 }
 
                 // Preview Section
-                if !self.previewCards.isEmpty {
+                if !previewCards.isEmpty {
                     Section {
-                        ForEach(self.previewCards.prefix(10), id: \.lineNumber) { card in
+                        ForEach(previewCards.prefix(10), id: \.lineNumber) { card in
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
                                     Text(card.word)
@@ -188,7 +188,7 @@ struct DictionaryImportView: View {
                             .padding(.vertical, 2)
                         }
                     } header: {
-                        Text("Preview (\(self.previewCards.count) cards)")
+                        Text("Preview (\(previewCards.count) cards)")
                     }
                 }
 
@@ -216,11 +216,11 @@ struct DictionaryImportView: View {
                 }
 
                 // Import Button Section
-                if self.selectedFileURL != nil, self.detectedFormat != nil, !self.isImporting, self.importResult == nil {
+                if selectedFileURL != nil, detectedFormat != nil, !isImporting, importResult == nil {
                     Section {
                         Button {
                             Task {
-                                await self.startImport()
+                                await startImport()
                             }
                         } label: {
                             HStack {
@@ -229,7 +229,7 @@ struct DictionaryImportView: View {
                             }
                         }
                         .buttonStyle(.borderedProminent)
-                        .disabled(self.previewCards.isEmpty)
+                        .disabled(previewCards.isEmpty)
                     }
                 }
 
@@ -279,7 +279,7 @@ struct DictionaryImportView: View {
                                 }
 
                                 Button("Done") {
-                                    self.dismiss()
+                                    dismiss()
                                 }
                                 .buttonStyle(.borderedProminent)
                             }
@@ -298,7 +298,7 @@ struct DictionaryImportView: View {
                                     .foregroundStyle(.secondary)
 
                                 Button("Dismiss") {
-                                    self.importResult = nil
+                                    importResult = nil
                                 }
                                 .buttonStyle(.bordered)
                             }
@@ -311,16 +311,16 @@ struct DictionaryImportView: View {
             }
             .navigationTitle("Import Dictionary")
             .fileImporter(
-                isPresented: self.$showingFileImporter,
+                isPresented: $showingFileImporter,
                 allowedContentTypes: [.commaSeparatedText, .json, .plainText],
                 allowsMultipleSelection: false
             ) { result in
-                self.handleFileSelection(result)
+                handleFileSelection(result)
             }
-            .alert("Error", isPresented: self.$showingError) {
+            .alert("Error", isPresented: $showingError) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text(self.errorMessage)
+                Text(errorMessage)
             }
         }
     }
@@ -334,21 +334,21 @@ struct DictionaryImportView: View {
 
             // Request security scope access
             guard url.startAccessingSecurityScopedResource() else {
-                self.errorMessage = "Unable to access file"
-                self.showingError = true
+                errorMessage = "Unable to access file"
+                showingError = true
                 return
             }
 
-            self.selectedFileURL = url
+            selectedFileURL = url
 
             Task {
-                await self.detectFormatAndPreview()
+                await detectFormatAndPreview()
                 url.stopAccessingSecurityScopedResource()
             }
 
         case let .failure(error):
-            self.errorMessage = error.localizedDescription
-            self.showingError = true
+            errorMessage = error.localizedDescription
+            showingError = true
         }
     }
 
@@ -361,23 +361,23 @@ struct DictionaryImportView: View {
 
         // Detect format
         if let format = importer.detectFormat(from: url) {
-            self.detectedFormat = format
-            self.logger.info("Detected format: \(format.rawValue)")
+            detectedFormat = format
+            logger.info("Detected format: \(format.rawValue)")
         } else {
-            self.errorMessage = "Unable to detect file format"
-            self.showingError = true
+            errorMessage = "Unable to detect file format"
+            showingError = true
             return
         }
 
         // Load preview
-        await self.refreshPreview()
+        await refreshPreview()
     }
 
     private func refreshPreview() async {
         guard let url = selectedFileURL,
               let format = detectedFormat else { return }
 
-        self.isPreviewLoading = true
+        isPreviewLoading = true
 
         let importer = DictionaryImporter(modelContext: modelContext)
 
@@ -385,17 +385,17 @@ struct DictionaryImportView: View {
             let preview = try await importer.previewImport(
                 url,
                 format: format,
-                fieldMapping: self.fieldMapping,
+                fieldMapping: fieldMapping,
                 limit: 10
             )
-            self.previewCards = preview
-            self.logger.info("Loaded preview with \(preview.count) cards")
+            previewCards = preview
+            logger.info("Loaded preview with \(preview.count) cards")
         } catch {
-            self.errorMessage = error.localizedDescription
-            self.showingError = true
+            errorMessage = error.localizedDescription
+            showingError = true
         }
 
-        self.isPreviewLoading = false
+        isPreviewLoading = false
     }
 
     // MARK: - Import
@@ -404,8 +404,8 @@ struct DictionaryImportView: View {
         guard let url = selectedFileURL,
               let format = detectedFormat else { return }
 
-        self.isImporting = true
-        self.importResult = nil
+        isImporting = true
+        importResult = nil
 
         let importer = DictionaryImporter(modelContext: modelContext)
 
@@ -413,24 +413,24 @@ struct DictionaryImportView: View {
             let result = try await importer.importDictionary(
                 url,
                 format: format,
-                fieldMapping: self.fieldMapping,
+                fieldMapping: fieldMapping,
                 into: nil, // Use default deck
                 progressHandler: { progress in
                     Task { @MainActor in
-                        self.importProgress = progress
+                        importProgress = progress
                     }
                 }
             )
 
-            self.importResult = result
-            self.logger.info("Import complete: \(result.imported) imported, \(result.failed) failed")
+            importResult = result
+            logger.info("Import complete: \(result.imported) imported, \(result.failed) failed")
         } catch {
-            self.errorMessage = error.localizedDescription
-            self.showingError = true
+            errorMessage = error.localizedDescription
+            showingError = true
         }
 
-        self.isImporting = false
-        self.importProgress = nil
+        isImporting = false
+        importProgress = nil
     }
 }
 

@@ -23,7 +23,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState creation with default values")
     func fsrsStateCreationWithDefaults() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(
@@ -45,7 +45,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState creation with custom values")
     func fsrsStateCreationWithCustomValues() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(
@@ -67,7 +67,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState initialization with FlashcardState enum")
     func fsrsStateInitWithEnum() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(state: .learning)
@@ -82,7 +82,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState computed property: new state")
     func fsrsStateComputedNew() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(stateEnum: FlashcardState.new.rawValue)
@@ -93,7 +93,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState computed property: learning state")
     func fsrsStateComputedLearning() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(stateEnum: FlashcardState.learning.rawValue)
@@ -104,7 +104,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState computed property: review state")
     func fsrsStateComputedReview() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(stateEnum: FlashcardState.review.rawValue)
@@ -115,7 +115,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState computed property: relearning state")
     func fsrsStateComputedRelearning() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(stateEnum: FlashcardState.relearning.rawValue)
@@ -126,7 +126,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState computed property: invalid state defaults to new")
     func fsrsStateComputedInvalidDefaultsToNew() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(stateEnum: "invalid_state")
@@ -140,7 +140,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState stability: zero for new cards")
     func stabilityZeroForNewCards() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(state: .new)
@@ -151,7 +151,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState stability: positive value for learned cards")
     func stabilityPositiveForLearned() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(stability: 5.0, state: .review)
@@ -163,7 +163,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState stability: can be very large")
     func stabilityCanBeLarge() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(stability: 365.0, state: .review)
@@ -176,7 +176,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState difficulty: range 0-10")
     func difficultyRange() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Test minimum
@@ -200,7 +200,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState difficulty: medium difficulty default")
     func difficultyDefaultMedium() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(
@@ -219,7 +219,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState retrievability: range 0-1")
     func retrievabilityRange() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         // Test minimum
@@ -243,7 +243,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState retrievability: high default for new cards")
     func retrievabilityDefaultHigh() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(
@@ -262,7 +262,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState dueDate: defaults to now")
     func dueDateDefaultsToNow() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let before = Date()
@@ -282,7 +282,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState dueDate: can be set to future")
     func dueDateFuture() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let futureDate = Date().addingTimeInterval(86400 * 7) // 7 days from now
@@ -294,7 +294,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState dueDate: can be set to past")
     func dueDatePast() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let pastDate = Date().addingTimeInterval(-86400) // 1 day ago
@@ -308,7 +308,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState lastReviewDate: nil for new cards")
     func lastReviewDateNilForNew() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(state: .new)
@@ -319,7 +319,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState lastReviewDate: can be set")
     func lastReviewDateCanBeSet() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let reviewDate = Date().addingTimeInterval(-3600) // 1 hour ago
@@ -340,7 +340,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState transition: new to learning")
     func transitionNewToLearning() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(state: .new)
@@ -355,7 +355,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState transition: learning to review")
     func transitionLearningToReview() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(state: .learning)
@@ -370,7 +370,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState transition: review to relearning")
     func transitionReviewToRelearning() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(state: .review)
@@ -385,7 +385,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState transition: relearning back to review")
     func transitionRelearningToReview() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(state: .relearning)
@@ -402,7 +402,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState-flashcard relationship")
     func fsrsStateFlashcardRelationship() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -419,7 +419,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState with no flashcard")
     func fsrsStateNoFlashcard() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(state: .new)
@@ -432,7 +432,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState update: after successful review")
     func updateAfterSuccessfulReview() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(state: .new)
@@ -458,7 +458,7 @@ struct FSRSStateTests {
 
     @Test("FSRSState update: after failed review")
     func updateAfterFailedReview() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let state = FSRSState(stability: 5.0, state: .review)
@@ -483,7 +483,7 @@ struct FSRSStateTests {
 
     @Test("Query: fetch due cards")
     func fetchDueCards() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard = Flashcard(word: "test", definition: "test")
@@ -510,7 +510,7 @@ struct FSRSStateTests {
 
     @Test("Query: fetch new cards")
     func fetchNewCards() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard1 = Flashcard(word: "new1", definition: "new")
@@ -539,7 +539,7 @@ struct FSRSStateTests {
 
     @Test("Query: fetch cards sorted by due date")
     func fetchSortedByDueDate() throws {
-        let context = self.freshContext()
+        let context = freshContext()
         try context.clearAll()
 
         let flashcard1 = Flashcard(word: "card1", definition: "test")

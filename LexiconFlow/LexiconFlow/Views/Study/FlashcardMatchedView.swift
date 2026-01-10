@@ -41,17 +41,17 @@ struct FlashcardMatchedView: View {
 
     var body: some View {
         ZStack {
-            if self.isFlipped {
-                CardBackViewMatched(card: self.card, namespace: self.flipAnimation)
+            if isFlipped {
+                CardBackViewMatched(card: card, namespace: flipAnimation)
                     .zIndex(1)
             } else {
-                CardFrontViewMatched(card: self.card, namespace: self.flipAnimation)
+                CardFrontViewMatched(card: card, namespace: flipAnimation)
                     .zIndex(0)
             }
         }
         // Single source of truth for flip animation (removed from FlashcardView to avoid double animations)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: self.isFlipped)
-        .ttsTiming(for: self.card, isFlipped: self.$isFlipped)
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isFlipped)
+        .ttsTiming(for: card, isFlipped: $isFlipped)
     }
 }
 

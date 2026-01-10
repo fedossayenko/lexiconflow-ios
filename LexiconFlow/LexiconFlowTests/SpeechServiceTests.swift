@@ -59,8 +59,8 @@ struct SpeechServiceTests {
     @Test("speak with valid text starts speech")
     func speakValidText() async throws {
         // Given: TTS enabled and valid text
-        let originalSettings = self.saveAppSettings()
-        self.resetAppSettings()
+        let originalSettings = saveAppSettings()
+        resetAppSettings()
         let service = SpeechService.shared
 
         // When: speak called with valid text
@@ -70,14 +70,14 @@ struct SpeechServiceTests {
         // Note: isSpeaking may return false immediately after speak() returns
         // because speech is asynchronous. We verify no crash occurs.
         #expect(true) // Test passes if no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("speak with empty text does nothing")
     func speakEmptyText() async throws {
         // Given: TTS enabled
-        let originalSettings = self.saveAppSettings()
-        self.resetAppSettings()
+        let originalSettings = saveAppSettings()
+        resetAppSettings()
         let service = SpeechService.shared
 
         // When: speak called with empty string
@@ -85,14 +85,14 @@ struct SpeechServiceTests {
 
         // Then: No speech started (should not crash)
         #expect(true) // Test passes if no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("speak with whitespace-only text does nothing")
     func speakWhitespaceOnly() async throws {
         // Given: TTS enabled
-        let originalSettings = self.saveAppSettings()
-        self.resetAppSettings()
+        let originalSettings = saveAppSettings()
+        resetAppSettings()
         let service = SpeechService.shared
 
         // When: speak called with whitespace
@@ -100,13 +100,13 @@ struct SpeechServiceTests {
 
         // Then: No speech started
         #expect(true) // Test passes if no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("speak when TTS disabled returns early")
     func speakWhenDisabled() async throws {
         // Given: TTS disabled
-        let originalSettings = self.saveAppSettings()
+        let originalSettings = saveAppSettings()
         AppSettings.ttsEnabled = false
         let service = SpeechService.shared
 
@@ -115,14 +115,14 @@ struct SpeechServiceTests {
 
         // Then: Returns early without speaking
         #expect(true) // Test passes if no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("speak called twice cancels first utterance")
     func speakTwiceCancelsFirst() async throws {
         // Given: TTS enabled
-        let originalSettings = self.saveAppSettings()
-        self.resetAppSettings()
+        let originalSettings = saveAppSettings()
+        resetAppSettings()
         let service = SpeechService.shared
 
         // When: speak called twice
@@ -131,14 +131,14 @@ struct SpeechServiceTests {
 
         // Then: Second utterance replaces first (no crash)
         #expect(true) // Test passes if no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("speak with long text processes correctly")
     func speakLongText() async throws {
         // Given: TTS enabled and long text
-        let originalSettings = self.saveAppSettings()
-        self.resetAppSettings()
+        let originalSettings = saveAppSettings()
+        resetAppSettings()
         let service = SpeechService.shared
 
         let longText = String(repeating: "This is a test. ", count: 100)
@@ -148,14 +148,14 @@ struct SpeechServiceTests {
 
         // Then: Text processed without error
         #expect(true) // Test passes if no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("speak with unicode characters handles correctly")
     func speakUnicode() async throws {
         // Given: TTS enabled and unicode text
-        let originalSettings = self.saveAppSettings()
-        self.resetAppSettings()
+        let originalSettings = saveAppSettings()
+        resetAppSettings()
         let service = SpeechService.shared
 
         // When: speak called with CJK, RTL, emoji
@@ -163,14 +163,14 @@ struct SpeechServiceTests {
 
         // Then: Unicode handled correctly
         #expect(true) // Test passes if no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("speak sets isSpeaking to true")
     func speakSetsIsSpeaking() async throws {
         // Given: TTS enabled
-        let originalSettings = self.saveAppSettings()
-        self.resetAppSettings()
+        let originalSettings = saveAppSettings()
+        resetAppSettings()
         let service = SpeechService.shared
 
         // When: speak called
@@ -179,7 +179,7 @@ struct SpeechServiceTests {
         // Then: isSpeaking becomes true (may need delay)
         // Note: isSpeaking is async, may need polling to verify
         #expect(true) // Test verifies no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     // MARK: - Category 2: Voice Selection Tests (6 tests)
@@ -242,7 +242,7 @@ struct SpeechServiceTests {
     @Test("Missing language code falls back to default")
     func missingLanguageFallback() async throws {
         // Given: TTS enabled with non-existent language
-        let originalSettings = self.saveAppSettings()
+        let originalSettings = saveAppSettings()
         AppSettings.ttsVoiceLanguage = "xx-XX" // Non-existent language
         let service = SpeechService.shared
 
@@ -250,7 +250,7 @@ struct SpeechServiceTests {
         // Then: Falls back to default voice (no crash)
         service.speak("Test")
         #expect(true) // Test passes if no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("Premium voice preference respected when available")
@@ -272,8 +272,8 @@ struct SpeechServiceTests {
     @Test("stop cancels current speech")
     func stopCancelsSpeech() async throws {
         // Given: TTS enabled and speech in progress
-        let originalSettings = self.saveAppSettings()
-        self.resetAppSettings()
+        let originalSettings = saveAppSettings()
+        resetAppSettings()
         let service = SpeechService.shared
 
         service.speak("Long text to test stop")
@@ -283,7 +283,7 @@ struct SpeechServiceTests {
 
         // Then: Speech cancelled
         #expect(true) // Test passes if no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("stop when not speaking does nothing")
@@ -301,8 +301,8 @@ struct SpeechServiceTests {
     @Test("pause sets isPaused to true")
     func pauseSetsIsPaused() async throws {
         // Given: TTS enabled and speech in progress
-        let originalSettings = self.saveAppSettings()
-        self.resetAppSettings()
+        let originalSettings = saveAppSettings()
+        resetAppSettings()
         let service = SpeechService.shared
 
         service.speak("Long text to test pause")
@@ -312,7 +312,7 @@ struct SpeechServiceTests {
 
         // Then: isPaused becomes true (may need delay)
         #expect(true) // Test verifies no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("pause when not speaking does nothing")
@@ -330,8 +330,8 @@ struct SpeechServiceTests {
     @Test("continueSpeaking resumes from pause")
     func continueSpeakingResumes() async throws {
         // Given: Speech paused
-        let originalSettings = self.saveAppSettings()
-        self.resetAppSettings()
+        let originalSettings = saveAppSettings()
+        resetAppSettings()
         let service = SpeechService.shared
 
         service.speak("Long text")
@@ -342,7 +342,7 @@ struct SpeechServiceTests {
 
         // Then: Speech resumes
         #expect(true) // Test verifies no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("continueSpeaking when not paused does nothing")
@@ -360,8 +360,8 @@ struct SpeechServiceTests {
     @Test("stop during pause resets both flags")
     func stopDuringPause() async throws {
         // Given: Speech paused
-        let originalSettings = self.saveAppSettings()
-        self.resetAppSettings()
+        let originalSettings = saveAppSettings()
+        resetAppSettings()
         let service = SpeechService.shared
 
         service.speak("Long text")
@@ -372,14 +372,14 @@ struct SpeechServiceTests {
 
         // Then: Both isSpeaking and isPaused reset
         #expect(true) // Test verifies no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("Multiple pause resume cycles work correctly")
     func multiplePauseResumeCycles() async throws {
         // Given: TTS enabled
-        let originalSettings = self.saveAppSettings()
-        self.resetAppSettings()
+        let originalSettings = saveAppSettings()
+        resetAppSettings()
         let service = SpeechService.shared
 
         service.speak("Very long text for multiple cycles")
@@ -392,14 +392,14 @@ struct SpeechServiceTests {
 
         // Then: No crashes or errors
         #expect(true) // Test verifies no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("stop followed by speak works correctly")
     func stopThenSpeak() async throws {
         // Given: TTS enabled
-        let originalSettings = self.saveAppSettings()
-        self.resetAppSettings()
+        let originalSettings = saveAppSettings()
+        resetAppSettings()
         let service = SpeechService.shared
 
         service.speak("First")
@@ -410,7 +410,7 @@ struct SpeechServiceTests {
 
         // Then: New speech starts
         #expect(true) // Test verifies no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     // MARK: - Category 4: State Properties Tests (6 tests)
@@ -418,8 +418,8 @@ struct SpeechServiceTests {
     @Test("isSpeaking true during speech")
     func isSpeakingTrueDuring() async throws {
         // Given: TTS enabled
-        let originalSettings = self.saveAppSettings()
-        self.resetAppSettings()
+        let originalSettings = saveAppSettings()
+        resetAppSettings()
         let service = SpeechService.shared
 
         // When: speak called
@@ -428,14 +428,14 @@ struct SpeechServiceTests {
         // Then: isSpeaking becomes true
         // Note: This is async, may need polling
         #expect(true) // Test verifies no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("isSpeaking false after completion")
     func isSpeakingFalseAfter() async throws {
         // Given: Short speech
-        let originalSettings = self.saveAppSettings()
-        self.resetAppSettings()
+        let originalSettings = saveAppSettings()
+        resetAppSettings()
         let service = SpeechService.shared
 
         // When: speak called with short text
@@ -444,14 +444,14 @@ struct SpeechServiceTests {
         // Then: isSpeaking becomes false after completion
         // Note: This is async, may need delay to verify
         #expect(true) // Test verifies no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("isPaused true after pause")
     func isPausedTrueAfterPause() async throws {
         // Given: TTS enabled
-        let originalSettings = self.saveAppSettings()
-        self.resetAppSettings()
+        let originalSettings = saveAppSettings()
+        resetAppSettings()
         let service = SpeechService.shared
 
         service.speak("Long text")
@@ -460,14 +460,14 @@ struct SpeechServiceTests {
         // When: isPaused checked
         // Then: Returns true (may need delay)
         #expect(true) // Test verifies no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("isPaused false after continue")
     func isPausedFalseAfterContinue() async throws {
         // Given: Speech paused
-        let originalSettings = self.saveAppSettings()
-        self.resetAppSettings()
+        let originalSettings = saveAppSettings()
+        resetAppSettings()
         let service = SpeechService.shared
 
         service.speak("Long text")
@@ -477,14 +477,14 @@ struct SpeechServiceTests {
         // When: isPaused checked
         // Then: Returns false (may need delay)
         #expect(true) // Test verifies no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("isSpeaking false after stop")
     func isSpeakingFalseAfterStop() async throws {
         // Given: TTS enabled
-        let originalSettings = self.saveAppSettings()
-        self.resetAppSettings()
+        let originalSettings = saveAppSettings()
+        resetAppSettings()
         let service = SpeechService.shared
 
         service.speak("Long text")
@@ -493,14 +493,14 @@ struct SpeechServiceTests {
         // When: isSpeaking checked
         // Then: Returns false
         #expect(!service.isSpeaking)
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("State transitions correct")
     func stateTransitionsCorrect() async throws {
         // Given: TTS enabled
-        let originalSettings = self.saveAppSettings()
-        self.resetAppSettings()
+        let originalSettings = saveAppSettings()
+        resetAppSettings()
         let service = SpeechService.shared
 
         // When: speak → pause → continue → stop
@@ -511,7 +511,7 @@ struct SpeechServiceTests {
 
         // Then: All transitions work
         #expect(true) // Test verifies no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     // MARK: - Category 5: AppSettings Integration Tests (6 tests)
@@ -519,7 +519,7 @@ struct SpeechServiceTests {
     @Test("ttsEnabled false prevents speak")
     func ttsEnabledFalsePreventsSpeak() async throws {
         // Given: TTS disabled
-        let originalSettings = self.saveAppSettings()
+        let originalSettings = saveAppSettings()
         AppSettings.ttsEnabled = false
         let service = SpeechService.shared
 
@@ -528,13 +528,13 @@ struct SpeechServiceTests {
 
         // Then: No speech (returns early)
         #expect(true) // Test verifies no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("Voice language from AppSettings used")
     func voiceLanguageFromSettings() async throws {
         // Given: TTS enabled with specific language
-        let originalSettings = self.saveAppSettings()
+        let originalSettings = saveAppSettings()
         AppSettings.ttsVoiceLanguage = "en-GB"
         AppSettings.ttsEnabled = true
         let service = SpeechService.shared
@@ -544,13 +544,13 @@ struct SpeechServiceTests {
 
         // Then: en-GB voice used (no crash)
         #expect(true) // Test verifies no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("Speech rate from AppSettings applied")
     func speechRateFromSettings() async throws {
         // Given: TTS enabled with custom rate
-        let originalSettings = self.saveAppSettings()
+        let originalSettings = saveAppSettings()
         AppSettings.ttsSpeechRate = 0.8
         AppSettings.ttsEnabled = true
         let service = SpeechService.shared
@@ -560,13 +560,13 @@ struct SpeechServiceTests {
 
         // Then: Custom rate applied (no crash)
         #expect(true) // Test verifies no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("Pitch multiplier from AppSettings applied")
     func pitchMultiplierFromSettings() async throws {
         // Given: TTS enabled with custom pitch
-        let originalSettings = self.saveAppSettings()
+        let originalSettings = saveAppSettings()
         AppSettings.ttsPitchMultiplier = 1.2
         AppSettings.ttsEnabled = true
         let service = SpeechService.shared
@@ -576,14 +576,14 @@ struct SpeechServiceTests {
 
         // Then: Custom pitch applied (no crash)
         #expect(true) // Test verifies no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("Settings changes reflect in next speech")
     func settingsChangeReflects() async throws {
         // Given: Initial settings
-        let originalSettings = self.saveAppSettings()
-        self.resetAppSettings()
+        let originalSettings = saveAppSettings()
+        resetAppSettings()
         let service = SpeechService.shared
 
         service.speak("First")
@@ -596,13 +596,13 @@ struct SpeechServiceTests {
 
         // Then: New settings used
         #expect(true) // Test verifies no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 
     @Test("All settings respected together")
     func allSettingsRespected() async throws {
         // Given: All settings customized
-        let originalSettings = self.saveAppSettings()
+        let originalSettings = saveAppSettings()
         AppSettings.ttsEnabled = true
         AppSettings.ttsVoiceLanguage = "en-US"
         AppSettings.ttsSpeechRate = 0.7
@@ -614,6 +614,6 @@ struct SpeechServiceTests {
 
         // Then: All settings applied (no crash)
         #expect(true) // Test verifies no crash
-        self.restoreAppSettings(originalSettings)
+        restoreAppSettings(originalSettings)
     }
 }

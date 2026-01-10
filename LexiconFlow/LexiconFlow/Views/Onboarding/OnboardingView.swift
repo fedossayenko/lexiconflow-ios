@@ -38,9 +38,9 @@ struct OnboardingView: View {
     ]
 
     var body: some View {
-        TabView(selection: self.$currentPage) {
-            ForEach(0 ..< self.pages.count, id: \.self) { index in
-                OnboardingPageView(page: self.pages[index])
+        TabView(selection: $currentPage) {
+            ForEach(0 ..< pages.count, id: \.self) { index in
+                OnboardingPageView(page: pages[index])
                     .tag(index)
             }
         }
@@ -49,9 +49,9 @@ struct OnboardingView: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Onboarding pages")
         .toolbar {
-            if self.currentPage == self.pages.count - 1 {
+            if currentPage == pages.count - 1 {
                 ToolbarItem(placement: .bottomBar) {
-                    Button(action: self.completeOnboarding) {
+                    Button(action: completeOnboarding) {
                         HStack {
                             Image(systemName: "star.fill")
                             Text("Get Started")
@@ -60,34 +60,34 @@ struct OnboardingView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
-                    .disabled(self.isCreatingSampleDeck)
+                    .disabled(isCreatingSampleDeck)
                     .accessibilityLabel("Get Started")
                 }
             }
         }
-        .alert("Error", isPresented: .constant(self.errorMessage != nil)) {
+        .alert("Error", isPresented: .constant(errorMessage != nil)) {
             Button("Retry", role: .cancel) {
-                self.errorMessage = nil
-                self.completeOnboarding()
+                errorMessage = nil
+                completeOnboarding()
             }
             Button("Cancel", role: .destructive) {
-                self.errorMessage = nil
-                self.isCreatingSampleDeck = false
+                errorMessage = nil
+                isCreatingSampleDeck = false
             }
         } message: {
-            Text(self.errorMessage ?? "An unknown error occurred")
+            Text(errorMessage ?? "An unknown error occurred")
         }
     }
 
     // MARK: - Sample Deck
 
     private func completeOnboarding() {
-        self.isCreatingSampleDeck = true
+        isCreatingSampleDeck = true
 
         Task { @MainActor in
             // Create sample deck
             let sampleDeck = Deck(name: "Sample Vocabulary", icon: "star.fill", order: 0)
-            self.modelContext.insert(sampleDeck)
+            modelContext.insert(sampleDeck)
 
             // Create sample flashcards
             let sampleCards = [
@@ -116,19 +116,19 @@ struct OnboardingView: View {
                 )
                 card.fsrsState = state
 
-                self.modelContext.insert(card)
-                self.modelContext.insert(state)
+                modelContext.insert(card)
+                modelContext.insert(state)
             }
 
             // Save to persistent store
             do {
-                try self.modelContext.save()
+                try modelContext.save()
                 AppSettings.hasCompletedOnboarding = true // Update single source of truth
-                self.hasCompletedOnboarding = true
+                hasCompletedOnboarding = true
             } catch {
-                Task { Analytics.trackError("onboarding_save", error: error) }
-                self.errorMessage = "Failed to create sample deck: \(error.localizedDescription)"
-                self.isCreatingSampleDeck = false
+                Analytics.trackError("onboarding_save", error: error)
+                errorMessage = "Failed to create sample deck: \(error.localizedDescription)"
+                isCreatingSampleDeck = false
             }
         }
     }
@@ -151,17 +151,17 @@ struct OnboardingPageView: View {
         VStack(spacing: 40) {
             Spacer()
 
-            Image(systemName: self.page.icon)
+            Image(systemName: page.icon)
                 .font(.system(size: 80))
                 .foregroundStyle(.blue)
 
             VStack(spacing: 16) {
-                Text(self.page.title)
+                Text(page.title)
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .multilineTextAlignment(.center)
 
-                Text(self.page.description)
+                Text(page.description)
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

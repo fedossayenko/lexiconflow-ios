@@ -30,25 +30,25 @@ struct MetricCard: View {
     var body: some View {
         HStack(spacing: 16) {
             // Icon
-            Image(systemName: self.icon)
+            Image(systemName: icon)
                 .font(.title2)
-                .foregroundStyle(self.color)
+                .foregroundStyle(color)
                 .frame(width: 44, height: 44)
-                .background(self.color.opacity(0.15))
+                .background(color.opacity(0.15))
                 .cornerRadius(10)
 
             // Content
             VStack(alignment: .leading, spacing: 4) {
-                Text(self.title)
+                Text(title)
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Text(self.value)
+                Text(value)
                     .font(.title2)
                     .fontWeight(.semibold)
                     .foregroundStyle(.primary)
 
-                Text(self.subtitle)
+                Text(subtitle)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .lineLimit(2)
@@ -62,8 +62,8 @@ struct MetricCard: View {
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(self.title): \(self.value)")
-        .accessibilityHint(self.subtitle)
+        .accessibilityLabel("\(title): \(value)")
+        .accessibilityHint(subtitle)
     }
 }
 
