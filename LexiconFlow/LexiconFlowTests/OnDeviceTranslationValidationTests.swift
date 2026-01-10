@@ -28,18 +28,19 @@ private var isCIEnvironment: Bool {
     }
 
     // Environment variable detection (fallback for direct test execution)
-    if ProcessInfo.processInfo.environment["CI"] != nil ||
-        ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] != nil ||
-        ProcessInfo.processInfo.environment["GITLAB_CI"] != nil ||
-        ProcessInfo.processInfo.environment["JENKINS_HOME"] != nil {
+    if ProcessInfo.processInfo.environment["CI"] != nil
+        || ProcessInfo.processInfo.environment["GITHUB_ACTIONS"] != nil
+        || ProcessInfo.processInfo.environment["GITLAB_CI"] != nil
+        || ProcessInfo.processInfo.environment["JENKINS_HOME"] != nil
+    {
         return true
     }
 
     // Simulator detection (language packs not available in simulator)
     #if targetEnvironment(simulator)
-    return true
+        return true
     #else
-    return false
+        return false
     #endif
 }
 
