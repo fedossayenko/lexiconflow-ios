@@ -181,7 +181,7 @@ struct DeckDetailView: View {
         .onDisappear {
             // Cancel any ongoing translation when view disappears
             self.translationTask?.cancel()
-            self.translationService.cancelBatchTranslation()
+            Task { await self.translationService.cancelBatchTranslation() }
         }
     }
 
@@ -336,7 +336,7 @@ struct DeckDetailView: View {
 
     private func cancelTranslation() {
         self.translationTask?.cancel()
-        TranslationService.shared.cancelBatchTranslation()
+        Task { await TranslationService.shared.cancelBatchTranslation() }
         self.isTranslating = false
         self.translationProgress = nil
         self.logger.info("Translation cancelled by user")

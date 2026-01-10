@@ -300,11 +300,10 @@ final class TranslationService {
     private let taskStorage = TaskStorage()
 
     /// Cancel any ongoing batch translation
-    func cancelBatchTranslation() {
-        Task {
-            await self.taskStorage.cancel()
-            self.logger.info("Batch translation cancelled")
-        }
+    /// - Note: Made async to ensure cancellation completes before test continues
+    func cancelBatchTranslation() async {
+        await self.taskStorage.cancel()
+        self.logger.info("Batch translation cancelled")
     }
 
     // MARK: - Batch Translation

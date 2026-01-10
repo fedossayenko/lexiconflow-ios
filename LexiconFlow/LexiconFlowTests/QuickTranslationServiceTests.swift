@@ -189,7 +189,6 @@ struct QuickTranslationServiceTests {
     func cacheHitIgnoresExpiredEntry() async throws {
         let container = self.createTestContainer()
         let context = ModelContext(container)
-        let service = QuickTranslationService.shared
 
         // Setup: Create expired translation (TTL = -1 day)
         let expired = try CachedTranslation(
@@ -241,7 +240,6 @@ struct QuickTranslationServiceTests {
     func cacheHitRespectsLanguagePair() async throws {
         let container = self.createTestContainer()
         let context = ModelContext(container)
-        let service = QuickTranslationService.shared
 
         // Setup: Create cached translation for en→es
         let cached = try CachedTranslation(
@@ -255,7 +253,7 @@ struct QuickTranslationServiceTests {
         try context.save()
 
         // Test: Different language pair should miss cache
-        let request = QuickTranslationService.FlashcardTranslationRequest(
+        _ = QuickTranslationService.FlashcardTranslationRequest(
             word: "test",
             flashcardID: nil
         )
@@ -373,7 +371,6 @@ struct QuickTranslationServiceTests {
     func cacheLRUEviction() async throws {
         let container = self.createTestContainer()
         let context = ModelContext(container)
-        let service = QuickTranslationService.shared
 
         // Setup: Fill cache to max capacity (10,000 entries)
         // Note: We'll create a smaller number for testing
@@ -636,15 +633,15 @@ struct QuickTranslationServiceTests {
     @Test("error types are Sendable")
     func errorsAreSendable() {
         // Verify error types conform to Sendable for actor isolation
-        let error1: any Sendable = QuickTranslationService.QuickTranslationError.emptyWord
-        let error2: any Sendable = QuickTranslationService.QuickTranslationError.offlineNoCache
-        let error3: any Sendable = QuickTranslationService.QuickTranslationError.languagePackMissing(
+        _ = QuickTranslationService.QuickTranslationError.emptyWord as any Sendable
+        _ = QuickTranslationService.QuickTranslationError.offlineNoCache as any Sendable
+        _ = QuickTranslationService.QuickTranslationError.languagePackMissing(
             source: "en",
             target: "es"
-        )
+        ) as any Sendable
 
         // If we got here, Sendable conformance works
-        #expect(true)
+        #expect(Bool(true))
     }
 
     // MARK: - Concurrency Tests

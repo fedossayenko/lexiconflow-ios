@@ -46,16 +46,17 @@ final class ImageCache {
         self.cache.totalCostLimit = 50 * 1024 * 1024 // 50MB memory limit
 
         // Respond to memory warnings automatically (block-based API)
-        // Note: MainActor isolation is ensured by queue: .main
-        // The weak self capture prevents retain cycles
+        // Note: Swift 6 requires explicit @MainActor isolation for the callback
+        // Using unowned self since ImageCache is a singleton that never deallocates
         self.observerToken = NotificationCenter.default.addObserver(
             forName: UIApplication.didReceiveMemoryWarningNotification,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
-            // MainActor queue ensures this runs on main thread
-            // Direct call is safe here since we're already on main
-            self?.clearCache()
+        ) { [unowned self] _ in
+            // Explicitly hop to MainActor for clearCache() call
+            Task { @MainActor in
+                self.clearCache()
+            }
         }
     }
 
