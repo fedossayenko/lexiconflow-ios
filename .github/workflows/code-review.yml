@@ -32,6 +32,8 @@ jobs:
             "LOG": true,
             "NON_INTERACTIVE_MODE": true,
             "API_TIMEOUT_MS": 3000000,
+            "APIKEY": "sk-ant-zai-placeholder-key-for-router-auth",
+            "HOST": "0.0.0.0",
             "Providers": [
               {
                 "name": "zai",
@@ -63,7 +65,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         env:
           ANTHROPIC_BASE_URL: http://localhost:3456
-          ANTHROPIC_API_KEY: "any-string-is-ok"
+          ANTHROPIC_API_KEY: "sk-ant-zai-placeholder-key-for-router-auth"
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
