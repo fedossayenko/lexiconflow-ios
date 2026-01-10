@@ -373,14 +373,40 @@ struct FlashcardDetailView: View {
 private extension Preview {
     static func makePreviewContainer() -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
+
+        // Try creating container with Flashcard model first
         do {
             return try ModelContainer(for: Flashcard.self, configurations: config)
         } catch {
-            // Preview failure indicates a real problem - log and use minimal fallback
+            // Preview failure indicates a real problem
             assertionFailure("Failed to create preview container: \(error.localizedDescription)")
-            // Fallback: return empty container to prevent preview crash
-            // EmptyModel.self is guaranteed to succeed as it has no persistent properties
-            return try! ModelContainer(for: EmptyModel.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+
+            // Try minimal fallback (no persistent properties)
+            if let fallbackContainer = try? ModelContainer(for: EmptyModel.self, configurations: config) {
+                return fallbackContainer
+            }
+
+            // Last resort: truly minimal container
+            // This should never fail under normal circumstances
+            let minimalConfig = ModelConfiguration(isStoredInMemoryOnly: true)
+            do {
+                return try ModelContainer(for: EmptyModel.self, configurations: minimalConfig)
+            } catch {
+                // If even this fails, return a placeholder that will show an error in preview
+                // The preview will fail to render, but the app won't crash
+                assertionFailure("Critical: Cannot create even minimal ModelContainer: \(error.localizedDescription)")
+
+                // Absolute last resort: return empty container
+                // Preview will be empty but won't crash the app
+                let minimalConfig = ModelConfiguration(isStoredInMemoryOnly: true)
+                do {
+                    return try ModelContainer(for: EmptyModel.self, configurations: minimalConfig)
+                } catch {
+                    // This should never happen - empty schema always works
+                    // If it does, something is fundamentally broken with the system
+                    return try! ModelContainer(for: EmptyModel.self)
+                }
+            }
         }
     }
 }

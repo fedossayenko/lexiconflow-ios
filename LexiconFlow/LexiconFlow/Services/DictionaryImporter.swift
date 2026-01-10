@@ -341,7 +341,7 @@ final class DictionaryImporter {
     func previewImport(
         _ url: URL,
         format: ImportFormat,
-        fieldMapping: FieldMappingConfiguration = .default,
+        fieldMapping: FieldMappingConfiguration,
         limit: Int = 10
     ) async throws -> [ParsedFlashcard] {
         self.logger.info("Previewing import from '\(url.lastPathComponent)' with format '\(format.rawValue)'")
@@ -354,6 +354,23 @@ final class DictionaryImporter {
         case .txt:
             return try await self.parseTXT(url, fieldMapping: fieldMapping, limit: limit)
         }
+    }
+
+    /// Preview import with default field mapping
+    ///
+    /// **Parameters:**
+    ///   - url: File URL to preview
+    ///   - format: Import format
+    ///   - limit: Maximum number of cards to return (default: 10)
+    ///
+    /// **Returns:** Array of parsed flashcards (up to limit)
+    @MainActor
+    func previewImport(
+        _ url: URL,
+        format: ImportFormat,
+        limit: Int = 10
+    ) async throws -> [ParsedFlashcard] {
+        try await self.previewImport(url, format: format, fieldMapping: .default, limit: limit)
     }
 
     // MARK: - Import
@@ -371,7 +388,7 @@ final class DictionaryImporter {
     func importDictionary(
         _ url: URL,
         format: ImportFormat,
-        fieldMapping: FieldMappingConfiguration = .default,
+        fieldMapping: FieldMappingConfiguration,
         into deck: Deck?,
         progressHandler: @escaping @Sendable (ImportProgress) -> Void
     ) async throws -> ImportResult {
@@ -438,6 +455,25 @@ final class DictionaryImporter {
             },
             duration: duration
         )
+    }
+
+    /// Import dictionary from file with default field mapping
+    ///
+    /// **Parameters:**
+    ///   - url: File URL to import
+    ///   - format: Import format
+    ///   - deck: Target deck (nil = default deck)
+    ///   - progressHandler: Progress callback
+    ///
+    /// **Returns:** Import result with statistics
+    @MainActor
+    func importDictionary(
+        _ url: URL,
+        format: ImportFormat,
+        into deck: Deck?,
+        progressHandler: @escaping @Sendable (ImportProgress) -> Void
+    ) async throws -> ImportResult {
+        try await self.importDictionary(url, format: format, fieldMapping: .default, into: deck, progressHandler: progressHandler)
     }
 
     // MARK: - Parsers

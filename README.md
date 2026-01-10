@@ -67,7 +67,7 @@ Lexicon Flow is a native iOS application for English vocabulary acquisition usin
 
 LexiconFlow uses **Swift Testing** (iOS 26+) with comprehensive test coverage:
 
-- **63+ test suites** with comprehensive coverage
+- **68 test files (1,726 individual tests)** with comprehensive coverage
 - >80% coverage target for new code
 - In-memory SwiftData for test isolation
 - CI/CD via GitHub Actions

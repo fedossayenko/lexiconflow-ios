@@ -634,6 +634,8 @@ final class Scheduler {
             // CRITICAL: Propagate save errors instead of silent failure
             do {
                 try self.modelContext.save()
+                // Invalidate statistics cache after review
+                StatisticsService.shared.invalidateCache()
                 return log
             } catch {
                 Analytics.trackError("save_cram_review", error: error, metadata: [
@@ -671,6 +673,9 @@ final class Scheduler {
 
             // Save changes
             try self.modelContext.save()
+
+            // Invalidate statistics cache after review
+            StatisticsService.shared.invalidateCache()
 
             Analytics.trackEvent("card_reviewed", metadata: [
                 "rating": "\(rating)",

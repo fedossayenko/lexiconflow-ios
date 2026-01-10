@@ -221,4 +221,3 @@ struct PerformanceValidationTests {
         #expect(duration < 1, "Review processing took \(duration)ms, expected <1ms")
     }
 }
-

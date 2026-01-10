@@ -80,12 +80,12 @@ This document outlines the phased development approach for Lexicon Flow, from in
 - Implement haptic feedback
 
 ### Week 5: GlassEffectContainer
-- [ ] Implement `GlassEffectContainer` for card stack
-- [ ] Apply `.glassEffect()` modifier to flashcard
-- [ ] Create glass thickness visualization (stability → opacity)
-- [ ] Implement glass tint feedback based on swipe direction
-- [ ] Performance testing with 50+ overlapping glass elements
-- [ ] Optimize for 120Hz ProMotion displays
+- [x] Implement `GlassEffectContainer` for card stack
+- [x] Apply `.glassEffect()` modifier to flashcard
+- [x] Create glass thickness visualization (stability → opacity)
+- [x] Implement glass tint feedback based on swipe direction
+- [x] Performance testing with 50+ overlapping glass elements
+- [x] Optimize for 120Hz ProMotion displays
 
 ### Week 6: Gesture System
 - [ ] Implement drag gesture on flashcard
@@ -99,13 +99,13 @@ This document outlines the phased development approach for Lexicon Flow, from in
 - [ ] Implement `.interactive()` modifier for reactive refraction
 
 ### Week 7: Morphing Transitions
-- [ ] Replace standard 3D flip with `glassEffectTransition(.materialize)`
-- [ ] Implement `matchedGeometryEffect` for smooth element transitions
-- [ ] Create "materialize" animation:
+- [x] Replace standard 3D flip with `glassEffectTransition(.materialize)`
+- [x] Implement `matchedGeometryEffect` for smooth element transitions
+- [x] Create "materialize" animation:
   - Front content blurs into glass
   - Back content sharpens from refraction
-- [ ] Add `glassEffectUnion` for deck icon + progress bar merging
-- [ ] Implement navigation transitions between views
+- [x] Add `glassEffectUnion` for deck icon + progress bar merging
+- [x] Implement navigation transitions between views
 
 ### Week 8: Haptics & Audio Feedback
 - [x] Design `CoreHaptics` patterns:
@@ -150,16 +150,16 @@ This document outlines the phased development approach for Lexicon Flow, from in
 - [ ] Test generation latency and quality
 
 ### Week 10: Translation API
-- [ ] Integrate Translation framework
-- [ ] Create `TranslationSession` manager
-- [ ] Implement tap-to-translate on example sentences
-- [ ] Build batch translation for word imports
-- [ ] Add language availability checking
-- [ ] Implement offline language pack detection
+- [x] Integrate Translation framework (OnDeviceTranslationService)
+- [x] Create `TranslationSession` manager (TranslationService, QuickTranslationService)
+- [x] Implement tap-to-translate on example sentences
+- [x] Build batch translation for word imports
+- [x] Add language availability checking
+- [x] Implement offline language pack detection
 - [ ] Create Share Extension for Safari → card creation
 
 ### Week 11: Audio System
-- [ ] Implement `AVSpeechSynthesizer` wrapper
+- [x] Implement `AVSpeechSynthesizer` wrapper (SpeechService)
 - [ ] Build voice quality selector:
   - Premium > Enhanced > Default
   - Filter by language code
@@ -170,7 +170,7 @@ This document outlines the phased development approach for Lexicon Flow, from in
   - en-AU (Australian)
   - en-IE (Irish)
 - [ ] Add playback rate controls
-- [ ] Implement "Auto-play on card flip" setting
+- [x] Implement "Auto-play on card flip" setting (TTSTiming: onView/onFlip/manual)
 - [ ] Detect and prompt for premium voice downloads
 
 ### Week 12: Dictionary Import

@@ -22,7 +22,7 @@ cd LexiconFlow
 xcodebuild build \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.1'
+  -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2'
 ```
 
 ### Run Tests
@@ -32,7 +32,7 @@ cd LexiconFlow
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.1' \
+  -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2' \
   -only-testing:LexiconFlowTests \
   -parallel-testing-enabled NO
 
@@ -40,7 +40,7 @@ xcodebuild test \
 xcodebuild test \
   -project LexiconFlow.xcodeproj \
   -scheme LexiconFlow \
-  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.1' \
+  -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2' \
   -only-testing:LexiconFlowTests/TranslationServiceTests \
   -parallel-testing-enabled NO
 ```
@@ -993,7 +993,7 @@ LexiconFlow/
 │   ├── Decks/              # DeckDetailView
 │   └── Settings/           # TranslationSettingsView, AppearanceSettingsView, etc.
 ├── Assets.xcassets/        # Images, colors
-└── LexiconFlowTests/       # Unit tests (63+ test suites)
+└── LexiconFlowTests/       # Unit tests (68 test files, 1,726 tests)
 ```
 
 ## Concurrency Guidelines
@@ -1007,7 +1007,7 @@ LexiconFlow/
 ## Testing
 
 - **Framework**: Swift Testing (`import Testing`)
-- **Structure**: 63 test suites in `LexiconFlowTests/` with comprehensive coverage:
+- **Structure**: 68 test files (1,726 individual tests) in `LexiconFlowTests/` with comprehensive coverage:
   - ModelTests, SchedulerTests, DataImporterTests
   - StudySessionViewModelTests, OnboardingTests, ErrorHandlingTests
   - FSRSWrapperTests, DateMathTests, AnalyticsTests

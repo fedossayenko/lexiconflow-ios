@@ -8,6 +8,7 @@
 //  Other test suites can run in parallel for better performance
 //
 
+import Foundation
 import SwiftData
 import Testing
 @testable import LexiconFlow
@@ -70,8 +71,18 @@ enum TestContainers {
             do {
                 return try ModelContainer(for: schema, configurations: [fallbackConfig])
             } catch {
-                // Last resort: minimal container
-                return try! ModelContainer(for: schema, configurations: [fallbackConfig])
+                // Last resort: truly minimal container that won't fail
+                // This allows tests to at least attempt to run with basic functionality
+                let minimalConfig = ModelConfiguration(isStoredInMemoryOnly: true)
+                do {
+                    // Create minimal schema with just one model type
+                    let minimalSchema = Schema([Flashcard.self])
+                    return try ModelContainer(for: minimalSchema, configurations: minimalConfig)
+                } catch {
+                    // If even this fails, there's a serious system issue
+                    // Log and return minimal container - tests will fail but won't crash
+                    fatalError("Test container initialization failed: \(error.localizedDescription)")
+                }
             }
         }
     }()

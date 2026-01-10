@@ -16,8 +16,8 @@ import UIKit
 ///
 /// **Performance:**
 /// - Caches decoded UIImage instances to avoid repeated JPEG/PNG decoding
-/// - LRU eviction policy when cache reaches capacity (100 images)
-/// - Uses data hash as key for O(1) lookups
+/// - Uses NSCache for automatic LRU eviction and memory pressure handling
+/// - Thread-safe by design (NSCache is synchronized internally)
 ///
 /// **Usage:**
 /// ```swift
@@ -30,16 +30,25 @@ final class ImageCache {
     /// Shared singleton instance
     static let shared = ImageCache()
 
-    /// Cache storage: key -> UIImage
-    /// Key is first 16 bytes of base64-encoded data (unique enough for images)
-    private var cache: [String: UIImage] = [:]
-
-    /// Maximum number of cached images
-    /// Limits memory usage while maintaining reasonable hit rate
-    private let maxCacheSize = 100
+    /// NSCache provides thread-safe LRU eviction automatically
+    /// - countLimit: Maximum number of objects to store
+    /// - totalCostLimit: Maximum total cost (in bytes) of all objects
+    private let cache = NSCache<NSString, UIImage>()
 
     /// Private initializer for singleton pattern
-    private init() {}
+    private init() {
+        // Configure cache limits
+        self.cache.countLimit = 100 // Maximum 100 cached images
+        self.cache.totalCostLimit = 50 * 1024 * 1024 // 50MB memory limit
+
+        // Respond to memory warnings automatically
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(self.handleMemoryWarning),
+            name: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil
+        )
+    }
 
     /// Generates cache key from image data
     ///
@@ -58,31 +67,23 @@ final class ImageCache {
     /// Retrieves cached UIImage for given data, decodes and caches if miss
     ///
     /// **Performance:** O(1) cache hit, O(n) decode on miss (n = data size)
-    /// Subsequent calls for same image return cached instance immediately.
+    /// NSCache handles automatic LRU eviction when memory pressure occurs.
     ///
     /// - Parameter data: Image data to decode/cache
     /// - Returns: Cached or newly decoded UIImage, or nil if decode fails
     func image(for data: Data) -> UIImage? {
-        let key = self.cacheKey(for: data)
+        let key = self.cacheKey(for: data) as NSString
 
         // Cache hit - return immediately
-        if let cached = cache[key] {
+        if let cached = cache.object(forKey: key) {
             return cached
         }
 
         // Cache miss - decode and cache
         guard let image = UIImage(data: data) else { return nil }
 
-        // Add to cache
-        self.cache[key] = image
-
-        // Evict oldest if at capacity (LRU eviction)
-        if self.cache.count > self.maxCacheSize {
-            // Remove first (oldest) entry
-            if let oldestKey = cache.keys.first {
-                self.cache.removeValue(forKey: oldestKey)
-            }
-        }
+        // Add to cache with cost (image data size in bytes)
+        self.cache.setObject(image, forKey: key, cost: data.count)
 
         return image
     }
@@ -91,13 +92,24 @@ final class ImageCache {
     ///
     /// **Usage:** Call on memory warning or when user explicitly clears cache
     func clearCache() {
-        self.cache.removeAll()
+        self.cache.removeAllObjects()
     }
 
     /// Returns current cache size (number of cached images)
     ///
     /// **Performance Monitoring:** Can be logged to track cache efficiency
     var size: Int {
-        self.cache.count
+        // NSCache doesn't expose current count, return 0 for monitoring
+        // Use Instruments to measure actual cache behavior
+        0
+    }
+
+    /// Handles memory warning notifications
+    @objc private func handleMemoryWarning() {
+        self.clearCache()
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 }

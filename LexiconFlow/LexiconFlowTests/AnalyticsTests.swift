@@ -16,6 +16,8 @@ import Foundation
 /// - Error tracking with context
 /// - Performance measurement
 /// - User property management
+@Suite(.serialized)
+@MainActor
 struct AnalyticsTests {
     /// Shared mock backend for all tests (reset before each test)
     private static let mockBackend = MockAnalyticsBackend()

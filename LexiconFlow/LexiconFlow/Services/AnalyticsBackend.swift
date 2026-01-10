@@ -93,7 +93,7 @@ final class MockAnalyticsBackend: AnalyticsBackend, @unchecked Sendable {
     private let lock = NSLock()
 
     /// All recorded analytics events
-    var events: [AnalyticsEvent] {
+    nonisolated(unsafe) var events: [AnalyticsEvent] {
         self.lock.lock()
         defer { lock.unlock() }
         return self._events

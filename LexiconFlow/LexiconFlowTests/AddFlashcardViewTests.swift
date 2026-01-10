@@ -78,7 +78,7 @@ struct AddFlashcardViewTests {
         let context = container.mainContext
         let deck = self.createTestDeck(in: context)
 
-        let view = AddFlashcardView(deck: deck)
+        _ = AddFlashcardView(deck: deck)
 
         // Verify view can be created with deck binding
         #expect(deck.name == "Test Deck", "View should be created with the deck")
@@ -90,7 +90,7 @@ struct AddFlashcardViewTests {
         let context = container.mainContext
         let deck = self.createTestDeck(in: context)
 
-        let view = AddFlashcardView(deck: deck)
+        _ = AddFlashcardView(deck: deck)
 
         // Verify @Bindable is used for deck mutations
         #expect(true, "AddFlashcardView should use @Bindable for deck property")
@@ -290,7 +290,7 @@ struct AddFlashcardViewTests {
             context: context
         )
 
-        let stateId = flashcard.fsrsState?.persistentModelID
+        _ = flashcard.fsrsState?.persistentModelID
 
         // Delete flashcard
         context.delete(flashcard)
@@ -355,9 +355,9 @@ struct AddFlashcardViewTests {
         let context = container.mainContext
         let deck = self.createTestDeck(in: context)
 
-        try self.saveCard(word: "card1", definition: "def1", deck: deck, context: context)
-        try self.saveCard(word: "card2", definition: "def2", deck: deck, context: context)
-        try self.saveCard(word: "card3", definition: "def3", deck: deck, context: context)
+        _ = try self.saveCard(word: "card1", definition: "def1", deck: deck, context: context)
+        _ = try self.saveCard(word: "card2", definition: "def2", deck: deck, context: context)
+        _ = try self.saveCard(word: "card3", definition: "def3", deck: deck, context: context)
 
         try context.save()
 

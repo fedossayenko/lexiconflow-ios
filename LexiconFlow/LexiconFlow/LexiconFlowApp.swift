@@ -47,7 +47,7 @@ struct LexiconFlowApp: App {
         }
 
         // Attempt 3: Empty schema only (no EmptyModel)
-        if let container = try? ModelContainer(for: Schema([]), configurations: [minimalConfig]) {
+        if let container = try? ModelContainer(for: EmptyModel.self, configurations: minimalConfig) {
             logger.critical("Using empty schema container - SwiftData severely broken")
             return container
         }
@@ -62,8 +62,18 @@ struct LexiconFlowApp: App {
         """
 
         #if DEBUG
-            // In DEBUG builds, crash immediately for diagnostics
-            fatalError(diagnostic)
+            // In DEBUG builds, show error UI before crashing
+            // This gives developers time to read logs and understand the issue
+            logger.critical("\(diagnostic)")
+
+            // Allow app to show error UI, then crash after delay for debugging
+            // The 5-second delay provides time to read the diagnostic information
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                fatalError(diagnostic)
+            }
+
+            // Return minimal container that allows app to launch and show error UI
+            return try! ModelContainer(for: EmptyModel.self)
         #else
             // In RELEASE, log critical error and use truly minimal container
             // The app will launch with minimal functionality but can show error UI
@@ -71,7 +81,7 @@ struct LexiconFlowApp: App {
 
             // Return truly minimal container that allows app to launch
             // Models will be unavailable, but error UI can be shown
-            return ModelContainer(for: [])
+            return try! ModelContainer(for: EmptyModel.self)
         #endif
     }()
 

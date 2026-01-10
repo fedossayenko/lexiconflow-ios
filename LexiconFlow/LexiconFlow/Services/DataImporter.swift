@@ -154,6 +154,9 @@ final class DataImporter {
             ])
         }
 
+        // Invalidate statistics cache after data import
+        StatisticsService.shared.invalidateCache()
+
         return result
     }
 

@@ -116,6 +116,22 @@ struct SettingsView: View {
                     .accessibilityLabel("Appearance")
                 }
 
+                // MARK: - Developer Section (DEBUG builds only)
+
+                #if DEBUG
+                    Section("Developer") {
+                        NavigationLink(destination: GlassPerformanceTest()) {
+                            Label("Performance Tests", systemImage: "gauge.with.dots.needle.67percent")
+                        }
+                        .accessibilityLabel("Performance Tests")
+
+                        NavigationLink(destination: DataManagementView()) {
+                            Label("Import Test Data", systemImage: "square.and.arrow.down")
+                        }
+                        .accessibilityLabel("Import Test Data")
+                    }
+                #endif
+
                 // MARK: - About Section
 
                 Section("About") {
