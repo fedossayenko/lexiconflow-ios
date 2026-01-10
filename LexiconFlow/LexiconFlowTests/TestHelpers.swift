@@ -19,29 +19,45 @@ extension ModelContext {
     /// This is much faster than creating a new ModelContainer for each test
     /// Optimized with batch delete (60% faster than fetch + delete)
     func clearAll() throws {
-        // IMPORTANT: Delete in reverse dependency order to avoid relationship issues
-        // 1. Delete dependent entities first (reviews, sentences, states, daily stats, study sessions)
-        // 2. Then delete their parents (cards)
-        // 3. Finally delete decks
+        // IMPORTANT: Delete in dependency order to avoid relationship issues
+        // 1. Delete reviews first (they have problematic relationships)
+        // 2. Then delete sessions
+        // 3. Then delete decks
+        // 4. Finally delete other entities
 
-        // Batch delete is much faster than fetch + delete loop
-        // SwiftData handles relationship cascades properly with delete(model:)
-        try delete(model: DailyStats.self)
-        try delete(model: StudySession.self)
-        try delete(model: FlashcardReview.self)
-        try delete(model: GeneratedSentence.self)
-        try delete(model: FSRSState.self)
+        // Delete reviews first - they have the problematic relationship
+        let reviews = try fetch(FetchDescriptor<FlashcardReview>())
+        for review in reviews {
+            review.studySession = nil
+            review.card = nil
+            delete(review)
+        }
+        try save()
 
-        // For cards, we need to clear relationships first to prevent cascade issues
-        // This is a special case due to the optional relationships
+        // Delete sessions individually to avoid cascade delete violations
+        let sessions = try fetch(FetchDescriptor<StudySession>())
+        for session in sessions {
+            session.deck = nil
+            delete(session)
+        }
+        try save()
+
+        // Delete decks - cascades to flashcards
+        try delete(model: Deck.self)
+        try save()
+
+        // Delete flashcards (now orphaned)
         let cards = try fetch(FetchDescriptor<Flashcard>())
         for card in cards {
             card.fsrsState = nil
-            card.deck = nil
         }
         try delete(model: Flashcard.self)
+        try save()
 
-        try delete(model: Deck.self)
+        // Delete other entities
+        try delete(model: DailyStats.self)
+        try delete(model: GeneratedSentence.self)
+        try delete(model: FSRSState.self)
         try save()
     }
 }

@@ -88,6 +88,12 @@ struct StatisticsServiceTests {
         return review
     }
 
+    /// Clear StatisticsService cache to ensure test isolation
+    /// The singleton cache persists across tests with 60-second TTL
+    private func clearStatisticsCache() {
+        StatisticsService.shared.invalidateCache()
+    }
+
     // MARK: - Retention Rate Tests
 
     @Test("Retention rate with empty data")
@@ -1107,6 +1113,7 @@ struct StatisticsServiceTests {
 
     @Test("manual cache invalidation prevents stale metrics")
     func manualInvalidationPreventsStaleMetrics() async throws {
+        clearStatisticsCache()
         let context = freshContext()
         try context.clearAll()
 
@@ -1135,6 +1142,7 @@ struct StatisticsServiceTests {
 
     @Test("cache handles empty data gracefully")
     func cacheHandlesFailedOperations() async throws {
+        clearStatisticsCache()
         let context = freshContext()
         try context.clearAll()
 
@@ -1147,6 +1155,7 @@ struct StatisticsServiceTests {
 
     @Test("cache reuse within TTL returns same instance")
     func cacheReuseWithinTTL() async throws {
+        clearStatisticsCache()
         let context = freshContext()
         try context.clearAll()
 
