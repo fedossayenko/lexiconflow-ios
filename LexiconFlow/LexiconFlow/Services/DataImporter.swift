@@ -62,95 +62,159 @@ final class DataImporter {
         progressHandler: (@Sendable (ImportProgress) -> Void)? = nil
     ) async -> ImportResult {
         let startTime = Date()
-        var result = ImportResult()
-
         let totalCount = cards.count
         Self.logger.info("Starting import of \(totalCount) cards in batches of \(batchSize)")
 
-        // PERFORMANCE: Pre-fetch ALL existing words ONCE (O(n) where n = total existing cards)
-        // This prevents O(n²) behavior where each batch fetches all cards
-        let allExistingWords: Set<String>
-        do {
-            let allCards = try modelContext.fetch(FetchDescriptor<Flashcard>())
-            allExistingWords = Set(allCards.map(\.word))
-            Self.logger.info("Pre-fetched \(allExistingWords.count) existing words for duplicate checking")
-        } catch {
-            Self.logger.error("Failed to pre-fetch existing words: \(error)")
-            // Continue without pre-fetch (will fall back to per-batch checking)
-            allExistingWords = []
-        }
+        // Pre-fetch existing words for O(1) duplicate checking
+        let allExistingWords = prefetchExistingWords()
 
         // Process in batches
-        let batches = cards.chunked(into: batchSize)
+        let config = BatchProcessingConfig(
+            cards: cards,
+            deck: deck,
+            batchSize: batchSize,
+            totalCount: totalCount,
+            existingWords: allExistingWords,
+            startTime: startTime,
+            progressHandler: progressHandler
+        )
+        let result = await processBatches(config)
+
+        // Log completion and analytics
+        logImportCompletion(result, duration: result.duration)
+
+        // Invalidate statistics cache after data import
+        StatisticsService.shared.invalidateCache()
+
+        return result
+    }
+
+    // MARK: - Private Helpers
+
+    /// Parameters for batch processing configuration
+    private struct BatchProcessingConfig: Sendable {
+        let cards: [FlashcardData]
+        let deck: Deck?
+        let batchSize: Int
+        let totalCount: Int
+        let existingWords: Set<String>
+        let startTime: Date
+        let progressHandler: (@Sendable (ImportProgress) -> Void)?
+    }
+
+    /// Pre-fetch all existing words for O(1) duplicate checking
+    private func prefetchExistingWords() -> Set<String> {
+        do {
+            let allCards = try modelContext.fetch(FetchDescriptor<Flashcard>())
+            let words = Set(allCards.map(\.word))
+            Self.logger.info("Pre-fetched \(words.count) existing words for duplicate checking")
+            return words
+        } catch {
+            Self.logger.error("Failed to pre-fetch existing words: \(error)")
+            return []
+        }
+    }
+
+    /// Process cards in batches with progress tracking
+    private func processBatches(_ config: BatchProcessingConfig) async -> ImportResult {
+        var result = ImportResult()
+        let batches = config.cards.chunked(into: config.batchSize)
+        let totalBatches = (config.totalCount + config.batchSize - 1) / config.batchSize
+
         for (index, batch) in batches.enumerated() {
             let batchNumber = index + 1
-            let totalBatches = (totalCount + batchSize - 1) / batchSize
 
             Self.logger.info("Processing batch \(batchNumber)/\(totalBatches) (\(batch.count) cards)")
 
             do {
-                // Import this batch with pre-fetched existing words
-                let batchStats = try importBatch(batch, into: deck, existingWords: allExistingWords)
+                let batchStats = try importBatch(batch, into: config.deck, existingWords: config.existingWords)
 
-                // Update result
                 result.importedCount += batchStats.success
                 result.skippedCount += batchStats.skipped
                 result.errors.append(contentsOf: batchStats.errors)
 
-                // Commit after each batch
                 try modelContext.save()
 
-                // Report progress
-                let progress = ImportProgress(
-                    current: result.importedCount,
-                    total: totalCount,
+                reportProgress(
+                    result.importedCount,
+                    total: config.totalCount,
                     batchNumber: batchNumber,
-                    totalBatches: totalBatches
+                    totalBatches: totalBatches,
+                    handler: config.progressHandler
                 )
-                progressHandler?(progress)
 
-                // Analytics for performance monitoring
-                // FIX: Capture current values explicitly to avoid mutable capture
-                let currentImportedCount = result.importedCount
-                let batchCount = batch.count
-
-                Task {
-                    Analytics.trackPerformance(
-                        "import_batch_\(batchNumber)",
-                        duration: Date().timeIntervalSince(startTime),
-                        metadata: [
-                            "batch_size": "\(batchCount)",
-                            "total_processed": "\(currentImportedCount)"
-                        ]
-                    )
-                }
+                trackBatchPerformance(batchNumber, batchCount: batch.count, startTime: config.startTime)
 
             } catch {
-                Self.logger.error("❌ Batch \(batchNumber) failed: \(error)")
-                result.errors.append(
-                    ImportError(
-                        batchNumber: batchNumber,
-                        error: error,
-                        cardWord: nil
-                    )
-                )
-
-                Task {
-                    Analytics.trackError(
-                        "import_batch_failed",
-                        error: error,
-                        metadata: [
-                            "batch_number": "\(batchNumber)",
-                            "batch_size": "\(batch.count)"
-                        ]
-                    )
-                }
+                handleBatchError(error, batchNumber: batchNumber, batchCount: batch.count, result: &result)
             }
         }
 
-        let duration = Date().timeIntervalSince(startTime)
-        result.duration = duration
+        result.duration = Date().timeIntervalSince(config.startTime)
+        return result
+    }
 
+    /// Report import progress
+    private func reportProgress(
+        _ current: Int,
+        total: Int,
+        batchNumber: Int,
+        totalBatches: Int,
+        handler: (@Sendable (ImportProgress) -> Void)?
+    ) {
+        let progress = ImportProgress(
+            current: current,
+            total: total,
+            batchNumber: batchNumber,
+            totalBatches: totalBatches
+        )
+        handler?(progress)
+    }
+
+    /// Track batch performance analytics
+    private func trackBatchPerformance(_ batchNumber: Int, batchCount: Int, startTime: Date) {
+        Task {
+            Analytics.trackPerformance(
+                "import_batch_\(batchNumber)",
+                duration: Date().timeIntervalSince(startTime),
+                metadata: [
+                    "batch_size": "\(batchCount)",
+                    "total_processed": "\(batchNumber * batchCount)"
+                ]
+            )
+        }
+    }
+
+    /// Handle batch import error
+    private func handleBatchError(
+        _ error: Error,
+        batchNumber: Int,
+        batchCount: Int,
+        result: inout ImportResult
+    ) {
+        Self.logger.error("❌ Batch \(batchNumber) failed: \(error)")
+        result.errors.append(
+            ImportError(
+                batchNumber: batchNumber,
+                error: error,
+                cardWord: nil
+            )
+        )
+
+        Task {
+            Analytics.trackError(
+                "import_batch_failed",
+                error: error,
+                metadata: [
+                    "batch_number": "\(batchNumber)",
+                    "batch_size": "\(batchCount)"
+                ]
+            )
+        }
+    }
+
+    /// Log import completion and track final analytics
+    private func logImportCompletion(_ result: ImportResult, duration: TimeInterval) {
         Self.logger.info("""
         Import complete:
         - Imported: \(result.importedCount)
@@ -167,11 +231,6 @@ final class DataImporter {
                 "duration_seconds": String(format: "%.2f", duration)
             ])
         }
-
-        // Invalidate statistics cache after data import
-        StatisticsService.shared.invalidateCache()
-
-        return result
     }
 
     /// Import a single batch of cards

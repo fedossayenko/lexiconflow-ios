@@ -138,17 +138,17 @@ enum StatisticsTimeRange: String, Sendable, CaseIterable {
 
 // MARK: - Statistics Service
 
-/// @MainActor service for calculating study statistics
-///
-/// **Why @MainActor?**: Statistics calculations involve aggregating data from
-/// multiple SwiftData models. @MainActor ensures safe access to ModelContext
-/// (which is non-Sendable) and prevents data races during concurrent queries.
-///
-/// **Architecture**:
-/// - All methods run on @MainActor for safe SwiftData ModelContext access
-/// - Returns DTOs instead of SwiftData models
-/// - Uses ModelContext for database queries
-/// - Timezone-aware calculations via DateMath
+// @MainActor service for calculating study statistics
+//
+// **Why @MainActor?**: Statistics calculations involve aggregating data from
+// multiple SwiftData models. @MainActor ensures safe access to ModelContext
+// (which is non-Sendable) and prevents data races during concurrent queries.
+//
+// **Architecture**:
+// - All methods run on @MainActor for safe SwiftData ModelContext access
+// - Returns DTOs instead of SwiftData models
+// - Uses ModelContext for database queries
+// - Timezone-aware calculations via DateMath
 
 // MARK: - Metrics Caching
 
@@ -661,12 +661,10 @@ final class StatisticsService {
         // Count cards in each bucket
         for state in states {
             var foundBucket = false
-            for bucket in StabilityBuckets.buckets {
-                if state.stability <= bucket.maxValue {
-                    distribution[bucket.key, default: 0] += 1
-                    foundBucket = true
-                    break
-                }
+            for bucket in StabilityBuckets.buckets where state.stability <= bucket.maxValue {
+                distribution[bucket.key, default: 0] += 1
+                foundBucket = true
+                break
             }
 
             // Fallback for very high stability values
@@ -696,12 +694,10 @@ final class StatisticsService {
             let difficulty = max(0.0, min(10.0, state.difficulty)) // Clamp to 0-10
 
             var foundBucket = false
-            for bucket in DifficultyBuckets.buckets {
-                if difficulty <= bucket.maxValue {
-                    distribution[bucket.key, default: 0] += 1
-                    foundBucket = true
-                    break
-                }
+            for bucket in DifficultyBuckets.buckets where difficulty <= bucket.maxValue {
+                distribution[bucket.key, default: 0] += 1
+                foundBucket = true
+                break
             }
 
             // Fallback for edge cases

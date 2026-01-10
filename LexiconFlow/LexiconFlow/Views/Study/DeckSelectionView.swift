@@ -202,8 +202,8 @@ struct DeckSelectionView: View {
     private func selectDueDecks() {
         var dueSet = Set<UUID>()
         dueSet.reserveCapacity(deckStats.count)
-        for deckStat in deckStats {
-            if deckStat.value.dueCount > 0 { dueSet.insert(deckStat.key) }
+        for deckStat in deckStats where deckStat.value.dueCount > 0 {
+            dueSet.insert(deckStat.key)
         }
         selectedDeckIDs = dueSet
     }
@@ -214,8 +214,8 @@ struct DeckSelectionView: View {
     private func selectNewDecks() {
         var newSet = Set<UUID>()
         newSet.reserveCapacity(deckStats.count)
-        for deckStat in deckStats {
-            if deckStat.value.newCount > 0 { newSet.insert(deckStat.key) }
+        for deckStat in deckStats where deckStat.value.newCount > 0 {
+            newSet.insert(deckStat.key)
         }
         selectedDeckIDs = newSet
     }

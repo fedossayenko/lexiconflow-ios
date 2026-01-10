@@ -8,62 +8,63 @@
 import Combine
 import SwiftUI
 
-/// View model for tracking and updating flashcard swipe gesture state.
-///
-/// **Overview:**
-/// Provides visual feedback state based on drag direction and progress.
-/// Maps 4-directional swipes to FSRS ratings with appropriate visual effects.
-///
-/// ## Design Rationale
-///
-/// **Swipe Threshold (100pt):**
-/// - Based on iOS HIG minimum touch target (44pt) × 2.5 for comfortable swipe
-/// - Requires deliberate gesture action (prevents accidental swipes)
-/// - Balanced for thumb reach on typical iPhone screen widths
-/// - Maps to FSRS rating commit point
-///
-/// **Minimum Distance (15pt):**
-/// - Filters out accidental touches while maintaining responsiveness
-/// - Below 15pt: No direction detected (dead zone for jitter)
-/// - Above 15pt: Direction detection begins
-/// - Triggers initial visual feedback (5% swelling)
-///
-/// **Rotation (5° max at threshold):**
-/// - Subtle 3D perspective without causing motion sickness
-/// - Calculated as: `translation.width / 50` (100pt / 50 = 2° for most swipes)
-/// - Provides tactile feedback through visual depth
-/// - Limited to prevent disorientation
-///
-/// **Scale Effects:**
-/// - **Good (right):** +15% swelling (positive reinforcement)
-/// - **Again (left):** -20% shrinking (negative feedback)
-/// - **Easy (up):** +10% swelling + 20% fade (levitation effect)
-/// - **Hard (down):** +5% swelling + 10% darkening (weight effect)
-/// - **Drag feedback:** +5% swelling (eliminates dead zone feel)
-///
-/// ## Sensitivity Mapping
-///
-/// Dynamic gesture constants adjust swipe thresholds based on user preference:
-///
-/// | Sensitivity | Threshold (pt) | Min Distance (pt) | Behavior |
-/// |-------------|----------------|-------------------|----------|
-/// | 0.5× (Low)  | 200            | 30                | 2× harder to trigger |
-/// | 1.0× (Default) | 100        | 15                | Original thresholds |
-/// | 2.0× (High) | 50             | 7.5               | 50% easier to trigger |
-///
-/// **Formula:** `adjustedValue = baseValue / sensitivity`
-///
-/// **Note:** Visual effects (scale multipliers, rotation, tints) remain constant
-/// across sensitivity levels to maintain consistent visual feedback.
-///
-/// ## Visual Feedback Mapping
-///
-/// - **Right (Good):** Green tint, 15% swelling, 2° tilt
-/// - **Left (Again):** Red tint, 20% shrinking, 2° tilt
-/// - **Up (Easy):** Blue tint, 10% swelling, 20% fade (levitation)
-/// - **Down (Hard):** Orange tint (40%), 5% swelling, 10% darkening
-/// - **None:** Subtle 5% swelling (drag feedback only)
-///
+// MARK: - Card Gesture ViewModel
+
+// View model for tracking and updating flashcard swipe gesture state.
+//
+// **Overview:**
+// Provides visual feedback state based on drag direction and progress.
+// Maps 4-directional swipes to FSRS ratings with appropriate visual effects.
+//
+// ## Design Rationale
+//
+// **Swipe Threshold (100pt):**
+// - Based on iOS HIG minimum touch target (44pt) × 2.5 for comfortable swipe
+// - Requires deliberate gesture action (prevents accidental swipes)
+// - Balanced for thumb reach on typical iPhone screen widths
+// - Maps to FSRS rating commit point
+//
+// **Minimum Distance (15pt):**
+// - Filters out accidental touches while maintaining responsiveness
+// - Below 15pt: No direction detected (dead zone for jitter)
+// - Above 15pt: Direction detection begins
+// - Triggers initial visual feedback (5% swelling)
+//
+// **Rotation (5° max at threshold):**
+// - Subtle 3D perspective without causing motion sickness
+// - Calculated as: `translation.width / 50` (100pt / 50 = 2° for most swipes)
+// - Provides tactile feedback through visual depth
+// - Limited to prevent disorientation
+//
+// **Scale Effects:**
+// - **Good (right):** +15% swelling (positive reinforcement)
+// - **Again (left):** -20% shrinking (negative feedback)
+// - **Easy (up):** +10% swelling + 20% fade (levitation effect)
+// - **Hard (down):** +5% swelling + 10% darkening (weight effect)
+// - **Drag feedback:** +5% swelling (eliminates dead zone feel)
+//
+// ## Sensitivity Mapping
+//
+// Dynamic gesture constants adjust swipe thresholds based on user preference:
+//
+// | Sensitivity | Threshold (pt) | Min Distance (pt) | Behavior |
+// |-------------|----------------|-------------------|----------|
+// | 0.5× (Low)  | 200            | 30                | 2× harder to trigger |
+// | 1.0× (Default) | 100        | 15                | Original thresholds |
+// | 2.0× (High) | 50             | 7.5               | 50% easier to trigger |
+//
+// **Formula:** `adjustedValue = baseValue / sensitivity`
+//
+// **Note:** Visual effects (scale multipliers, rotation, tints) remain constant
+// across sensitivity levels to maintain consistent visual feedback.
+//
+// ## Visual Feedback Mapping
+//
+// - **Right (Good):** Green tint, 15% swelling, 2° tilt
+// - **Left (Again):** Red tint, 20% shrinking, 2° tilt
+// - **Up (Easy):** Blue tint, 10% swelling, 20% fade (levitation)
+// - **Down (Hard):** Orange tint (40%), 5% swelling, 10% darkening
+// - **None:** Subtle 5% swelling (drag feedback only)
 
 // MARK: - Gesture State
 

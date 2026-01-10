@@ -136,6 +136,15 @@ final class DictionaryImporter {
         let lineNumber: Int
     }
 
+    /// Internal JSON flashcard struct for decoding
+    private struct JSONFlashcard: Codable {
+        let word: String
+        let definition: String
+        let phonetic: String?
+        let cefrLevel: String?
+        let translation: String?
+    }
+
     /// Logger for debugging and monitoring
     private let logger = Logger(subsystem: "com.lexiconflow.import", category: "DictionaryImporter")
 
@@ -273,11 +282,9 @@ final class DictionaryImporter {
 
         // 1. File extension
         if let pathExtension = url.pathExtension.lowercased() as String? {
-            for format in ImportFormat.allCases {
-                if format.fileExtensions.contains(pathExtension) {
-                    logger.info("Detected format '\(format.rawValue)' from file extension")
-                    return format
-                }
+            for format in ImportFormat.allCases where format.fileExtensions.contains(pathExtension) {
+                logger.info("Detected format '\(format.rawValue)' from file extension")
+                return format
             }
         }
 
@@ -639,7 +646,28 @@ final class DictionaryImporter {
     /// - Input sanitization (removes control characters, null bytes)
     /// - Detailed error reporting with line numbers
     private func parseJSON(_ url: URL, limit: Int = Int.max) async throws -> [ParsedFlashcard] {
-        // 1. File size validation (max 10MB)
+        let fileSize = try validateJSONFileSize(url)
+        _ = fileSize // Size is validated, used for logging
+        let data = try readJSONFile(url)
+        let sanitizedData = preSanitizeJSONData(data)
+
+        let decoder = JSONDecoder()
+        do {
+            let jsonCards = try decoder.decode([JSONFlashcard].self, from: sanitizedData)
+            return try validateAndSanitizeCards(jsonCards, limit: limit)
+        } catch {
+            throw mapDecodingError(error)
+        }
+    }
+
+    // MARK: - JSON Parsing Helper Methods
+
+    /// Validates JSON file size (max 10MB)
+    ///
+    /// - Parameter url: File URL to validate
+    /// - Returns: File size in bytes
+    /// - Throws: ImportError if file is too large or size cannot be determined
+    private func validateJSONFileSize(_ url: URL) throws -> UInt64 {
         do {
             let fileAttributes = try FileManager.default.attributesOfItem(atPath: url.path)
             guard let fileSize = fileAttributes[.size] as? UInt64 else {
@@ -659,6 +687,7 @@ final class DictionaryImporter {
                     isRetryable: false
                 )
             }
+            return fileSize
         } catch {
             throw ImportError(
                 lineNumber: 0,
@@ -667,11 +696,16 @@ final class DictionaryImporter {
                 isRetryable: false
             )
         }
+    }
 
-        // 2. Safe file reading with error context
-        let data: Data
+    /// Reads JSON file safely with error context
+    ///
+    /// - Parameter url: File URL to read
+    /// - Returns: File data
+    /// - Throws: ImportError if file cannot be read
+    private func readJSONFile(_ url: URL) throws -> Data {
         do {
-            data = try Data(contentsOf: url, options: .mappedIfSafe)
+            return try Data(contentsOf: url, options: .mappedIfSafe)
         } catch {
             throw ImportError(
                 lineNumber: 0,
@@ -680,110 +714,135 @@ final class DictionaryImporter {
                 isRetryable: false
             )
         }
+    }
 
-        // 2.5. Pre-sanitize raw JSON to remove control characters before JSONDecoder
-        // (JSONDecoder rejects null bytes before we can sanitize parsed values)
-        let sanitizedData: Data
+    /// Pre-sanitizes raw JSON data to remove control characters before JSONDecoder
+    ///
+    /// JSONDecoder rejects null bytes before we can sanitize parsed values,
+    /// so we need to clean the raw JSON string first.
+    ///
+    /// - Parameter data: Raw JSON data
+    /// - Returns: Sanitized data (or original if sanitization fails)
+    private func preSanitizeJSONData(_ data: Data) -> Data {
         if let jsonString = String(data: data, encoding: .utf8) {
             let sanitizedJSONString = sanitizeString(jsonString)
             if let dataFromString = sanitizedJSONString.data(using: .utf8) {
-                sanitizedData = dataFromString
-            } else {
-                sanitizedData = data
+                return dataFromString
             }
-        } else {
-            sanitizedData = data
         }
+        return data
+    }
 
-        // 3. Type-safe Codable parsing
-        struct JSONFlashcard: Codable {
-            let word: String
-            let definition: String
-            let phonetic: String?
-            let cefrLevel: String?
-            let translation: String?
-        }
-
-        let decoder = JSONDecoder()
+    /// Validates and sanitizes parsed JSON flashcards
+    ///
+    /// - Parameters:
+    ///   - jsonCards: Array of parsed JSONFlashcard structs
+    ///   - limit: Maximum number of cards to process
+    /// - Returns: Array of validated ParsedFlashcard objects
+    /// - Throws: ImportError if any card fails validation
+    private func validateAndSanitizeCards(
+        _ jsonCards: [JSONFlashcard],
+        limit: Int
+    ) throws -> [ParsedFlashcard] {
         var cards: [ParsedFlashcard] = []
 
-        do {
-            let jsonCards = try decoder.decode([JSONFlashcard].self, from: sanitizedData)
+        for (index, card) in jsonCards.enumerated() {
+            guard index < limit else { break }
 
-            // 4. Validate and sanitize content
-            for (index, card) in jsonCards.enumerated() {
-                guard index < limit else { break }
+            // Sanitize strings (remove control characters and null bytes)
+            let sanitizedWord = sanitizeString(card.word)
+            let sanitizedDef = sanitizeString(card.definition)
 
-                // Sanitize strings (remove control characters and null bytes)
-                let sanitizedWord = sanitizeString(card.word)
-                let sanitizedDef = sanitizeString(card.definition)
-
-                // Validate required fields
-                guard !sanitizedWord.isEmpty else {
-                    throw ImportError(
-                        lineNumber: index + 1,
-                        fieldName: "word",
-                        reason: "Word cannot be empty after sanitization",
-                        isRetryable: false
-                    )
-                }
-
-                guard !sanitizedDef.isEmpty else {
-                    throw ImportError(
-                        lineNumber: index + 1,
-                        fieldName: "definition",
-                        reason: "Definition cannot be empty after sanitization",
-                        isRetryable: false
-                    )
-                }
-
-                // Sanitize optional fields
-                let sanitizedPhonetic = card.phonetic.map { self.sanitizeString($0) }.nilIfEmpty
-                let sanitizedCefrLevel = card.cefrLevel.map { self.sanitizeString($0) }.nilIfEmpty
-                let sanitizedTranslation = card.translation.map { self.sanitizeString($0) }.nilIfEmpty
-
-                cards.append(ParsedFlashcard(
-                    word: sanitizedWord,
-                    definition: sanitizedDef,
-                    phonetic: sanitizedPhonetic,
-                    cefrLevel: sanitizedCefrLevel,
-                    translation: sanitizedTranslation,
-                    lineNumber: index + 1
-                ))
+            // Validate required fields
+            guard !sanitizedWord.isEmpty else {
+                throw ImportError(
+                    lineNumber: index + 1,
+                    fieldName: "word",
+                    reason: "Word cannot be empty after sanitization",
+                    isRetryable: false
+                )
             }
-        } catch let DecodingError.dataCorrupted(context) {
-            throw ImportError(
-                lineNumber: 0,
-                fieldName: nil,
-                reason: "Invalid JSON structure: \(context.debugDescription)",
-                isRetryable: false
-            )
-        } catch let DecodingError.keyNotFound(key, context) {
-            let lineNumber = context.codingPath.first?.intValue ?? 0
-            throw ImportError(
-                lineNumber: lineNumber + 1,
-                fieldName: key.stringValue,
-                reason: "Missing required field: \(key.stringValue)",
-                isRetryable: false
-            )
-        } catch let DecodingError.typeMismatch(type, context) {
-            let lineNumber = context.codingPath.first?.intValue ?? 0
-            throw ImportError(
-                lineNumber: lineNumber + 1,
-                fieldName: context.codingPath.last?.stringValue,
-                reason: "Type mismatch: expected \(type), got different type",
-                isRetryable: false
-            )
-        } catch {
-            throw ImportError(
-                lineNumber: 0,
-                fieldName: nil,
-                reason: "JSON parsing failed: \(error.localizedDescription)",
-                isRetryable: false
-            )
+
+            guard !sanitizedDef.isEmpty else {
+                throw ImportError(
+                    lineNumber: index + 1,
+                    fieldName: "definition",
+                    reason: "Definition cannot be empty after sanitization",
+                    isRetryable: false
+                )
+            }
+
+            // Sanitize optional fields
+            let sanitizedPhonetic = card.phonetic.map { self.sanitizeString($0) }.nilIfEmpty
+            let sanitizedCefrLevel = card.cefrLevel.map { self.sanitizeString($0) }.nilIfEmpty
+            let sanitizedTranslation = card.translation.map { self.sanitizeString($0) }.nilIfEmpty
+
+            cards.append(ParsedFlashcard(
+                word: sanitizedWord,
+                definition: sanitizedDef,
+                phonetic: sanitizedPhonetic,
+                cefrLevel: sanitizedCefrLevel,
+                translation: sanitizedTranslation,
+                lineNumber: index + 1
+            ))
         }
 
         return cards
+    }
+
+    /// Converts DecodingError to ImportError with detailed context
+    ///
+    /// - Parameter error: The decoding error to convert
+    /// - Returns: ImportError with line number and field information
+    private func mapDecodingError(_ error: Error) -> ImportError {
+        if let decodingError = error as? DecodingError {
+            switch decodingError {
+            case let .dataCorrupted(context):
+                return ImportError(
+                    lineNumber: 0,
+                    fieldName: nil,
+                    reason: "Invalid JSON structure: \(context.debugDescription)",
+                    isRetryable: false
+                )
+            case let .keyNotFound(key, context):
+                let lineNumber = context.codingPath.first?.intValue ?? 0
+                return ImportError(
+                    lineNumber: lineNumber + 1,
+                    fieldName: key.stringValue,
+                    reason: "Missing required field: \(key.stringValue)",
+                    isRetryable: false
+                )
+            case let .typeMismatch(type, context):
+                let lineNumber = context.codingPath.first?.intValue ?? 0
+                return ImportError(
+                    lineNumber: lineNumber + 1,
+                    fieldName: context.codingPath.last?.stringValue,
+                    reason: "Type mismatch: expected \(type), got different type",
+                    isRetryable: false
+                )
+            case let .valueNotFound(type, context):
+                let lineNumber = context.codingPath.first?.intValue ?? 0
+                return ImportError(
+                    lineNumber: lineNumber + 1,
+                    fieldName: context.codingPath.last?.stringValue,
+                    reason: "Value not found for type: \(type)",
+                    isRetryable: false
+                )
+            @unknown default:
+                return ImportError(
+                    lineNumber: 0,
+                    fieldName: nil,
+                    reason: "Unknown decoding error: \(error.localizedDescription)",
+                    isRetryable: false
+                )
+            }
+        }
+        return ImportError(
+            lineNumber: 0,
+            fieldName: nil,
+            reason: "JSON parsing failed: \(error.localizedDescription)",
+            isRetryable: false
+        )
     }
 
     /// Sanitize string by removing control characters and null bytes

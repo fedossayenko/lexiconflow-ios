@@ -140,7 +140,7 @@ struct FlashcardDetailView: View {
     @ViewBuilder
     private func exportToolbarItem(viewModel: FlashcardDetailViewModel) -> some View {
         if let csvString = viewModel.exportCSVString,
-           let _ = viewModel.exportFilename
+           viewModel.exportFilename != nil
         {
             ShareLink(
                 item: csvString,

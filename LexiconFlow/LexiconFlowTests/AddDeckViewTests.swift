@@ -78,7 +78,7 @@ struct AddDeckViewTests {
     func nameFieldAcceptsInput() async throws {
         // Given: AddDeckView with name binding
         _ = createTestContext()
-        @State var name = "Test Deck"
+        var name = "Test Deck"
 
         // When: Setting name value
         name = "My Vocabulary Deck"

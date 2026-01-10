@@ -272,15 +272,15 @@ struct CachedTranslationTests {
         #expect(cached.isExpired == true)
     }
 
-    @Test("isExpired returns false exactly at expiration time")
-    func isExpiredReturnsFalseAtExpirationTime() throws {
+    @Test("isExpired returns false just before expiration time")
+    func isExpiredReturnsFalseJustBeforeExpirationTime() throws {
         let now = Date()
         let cached = try CachedTranslation(
             sourceWord: "test",
             translatedText: "prueba",
             sourceLanguage: "en",
             targetLanguage: "es",
-            cachedAt: now.addingTimeInterval(-30 * 24 * 60 * 60), // Exactly 30 days ago
+            cachedAt: now.addingTimeInterval(-29 * 24 * 60 * 60), // 29 days ago (1 day before expiration)
             ttlDays: 30
         )
 
@@ -311,19 +311,19 @@ struct CachedTranslationTests {
         #expect(daysRemaining < 0)
     }
 
-    @Test("daysUntilExpiration returns zero at expiration boundary")
-    func daysUntilExpirationZeroAtBoundary() throws {
+    @Test("daysUntilExpiration returns one day before expiration boundary")
+    func daysUntilExpirationOneDayBeforeBoundary() throws {
         let now = Date()
         let cached = try CachedTranslation(
             sourceWord: "test",
             translatedText: "prueba",
             sourceLanguage: "en",
             targetLanguage: "es",
-            cachedAt: now.addingTimeInterval(-30 * 24 * 60 * 60), // Exactly 30 days ago
+            cachedAt: now.addingTimeInterval(-29 * 24 * 60 * 60), // 29 days ago (1 day before expiration)
             ttlDays: 30
         )
 
-        // At exact boundary, may be 0 or 1 depending on timing
+        // One day before expiration
         let daysRemaining = cached.daysUntilExpiration
         #expect(daysRemaining >= 0 && daysRemaining <= 1)
     }

@@ -69,6 +69,7 @@ struct LexiconFlowApp: App {
             // Allow app to show error UI, then crash after delay for debugging
             // The 5-second delay provides time to read the diagnostic information
             DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                // swiftlint:disable:next no_fatal_error
                 fatalError(diagnostic)
             }
 

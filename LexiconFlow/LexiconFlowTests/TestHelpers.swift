@@ -81,6 +81,7 @@ enum TestContainers {
                 } catch {
                     // If even this fails, there's a serious system issue
                     // Log and return minimal container - tests will fail but won't crash
+                    // swiftlint:disable:next no_fatal_error
                     fatalError("Test container initialization failed: \(error.localizedDescription)")
                 }
             }

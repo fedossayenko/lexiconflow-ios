@@ -344,10 +344,8 @@ final class Scheduler {
             }
 
             // Fill in empty decks with zeros (decks with no cards)
-            for deck in decks {
-                if results[deck.id] == nil {
-                    results[deck.id] = DeckStatistics(due: 0, new: 0, total: 0)
-                }
+            for deck in decks where results[deck.id] == nil {
+                results[deck.id] = DeckStatistics(due: 0, new: 0, total: 0)
             }
 
             return results

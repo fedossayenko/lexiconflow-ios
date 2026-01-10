@@ -14,6 +14,51 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **On-device translation** (iOS 26 Translation framework) - 100% offline, no API costs
 - Two study modes: Scheduled (respects due dates) and Cram (for practice)
 
+## MCP Memory for LexiconFlow
+
+Project-specific memory using semantic search (see Global CLAUDE.md for tool reference)
+
+### Project Usage
+
+**Search project context:**
+```
+mcp__memory__search_nodes({query: "LexiconFlow architecture SwiftData"})
+```
+
+**Add project entity:**
+```
+mcp__memory__create_entities({
+  entities: [{
+    name: "StudyStreakFeature",
+    entityType: "feature",
+    observations: ["Study streak tracking", "@Observable state", "DailyStats integration"]
+  }]
+})
+```
+
+**Update LexiconFlow entity:**
+```
+mcp__memory__add_observations({
+  observations: [{
+    entityName: "LexiconFlow",
+    contents: ["Added Quick Translation (Pattern 24) - Jan 2026"]
+  }]
+})
+```
+
+### Current Entities
+
+- **LexiconFlow** (project) - iOS vocabulary app: Swift 6, SwiftUI, SwiftData, FSRS v5
+- **Fedir** (developer) - iOS developer, MacBook M2 Pro 16GB
+- **FSRS** (algorithm) - Free Spaced Repetition Scheduler v5
+
+### Project Best Practices
+
+- Always search memory before asking user
+- Name entities with "LexiconFlow" prefix for project-specific items
+- Store architectural decisions as they're made
+- Add bug fixes and their resolutions
+
 ## Build and Test Commands
 
 ### Build
