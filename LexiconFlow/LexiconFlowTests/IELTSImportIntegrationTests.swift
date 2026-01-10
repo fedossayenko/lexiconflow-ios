@@ -24,10 +24,13 @@ struct IELTSImportIntegrationTests {
         TestContainers.freshContext()
     }
 
+    /// Helper class to get test bundle
+    private class BundleHelper {}
+
     /// Checks if vocabulary file is available in test bundle
     private func requireVocabularyFile() throws {
         // Use test bundle for unit tests (not Bundle.main which points to test runner)
-        let testBundle = Bundle(for: type(of: self))
+        let testBundle = Bundle(for: BundleHelper.self as! AnyClass)
         guard let _ = testBundle.url(
             forResource: "ielts-vocabulary-smartool",
             withExtension: "json"

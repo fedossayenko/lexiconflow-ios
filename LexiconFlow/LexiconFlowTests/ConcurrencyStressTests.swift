@@ -166,7 +166,7 @@ struct ConcurrencyStressTests {
     @Test("DTOs are Sendable across actor boundaries")
     func sendableDTOs() async throws {
         // Create test flashcard
-        let flashcard = self.createTestFlashcard(in: self.freshContext())
+        let flashcard = await self.createTestFlashcard(in: self.freshContext())
 
         // Get DTO from actor
         let dto = try await FSRSWrapper.shared.processReview(
