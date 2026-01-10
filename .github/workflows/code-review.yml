@@ -64,22 +64,37 @@ jobs:
 
       - name: Start Claude Code Router
         run: |
-          nohup bunx @musistudio/claude-code-router@latest start &
+          # Start router in background with output logging
+          bunx @musistudio/claude-code-router@latest start > /tmp/router.log 2>&1 &
+          ROUTER_PID=$!
+          echo "Router PID: $ROUTER_PID"
+
           # Wait for router to be ready with timeout (up to 60 seconds)
           for i in {1..30}; do
             if curl -s http://localhost:3456/health > /dev/null 2>&1; then
-              echo "Router is ready"
+              echo "Router is ready after ${i}s"
               break
             fi
             echo "Waiting for router... ($i/30)"
             sleep 2
           done
+
           # Final check - fail if router still not ready
-          curl -s http://localhost:3456/health || exit 1
+          if ! curl -s http://localhost:3456/health > /dev/null 2>&1; then
+            echo "Router failed to start. Log output:"
+            cat /tmp/router.log
+            exit 1
+          fi
+
+          # Keep router process running
+          echo "Router is running at http://localhost:3456"
         shell: bash
 
       - name: Run Claude Code Review
         uses: anthropics/claude-code-action@v1
+        env:
+          # Explicitly set env vars for the action step
+          ANTHROPIC_BASE_URL: http://localhost:3456
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           anthropic_api_key: sk-ant-zai-placeholder-key-for-router-auth
