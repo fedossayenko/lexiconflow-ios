@@ -1171,10 +1171,13 @@ struct SchedulerTests {
         let deck1Count = cards.count(where: { $0.deck?.id == deck1.id })
         let deck2Count = cards.count(where: { $0.deck?.id == deck2.id })
 
+        // Debug: print actual counts
+        print("DEBUG: deck1Count=\(deck1Count), deck2Count=\(deck2Count), ratio=\(Double(deck1Count) / Double(max(deck2Count, 1)))")
+
         // With interleaving + random, should be approximately 2:1 ratio
-        // (not exact due to randomness, but roughly proportional)
-        let ratio = Double(deck1Count) / Double(deck2Count)
-        #expect(ratio > 1.5 && ratio < 2.5, "Ratio should be approximately 2:1")
+        // For 12 cards from 15 total (10 deck1, 5 deck2), round-robin gives: 8 deck1, 4 deck2 = 2.0 ratio
+        let ratio = Double(deck1Count) / Double(max(deck2Count, 1))
+        #expect(ratio > 1.5 && ratio < 2.5, "Ratio should be approximately 2:1, got \(ratio) (d1=\(deck1Count), d2=\(deck2Count))")
     }
 
     @Test("Interleaving disabled preserves deck grouping")
@@ -1255,8 +1258,8 @@ struct SwiftDataRollbackTests {
         TestContainers.freshContext()
     }
 
-    private func createTestDeck(context: ModelContext) -> Deck {
-        let deck = Deck(name: "Test Deck", icon: "folder.fill", order: 0)
+    private func createTestDeck(context: ModelContext, name: String = "Test Deck") -> Deck {
+        let deck = Deck(name: name, icon: "folder.fill", order: 0)
         context.insert(deck)
         try! context.save()
         return deck
@@ -1266,7 +1269,9 @@ struct SwiftDataRollbackTests {
         context: ModelContext,
         word: String = "test",
         state: FlashcardState = .new,
-        dueOffset: TimeInterval = 0
+        dueOffset: TimeInterval = 0,
+        stability: Double = 0.0,
+        difficulty: Double = 5.0
     ) -> Flashcard {
         let deck = createTestDeck(context: context)
         let card = Flashcard(word: word, definition: word)
@@ -1274,8 +1279,8 @@ struct SwiftDataRollbackTests {
         context.insert(card)
 
         let fsrsState = FSRSState(
-            stability: 0.0,
-            difficulty: 5.0,
+            stability: stability,
+            difficulty: difficulty,
             retrievability: 0.9,
             dueDate: Date().addingTimeInterval(dueOffset),
             stateEnum: state.rawValue
@@ -1424,5 +1429,222 @@ struct SwiftDataRollbackTests {
         // Should handle cards without FSRSState gracefully
         let totalCount = scheduler.totalCardCount(for: deck)
         #expect(totalCount >= 0) // Should count the card even without state
+    }
+
+    // MARK: - Cache Integration Tests
+
+    @Test("fetchDeckStatistics populates cache on first call")
+    func fetchDeckStatisticsPopulatesCache() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+        let cache = DeckStatisticsCache.shared
+        cache.clearForTesting()
+
+        let deck = createTestDeck(context: context)
+        let card = createTestFlashcard(context: context, word: "card1", state: .review, dueOffset: -3600)
+        card.deck = deck
+        try context.save()
+
+        // First call should populate cache
+        let stats1 = scheduler.fetchDeckStatistics(for: deck)
+
+        #expect(cache.get(deckID: deck.id) != nil, "Cache should be populated")
+        #expect(cache.get(deckID: deck.id)?.due == stats1.due)
+    }
+
+    @Test("fetchDeckStatistics returns cached data on second call")
+    func fetchDeckStatisticsReturnsCachedData() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+        let cache = DeckStatisticsCache.shared
+        cache.clearForTesting()
+
+        let deck = createTestDeck(context: context)
+        let card = createTestFlashcard(context: context, word: "card1", state: .review, dueOffset: -3600)
+        card.deck = deck
+        try context.save()
+
+        // First call
+        let stats1 = scheduler.fetchDeckStatistics(for: deck)
+
+        // Second call should return same data (cached)
+        let stats2 = scheduler.fetchDeckStatistics(for: deck)
+
+        #expect(stats1.due == stats2.due)
+        #expect(stats1.new == stats2.new)
+        #expect(stats1.total == stats2.total)
+    }
+
+    @Test("processReview invalidates cache for affected deck")
+    func processReviewInvalidatesCache() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+        let cache = DeckStatisticsCache.shared
+        cache.clearForTesting()
+
+        let deck = createTestDeck(context: context)
+        let card = createTestFlashcard(context: context, word: "card1", state: .review, dueOffset: -3600)
+        card.deck = deck
+        try context.save()
+
+        // Pre-warm cache
+        _ = scheduler.fetchDeckStatistics(for: deck)
+        #expect(cache.get(deckID: deck.id) != nil)
+
+        // Process review
+        _ = await scheduler.processReview(flashcard: card, rating: 3)
+
+        // Cache should be invalidated
+        #expect(cache.get(deckID: deck.id) == nil, "Cache should be invalidated after review")
+    }
+
+    @Test("processCramReview does not invalidate cache")
+    func processCramReviewDoesNotInvalidateCache() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+        let cache = DeckStatisticsCache.shared
+        cache.clearForTesting()
+
+        let deck = createTestDeck(context: context)
+        let card = createTestFlashcard(context: context, word: "card1", state: .review, dueOffset: -3600)
+        card.deck = deck
+        try context.save()
+
+        // Pre-warm cache
+        _ = scheduler.fetchDeckStatistics(for: deck)
+        let cachedBefore = cache.get(deckID: deck.id)
+        #expect(cachedBefore != nil)
+
+        // Process cram review (should not affect due count)
+        _ = await scheduler.processReview(flashcard: card, rating: 3, mode: .cram)
+
+        // Cache should still be valid (cram mode doesn't affect statistics)
+        let cachedAfter = cache.get(deckID: deck.id)
+        #expect(cachedAfter != nil, "Cache should remain valid after cram review")
+    }
+
+    @Test("resetCard invalidates cache for affected deck")
+    func resetCardInvalidatesCache() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+        let cache = DeckStatisticsCache.shared
+        cache.clearForTesting()
+
+        let deck = createTestDeck(context: context)
+        let card = createTestFlashcard(context: context, word: "card1", state: .review, dueOffset: -3600)
+        card.deck = deck
+        try context.save()
+
+        // Pre-warm cache
+        _ = scheduler.fetchDeckStatistics(for: deck)
+        #expect(cache.get(deckID: deck.id) != nil)
+
+        // Reset card
+        _ = await scheduler.resetFlashcard(card)
+
+        // Cache should be invalidated
+        #expect(cache.get(deckID: deck.id) == nil, "Cache should be invalidated after card reset")
+    }
+
+    @Test("batch fetch uses cached data when available")
+    func batchFetchUsesCachedData() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+        let cache = DeckStatisticsCache.shared
+        cache.clearForTesting()
+
+        let deck1 = createTestDeck(context: context, name: "Deck1")
+        let deck2 = createTestDeck(context: context, name: "Deck2")
+
+        let card1 = createTestFlashcard(context: context, word: "card1", state: .review, dueOffset: -3600)
+        card1.deck = deck1
+
+        let card2 = createTestFlashcard(context: context, word: "card2", state: .review, dueOffset: -3600)
+        card2.deck = deck2
+
+        try context.save()
+
+        // Pre-warm cache for deck1 only
+        let cachedStats = DeckStatistics(due: 99, new: 99, total: 99)
+        cache.set(cachedStats, for: deck1.id)
+
+        // Batch fetch should use cached data for deck1
+        let results = scheduler.fetchDeckStatistics(for: [deck1, deck2])
+
+        #expect(results[deck1.id]?.due == 99, "Should use cached data for deck1")
+        #expect(results[deck2.id]?.due == 1, "Should fetch fresh data for deck2")
+    }
+
+    @Test("batch fetch merges cached and fetched results")
+    func batchFetchMergesCachedAndFetched() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+        let cache = DeckStatisticsCache.shared
+        cache.clearForTesting()
+
+        let deck1 = createTestDeck(context: context, name: "Deck1")
+        let deck2 = createTestDeck(context: context, name: "Deck2")
+        let deck3 = createTestDeck(context: context, name: "Deck3")
+
+        let card1 = createTestFlashcard(context: context, word: "card1", state: .review, dueOffset: -3600)
+        card1.deck = deck1
+
+        let card2 = createTestFlashcard(context: context, word: "card2", state: .review, dueOffset: -3600)
+        card2.deck = deck2
+
+        let card3 = createTestFlashcard(context: context, word: "card3", state: .review, dueOffset: -3600)
+        card3.deck = deck3
+
+        try context.save()
+
+        // Pre-warm cache for deck1 and deck3
+        cache.set(DeckStatistics(due: 88, new: 88, total: 88), for: deck1.id)
+        cache.set(DeckStatistics(due: 99, new: 99, total: 99), for: deck3.id)
+
+        // Batch fetch should use cached data for deck1 and deck3
+        let results = scheduler.fetchDeckStatistics(for: [deck1, deck2, deck3])
+
+        #expect(results[deck1.id]?.due == 88, "Should use cached data for deck1")
+        #expect(results[deck2.id]?.due == 1, "Should fetch fresh data for deck2")
+        #expect(results[deck3.id]?.due == 99, "Should use cached data for deck3")
+        #expect(results.count == 3, "Should return all three decks")
+    }
+
+    @Test("Cache invalidation after importing new cards")
+    func cacheInvalidationAfterImport() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+        let cache = DeckStatisticsCache.shared
+        cache.clearForTesting()
+
+        let deck = createTestDeck(context: context)
+        let card1 = createTestFlashcard(context: context, word: "card1", state: .review, dueOffset: -3600)
+        card1.deck = deck
+        try context.save()
+
+        // Pre-warm cache
+        _ = scheduler.fetchDeckStatistics(for: deck)
+        let initialStats = cache.get(deckID: deck.id)
+        #expect(initialStats != nil)
+        #expect(initialStats?.total == 1)
+
+        // Import new card (simulating DataImporter behavior)
+        let card2 = createTestFlashcard(context: context, word: "card2", state: .new)
+        card2.deck = deck
+        try context.save()
+
+        // Invalidate cache after import
+        cache.invalidate(deckID: deck.id)
+
+        // Verify cache was invalidated
+        #expect(cache.get(deckID: deck.id) == nil, "Cache should be invalidated after card import")
     }
 }

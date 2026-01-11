@@ -17,6 +17,11 @@ struct MainTabView: View {
 
     @Query(sort: \Deck.order) private var decks: [Deck]
 
+    // Orphaned cards onboarding state
+    @State private var showingOrphanedCardsAlert = false
+    @State private var orphanedCardsCount = 0
+    @State private var navigateToOrphanedCards = false
+
     var body: some View {
         TabView(selection: $selectedTab) {
             NavigationStack {
@@ -59,15 +64,58 @@ struct MainTabView: View {
         }
         .onAppear {
             refreshDueCount()
+            checkOrphanedCards()
         }
-        .onChange(of: selectedTab) { _, _ in
-            if selectedTab == 1 {
+        .onChange(of: selectedTab) { _, newValue in
+            if newValue == 1 {
                 refreshDueCount()
+            }
+            // Navigate to orphaned cards when flag is set
+            if navigateToOrphanedCards, newValue == 0 {
+                navigateToOrphanedCards = false
+                // Trigger navigation after a slight delay to ensure tab switch completes
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    // The NavigationLink in DeckListView will handle the actual navigation
+                }
             }
         }
         .onChange(of: AppSettings.selectedDeckIDs) { _, _ in
             refreshDueCount()
         }
+        .alert("Orphaned Cards Found", isPresented: $showingOrphanedCardsAlert) {
+            Button("View Orphaned Cards") {
+                showingOrphanedCardsAlert = false
+                selectedTab = 0
+                navigateToOrphanedCards = true
+            }
+            Button("Later", role: .cancel) {
+                showingOrphanedCardsAlert = false
+            }
+        } message: {
+            Text("You have \(orphanedCardsCount) card\(orphanedCardsCount == 1 ? "" : "s") without deck assignment. These appear when decks are deleted. You can reassign them to existing decks in the Orphaned Cards section.")
+        }
+    }
+
+    // MARK: - Orphaned Cards Onboarding
+
+    /// Checks for orphaned cards and shows onboarding notification if needed
+    ///
+    /// This runs on first launch after the orphaned cards feature is introduced.
+    /// Users who already have orphaned cards will be informed about the feature.
+    private func checkOrphanedCards() {
+        // Only check once per app install
+        guard !AppSettings.hasShownOrphanedCardsPrompt else { return }
+
+        let count = OrphanedCardsService.shared.orphanedCardCount(context: modelContext)
+        guard count > 0 else {
+            // Mark as shown even if no orphans (no need to check again)
+            AppSettings.hasShownOrphanedCardsPrompt = true
+            return
+        }
+
+        orphanedCardsCount = count
+        showingOrphanedCardsAlert = true
+        AppSettings.hasShownOrphanedCardsPrompt = true
     }
 
     private var selectedDecks: [Deck] {

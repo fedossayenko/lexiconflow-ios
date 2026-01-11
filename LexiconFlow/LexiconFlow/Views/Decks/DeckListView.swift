@@ -13,6 +13,7 @@ import SwiftUI
 struct DeckListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Deck.order) private var decks: [Deck]
+    @Query(filter: #Predicate<Flashcard> { $0.deck == nil }) private var orphanedCards: [Flashcard]
     @State private var showingAddDeck = false
 
     /// PERFORMANCE: Visible limit for extreme cases (1000+ decks)
@@ -25,6 +26,13 @@ struct DeckListView: View {
     /// This is critical for preventing "System gesture gate timed out" errors during scrolling
     @State private var deckDueCounts: [Deck.ID: Int] = [:]
     @State private var countsTimestamp: Date?
+
+    /// PERFORMANCE: Memoized scheduler to avoid repeated allocations during rapid scrolling
+    @State private var scheduler: Scheduler?
+
+    /// Deck deletion confirmation state
+    @State private var deckToDelete: Deck?
+    @State private var showingDeleteConfirmation = false
 
     var body: some View {
         NavigationStack {
@@ -47,12 +55,44 @@ struct DeckListView: View {
                         }
                         // PERFORMANCE: Load more when reaching end of visible list
                         .onAppear {
-                            if deck.id == decks.prefix(visibleCount).last?.id {
-                                loadMoreIfNeeded()
-                            }
+                            guard let lastVisibleDeck = decks.prefix(visibleCount).last,
+                                  deck.id == lastVisibleDeck.id else { return }
+                            loadMoreIfNeeded()
                         }
                     }
-                    .onDelete(perform: deleteDecks)
+                    .onDelete(perform: initiateDeckDeletion)
+
+                    // Orphaned Cards Section (shown when orphans exist)
+                    if !orphanedCards.isEmpty {
+                        Section {
+                            NavigationLink(destination: OrphanedCardsView()) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "folder.badge.questionmark")
+                                        .foregroundStyle(.orange)
+                                        .font(.title3)
+
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Orphaned Cards")
+                                            .font(.headline)
+                                            .foregroundStyle(.primary)
+
+                                        Text("\(orphanedCards.count) card\(orphanedCards.count == 1 ? "" : "s") need reassignment")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+
+                                    Spacer()
+
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption)
+                                        .foregroundStyle(.tertiary)
+                                }
+                                .padding(.vertical, 4)
+                            }
+                        } header: {
+                            Text("Unassigned Cards")
+                        }
+                    }
                 }
             }
             .navigationTitle("Decks")
@@ -74,6 +114,26 @@ struct DeckListView: View {
             .onChange(of: decks) { _, _ in
                 loadDeckDueCounts()
             }
+            .alert("Delete Deck?", isPresented: $showingDeleteConfirmation) {
+                Button("Cancel", role: .cancel) {
+                    deckToDelete = nil
+                }
+                Button("Delete", role: .destructive) {
+                    if let deck = deckToDelete {
+                        performDeckDeletion(deck)
+                        deckToDelete = nil
+                    }
+                }
+            } message: {
+                if let deck = deckToDelete {
+                    let cardCount = deck.cards.count
+                    if cardCount > 0 {
+                        Text("Deleting ") + Text("\(deck.name)").bold() + Text(" will create \(cardCount) orphaned card\(cardCount == 1 ? "" : "s"). Cards will NOT be deleted and will appear in the Orphaned Cards section.")
+                    } else {
+                        Text("Delete ") + Text("\(deck.name)").bold() + Text("? This action cannot be undone.")
+                    }
+                }
+            }
         }
     }
 
@@ -92,10 +152,13 @@ struct DeckListView: View {
             return
         }
 
-        // Use Scheduler for batch loading with cache support
-        let scheduler = Scheduler(modelContext: modelContext)
+        // Reuse scheduler instance for performance (memoization)
+        if scheduler == nil {
+            scheduler = Scheduler(modelContext: modelContext)
+        }
+
         let visibleDecksArray = Array(decks.prefix(visibleCount))
-        let allStats = scheduler.fetchDeckStatistics(for: visibleDecksArray)
+        let allStats = scheduler?.fetchDeckStatistics(for: visibleDecksArray) ?? [:]
 
         // Extract only due counts
         deckDueCounts = allStats.mapValues { $0.due }
@@ -122,14 +185,41 @@ struct DeckListView: View {
         loadDeckDueCounts()
     }
 
-    private func deleteDecks(at offsets: IndexSet) {
-        for index in offsets {
-            guard index >= 0, index < decks.count else { continue }
-            modelContext.delete(decks[index])
+    // MARK: - Deck Deletion
+
+    /// Initiates deck deletion by showing confirmation dialog
+    ///
+    /// This replaces the immediate deletion behavior with a user-facing
+    /// confirmation dialog that explains orphaned card creation.
+    private func initiateDeckDeletion(at offsets: IndexSet) {
+        guard let index = offsets.first else { return }
+        guard index >= 0, index < decks.count else { return }
+
+        deckToDelete = decks[index]
+        showingDeleteConfirmation = true
+    }
+
+    /// Performs the actual deck deletion after confirmation
+    ///
+    /// Deletes the deck and invalidates caches. Cards are preserved as
+    /// orphans due to .nullify delete rule.
+    private func performDeckDeletion(_ deck: Deck) {
+        modelContext.delete(deck)
+
+        do {
+            try modelContext.save()
+        } catch {
+            Analytics.trackError("deck_deletion", error: error)
         }
+
         // Invalidate statistics cache after deck deletion
         DeckStatisticsCache.shared.invalidate()
         StatisticsService.shared.invalidateCache()
+
+        Analytics.trackEvent("deck_deleted", metadata: [
+            "card_count": String(deck.cards.count),
+            "orphaned_created": String(deck.cards.count)
+        ])
     }
 }
 

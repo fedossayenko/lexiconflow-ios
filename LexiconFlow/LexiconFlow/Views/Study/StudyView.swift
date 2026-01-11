@@ -35,6 +35,7 @@ struct StudyView: View {
     @State private var sessionCards: [Flashcard] = []
     @State private var isRefreshing = false
     @State private var isLoadingCards = false
+    @State private var lastCountsRefresh: Date? // Debouncing for count refreshes
 
     var body: some View {
         NavigationStack {
@@ -302,6 +303,14 @@ struct StudyView: View {
     }
 
     private func refreshCounts() {
+        // Debounce: respect cache TTL (5 seconds)
+        // This prevents excessive queries during rapid deck selection changes
+        if let lastRefresh = lastCountsRefresh,
+           Date().timeIntervalSince(lastRefresh) < 5.0
+        {
+            return
+        }
+
         guard !selectedDecks.isEmpty else {
             dueCount = 0
             newCount = 0
@@ -316,6 +325,8 @@ struct StudyView: View {
         dueCount = allStats.values.reduce(0) { $0 + $1.due }
         newCount = allStats.values.reduce(0) { $0 + $1.new }
         totalCount = allStats.values.reduce(0) { $0 + $1.total }
+
+        lastCountsRefresh = Date()
     }
 
     private func startSession() {

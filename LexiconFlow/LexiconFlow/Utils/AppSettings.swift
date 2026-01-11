@@ -181,6 +181,10 @@ enum AppSettings {
     /// Used to skip onboarding on subsequent app launches
     @AppStorage("hasCompletedOnboarding") static var hasCompletedOnboarding: Bool = false
 
+    /// Whether user has seen the orphaned cards onboarding notification
+    /// Tracks if the user has been informed about the orphaned cards feature
+    @AppStorage("hasShownOrphanedCardsPrompt") static var hasShownOrphanedCardsPrompt: Bool = false
+
     // MARK: - Statistics Settings (NEW)
 
     /// Selected time range for statistics dashboard ("7d", "30d", "all")

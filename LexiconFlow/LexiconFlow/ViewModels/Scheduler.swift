@@ -559,9 +559,9 @@ final class Scheduler {
                 // Multi-deck with interleaving enabled
                 switch AppSettings.newCardOrderMode {
                 case .random:
-                    // No sorting needed for random, just interleave and randomize
-                    let interleaved = interleaveCards(cards, limit: limit * 2)
-                    return interleaved.randomSample(limit)
+                    // Shuffle cards within each deck, then interleave using round-robin
+                    // This ensures random cards from each deck while maintaining proportional representation
+                    return interleaveCardsShuffled(cards, limit: limit)
                 case .sequential:
                     // Sort by creation date first, then interleave (to maintain order within decks)
                     let sorted = cards.sorted { $0.createdAt < $1.createdAt }
@@ -986,6 +986,174 @@ final class Scheduler {
 
             if !addedThisRound { break } // All decks exhausted
         }
+
+        return result
+    }
+
+    /// Calculate proportional card allocation for each deck based on deck size.
+    ///
+    /// **Algorithm**: Distributes cards proportionally based on each deck's share
+    /// of the total card count, then distributes remaining slots to largest decks.
+    ///
+    /// - Parameters:
+    ///   - deckGroups: Dictionary mapping deck IDs to their cards
+    ///   - sortedDeckIDs: Sorted list of deck IDs for deterministic allocation
+    ///   - limit: Maximum total cards to allocate
+    /// - Returns: Dictionary mapping deck IDs to their allocated card counts
+    private func calculateProportionalAllocation(
+        deckGroups: [UUID?: [Flashcard]],
+        sortedDeckIDs: [UUID],
+        limit: Int
+    ) -> [UUID: Int] {
+        let totalCards = deckGroups.values.reduce(0) { $0 + $1.count }
+        guard totalCards > 0 else { return [:] }
+
+        var deckAllocations: [UUID: Int] = [:]
+        var allocatedTotal = 0
+
+        // Calculate proportional allocation for each deck
+        for deckID in sortedDeckIDs {
+            guard let deckCards = deckGroups[deckID] else { continue }
+            let deckCount = deckCards.count
+            // Calculate proportional allocation
+            let allocation = min(deckCount, Int(Double(deckCount) / Double(totalCards) * Double(limit)))
+            deckAllocations[deckID] = allocation
+            allocatedTotal += allocation
+        }
+
+        // Distribute remaining cards (due to rounding) to largest deck(s)
+        let remaining = limit - allocatedTotal
+        distributeRemainder(
+            allocations: &deckAllocations,
+            deckGroups: deckGroups,
+            sortedDeckIDs: sortedDeckIDs,
+            remainder: remaining
+        )
+
+        return deckAllocations
+    }
+
+    /// Distribute remaining allocation slots to largest decks.
+    ///
+    /// **Purpose**: After proportional allocation, rounding errors may leave some slots unused.
+    /// This distributes remaining slots to decks with the most cards available.
+    ///
+    /// - Parameters:
+    ///   - allocations: Mutable dictionary of deck allocations to update
+    ///   - deckGroups: Dictionary mapping deck IDs to their cards
+    ///   - sortedDeckIDs: Sorted list of deck IDs
+    ///   - remainder: Number of remaining slots to distribute
+    private func distributeRemainder(
+        allocations: inout [UUID: Int],
+        deckGroups: [UUID?: [Flashcard]],
+        sortedDeckIDs: [UUID],
+        remainder: Int
+    ) {
+        var remaining = remainder
+        // Sort decks by size (largest first) for remainder distribution
+        let decksBySize = sortedDeckIDs.sorted { deckGroups[$0]?.count ?? 0 > deckGroups[$1]?.count ?? 0 }
+        var deckIndex = 0
+
+        while remaining > 0, deckIndex < decksBySize.count {
+            let deckID = decksBySize[deckIndex]
+            if let current = allocations[deckID],
+               let deckCards = deckGroups[deckID],
+               current < deckCards.count
+            {
+                allocations[deckID] = current + 1
+                remaining -= 1
+            }
+            deckIndex += 1
+        }
+    }
+
+    /// Sample cards from each deck according to allocations, with shuffling.
+    ///
+    /// **Algorithm**: For each deck with an allocation, shuffle its cards and take
+    /// the allocated amount. Then shuffle all sampled cards together.
+    ///
+    /// - Parameters:
+    ///   - deckGroups: Dictionary mapping deck IDs to their cards
+    ///   - sortedDeckIDs: Sorted list of deck IDs for deterministic order
+    ///   - allocations: Dictionary mapping deck IDs to their allocated counts
+    ///   - limit: Maximum total cards to return
+    /// - Returns: Shuffled array of sampled cards
+    private func sampleCardsProportionally(
+        deckGroups: [UUID?: [Flashcard]],
+        sortedDeckIDs: [UUID],
+        allocations: [UUID: Int],
+        limit: Int
+    ) -> [Flashcard] {
+        var result: [Flashcard] = []
+        result.reserveCapacity(limit)
+
+        for deckID in sortedDeckIDs {
+            guard let allocation = allocations[deckID],
+                  allocation > 0,
+                  let deckCards = deckGroups[deckID] else { continue }
+
+            // Shuffle and take allocated amount
+            let shuffled = deckCards.shuffled()
+            let sample = shuffled.prefix(allocation)
+            result.append(contentsOf: sample)
+        }
+
+        // Final shuffle to mix cards from different decks
+        result.shuffle()
+        return result
+    }
+
+    /// Interleave cards from multiple decks using round-robin algorithm, shuffling within each deck
+    ///
+    /// **Algorithm:** Similar to interleaveCards but shuffles cards within each deck group
+    /// before round-robin sampling. This ensures random card selection while maintaining
+    /// proportional deck representation.
+    ///
+    /// **Use Case:** Random mode with multi-deck interleaving enabled
+    ///
+    /// - Parameters:
+    ///   - cards: Array of flashcards to interleave
+    ///   - limit: Maximum number of cards to return
+    /// - Returns: Interleaved array with randomly shuffled cards distributed proportionally across decks
+    private func interleaveCardsShuffled(_ cards: [Flashcard], limit: Int) -> [Flashcard] {
+        guard !cards.isEmpty else { return [] }
+
+        // Group cards by deck ID
+        let deckGroups = Dictionary(grouping: cards) { card -> UUID? in
+            card.deck?.id
+        }
+
+        #if DEBUG
+            // Debug: print card counts per deck before interleaving
+            for (deckID, groupCards) in deckGroups {
+                logger.debug("Deck \(deckID?.uuidString ?? "nil"): \(groupCards.count) cards")
+            }
+        #endif
+
+        let sortedDeckIDs = deckGroups.keys.compactMap(\.self).sorted()
+
+        // Calculate proportional allocation for each deck
+        let deckAllocations = calculateProportionalAllocation(
+            deckGroups: deckGroups,
+            sortedDeckIDs: sortedDeckIDs,
+            limit: limit
+        )
+
+        // Sample cards proportionally from each deck (with shuffling)
+        let result = sampleCardsProportionally(
+            deckGroups: deckGroups,
+            sortedDeckIDs: sortedDeckIDs,
+            allocations: deckAllocations,
+            limit: limit
+        )
+
+        #if DEBUG
+            // Debug: print final result distribution
+            let resultDeckGroups = Dictionary(grouping: result) { $0.deck?.id }
+            for (deckID, groupCards) in resultDeckGroups {
+                logger.debug("Result deck \(deckID?.uuidString ?? "nil"): \(groupCards.count) cards")
+            }
+        #endif
 
         return result
     }

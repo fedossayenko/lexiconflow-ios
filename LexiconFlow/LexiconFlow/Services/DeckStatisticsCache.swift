@@ -50,7 +50,7 @@ final class DeckStatisticsCache: Sendable {
     ///
     /// **Trade-off**: 30 seconds balances freshness (for due card updates) with
     /// performance (avoiding repeated queries during rapid tab/mode switching).
-    private let ttl: TimeInterval = 30.0
+    private var ttl: TimeInterval = 30.0
 
     private init() {}
 
@@ -68,20 +68,35 @@ final class DeckStatisticsCache: Sendable {
     func get(deckID: UUID) -> DeckStatistics? {
         guard let timestamp else {
             logger.debug("Cache miss: no timestamp (cache empty)")
+            Analytics.trackEvent("deck_statistics_cache_miss", metadata: ["reason": "empty"])
             return nil
         }
 
-        let age = Date().timeIntervalSince(timestamp)
+        // Use mock time in tests if provided
+        let now = Self.currentTime()
+        let age = now.timeIntervalSince(timestamp)
         guard age < ttl else {
             logger.debug("Cache miss: TTL exceeded (\(age)s > \(ttl)s)")
+            Analytics.trackEvent("deck_statistics_cache_miss", metadata: [
+                "reason": "ttl_expired",
+                "age_seconds": String(format: "%.1f", age)
+            ])
             return nil
         }
 
         let stats = cache[deckID]
         if stats != nil {
             logger.debug("Cache hit: deck \(deckID)")
+            Analytics.trackEvent("deck_statistics_cache_hit", metadata: [
+                "deck_id": deckID.uuidString,
+                "age_seconds": String(format: "%.1f", age)
+            ])
         } else {
             logger.debug("Cache miss: deck \(deckID) not in cache")
+            Analytics.trackEvent("deck_statistics_cache_miss", metadata: [
+                "reason": "not_in_cache",
+                "deck_id": deckID.uuidString
+            ])
         }
         return stats
     }
@@ -95,8 +110,14 @@ final class DeckStatisticsCache: Sendable {
     ///   - deckID: The deck's UUID to associate with these statistics
     func set(_ stats: DeckStatistics, for deckID: UUID) {
         cache[deckID] = stats
-        timestamp = Date()
+        timestamp = Self.currentTime()
         logger.debug("Cache set: deck \(deckID) (due: \(stats.due), new: \(stats.new), total: \(stats.total))")
+        Analytics.trackEvent("deck_statistics_cache_set", metadata: [
+            "deck_id": deckID.uuidString,
+            "due": String(stats.due),
+            "new": String(stats.new),
+            "total": String(stats.total)
+        ])
     }
 
     /// Store multiple statistics in cache in a single operation.
@@ -107,7 +128,7 @@ final class DeckStatisticsCache: Sendable {
     /// - Parameter statistics: Dictionary mapping deck IDs to their statistics
     func setBatch(_ statistics: [UUID: DeckStatistics]) {
         cache.merge(statistics) { _, new in new }
-        timestamp = Date()
+        timestamp = Self.currentTime()
         logger.debug("Cache batch: \(statistics.count) decks")
     }
 
@@ -124,10 +145,19 @@ final class DeckStatisticsCache: Sendable {
         if let deckID {
             cache.removeValue(forKey: deckID)
             logger.debug("Cache invalidated: deck \(deckID)")
+            Analytics.trackEvent("deck_statistics_cache_invalidate", metadata: [
+                "scope": "single_deck",
+                "deck_id": deckID.uuidString
+            ])
         } else {
+            let count = cache.count
             cache.removeAll()
             timestamp = nil
             logger.debug("Cache cleared: all decks")
+            Analytics.trackEvent("deck_statistics_cache_invalidate", metadata: [
+                "scope": "all_decks",
+                "previous_count": String(count)
+            ])
         }
     }
 
@@ -144,7 +174,9 @@ final class DeckStatisticsCache: Sendable {
     /// - Returns: Age in seconds, or `nil` if cache is empty
     func age() -> TimeInterval? {
         guard let timestamp else { return nil }
-        return Date().timeIntervalSince(timestamp)
+        // Use mock time in tests if provided
+        let now = Self.currentTime()
+        return now.timeIntervalSince(timestamp)
     }
 }
 
@@ -152,6 +184,40 @@ final class DeckStatisticsCache: Sendable {
 
 #if DEBUG
     extension DeckStatisticsCache {
+        /// Mock time provider for deterministic TTL testing.
+        ///
+        /// **Usage**:
+        /// ```swift
+        /// var mockDate = Date()
+        /// DeckStatisticsCache.setTimeProviderForTesting { mockDate }
+        ///
+        /// // Advance time to test TTL expiration
+        /// mockDate = mockDate.addingTimeInterval(31)
+        /// ```
+        private static var timeProvider: (() -> Date)?
+
+        /// Set a custom time provider for testing.
+        ///
+        /// **WARNING**: Only use in tests. This affects the singleton instance globally.
+        /// Always call `resetTimeProvider()` in test teardown.
+        ///
+        /// - Parameter provider: Closure that returns the current mock date
+        static func setTimeProviderForTesting(_ provider: @escaping () -> Date) {
+            timeProvider = provider
+        }
+
+        /// Reset the time provider to use system time (for test cleanup).
+        static func resetTimeProvider() {
+            timeProvider = nil
+        }
+
+        /// Get the current time, using mock provider if set.
+        ///
+        /// - Returns: Current time from mock provider (if set) or system time
+        static func currentTime() -> Date {
+            timeProvider?() ?? Date()
+        }
+
         /// Clear all cache entries without logging (for testing).
         func clearForTesting() {
             cache.removeAll()
@@ -159,8 +225,20 @@ final class DeckStatisticsCache: Sendable {
         }
 
         /// Set a custom TTL for testing purposes.
-        func setTTLForTesting(_: TimeInterval) {
-            // Note: This would require making ttl mutable, omitted for thread safety
+        ///
+        /// **WARNING**: Only use in tests. Production code should use default 30s TTL.
+        /// Making `ttl` mutable is safe because `@MainActor` ensures thread safety.
+        ///
+        /// - Parameter ttl: Custom time-to-live in seconds
+        func setTTLForTesting(_ ttl: TimeInterval) {
+            self.ttl = ttl
+            logger.debug("TTL set to \(ttl)s for testing")
+        }
+
+        /// Reset TTL to default value (for test cleanup).
+        func resetTTL() {
+            ttl = 30.0
+            logger.debug("TTL reset to 30s (default)")
         }
 
         /// Get current cache size for testing.

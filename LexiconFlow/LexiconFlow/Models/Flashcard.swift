@@ -57,10 +57,12 @@ final class Flashcard {
     // MARK: - Relationships
 
     /// The deck this card belongs to (optional for CloudKit compatibility)
-    /// - Inverse defined on Deck.cards to avoid circular reference
-    /// - SwiftData auto-initializes this property
-    /// - Note: Nullify delete rule ensures cards persist when deck is deleted (orphaned cards)
-    /// - This prevents bidirectional cascade deadlock with Deck.cards cascade rule
+    ///
+    /// **Nil Value**: Card is orphaned (deck was deleted, or card created without deck)
+    /// **Delete Rule**: .nullify ensures cards persist when deck is deleted (preserves FSRS progress)
+    /// **Orphan Management**: Orphaned cards are visible in "Orphaned Cards" section
+    /// **Inverse**: Defined on Deck.cards to avoid circular macro expansion
+    /// **SwiftData**: Auto-initializes this property
     @Relationship(deleteRule: .nullify) var deck: Deck?
 
     /// All review logs for this card

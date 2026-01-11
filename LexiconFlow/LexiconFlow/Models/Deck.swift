@@ -35,10 +35,14 @@ final class Deck {
     var order: Int
 
     /// All cards belonging to this deck
-    /// - Deleting deck nullifies the deck reference on cards (cards persist as orphans)
-    /// - This preserves user learning progress (FSRS state) when deck is deleted
-    /// - Inverse points to Flashcard.deck (both sides use .nullify for consistency)
-    /// - SwiftData auto-initializes this property
+    ///
+    /// **Delete Behavior**: Deleting deck nullifies the deck reference on cards (cards persist as orphans)
+    /// **Rationale**: Preserves user learning progress (FSRS state) when deck is deleted
+    /// **Orphan Management**: Orphaned cards appear in "Orphaned Cards" section for reassignment
+    /// **User Confirmation**: Deck deletion shows confirmation dialog with orphan count warning
+    /// **Inverse**: Defined on Deck.cards (SwiftData single-sided pattern)
+    /// **Delete Rule**: Both sides use .nullify to prevent cascade loops
+    /// **SwiftData**: Auto-initializes this property
     @Relationship(deleteRule: .nullify, inverse: \Flashcard.deck) var cards: [Flashcard] = []
 
     /// All study sessions for this deck

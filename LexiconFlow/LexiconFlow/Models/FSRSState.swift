@@ -92,9 +92,13 @@ final class FSRSState {
         MasteryLevel(stability: stability)
     }
 
-    /// Whether card is considered "mastered" (stability >= 30 days and in review state)
+    /// Whether card is considered "mastered"
+    ///
+    /// Considers both stability threshold (from MasteryLevel) and state.
+    /// Cards must have stability >= 30 days AND be in review state
+    /// to be considered mastered (excludes learning/relearning states).
     var isMastered: Bool {
-        stability >= 30.0 && state == .review
+        masteryLevel == .mastered && state == .review
     }
 
     /// Initialize with default values for a new card
