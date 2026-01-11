@@ -85,6 +85,8 @@ fastlane/test_output
 # Test output files
 LexiconFlow/test_output.txt
 LexiconFlow/test_output/*.txt
+LexiconFlow/test_*.txt
+LexiconFlow/test_*.log
 LexiconFlow/final_test_*.txt
 
 # Code Injection
