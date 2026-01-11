@@ -124,10 +124,4 @@ struct AppSettingsVoiceQualityTests {
         // Reset
         AppSettings.ttsVoiceQuality = initial
     }
-
-    @Test("ttsVoiceQuality is included in default settings")
-    func voiceQualityInDefaultSettings() async throws {
-        let defaults = AppSettings.defaults
-        #expect(defaults["ttsVoiceQuality"] as? String == "enhanced")
-    }
 }

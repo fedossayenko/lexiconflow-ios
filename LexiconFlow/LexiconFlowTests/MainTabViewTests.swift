@@ -46,7 +46,7 @@ struct MainTabViewTests {
     @Test("MainTabView can be created")
     func mainTabViewCreation() {
         let container = self.createTestContainer()
-        let view = MainTabView()
+        let view = MainTabView(selectedTab: .constant(0))
 
         // Verify view can be created (smoke test)
         #expect(true, "MainTabView should be instantiable")
@@ -198,7 +198,7 @@ struct MainTabViewTests {
     @Test("View creation with empty database doesn't crash")
     func viewCreationWithEmptyDatabase() {
         let container = self.createTestContainer()
-        let view = MainTabView()
+        let view = MainTabView(selectedTab: .constant(0))
 
         // Verify view can be created with empty database
         #expect(true, "MainTabView should handle empty database without crash")
@@ -215,7 +215,7 @@ struct MainTabViewTests {
 
         try context.save()
 
-        let view = MainTabView()
+        let view = MainTabView(selectedTab: .constant(0))
 
         // Verify view can be created with cards in database
         #expect(true, "MainTabView should handle cards in database without crash")

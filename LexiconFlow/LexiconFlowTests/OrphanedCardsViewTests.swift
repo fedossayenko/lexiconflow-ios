@@ -587,8 +587,9 @@ struct OrphanedCardsViewTests {
 
         try context.save()
 
-        // Pre-warm cache for deck
-        _ = DeckStatisticsCache.shared.fetchDeckStatistics(for: deck)
+        // Pre-warm cache for deck using Scheduler
+        let scheduler = Scheduler(modelContext: context)
+        _ = scheduler.fetchDeckStatistics(for: deck)
 
         // Reassign card
         _ = try await OrphanedCardsService.shared.reassignCards(
