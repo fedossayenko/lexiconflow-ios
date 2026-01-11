@@ -11,6 +11,13 @@ import SwiftUI
 struct CardBackView: View {
     @Bindable var card: Flashcard
     @State private var showAllSentences = false
+    @State private var isRegenerating = false
+    @Environment(\.modelContext) private var modelContext
+
+    // Toast State
+    @State private var showToast = false
+    @State private var toastMessage = ""
+    @State private var toastStyle: ToastStyle = .info
 
     var body: some View {
         ScrollView {
@@ -93,6 +100,7 @@ struct CardBackView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Card back")
+        .toast(isPresented: self.$showToast, message: self.toastMessage, style: self.toastStyle)
     }
 
     // MARK: - Sentence Section
@@ -105,12 +113,33 @@ struct CardBackView: View {
         // Only show section if there are valid sentences
         if !validSentences.isEmpty {
             VStack(alignment: .leading, spacing: 16) {
-                // Header (no button)
-                Text("AI Sentences")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
+                // Header
+                HStack {
+                    Text("AI Sentences")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+
+                    Spacer()
+
+                    if AppSettings.isSentenceGenerationEnabled {
+                        Button {
+                            HapticService.shared.triggerLight()
+                            self.regenerateSentences()
+                        } label: {
+                            if self.isRegenerating {
+                                ProgressView()
+                                    .controlSize(.mini)
+                            } else {
+                                Label("Regenerate", systemImage: "arrow.triangle.2.circlepath")
+                                    .labelStyle(.iconOnly)
+                                    .font(.caption2)
+                            }
+                        }
+                        .disabled(self.isRegenerating)
+                        .accessibilityLabel("Regenerate sentences")
+                    }
+                }
+                .padding(.horizontal)
 
                 // Sentences display
                 self.sentencesList(sentences: validSentences)
@@ -142,6 +171,62 @@ struct CardBackView: View {
     }
 
     // MARK: - Helper Methods
+
+    /// Regenerate AI sentences
+    private func regenerateSentences() {
+        self.isRegenerating = true
+
+        Task {
+            do {
+                let response = try await SentenceGenerationService.shared.generateSentences(
+                    cardWord: self.card.word,
+                    cardDefinition: self.card.definition,
+                    cardTranslation: self.card.translation,
+                    cardCEFR: self.card.cefrLevel
+                )
+
+                await MainActor.run {
+                    // Remove non-favorite generated sentences to avoid clutter
+                    // We keep favorites and user created ones
+                    let toRemove = self.card.generatedSentences.filter {
+                        !$0.isFavorite && $0.source != .userCreated
+                    }
+
+                    for sentence in toRemove {
+                        if let index = card.generatedSentences.firstIndex(of: sentence) {
+                            self.card.generatedSentences.remove(at: index)
+                        }
+                        self.modelContext.delete(sentence)
+                    }
+
+                    // Add new sentences
+                    for item in response.items {
+                        if let newSentence = try? GeneratedSentence(
+                            sentenceText: item.sentence,
+                            cefrLevel: item.cefrLevel,
+                            source: .aiGenerated
+                        ) {
+                            self.card.generatedSentences.append(newSentence)
+                        }
+                    }
+
+                    self.toastMessage = "New examples ready!"
+                    self.toastStyle = .success
+                    self.showToast = true
+                }
+            } catch {
+                await MainActor.run {
+                    self.toastMessage = "Generation failed"
+                    self.toastStyle = .error
+                    self.showToast = true
+                }
+            }
+
+            await MainActor.run {
+                self.isRegenerating = false
+            }
+        }
+    }
 }
 
 // MARK: - Helper Methods

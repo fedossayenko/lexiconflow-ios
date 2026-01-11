@@ -135,7 +135,16 @@ struct TTSSettingsView: View {
                 } header: {
                     Text("Voice")
                 } footer: {
-                    Text("Premium and Enhanced voices require download in Settings → Accessibility → Spoken Content → Voices.")
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Premium and Enhanced voices require download in Settings → Accessibility → Spoken Content → Voices.")
+
+                        Button("Open Settings") {
+                            if let url = URL(string: UIApplication.openSettingsURLString) {
+                                UIApplication.shared.open(url)
+                            }
+                        }
+                        .font(.caption)
+                    }
                 }
 
                 Section {
