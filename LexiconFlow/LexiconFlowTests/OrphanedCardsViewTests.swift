@@ -69,12 +69,12 @@ struct OrphanedCardsViewTests {
 
     @Test("Empty state shows when no orphaned cards")
     func emptyStateWhenNoOrphans() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create deck with cards (no orphans)
-        let deck = createTestDeck(in: context, name: "Test Deck")
-        _ = createCardWithDeck(in: context, word: "Test", deck: deck)
+        let deck = self.createTestDeck(in: context, name: "Test Deck")
+        _ = self.createCardWithDeck(in: context, word: "Test", deck: deck)
         try context.save()
 
         _ = OrphanedCardsView()
@@ -100,12 +100,12 @@ struct OrphanedCardsViewTests {
 
     @Test("Orphaned cards are fetched and displayed")
     func orphanedCardsFetched() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create orphaned cards
-        _ = createOrphanedCard(in: context, word: "Orphan1")
-        _ = createOrphanedCard(in: context, word: "Orphan2")
+        _ = self.createOrphanedCard(in: context, word: "Orphan1")
+        _ = self.createOrphanedCard(in: context, word: "Orphan2")
 
         try context.save()
 
@@ -116,15 +116,15 @@ struct OrphanedCardsViewTests {
 
     @Test("Cards with decks are not included")
     func cardsWithDecksNotIncluded() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create deck with card
-        let deck = createTestDeck(in: context, name: "Test Deck")
-        _ = createCardWithDeck(in: context, word: "NotOrphan", deck: deck)
+        let deck = self.createTestDeck(in: context, name: "Test Deck")
+        _ = self.createCardWithDeck(in: context, word: "NotOrphan", deck: deck)
 
         // Create orphan
-        _ = createOrphanedCard(in: context, word: "Orphan")
+        _ = self.createOrphanedCard(in: context, word: "Orphan")
 
         try context.save()
 
@@ -135,13 +135,13 @@ struct OrphanedCardsViewTests {
 
     @Test("Section header shows correct orphan count")
     func sectionHeaderShowsCount() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create 3 orphaned cards
-        _ = createOrphanedCard(in: context, word: "Orphan1")
-        _ = createOrphanedCard(in: context, word: "Orphan2")
-        _ = createOrphanedCard(in: context, word: "Orphan3")
+        _ = self.createOrphanedCard(in: context, word: "Orphan1")
+        _ = self.createOrphanedCard(in: context, word: "Orphan2")
+        _ = self.createOrphanedCard(in: context, word: "Orphan3")
 
         try context.save()
 
@@ -151,10 +151,10 @@ struct OrphanedCardsViewTests {
 
     @Test("Section header uses singular form for single orphan")
     func sectionHeaderSingularForm() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        _ = createOrphanedCard(in: context, word: "OnlyOrphan")
+        _ = self.createOrphanedCard(in: context, word: "OnlyOrphan")
         try context.save()
 
         let orphans = OrphanedCardsService.shared.fetchOrphanedCards(context: context)
@@ -211,15 +211,15 @@ struct OrphanedCardsViewTests {
 
     @Test("Reassigning cards to deck updates deck reference")
     func reassignCardsToDeck() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create orphaned cards
-        let card1 = createOrphanedCard(in: context, word: "Orphan1")
-        let card2 = createOrphanedCard(in: context, word: "Orphan2")
+        let card1 = self.createOrphanedCard(in: context, word: "Orphan1")
+        let card2 = self.createOrphanedCard(in: context, word: "Orphan2")
 
         // Create target deck
-        let deck = createTestDeck(in: context, name: "Target Deck")
+        let deck = self.createTestDeck(in: context, name: "Target Deck")
 
         try context.save()
 
@@ -237,10 +237,10 @@ struct OrphanedCardsViewTests {
 
     @Test("Reassigning empty array does not crash")
     func reassignEmptyArray() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = createTestDeck(in: context, name: "Target Deck")
+        let deck = self.createTestDeck(in: context, name: "Target Deck")
 
         let reassigned = try await OrphanedCardsService.shared.reassignCards(
             [],
@@ -253,12 +253,12 @@ struct OrphanedCardsViewTests {
 
     @Test("Cache is invalidated after reassignment")
     func reassignmentInvalidatesCache() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create orphaned card
-        let card = createOrphanedCard(in: context, word: "Orphan")
-        let deck = createTestDeck(in: context, name: "Target Deck")
+        let card = self.createOrphanedCard(in: context, word: "Orphan")
+        let deck = self.createTestDeck(in: context, name: "Target Deck")
 
         try context.save()
 
@@ -277,11 +277,11 @@ struct OrphanedCardsViewTests {
 
     @Test("Bulk deleting orphaned cards removes them")
     func bulkDeleteOrphanedCards() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let card1 = createOrphanedCard(in: context, word: "Delete1")
-        let card2 = createOrphanedCard(in: context, word: "Delete2")
+        let card1 = self.createOrphanedCard(in: context, word: "Delete1")
+        let card2 = self.createOrphanedCard(in: context, word: "Delete2")
 
         try context.save()
 
@@ -301,10 +301,10 @@ struct OrphanedCardsViewTests {
 
     @Test("Deleting orphaned card cascades to FSRSState")
     func deleteOrphanedCardCascadeToState() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let card = createOrphanedCard(in: context, word: "Orphan")
+        let card = self.createOrphanedCard(in: context, word: "Orphan")
 
         let state = FSRSState(
             stability: 1.0,
@@ -369,9 +369,9 @@ struct OrphanedCardsViewTests {
 
     @Test("OrphanedCardRow displays card word")
     func orphanedCardRowDisplaysWord() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let card = createOrphanedCard(in: context, word: "TestWord")
+        let card = self.createOrphanedCard(in: context, word: "TestWord")
 
         _ = OrphanedCardRow(card: card, isSelected: false)
 
@@ -380,9 +380,9 @@ struct OrphanedCardsViewTests {
 
     @Test("OrphanedCardRow displays card definition")
     func orphanedCardRowDisplaysDefinition() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let card = createOrphanedCard(in: context, word: "Test", definition: "Test definition")
+        let card = self.createOrphanedCard(in: context, word: "Test", definition: "Test definition")
 
         _ = OrphanedCardRow(card: card, isSelected: false)
 
@@ -391,9 +391,9 @@ struct OrphanedCardsViewTests {
 
     @Test("OrphanedCardRow shows checkmark when selected")
     func orphanedCardRowSelectedIndicator() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let card = createOrphanedCard(in: context, word: "Test")
+        let card = self.createOrphanedCard(in: context, word: "Test")
 
         let row = OrphanedCardRow(card: card, isSelected: true)
 
@@ -403,9 +403,9 @@ struct OrphanedCardsViewTests {
 
     @Test("OrphanedCardRow shows circle when not selected")
     func orphanedCardRowUnselectedIndicator() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let card = createOrphanedCard(in: context, word: "Test")
+        let card = self.createOrphanedCard(in: context, word: "Test")
 
         let row = OrphanedCardRow(card: card, isSelected: false)
 
@@ -415,9 +415,9 @@ struct OrphanedCardsViewTests {
 
     @Test("OrphanedCardRow shows No Deck badge")
     func orphanedCardRowShowsNoDeckBadge() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let card = createOrphanedCard(in: context, word: "Test")
+        let card = self.createOrphanedCard(in: context, word: "Test")
 
         _ = OrphanedCardRow(card: card, isSelected: false)
 
@@ -429,11 +429,11 @@ struct OrphanedCardsViewTests {
 
     @Test("DeckReassignmentView lists available decks")
     func deckReassignmentListsDecks() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        _ = createTestDeck(in: context, name: "Deck1")
-        _ = createTestDeck(in: context, name: "Deck2")
+        _ = self.createTestDeck(in: context, name: "Deck1")
+        _ = self.createTestDeck(in: context, name: "Deck2")
 
         try context.save()
 
@@ -444,7 +444,7 @@ struct OrphanedCardsViewTests {
 
     @Test("DeckReassignmentView shows empty state when no decks")
     func deckReassignmentEmptyState() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         try context.save()
@@ -464,10 +464,10 @@ struct OrphanedCardsViewTests {
 
     @Test("View handles cards with special characters")
     func handlesSpecialCharacters() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let card = createOrphanedCard(in: context, word: "日本語 🇯🇵")
+        let card = self.createOrphanedCard(in: context, word: "日本語 🇯🇵")
         try context.save()
 
         _ = OrphanedCardsView()
@@ -477,12 +477,12 @@ struct OrphanedCardsViewTests {
 
     @Test("View handles very large number of orphans")
     func handlesLargeOrphanCount() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create 100 orphaned cards
-        for i in 0..<100 {
-            _ = createOrphanedCard(in: context, word: "Orphan\(i)")
+        for i in 0 ..< 100 {
+            _ = self.createOrphanedCard(in: context, word: "Orphan\(i)")
         }
 
         try context.save()
@@ -493,7 +493,7 @@ struct OrphanedCardsViewTests {
 
     @Test("View handles card with empty definition")
     func handlesEmptyDefinition() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let card = Flashcard(word: "Test", definition: "", phonetic: nil)
@@ -507,11 +507,11 @@ struct OrphanedCardsViewTests {
 
     @Test("View handles card with very long definition")
     func handlesVeryLongDefinition() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let longDefinition = String(repeating: "Definition text. ", count: 100)
-        let card = createOrphanedCard(in: context, word: "Test", definition: longDefinition)
+        let card = self.createOrphanedCard(in: context, word: "Test", definition: longDefinition)
         try context.save()
 
         _ = OrphanedCardsView()
@@ -536,11 +536,11 @@ struct OrphanedCardsViewTests {
 
     @Test("Reassignment clears selection after success")
     func reassignmentClearsSelection() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let card = createOrphanedCard(in: context, word: "Orphan")
-        let deck = createTestDeck(in: context, name: "Target")
+        let card = self.createOrphanedCard(in: context, word: "Orphan")
+        let deck = self.createTestDeck(in: context, name: "Target")
 
         try context.save()
 
@@ -559,10 +559,10 @@ struct OrphanedCardsViewTests {
 
     @Test("Deletion clears selection after success")
     func deletionClearsSelection() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let card = createOrphanedCard(in: context, word: "DeleteMe")
+        let card = self.createOrphanedCard(in: context, word: "DeleteMe")
         try context.save()
 
         _ = try await OrphanedCardsService.shared.deleteOrphanedCards(
@@ -579,11 +579,11 @@ struct OrphanedCardsViewTests {
 
     @Test("Reassigning to deck invalidates cache")
     func reassignmentInvalidatesDeckCache() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let card = createOrphanedCard(in: context, word: "Orphan")
-        let deck = createTestDeck(in: context, name: "Target")
+        let card = self.createOrphanedCard(in: context, word: "Orphan")
+        let deck = self.createTestDeck(in: context, name: "Target")
 
         try context.save()
 

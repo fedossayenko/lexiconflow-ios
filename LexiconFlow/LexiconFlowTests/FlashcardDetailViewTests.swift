@@ -59,9 +59,9 @@ struct FlashcardDetailViewTests {
 
     @Test("FlashcardDetailView can be created with flashcard")
     func flashcardDetailViewCreation() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let card = createFlashcard(in: context, word: "Test", definition: "Definition")
+        let card = self.createFlashcard(in: context, word: "Test", definition: "Definition")
 
         _ = FlashcardDetailView(flashcard: card)
 
@@ -70,9 +70,9 @@ struct FlashcardDetailViewTests {
 
     @Test("Navigation title shows flashcard word")
     func navigationTitleShowsWord() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let card = createFlashcard(in: context, word: "Ephemeral", definition: "Definition")
+        let card = self.createFlashcard(in: context, word: "Ephemeral", definition: "Definition")
 
         _ = FlashcardDetailView(flashcard: card)
 
@@ -83,10 +83,10 @@ struct FlashcardDetailViewTests {
 
     @Test("Mastery badge is displayed when enabled and card has FSRS state")
     func masteryBadgeDisplayedWhenEnabled() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let card = createFlashcardWithState(
+        let card = self.createFlashcardWithState(
             in: context,
             word: "Mastered",
             definition: "High stability",
@@ -105,10 +105,10 @@ struct FlashcardDetailViewTests {
 
     @Test("Mastery badge is hidden when disabled")
     func masteryBadgeHiddenWhenDisabled() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let card = createFlashcardWithState(
+        let card = self.createFlashcardWithState(
             in: context,
             word: "Mastered",
             definition: "High stability",
@@ -127,11 +127,11 @@ struct FlashcardDetailViewTests {
 
     @Test("Mastery badge is hidden for cards without FSRS state")
     func masteryBadgeHiddenWithoutState() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create card without FSRS state
-        let card = createFlashcard(in: context, word: "NoState", definition: "No FSRS state")
+        let card = self.createFlashcard(in: context, word: "NoState", definition: "No FSRS state")
         try context.save()
 
         // Enable mastery badges
@@ -144,10 +144,10 @@ struct FlashcardDetailViewTests {
 
     @Test("Mastery badge is hidden for cards with zero stability")
     func masteryBadgeHiddenForZeroStability() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let card = createFlashcardWithState(
+        let card = self.createFlashcardWithState(
             in: context,
             word: "New",
             definition: "Zero stability",
@@ -166,7 +166,7 @@ struct FlashcardDetailViewTests {
 
     @Test("Mastery badge shows correct icon for each level")
     func masteryBadgeIcons() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Test each mastery level
@@ -178,7 +178,7 @@ struct FlashcardDetailViewTests {
         ]
 
         for (stability, expectedLevel, expectedIcon) in levels {
-            let card = createFlashcardWithState(
+            let card = self.createFlashcardWithState(
                 in: context,
                 word: "Test\(stability)",
                 definition: "Test",
@@ -194,7 +194,7 @@ struct FlashcardDetailViewTests {
 
     @Test("Mastery badge shows correct label for each level")
     func masteryBadgeLabels() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Test each mastery level
@@ -206,7 +206,7 @@ struct FlashcardDetailViewTests {
         ]
 
         for (stability, expectedLevel, expectedLabel) in levels {
-            let card = createFlashcardWithState(
+            let card = self.createFlashcardWithState(
                 in: context,
                 word: "Test\(stability)",
                 definition: "Test",
@@ -222,14 +222,14 @@ struct FlashcardDetailViewTests {
 
     @Test("Mastery badge colors map correctly")
     func masteryBadgeColors() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Test each mastery level color
-        let beginnerCard = createFlashcardWithState(in: context, word: "Beginner", definition: "Low", stability: 1.0)
-        let intermediateCard = createFlashcardWithState(in: context, word: "Intermediate", definition: "Medium", stability: 5.0)
-        let advancedCard = createFlashcardWithState(in: context, word: "Advanced", definition: "High", stability: 14.0)
-        let masteredCard = createFlashcardWithState(in: context, word: "Mastered", definition: "Mastered", stability: 30.0)
+        let beginnerCard = self.createFlashcardWithState(in: context, word: "Beginner", definition: "Low", stability: 1.0)
+        let intermediateCard = self.createFlashcardWithState(in: context, word: "Intermediate", definition: "Medium", stability: 5.0)
+        let advancedCard = self.createFlashcardWithState(in: context, word: "Advanced", definition: "High", stability: 14.0)
+        let masteredCard = self.createFlashcardWithState(in: context, word: "Mastered", definition: "Mastered", stability: 30.0)
 
         try context.save()
 
@@ -244,9 +244,9 @@ struct FlashcardDetailViewTests {
 
     @Test("Card info section displays word")
     func cardInfoDisplaysWord() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let card = createFlashcard(in: context, word: "Ephemeral", definition: "Definition")
+        let card = self.createFlashcard(in: context, word: "Ephemeral", definition: "Definition")
 
         _ = FlashcardDetailView(flashcard: card)
 
@@ -255,9 +255,9 @@ struct FlashcardDetailViewTests {
 
     @Test("Card info section displays definition")
     func cardInfoDisplaysDefinition() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let card = createFlashcard(in: context, word: "Test", definition: "Lasting for a very short time")
+        let card = self.createFlashcard(in: context, word: "Test", definition: "Lasting for a very short time")
 
         _ = FlashcardDetailView(flashcard: card)
 
@@ -266,7 +266,7 @@ struct FlashcardDetailViewTests {
 
     @Test("Card info section displays phonetic when available")
     func cardInfoDisplaysPhonetic() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
         let card = Flashcard(word: "Test", definition: "Definition", phonetic: "/əˈfem(ə)rəl/")
         context.insert(card)
@@ -278,7 +278,7 @@ struct FlashcardDetailViewTests {
 
     @Test("Card info section displays translation when available")
     func cardInfoDisplaysTranslation() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
         let card = Flashcard(word: "Test", definition: "Definition", translation: "Тест")
         context.insert(card)
@@ -292,10 +292,10 @@ struct FlashcardDetailViewTests {
 
     @Test("FSRS state info displays when available")
     func fsrsStateInfoDisplays() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let card = createFlashcardWithState(
+        let card = self.createFlashcardWithState(
             in: context,
             word: "Test",
             definition: "Definition",
@@ -363,10 +363,10 @@ struct FlashcardDetailViewTests {
 
     @Test("View handles card with very long word")
     func viewHandlesLongWord() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
         let longWord = String(repeating: "a", count: 100)
-        let card = createFlashcard(in: context, word: longWord, definition: "Definition")
+        let card = self.createFlashcard(in: context, word: longWord, definition: "Definition")
 
         _ = FlashcardDetailView(flashcard: card)
 
@@ -375,10 +375,10 @@ struct FlashcardDetailViewTests {
 
     @Test("View handles card with very long definition")
     func viewHandlesLongDefinition() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
         let longDefinition = String(repeating: "Word ", count: 100)
-        let card = createFlashcard(in: context, word: "Test", definition: longDefinition)
+        let card = self.createFlashcard(in: context, word: "Test", definition: longDefinition)
 
         _ = FlashcardDetailView(flashcard: card)
 
@@ -387,7 +387,7 @@ struct FlashcardDetailViewTests {
 
     @Test("View handles card with empty phonetic")
     func viewHandlesEmptyPhonetic() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
         let card = Flashcard(word: "Test", definition: "Definition", phonetic: "")
         context.insert(card)
@@ -399,7 +399,7 @@ struct FlashcardDetailViewTests {
 
     @Test("View handles card with empty translation")
     func viewHandlesEmptyTranslation() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
         let card = Flashcard(word: "Test", definition: "Definition", translation: "")
         context.insert(card)
@@ -411,9 +411,9 @@ struct FlashcardDetailViewTests {
 
     @Test("View handles special characters in word")
     func viewHandlesSpecialCharacters() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let card = createFlashcard(in: context, word: "日本語 🇯🇵", definition: "Definition")
+        let card = self.createFlashcard(in: context, word: "日本語 🇯🇵", definition: "Definition")
 
         _ = FlashcardDetailView(flashcard: card)
 
@@ -424,9 +424,9 @@ struct FlashcardDetailViewTests {
 
     @Test("Review history section title is displayed")
     func reviewHistorySectionTitle() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
-        let card = createFlashcard(in: context, word: "Test", definition: "Definition")
+        let card = self.createFlashcard(in: context, word: "Test", definition: "Definition")
 
         _ = FlashcardDetailView(flashcard: card)
 
@@ -442,10 +442,10 @@ struct FlashcardDetailViewTests {
 
     @Test("Review history viewed is tracked")
     func reviewHistoryViewedTracked() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let card = createFlashcardWithState(
+        let card = self.createFlashcardWithState(
             in: context,
             word: "Test",
             definition: "Definition",
@@ -459,10 +459,10 @@ struct FlashcardDetailViewTests {
 
     @Test("Review history filter change is tracked")
     func reviewHistoryFilterChangeTracked() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let card = createFlashcardWithState(
+        let card = self.createFlashcardWithState(
             in: context,
             word: "Test",
             definition: "Definition",

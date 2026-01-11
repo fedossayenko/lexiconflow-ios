@@ -183,6 +183,7 @@ final class DeckStatisticsCache: Sendable {
 // MARK: - Testing Support
 
 #if DEBUG
+    @MainActor
     extension DeckStatisticsCache {
         /// Mock time provider for deterministic TTL testing.
         ///

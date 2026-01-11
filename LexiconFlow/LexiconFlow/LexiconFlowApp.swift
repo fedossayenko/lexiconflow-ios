@@ -74,7 +74,17 @@ struct LexiconFlowApp: App {
             }
 
             // Return minimal container that allows app to launch and show error UI
-            return try! ModelContainer(for: EmptyModel.self)
+            // Using empty schema as absolute fallback
+            let emptyConfig = ModelConfiguration(isStoredInMemoryOnly: true)
+            do {
+                return try ModelContainer(for: EmptyModel.self, configurations: emptyConfig)
+            } catch {
+                // Absolute last resort - return container with empty schema
+                // This allows the app to launch but models will be unavailable
+                logger.critical("Even EmptyModel container failed: \(error.localizedDescription)")
+                let emptySchema = Schema([])
+                return try! ModelContainer(for: emptySchema, configurations: emptyConfig)
+            }
         #else
             // In RELEASE, log critical error and use truly minimal container
             // The app will launch with minimal functionality but can show error UI
@@ -82,7 +92,15 @@ struct LexiconFlowApp: App {
 
             // Return truly minimal container that allows app to launch
             // Models will be unavailable, but error UI can be shown
-            return try! ModelContainer(for: EmptyModel.self)
+            do {
+                return try ModelContainer(for: EmptyModel.self)
+            } catch {
+                // Absolute last resort - return container with empty schema
+                logger.critical("Even EmptyModel container failed: \(error.localizedDescription)")
+                let emptySchema = Schema([])
+                let emptyConfig = ModelConfiguration(isStoredInMemoryOnly: true)
+                return try! ModelContainer(for: emptySchema, configurations: emptyConfig)
+            }
         #endif
     }()
 

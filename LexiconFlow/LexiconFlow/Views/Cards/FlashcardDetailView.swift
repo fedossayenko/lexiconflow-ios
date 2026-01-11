@@ -419,32 +419,11 @@ private extension Preview {
             // Preview failure indicates a real problem
             assertionFailure("Failed to create preview container: \(error.localizedDescription)")
 
-            // Try minimal fallback (no persistent properties)
-            if let fallbackContainer = try? ModelContainer(for: EmptyModel.self, configurations: config) {
-                return fallbackContainer
-            }
-
-            // Last resort: truly minimal container
-            // This should never fail under normal circumstances
-            let minimalConfig = ModelConfiguration(isStoredInMemoryOnly: true)
-            do {
-                return try ModelContainer(for: EmptyModel.self, configurations: minimalConfig)
-            } catch {
-                // If even this fails, return a placeholder that will show an error in preview
-                // The preview will fail to render, but the app won't crash
-                assertionFailure("Critical: Cannot create even minimal ModelContainer: \(error.localizedDescription)")
-
-                // Absolute last resort: return empty container
-                // Preview will be empty but won't crash the app
-                let minimalConfig = ModelConfiguration(isStoredInMemoryOnly: true)
-                do {
-                    return try ModelContainer(for: EmptyModel.self, configurations: minimalConfig)
-                } catch {
-                    // This should never happen - empty schema always works
-                    // If it does, something is fundamentally broken with the system
-                    return try! ModelContainer(for: EmptyModel.self)
-                }
-            }
+            // Last resort: return empty schema container
+            // This allows preview to render (albeit empty) without crashing
+            assertionFailure("Critical: Cannot create ModelContainer, using empty schema fallback")
+            let emptySchema = Schema([])
+            return try! ModelContainer(for: emptySchema, configurations: config)
         }
     }
 }

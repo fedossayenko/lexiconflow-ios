@@ -311,10 +311,18 @@ struct OrphanedCardDeckReassignmentView: View {
 // MARK: - Preview
 
 private func makeEmptyPreviewContainer() -> ModelContainer {
-    try! ModelContainer(
-        for: Flashcard.self, Deck.self, FSRSState.self,
-        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-    )
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    do {
+        return try ModelContainer(
+            for: Flashcard.self, Deck.self, FSRSState.self,
+            configurations: config
+        )
+    } catch {
+        assertionFailure("Failed to create preview container: \(error.localizedDescription)")
+        // Return empty schema container as absolute fallback
+        let emptySchema = Schema([])
+        return try! ModelContainer(for: emptySchema, configurations: config)
+    }
 }
 
 #Preview("Empty State") {
@@ -323,10 +331,19 @@ private func makeEmptyPreviewContainer() -> ModelContainer {
 }
 
 private func makeOrphanedCardsPreviewContainer() -> ModelContainer {
-    let container = try! ModelContainer(
-        for: Flashcard.self, Deck.self, FSRSState.self,
-        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-    )
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container: ModelContainer
+    do {
+        container = try ModelContainer(
+            for: Flashcard.self, Deck.self, FSRSState.self,
+            configurations: config
+        )
+    } catch {
+        assertionFailure("Failed to create preview container: \(error.localizedDescription)")
+        // Return empty schema container as absolute fallback
+        let emptySchema = Schema([])
+        return try! ModelContainer(for: emptySchema, configurations: config)
+    }
 
     // Create some orphaned cards
     let context = ModelContext(container)
@@ -342,7 +359,11 @@ private func makeOrphanedCardsPreviewContainer() -> ModelContainer {
     let deck = Deck(name: "Test Deck")
     context.insert(deck)
 
-    try! context.save()
+    do {
+        try context.save()
+    } catch {
+        assertionFailure("Failed to save preview context: \(error.localizedDescription)")
+    }
 
     return container
 }
