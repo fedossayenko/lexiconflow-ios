@@ -199,22 +199,44 @@ class SpeechService {
 
     // MARK: - Private Helpers
 
-    /// Get voice for specific language code
+    /// Get voice for specific language code based on user's quality preference
     ///
     /// **Parameters:**
     ///   - languageCode: BCP 47 language code (e.g., "en-US", "en-GB")
     ///
-    /// **Returns:** Voice matching the language code, or nil if not found
+    /// **Returns:** Voice matching the language code and quality preference, with fallback
+    ///
+    /// **Quality Fallback Chain:**
+    /// - If preferred quality not available, falls back to next lower quality
+    /// - Premium → Enhanced → Default
     private func voiceForLanguage(_ languageCode: String) -> AVSpeechSynthesisVoice? {
         let voices = self.availableVoices(for: languageCode)
+        let preferredQuality = AppSettings.ttsVoiceQuality
 
-        // Prefer premium voices (enhanced quality)
-        let premiumVoices = voices.filter { $0.quality == .enhanced }
-        if let premiumVoice = premiumVoices.first {
-            return premiumVoice
+        // Filter by quality based on user preference
+        switch preferredQuality {
+        case .premium:
+            // Try premium first, then enhanced, then default
+            if let premiumVoice = voices.first(where: { $0.quality == .premium }) {
+                return premiumVoice
+            }
+            if let enhancedVoice = voices.first(where: { $0.quality == .enhanced }) {
+                self.logger.info("Premium voice not available, using enhanced")
+                return enhancedVoice
+            }
+        case .enhanced:
+            // Try enhanced first, then default
+            if let enhancedVoice = voices.first(where: { $0.quality == .enhanced }) {
+                return enhancedVoice
+            }
+        case .default:
+            // Use default quality only
+            if let defaultVoice = voices.first(where: { $0.quality == .default }) {
+                return defaultVoice
+            }
         }
 
-        // Fallback to default voice
+        // Fallback to any available voice
         return voices.first
     }
 

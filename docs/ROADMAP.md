@@ -157,7 +157,6 @@ This document outlines the phased development approach for Lexicon Flow, from in
 - [x] Build batch translation for word imports
 - [x] Add language availability checking
 - [x] Implement offline language pack detection
-- [ ] Create Share Extension for Safari → card creation
 
 ### Week 11: Audio System
 - [x] Implement `AVSpeechSynthesizer` wrapper (SpeechService)

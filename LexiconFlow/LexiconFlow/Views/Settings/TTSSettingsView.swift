@@ -54,6 +54,14 @@ struct TTSSettingsView: View {
         )
     }
 
+    /// Binding to AppSettings.ttsVoiceQuality following centralized pattern
+    private var voiceQualityBinding: Binding<AppSettings.VoiceQuality> {
+        Binding(
+            get: { AppSettings.ttsVoiceQuality },
+            set: { AppSettings.ttsVoiceQuality = $0 }
+        )
+    }
+
     var body: some View {
         Form {
             Section {
@@ -92,8 +100,25 @@ struct TTSSettingsView: View {
                     }
                     .accessibilityLabel("Select voice accent")
 
+                    Picker("Voice Quality", selection: self.voiceQualityBinding) {
+                        ForEach(AppSettings.VoiceQuality.allCases, id: \.self) { quality in
+                            Label {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(quality.displayName)
+                                    Text(quality.description)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            } icon: {
+                                Image(systemName: quality.icon)
+                            }
+                            .tag(quality)
+                        }
+                    }
+                    .accessibilityLabel("Select voice quality")
+
                     if let currentAccent = AppSettings.supportedTTSAccents.first(where: { $0.code == AppSettings.ttsVoiceLanguage }) {
-                        Text("Selected: \(currentAccent.name)")
+                        Text("Selected: \(currentAccent.name) (\(AppSettings.ttsVoiceQuality.displayName))")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -110,7 +135,7 @@ struct TTSSettingsView: View {
                 } header: {
                     Text("Voice")
                 } footer: {
-                    Text("Available voices depend on your device and iOS version.")
+                    Text("Premium and Enhanced voices require download in Settings → Accessibility → Spoken Content → Voices.")
                 }
 
                 Section {
