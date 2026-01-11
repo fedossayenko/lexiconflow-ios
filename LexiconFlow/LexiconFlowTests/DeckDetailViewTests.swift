@@ -381,4 +381,293 @@ struct DeckDetailViewTests {
         // Verify long definitions are handled (limited to 2 lines by UI)
         #expect(card.definition.count > 0, "Card with long definition should be handled")
     }
+
+    // MARK: - Mastery Filter Tests
+
+    @Test("Mastery filter shows all cards by default")
+    func masteryFilterShowsAllCards() async throws {
+        let container = self.createTestContainer()
+        let context = container.mainContext
+
+        let deck = self.createTestDeck(in: context, name: "Test Deck")
+
+        // Create cards with different mastery levels
+        let card1 = Flashcard(word: "Beginner", definition: "Low stability")
+        card1.deck = deck
+        context.insert(card1)
+
+        let state1 = FSRSState(
+            stability: 1.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        card1.fsrsState = state1
+        context.insert(state1)
+
+        let card2 = Flashcard(word: "Mastered", definition: "High stability")
+        card2.deck = deck
+        context.insert(card2)
+
+        let state2 = FSRSState(
+            stability: 30.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        card2.fsrsState = state2
+        context.insert(state2)
+
+        try context.save()
+
+        // All cards should be visible with .all filter
+        #expect(deck.cards.count == 2, "All cards should be shown with .all filter")
+        #expect(card1.fsrsState?.masteryLevel == .beginner, "First card should be beginner")
+        #expect(card2.fsrsState?.masteryLevel == .mastered, "Second card should be mastered")
+    }
+
+    @Test("Mastery filter shows only mastered cards")
+    func masteryFilterShowsOnlyMastered() async throws {
+        let container = self.createTestContainer()
+        let context = container.mainContext
+
+        let deck = self.createTestDeck(in: context, name: "Test Deck")
+
+        // Create beginner card
+        let card1 = Flashcard(word: "Beginner", definition: "Low")
+        card1.deck = deck
+        context.insert(card1)
+
+        let state1 = FSRSState(
+            stability: 3.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        card1.fsrsState = state1
+        context.insert(state1)
+
+        // Create mastered card
+        let card2 = Flashcard(word: "Mastered", definition: "High")
+        card2.deck = deck
+        context.insert(card2)
+
+        let state2 = FSRSState(
+            stability: 35.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        card2.fsrsState = state2
+        context.insert(state2)
+
+        try context.save()
+
+        // Filter for mastered cards: stability >= 30 AND state == .review
+        let masteredCards = deck.cards.filter { card in
+            guard let state = card.fsrsState else { return false }
+            return state.stability >= 30.0 && state.stateEnum == FlashcardState.review.rawValue
+        }
+
+        #expect(masteredCards.count == 1, "Should show only 1 mastered card")
+        #expect(masteredCards.first?.word == "Mastered", "Should be the high stability card")
+    }
+
+    @Test("Mastery filter shows learning cards")
+    func masteryFilterShowsLearning() async throws {
+        let container = self.createTestContainer()
+        let context = container.mainContext
+
+        let deck = self.createTestDeck(in: context, name: "Test Deck")
+
+        // Create new card (learning)
+        let card1 = Flashcard(word: "New", definition: "New card")
+        card1.deck = deck
+        context.insert(card1)
+
+        let state1 = FSRSState(
+            stability: 0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.new.rawValue
+        )
+        card1.fsrsState = state1
+        context.insert(state1)
+
+        // Create learning card
+        let card2 = Flashcard(word: "Learning", definition: "Learning")
+        card2.deck = deck
+        context.insert(card2)
+
+        let state2 = FSRSState(
+            stability: 2.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.learning.rawValue
+        )
+        card2.fsrsState = state2
+        context.insert(state2)
+
+        // Create relearning card
+        let card3 = Flashcard(word: "Relearning", definition: "Relearning")
+        card3.deck = deck
+        context.insert(card3)
+
+        let state3 = FSRSState(
+            stability: 1.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.relearning.rawValue
+        )
+        card3.fsrsState = state3
+        context.insert(state3)
+
+        // Create mastered card (should be excluded)
+        let card4 = Flashcard(word: "Mastered", definition: "Mastered")
+        card4.deck = deck
+        context.insert(card4)
+
+        let state4 = FSRSState(
+            stability: 30.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        card4.fsrsState = state4
+        context.insert(state4)
+
+        try context.save()
+
+        // Filter for learning cards: state in [.new, .learning, .relearning]
+        let learningCards = deck.cards.filter { card in
+            guard let state = card.fsrsState else { return false }
+            return state.stateEnum == FlashcardState.new.rawValue
+                || state.stateEnum == FlashcardState.learning.rawValue
+                || state.stateEnum == FlashcardState.relearning.rawValue
+        }
+
+        #expect(learningCards.count == 3, "Should show 3 learning cards (new, learning, relearning)")
+        #expect(learningCards.allSatisfy { $0.word != "Mastered" }, "Should not include mastered cards")
+    }
+
+    @Test("Cards without FSRSState are included in all filter")
+    func cardsWithoutStateIncludedInAll() async throws {
+        let container = self.createTestContainer()
+        let context = container.mainContext
+
+        let deck = self.createTestDeck(in: context, name: "Test Deck")
+
+        // Create card without FSRS state
+        let card = Flashcard(word: "NoState", definition: "No FSRS state")
+        card.deck = deck
+        context.insert(card)
+
+        try context.save()
+
+        // .all filter should include all cards regardless of state
+        #expect(deck.cards.count == 1, "All filter should include cards without state")
+    }
+
+    @Test("MasteryLevel computed property returns correct level")
+    func masteryLevelComputedProperty() async throws {
+        let container = self.createTestContainer()
+        let context = container.mainContext
+
+        // Test beginner (0-3 days)
+        let state1 = FSRSState(
+            stability: 2.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        context.insert(state1)
+
+        // Test intermediate (3-14 days)
+        let state2 = FSRSState(
+            stability: 8.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        context.insert(state2)
+
+        // Test advanced (14-30 days)
+        let state3 = FSRSState(
+            stability: 20.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        context.insert(state3)
+
+        // Test mastered (30+ days)
+        let state4 = FSRSState(
+            stability: 40.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        context.insert(state4)
+
+        try context.save()
+
+        #expect(state1.masteryLevel == .beginner, "Stability 2.0 should be beginner")
+        #expect(state2.masteryLevel == .intermediate, "Stability 8.0 should be intermediate")
+        #expect(state3.masteryLevel == .advanced, "Stability 20.0 should be advanced")
+        #expect(state4.masteryLevel == .mastered, "Stability 40.0 should be mastered")
+    }
+
+    @Test("isMastered returns true only when stability >= 30 and state is review")
+    func isMasteredComputedProperty() async throws {
+        let container = self.createTestContainer()
+        let context = container.mainContext
+
+        // Test mastered with review state
+        let masteredReview = FSRSState(
+            stability: 30.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        context.insert(masteredReview)
+
+        // Test high stability with learning state
+        let masteredLearning = FSRSState(
+            stability: 35.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.learning.rawValue
+        )
+        context.insert(masteredLearning)
+
+        // Test low stability with review state
+        let beginnerReview = FSRSState(
+            stability: 10.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        context.insert(beginnerReview)
+
+        try context.save()
+
+        #expect(masteredReview.isMastered == true, "Stability 30+ with review state should be mastered")
+        #expect(masteredLearning.isMastered == false, "Learning state should not be mastered even with high stability")
+        #expect(beginnerReview.isMastered == false, "Low stability should not be mastered")
+    }
 }

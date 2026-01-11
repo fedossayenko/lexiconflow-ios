@@ -133,32 +133,124 @@ do {
 
 ### 7. DeckStatisticsCache Pattern
 
-O(1) cache service with 30-second TTL to eliminate expensive database queries:
+O(1) cache service with 30-second TTL to eliminate expensive database queries.
 
+**Performance Impact:**
+- Eliminates O(n) database queries for deck statistics
+- Fixes tab-switching lag and "gesture timeout" errors
+- Reduces deck list rendering from N*3 queries to 1 query with caching
+
+**Cache Implementation:**
 ```swift
-// Cache-aside pattern
-@MainActor func fetchDeckStatistics(for deck: Deck) -> DeckStatistics {
-    // O(1) cache lookup
-    if let cached = DeckStatisticsCache.shared.get(deckID: deck.id) {
-        return cached
-    }
-    // Fallback to O(n) database query
-    let stats = /* expensive aggregation */
-    DeckStatisticsCache.shared.set(stats, for: deck.id)
-    return stats
-}
+@MainActor
+final class DeckStatisticsCache: Sendable {
+    static let shared = DeckStatisticsCache()
 
-// Invalidate after data changes
+    private var cache: [Deck.ID: CacheEntry] = [:]
+    private let ttl: TimeInterval = 30.0 // 30 seconds
+    private var globalTimestamp: Date = Date()
+
+    struct CacheEntry {
+        let statistics: DeckStatistics
+        let timestamp: Date
+    }
+
+    func fetchDeckStatistics(for deck: Deck) -> DeckStatistics {
+        // O(1) cache lookup
+        if let entry = cache[deck.id],
+           Date().timeIntervalSince(entry.timestamp) < ttl
+        {
+            return entry.statistics
+        }
+
+        // Cache miss: compute and cache
+        let stats = computeStatistics(for: deck)
+        cache[deck.id] = CacheEntry(statistics: stats, timestamp: Date())
+        return stats
+    }
+
+    func invalidate(deckID: Deck.ID? = nil) {
+        if let deckID {
+            cache.removeValue(forKey: deckID)
+        } else {
+            cache.removeAll()
+        }
+    }
+}
+```
+
+**Cache-Aside Pattern:**
+
+1. **Check cache** - O(1) dictionary lookup
+2. **If miss** - Compute statistics (O(n) database query)
+3. **Store result** - Save to cache with timestamp
+4. **Return value** - Always return valid statistics
+
+**Invalidation Triggers** (MANDATORY after data changes):
+
+| Operation | Invalidation Scope | Reason |
+|-----------|-------------------|--------|
+| Card review | Specific deck | Due count changes |
+| Card import | Specific deck | Total count changes |
+| Deck deletion | Global | Deck removed |
+| Card deletion | Specific deck | Total count changes |
+| Orphan reassignment | Both decks | Card count changes in both |
+| Orphan deletion | Global | May affect any deck |
+
+**Usage Example:**
+```swift
+// Fetch statistics (uses cache if available)
+let stats = DeckStatisticsCache.shared.fetchDeckStatistics(for: deck)
+
+// After modifying data, invalidate cache
 func processReview(flashcard: Flashcard, rating: Int) async throws {
     // ... update FSRS state ...
+    try modelContext.save()
+
+    // Critical: invalidate cache
     DeckStatisticsCache.shared.invalidate(deckID: flashcard.deck?.id)
 }
 ```
 
-**Invalidate Triggers:**
-- After processing card review (due count changes)
-- After importing cards (total count changes)
-- After deleting deck or resetting card
+**Thread Safety:**
+
+- `@MainActor` isolation ensures thread-safe access
+- No locks required (all operations on main actor)
+- Safe for concurrent SwiftUI view updates
+
+**Testing Support** (DEBUG only):
+```swift
+// Mock time for deterministic TTL testing
+var mockDate = Date()
+DeckStatisticsCache.setTimeProviderForTesting { mockDate }
+mockDate = mockDate.addingTimeInterval(31) // Advance time
+
+// Custom TTL for faster tests
+DeckStatisticsCache.shared.setTTLForTesting(0.1)
+
+// Cache inspection
+DeckStatisticsCache.shared.clearForTesting()
+DeckStatisticsCache.shared.size // Current entry count
+```
+
+**Public API:**
+
+| Method | Parameters | Returns | Description |
+|--------|------------|---------|-------------|
+| `fetchDeckStatistics(for:)` | `Deck` | `DeckStatistics` | Get stats (uses cache if valid) |
+| `get(deckID:)` | `UUID` | `DeckStatistics?` | Direct cache lookup (no TTL check) |
+| `set(_:for:)` | `DeckStatistics`, `UUID` | `Void` | Store stats in cache |
+| `setBatch(_:)` | `[UUID: DeckStatistics]` | `Void` | Bulk update for initial load |
+| `invalidate(deckID:)` | `UUID?` (optional) | `Void` | Remove specific or clear all |
+| `isValid(deckID:)` | `UUID` | `Bool` | Check existence + validity |
+| `age()` | None | `TimeInterval?` | Get current cache age in seconds |
+
+**Analytics Events Tracked:**
+- `deck_statistics_cache_hit` - Successful cache lookup
+- `deck_statistics_cache_miss` - Cache miss with reason metadata
+- `deck_statistics_cache_set` - New entry stored
+- `deck_statistics_cache_invalidate` - Cache invalidated
+
 
 ## Project Structure
 

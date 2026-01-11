@@ -3,7 +3,7 @@
 //  LexiconFlowTests
 //
 //  Tests for Deck model
-//  Covers: Deck creation, relationships, cascade delete behavior
+//  Covers: Deck creation, relationships, nullify delete behavior (cards persist as orphans)
 //
 
 import Foundation
@@ -124,9 +124,9 @@ struct DeckTests {
         #expect(card.deck == nil)
     }
 
-    // MARK: - Cascade Delete Tests
+    // MARK: - Nullify Delete Tests
 
-    @Test("Cascade delete: deleting deck nullifies cards")
+    @Test("Nullify delete: deleting deck nullifies cards (creates orphans)")
     func deleteDeckNullifiesCards() throws {
         let context = self.freshContext()
         try context.clearAll()
@@ -158,7 +158,7 @@ struct DeckTests {
         #expect(cards.first?.deck == nil)
     }
 
-    @Test("Cascade delete: deleting deck with multiple cards")
+    @Test("Nullify delete: deleting deck with multiple cards (creates multiple orphans)")
     func deleteDeckWithMultipleCards() throws {
         let context = self.freshContext()
         try context.clearAll()

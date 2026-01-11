@@ -3,7 +3,9 @@
 //  LexiconFlowTests
 //
 //  Tests for Flashcard model
-//  Covers: Flashcard creation, relationships, external storage, cascade delete
+//  Covers: Flashcard creation, relationships, external storage, delete behavior
+//  Note: Flashcard.deck uses .nullify (deck preserved when card deleted)
+//        FSRSState and FlashcardReview cascade (deleted when card deleted)
 //
 
 import Foundation
@@ -308,7 +310,7 @@ struct FlashcardTests {
         #expect(reviews.count == 0)
     }
 
-    @Test("Cascade delete: deleting flashcard with full relationships")
+    @Test("Delete: flashcard cascades to state/reviews, preserves deck (nullify)")
     func deleteFlashcardWithFullRelationships() throws {
         let context = self.freshContext()
         try context.clearAll()
