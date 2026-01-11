@@ -212,6 +212,25 @@ struct FlashcardDetailView: View {
                 {
                     fsrsStateInfo(state: state, stability: stability)
                 }
+
+                // Mastery badge (if enabled and card has FSRS state)
+                if AppSettings.showMasteryBadges,
+                   let state = flashcard.fsrsState,
+                   state.stability > 0
+                {
+                    HStack(spacing: 8) {
+                        Image(systemName: masteryIcon(for: state.masteryLevel))
+                            .font(.caption)
+                        Text(masteryLabel(for: state.masteryLevel))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(masteryColor(for: state.masteryLevel).opacity(0.15))
+                    .foregroundStyle(masteryColor(for: state.masteryLevel))
+                    .cornerRadius(8)
+                }
             }
             .padding(20)
             .background(
@@ -365,6 +384,25 @@ struct FlashcardDetailView: View {
             let months = Int(stability / 30.0)
             return months == 1 ? "1 month" : "\(months) months"
         }
+    }
+
+    // MARK: - Mastery Helpers
+
+    private func masteryIcon(for level: MasteryLevel) -> String {
+        level.icon
+    }
+
+    private func masteryColor(for level: MasteryLevel) -> Color {
+        switch level {
+        case .beginner: Theme.Colors.masteryBeginner
+        case .intermediate: Theme.Colors.masteryIntermediate
+        case .advanced: Theme.Colors.masteryAdvanced
+        case .mastered: Theme.Colors.masteryMastered
+        }
+    }
+
+    private func masteryLabel(for level: MasteryLevel) -> String {
+        level.displayName
     }
 }
 

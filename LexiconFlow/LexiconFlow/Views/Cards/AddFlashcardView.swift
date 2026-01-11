@@ -285,6 +285,12 @@ struct AddFlashcardView: View {
             modelContext.insert(flashcard)
             modelContext.insert(state)
             try modelContext.save()
+
+            // Invalidate statistics cache after adding card
+            if let deckID = selectedDeck?.id {
+                DeckStatisticsCache.shared.invalidate(deckID: deckID)
+            }
+
             dismiss()
         } catch {
             // Rollback: delete from context if save fails

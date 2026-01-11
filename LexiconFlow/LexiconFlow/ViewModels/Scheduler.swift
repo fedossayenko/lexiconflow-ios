@@ -200,9 +200,18 @@ final class Scheduler {
                 return card
             }
 
-            // Sort by creation date (oldest first)
-            let sorted = cards.sorted { $0.createdAt < $1.createdAt }
-            return Array(sorted.prefix(limit))
+            // Apply ordering mode from AppSettings
+            let ordered: [Flashcard]
+            switch AppSettings.newCardOrderMode {
+            case .random:
+                // O(k) Fisher-Yates partial shuffle (same as cram mode)
+                ordered = cards.randomSample(limit)
+            case .sequential:
+                // O(n log n) sort by creation date (current behavior)
+                let sorted = cards.sorted { $0.createdAt < $1.createdAt }
+                ordered = Array(sorted.prefix(limit))
+            }
+            return ordered
         } catch {
             Analytics.trackError("fetch_new_cards", error: error)
             logger.error("Error fetching new cards: \(error)")
@@ -261,12 +270,19 @@ final class Scheduler {
     /// Fetch deck statistics with single-query aggregation
     ///
     /// **Performance**: Eliminates 3 separate O(n) queries by aggregating in one pass
-    /// **Optimization**: Fetches all deck states once, calculates due/new/total counts in-memory
+    /// **Optimization**: Uses DeckStatisticsCache for O(1) lookups with 30-second TTL
     ///
     /// - Parameter deck: The deck to fetch statistics for
     /// - Returns: DeckStatistics containing due, new, and total card counts
     func fetchDeckStatistics(for deck: Deck) -> DeckStatistics {
         let deckID = deck.id
+
+        // Check cache first for O(1) lookup
+        if let cached = DeckStatisticsCache.shared.get(deckID: deckID) {
+            logger.debug("Cache hit for deck \(deckID)")
+            return cached
+        }
+
         let now = Date()
 
         // Fetch all states for this deck in a single query
@@ -292,7 +308,12 @@ final class Scheduler {
                 }
             }
 
-            return DeckStatistics(due: due, new: new, total: total)
+            let stats = DeckStatistics(due: due, new: new, total: total)
+
+            // Cache result for future lookups
+            DeckStatisticsCache.shared.set(stats, for: deckID)
+
+            return stats
 
         } catch {
             Analytics.trackError("deck_statistics_fetch", error: error)
@@ -305,11 +326,29 @@ final class Scheduler {
     ///
     /// **Performance Optimization**: Eliminates N+1 query problem in deck list rendering
     /// Instead of 3 queries per deck (N*3 total), performs 1 query for all decks
+    /// Uses DeckStatisticsCache for O(1) lookups with 30-second TTL
     ///
     /// - Parameter decks: Array of decks to fetch statistics for
     /// - Returns: Dictionary mapping deck ID to DeckStatistics
     func fetchDeckStatistics(for decks: [Deck]) -> [UUID: DeckStatistics] {
-        let deckIDs = Set(decks.map(\.id))
+        var results: [UUID: DeckStatistics] = [:]
+        var missingDeckIDs: Set<UUID> = []
+
+        // Check cache for each deck first
+        for deck in decks {
+            if let cached = DeckStatisticsCache.shared.get(deckID: deck.id) {
+                results[deck.id] = cached
+            } else {
+                missingDeckIDs.insert(deck.id)
+            }
+        }
+
+        // If all decks were cached, return early
+        if missingDeckIDs.isEmpty {
+            logger.debug("All \(results.count) decks served from cache")
+            return results
+        }
+
         let now = Date()
 
         // Single query fetches all states for all requested decks
@@ -319,15 +358,15 @@ final class Scheduler {
             let states = try modelContext.fetch(stateDescriptor)
 
             // Group by deck in memory (O(n) where n = total states across all decks)
-            var results: [UUID: DeckStatistics] = [:]
+            var fetchedResults: [UUID: DeckStatistics] = [:]
 
             for state in states {
                 guard let card = state.card else { continue }
                 guard let cardDeckID = card.deck?.id else { continue }
-                guard deckIDs.contains(cardDeckID) else { continue }
+                guard missingDeckIDs.contains(cardDeckID) else { continue }
 
                 // Get current stats (or create new)
-                let current = results[cardDeckID] ?? DeckStatistics(due: 0, new: 0, total: 0)
+                let current = fetchedResults[cardDeckID] ?? DeckStatistics(due: 0, new: 0, total: 0)
 
                 // Accumulate counts
                 var newDue = current.due
@@ -340,13 +379,21 @@ final class Scheduler {
                     newDue += 1
                 }
 
-                results[cardDeckID] = DeckStatistics(due: newDue, new: newCards, total: newTotal)
+                fetchedResults[cardDeckID] = DeckStatistics(due: newDue, new: newCards, total: newTotal)
             }
 
             // Fill in empty decks with zeros (decks with no cards)
-            for deck in decks where results[deck.id] == nil {
-                results[deck.id] = DeckStatistics(due: 0, new: 0, total: 0)
+            for deckID in missingDeckIDs where fetchedResults[deckID] == nil {
+                fetchedResults[deckID] = DeckStatistics(due: 0, new: 0, total: 0)
             }
+
+            // Merge cached and fetched results
+            results.merge(fetchedResults) { _, new in new }
+
+            // Batch cache all fetched results
+            DeckStatisticsCache.shared.setBatch(fetchedResults)
+
+            logger.debug("Fetched \(fetchedResults.count) decks from DB, \(results.count - fetchedResults.count) from cache")
 
             return results
 
@@ -354,12 +401,11 @@ final class Scheduler {
             Analytics.trackError("deck_statistics_batch_fetch", error: error)
             logger.error("Error fetching batch deck statistics: \(error)")
 
-            // Return zero stats for all decks on error
-            var errorResults: [UUID: DeckStatistics] = [:]
-            for deck in decks {
-                errorResults[deck.id] = DeckStatistics(due: 0, new: 0, total: 0)
+            // Return zero stats for all decks on error (use cached if available)
+            for deck in decks where results[deck.id] == nil {
+                results[deck.id] = DeckStatistics(due: 0, new: 0, total: 0)
             }
-            return errorResults
+            return results
         }
     }
 
@@ -508,9 +554,29 @@ final class Scheduler {
                 return card
             }
 
-            // Sort by creation date (oldest first)
-            let sorted = cards.sorted { $0.createdAt < $1.createdAt }
-            return Array(sorted.prefix(limit))
+            // Apply interleaving and ordering based on settings
+            if AppSettings.multiDeckInterleaveEnabled, decks.count > 1 {
+                // Multi-deck with interleaving enabled
+                switch AppSettings.newCardOrderMode {
+                case .random:
+                    // No sorting needed for random, just interleave and randomize
+                    let interleaved = interleaveCards(cards, limit: limit * 2)
+                    return interleaved.randomSample(limit)
+                case .sequential:
+                    // Sort by creation date first, then interleave (to maintain order within decks)
+                    let sorted = cards.sorted { $0.createdAt < $1.createdAt }
+                    return interleaveCards(sorted, limit: limit)
+                }
+            } else {
+                // Single deck or interleaving disabled
+                switch AppSettings.newCardOrderMode {
+                case .random:
+                    return cards.randomSample(limit)
+                case .sequential:
+                    let sorted = cards.sorted { $0.createdAt < $1.createdAt }
+                    return Array(sorted.prefix(limit))
+                }
+            }
         } catch {
             Analytics.trackError("fetch_new_cards_multi", error: error)
             logger.error("Error fetching new cards for multiple decks: \(error)")
@@ -699,6 +765,7 @@ final class Scheduler {
             do {
                 try modelContext.save()
                 // Invalidate statistics cache after review
+                DeckStatisticsCache.shared.invalidate(deckID: flashcard.deck?.id)
                 StatisticsService.shared.invalidateCache()
                 return log
             } catch {
@@ -739,6 +806,7 @@ final class Scheduler {
             try modelContext.save()
 
             // Invalidate statistics cache after review
+            DeckStatisticsCache.shared.invalidate(deckID: flashcard.deck?.id)
             StatisticsService.shared.invalidateCache()
 
             Analytics.trackEvent("card_reviewed", metadata: [
@@ -841,6 +909,9 @@ final class Scheduler {
 
             try modelContext.save()
 
+            // Invalidate statistics cache after reset
+            DeckStatisticsCache.shared.invalidate(deckID: flashcard.deck?.id)
+
             Analytics.trackEvent("card_reset", metadata: [
                 "card": flashcard.word
             ])
@@ -853,6 +924,70 @@ final class Scheduler {
             logger.error("Failed to save reset: \(error)")
             return false
         }
+    }
+
+    // MARK: - Card Interleaving
+
+    /// Interleave cards from multiple decks using round-robin algorithm
+    ///
+    /// **Algorithm:** Round-robin sampling ensures proportional representation
+    /// from each deck, preventing "deck blocking" where all cards from one
+    /// deck appear sequentially.
+    ///
+    /// **Performance:** O(n) where n = number of cards returned
+    /// **Memory:** O(d) where d = number of decks (for iterator storage)
+    ///
+    /// **Cognitive Science:** Interleaving creates "desirable difficulties" by
+    /// forcing contextual switching, improving long-term retention and transfer.
+    ///
+    /// - Parameters:
+    ///   - cards: Array of flashcards to interleave
+    ///   - limit: Maximum number of cards to return
+    /// - Returns: Interleaved array with cards distributed evenly across decks
+    private func interleaveCards(_ cards: [Flashcard], limit: Int) -> [Flashcard] {
+        guard !cards.isEmpty else { return [] }
+
+        // Group cards by deck ID
+        let deckGroups = Dictionary(grouping: cards) { card -> UUID? in
+            card.deck?.id
+        }
+
+        // Sort deck IDs for deterministic order (important for sequential mode)
+        let sortedDeckIDs = deckGroups.keys.compactMap(\.self).sorted()
+
+        // Store cards in arrays indexed by deck
+        var deckCardArrays: [UUID: [Flashcard]] = [:]
+        var currentIndexs: [UUID: Int] = [:]
+        for deckID in sortedDeckIDs {
+            if let deckCards = deckGroups[deckID] {
+                deckCardArrays[deckID] = deckCards
+                currentIndexs[deckID] = 0
+            }
+        }
+
+        // Round-robin sampling
+        var result: [Flashcard] = []
+        result.reserveCapacity(min(limit, cards.count))
+
+        while result.count < limit {
+            var addedThisRound = false
+
+            for deckID in sortedDeckIDs {
+                guard let cards = deckCardArrays[deckID] else { continue }
+                guard var index = currentIndexs[deckID] else { continue }
+
+                if index < cards.count {
+                    result.append(cards[index])
+                    currentIndexs[deckID] = index + 1
+                    addedThisRound = true
+                    if result.count >= limit { break }
+                }
+            }
+
+            if !addedThisRound { break } // All decks exhausted
+        }
+
+        return result
     }
 }
 

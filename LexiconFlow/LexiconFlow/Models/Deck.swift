@@ -35,10 +35,11 @@ final class Deck {
     var order: Int
 
     /// All cards belonging to this deck
-    /// - Deleting deck cascades to delete all flashcards
-    /// - Inverse points to Flashcard.deck
+    /// - Deleting deck nullifies the deck reference on cards (cards persist as orphans)
+    /// - This preserves user learning progress (FSRS state) when deck is deleted
+    /// - Inverse points to Flashcard.deck (both sides use .nullify for consistency)
     /// - SwiftData auto-initializes this property
-    @Relationship(deleteRule: .cascade, inverse: \Flashcard.deck) var cards: [Flashcard] = []
+    @Relationship(deleteRule: .nullify, inverse: \Flashcard.deck) var cards: [Flashcard] = []
 
     /// All study sessions for this deck
     /// - Deleting deck sets studySession.deck to nil (sessions preserved in history)

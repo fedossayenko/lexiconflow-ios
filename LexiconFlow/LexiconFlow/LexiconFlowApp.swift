@@ -126,6 +126,26 @@ struct LexiconFlowApp: App {
             CachedTranslation.self
         ])
 
+        // Pre-create Application Support directory to avoid timing issues in iOS Simulator
+        // This prevents CoreData "Failed to stat path" errors (errno 2) during ModelContainer initialization
+        // SwiftData auto-recovers, but pre-creating eliminates cosmetic error logs
+        if let applicationSupportURL = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first {
+            do {
+                try FileManager.default.createDirectory(
+                    at: applicationSupportURL,
+                    withIntermediateDirectories: true,
+                    attributes: nil
+                )
+                logger.debug("Application Support directory ready at: \(applicationSupportURL.path)")
+            } catch {
+                logger.warning("Failed to create Application Support directory: \(error.localizedDescription)")
+                // Continue anyway - SwiftData's NSPersistentStoreCoordinator will attempt recovery
+            }
+        }
+
         // Attempt 1: Try persistent SQLite storage (primary)
         let persistentConfig = ModelConfiguration(isStoredInMemoryOnly: false)
         do {

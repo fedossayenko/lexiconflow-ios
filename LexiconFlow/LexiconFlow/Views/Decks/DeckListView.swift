@@ -21,54 +21,10 @@ struct DeckListView: View {
     /// Incrementally loads more as user scrolls toward end.
     @State private var visibleCount = 50
 
-    /// Fetches only states needed for visible decks (lazy loading optimization)
-    ///
-    /// **PERFORMANCE**: Uses predicate-based filtering to reduce memory footprint.
-    /// 1. Filters by due date at database level (reduces dataset from all states to due states only)
-    /// 2. Filters by visible decks in-memory (SwiftData limitation: can't query nested relationships)
-    ///
-    /// This approach reduces memory from O(all cards) to O(due cards) + O(visible decks),
-    /// which is typically 10-100x smaller for large collections.
-    ///
-    /// - Returns: Dictionary mapping deck IDs to due counts
-    private var deckDueCounts: [Deck.ID: Int] {
-        let now = Date()
-        var counts: [Deck.ID: Int] = [:]
-
-        // PERFORMANCE: Only process states for visible decks
-        let visibleDecks = Set(decks.prefix(visibleCount).map(\.id))
-
-        // PERFORMANCE: Filter by due date at DATABASE level (most important optimization)
-        // This reduces the dataset from all states to only due states (typically 5-20% of total)
-        // SwiftData limitation: Can't filter by card.deck relationship in predicate
-        let stateDescriptor = FetchDescriptor<FSRSState>(
-            predicate: #Predicate<FSRSState> { state in
-                // Only fetch states that are due (database-level filter)
-                state.dueDate <= now && state.stateEnum != "new"
-            }
-        )
-
-        do {
-            let dueStates = try modelContext.fetch(stateDescriptor)
-
-            // Filter by visible decks in-memory (SwiftData limitation)
-            // Total complexity: O(due_states) instead of O(all_states)
-            for state in dueStates {
-                guard let card = state.card,
-                      let deck = card.deck,
-                      visibleDecks.contains(deck.id)
-                else {
-                    continue
-                }
-
-                counts[deck.id, default: 0] += 1
-            }
-        } catch {
-            // Silently fail on fetch error - counts will be 0
-        }
-
-        return counts
-    }
+    /// PERFORMANCE: Cached due counts to avoid running database query on every view render
+    /// This is critical for preventing "System gesture gate timed out" errors during scrolling
+    @State private var deckDueCounts: [Deck.ID: Int] = [:]
+    @State private var countsTimestamp: Date?
 
     var body: some View {
         NavigationStack {
@@ -112,7 +68,38 @@ struct DeckListView: View {
                     .presentationCornerRadius(24)
                     .presentationDragIndicator(.visible)
             }
+            .onAppear {
+                loadDeckDueCounts()
+            }
+            .onChange(of: decks) { _, _ in
+                loadDeckDueCounts()
+            }
         }
+    }
+
+    // MARK: - Due Counts Loading
+
+    /// Loads due counts for visible decks with debouncing
+    ///
+    /// **PERFORMANCE**: Only reloads if 1 second has passed since last load.
+    /// This prevents excessive database queries during rapid animations or gestures.
+    /// Uses Scheduler.fetchDeckStatistics for efficient batch loading with caching.
+    private func loadDeckDueCounts() {
+        // Debounce: only reload if 1 second has passed (or on first load)
+        if let timestamp = countsTimestamp,
+           Date().timeIntervalSince(timestamp) < 1.0
+        {
+            return
+        }
+
+        // Use Scheduler for batch loading with cache support
+        let scheduler = Scheduler(modelContext: modelContext)
+        let visibleDecksArray = Array(decks.prefix(visibleCount))
+        let allStats = scheduler.fetchDeckStatistics(for: visibleDecksArray)
+
+        // Extract only due counts
+        deckDueCounts = allStats.mapValues { $0.due }
+        countsTimestamp = Date()
     }
 
     // MARK: - Lazy Loading
@@ -130,6 +117,9 @@ struct DeckListView: View {
         // Load 50 more decks (or remaining if less than 50)
         let increment = min(50, totalCount - visibleCount)
         visibleCount += increment
+
+        // Reload counts when loading more decks
+        loadDeckDueCounts()
     }
 
     private func deleteDecks(at offsets: IndexSet) {
@@ -138,6 +128,7 @@ struct DeckListView: View {
             modelContext.delete(decks[index])
         }
         // Invalidate statistics cache after deck deletion
+        DeckStatisticsCache.shared.invalidate()
         StatisticsService.shared.invalidateCache()
     }
 }

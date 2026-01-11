@@ -16,6 +16,46 @@ struct AppearanceSettingsView: View {
         static let multiplier: Int = 100
     }
 
+    // MARK: - Computed Properties
+
+    /// Dynamic glass thickness based on current settings
+    private var previewGlassThickness: GlassThickness {
+        let config = AppSettings.glassConfiguration
+        guard config.isEnabled else { return .thin }
+
+        switch config.intensity {
+        case 0.0 ..< 0.3:
+            return .thin
+        case 0.3 ..< 0.7:
+            return .regular
+        default:
+            return .thick
+        }
+    }
+
+    /// Dynamic background for theme demonstration
+    private var previewBackground: some View {
+        // Creates a gradient that shows theme difference clearly
+        LinearGradient(
+            colors: themeAwareGradientColors,
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    /// Theme-aware gradient colors for preview background
+    private var themeAwareGradientColors: [Color] {
+        switch AppSettings.darkMode {
+        case .light:
+            [Color.blue.opacity(0.2), Color.purple.opacity(0.15)]
+        case .dark:
+            [Color.blue.opacity(0.4), Color.purple.opacity(0.3)]
+        case .system:
+            // Uses adaptive colors that respond to system theme
+            [.blue.opacity(0.3), .purple.opacity(0.2)]
+        }
+    }
+
     var body: some View {
         Form {
             // Theme Selection
@@ -110,24 +150,37 @@ struct AppearanceSettingsView: View {
             // Preview
             Section {
                 VStack(spacing: 16) {
-                    // Card Preview
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(.ultraThinMaterial)
-                        .frame(height: 80)
+                    // Dynamic background to demonstrate theme
+                    previewBackground
+                        .frame(height: 100)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                         .overlay {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Sample Card")
-                                    .font(.headline)
-                                Text("This is how cards appear in your current theme")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding()
+                            // Glass card that responds to intensity settings
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(.clear)
+                                .frame(height: 80)
+                                .glassEffect(previewGlassThickness)
+                                .overlay {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        HStack {
+                                            Text("Sample Card")
+                                                .font(.headline)
+                                            Spacer()
+                                            // Theme indicator
+                                            Image(systemName: AppSettings.darkMode.icon)
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        Text("Glass: \(AppSettings.glassEffectsEnabled ? "On" : "Off") • \(Int(AppSettings.glassEffectIntensity * 100))% intensity")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding()
+                                }
                         }
-                        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
 
-                    Text("Preview updates based on your theme selection")
+                    Text("Preview updates in real-time based on your settings")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 }

@@ -182,6 +182,9 @@ final class IELTSDeckManager {
         Self.logger.info("Deleting deck for level \(level): \(deckName)")
         modelContext.delete(deck)
         try modelContext.save()
+
+        // Invalidate statistics cache after deck deletion
+        DeckStatisticsCache.shared.invalidate(deckID: deck.id)
     }
 
     /// Get deck name for a CEFR level

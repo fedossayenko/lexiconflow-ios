@@ -13,6 +13,7 @@ struct MainTabView: View {
     @State private var selectedTab = 0
     @State private var dueCardCount = 0
     @State private var scheduler: Scheduler? // Memoized scheduler for performance
+    @State private var lastBadgeUpdate: Date? // Debouncing for badge updates
 
     @Query(sort: \Deck.order) private var decks: [Deck]
 
@@ -75,11 +76,20 @@ struct MainTabView: View {
     }
 
     private func refreshDueCount() {
+        // Debounce: only update badge if 5 seconds have passed (or on first load)
+        // This prevents excessive queries during rapid tab switching
+        if let lastUpdate = lastBadgeUpdate,
+           Date().timeIntervalSince(lastUpdate) < 5.0
+        {
+            return
+        }
+
         // Memoize scheduler to avoid creating new instance on every tab switch
         if scheduler == nil {
             scheduler = Scheduler(modelContext: modelContext)
         }
         dueCardCount = scheduler?.dueCardCount(for: selectedDecks) ?? 0
+        lastBadgeUpdate = Date()
     }
 }
 

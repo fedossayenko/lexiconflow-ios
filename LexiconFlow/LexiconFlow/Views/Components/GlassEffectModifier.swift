@@ -71,6 +71,7 @@ enum GlassThickness {
 struct GlassEffectModifier<S: InsettableShape>: ViewModifier {
     let thickness: GlassThickness
     let shape: S
+    @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
         let config = AppSettings.glassConfiguration
@@ -124,7 +125,14 @@ struct GlassEffectModifier<S: InsettableShape>: ViewModifier {
                             lineWidth: 1.5
                         )
                 }
-                .shadow(color: .black.opacity(0.15), radius: thickness.shadowRadius, x: 0, y: 4)
+                .shadow(
+                    color: colorScheme == .dark
+                        ? Color.white.opacity(0.1) // Light shadow for depth in dark mode
+                        : Color.black.opacity(0.05), // Subtle shadow in light mode
+                    radius: thickness.shadowRadius,
+                    x: 0,
+                    y: 4
+                )
                 .modifier(DynamicLightingModifier(thickness: thickness)) // KEEP - essential
         }
 
@@ -182,6 +190,44 @@ extension View {
     )
 }
 
+#Preview("Glass Effect - Light Mode") {
+    VStack(spacing: 32) {
+        Text("Thin Glass (Light)")
+            .padding()
+            .glassEffect(.thin)
+
+        Text("Regular Glass (Light)")
+            .padding()
+            .glassEffect(.regular)
+
+        Text("Thick Glass (Light)")
+            .padding()
+            .glassEffect(.thick)
+    }
+    .padding()
+    .background(Color.white.opacity(0.9))
+    .preferredColorScheme(.light)
+}
+
+#Preview("Glass Effect - Dark Mode") {
+    VStack(spacing: 32) {
+        Text("Thin Glass (Dark)")
+            .padding()
+            .glassEffect(.thin)
+
+        Text("Regular Glass (Dark)")
+            .padding()
+            .glassEffect(.regular)
+
+        Text("Thick Glass (Dark)")
+            .padding()
+            .glassEffect(.thick)
+    }
+    .padding()
+    .background(Color.black.opacity(0.3))
+    .preferredColorScheme(.dark)
+}
+
 #Preview("Glass Effect on Cards") {
     HStack(spacing: 16) {
         VStack(alignment: .leading, spacing: 8) {
@@ -216,4 +262,78 @@ extension View {
     }
     .padding()
     .background(.gray.opacity(0.1))
+}
+
+#Preview("Glass Effect Cards - Light Mode") {
+    HStack(spacing: 16) {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Fragile Memory")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text("Stability: 5")
+                .font(.headline)
+        }
+        .padding()
+        .glassEffect(.thin)
+
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Medium Memory")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text("Stability: 25")
+                .font(.headline)
+        }
+        .padding()
+        .glassEffect(.regular)
+
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Stable Memory")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text("Stability: 75")
+                .font(.headline)
+        }
+        .padding()
+        .glassEffect(.thick)
+    }
+    .padding()
+    .background(Color.white.opacity(0.9))
+    .preferredColorScheme(.light)
+}
+
+#Preview("Glass Effect Cards - Dark Mode") {
+    HStack(spacing: 16) {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Fragile Memory")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text("Stability: 5")
+                .font(.headline)
+        }
+        .padding()
+        .glassEffect(.thin)
+
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Medium Memory")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text("Stability: 25")
+                .font(.headline)
+        }
+        .padding()
+        .glassEffect(.regular)
+
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Stable Memory")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text("Stability: 75")
+                .font(.headline)
+        }
+        .padding()
+        .glassEffect(.thick)
+    }
+    .padding()
+    .background(Color.black.opacity(0.3))
+    .preferredColorScheme(.dark)
 }

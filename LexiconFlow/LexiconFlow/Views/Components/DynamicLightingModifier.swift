@@ -16,6 +16,7 @@ import SwiftUI
 struct DynamicLightingModifier: ViewModifier {
     let thickness: GlassThickness
     @State private var isPressed = false
+    @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
         content
@@ -24,7 +25,12 @@ struct DynamicLightingModifier: ViewModifier {
                     .fill(
                         RadialGradient(
                             colors: [
-                                .white.opacity(isPressed ? 0.1 : 0.05),
+                                // Adaptive ambient light: higher in light mode to counteract dark corners
+                                .white.opacity(
+                                    colorScheme == .dark
+                                        ? (isPressed ? 0.1 : 0.05) // Dark mode: lower intensity
+                                        : (isPressed ? 0.15 : 0.08) // Light mode: higher intensity
+                                ),
                                 .clear
                             ],
                             center: .topLeading,

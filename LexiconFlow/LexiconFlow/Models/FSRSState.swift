@@ -85,6 +85,18 @@ final class FSRSState {
         set { stateEnum = newValue.rawValue }
     }
 
+    // MARK: - Mastery Properties
+
+    /// Mastery level based on stability
+    var masteryLevel: MasteryLevel {
+        MasteryLevel(stability: stability)
+    }
+
+    /// Whether card is considered "mastered" (stability >= 30 days and in review state)
+    var isMastered: Bool {
+        stability >= 30.0 && state == .review
+    }
+
     /// Initialize with default values for a new card
     init(
         stability: Double = 0.0,

@@ -121,6 +121,20 @@ enum Theme {
         /// Relearning state color
         static let stateRelearning = Color.orange
 
+        // MARK: Mastery Level Colors
+
+        /// Beginner mastery level (0-3 days stability)
+        static let masteryBeginner = Color.green
+
+        /// Intermediate mastery level (3-14 days stability)
+        static let masteryIntermediate = Color.blue
+
+        /// Advanced mastery level (14-30 days stability)
+        static let masteryAdvanced = Color.orange
+
+        /// Mastered level (30+ days stability)
+        static let masteryMastered = Color.purple
+
         // MARK: Metric Colors
 
         /// Primary metric color (e.g., retention rate)

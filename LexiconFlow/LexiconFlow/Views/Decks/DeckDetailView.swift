@@ -13,6 +13,7 @@ struct DeckDetailView: View {
     @Bindable var deck: Deck
     @Environment(\.modelContext) private var modelContext
     @State private var showingAddCard = false
+    @State private var selectedMasteryFilter: AppSettings.MasteryFilter = .all
 
     // MARK: - Batch Translation State
 
@@ -77,8 +78,19 @@ struct DeckDetailView: View {
                     }
                 }
 
+                // Mastery filter picker
                 Section {
-                    ForEach(deck.cards) { card in
+                    Picker("Filter", selection: $selectedMasteryFilter) {
+                        ForEach(AppSettings.MasteryFilter.allCases, id: \.self) { filter in
+                            Label(filter.displayName, systemImage: filter.icon)
+                                .tag(filter)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                Section {
+                    ForEach(filteredCards) { card in
                         NavigationLink(destination: FlashcardDetailView(flashcard: card)) {
                             VStack(alignment: .leading, spacing: 4) {
                                 // Word
@@ -114,7 +126,7 @@ struct DeckDetailView: View {
                     }
                     .onDelete(perform: deleteCards)
                 } header: {
-                    Text("Flashcards (\(deck.cards.count))")
+                    Text("Flashcards (\(filteredCards.count))")
                 }
             }
         }
@@ -347,6 +359,9 @@ struct DeckDetailView: View {
             guard index >= 0, index < deck.cards.count else { continue }
             modelContext.delete(deck.cards[index])
         }
+        // Invalidate statistics cache after card deletion
+        DeckStatisticsCache.shared.invalidate(deckID: deck.id)
+        StatisticsService.shared.invalidateCache()
     }
 
     // MARK: - Cache Management
@@ -358,6 +373,23 @@ struct DeckDetailView: View {
     private func updateUntranslatedCards() {
         lastCardCount = deck.cards.count
         untranslatedCards = deck.cards.filter { $0.translation == nil }
+    }
+
+    // MARK: - Computed Properties
+
+    /// Filtered cards based on selected mastery filter
+    private var filteredCards: [Flashcard] {
+        switch selectedMasteryFilter {
+        case .all:
+            deck.cards
+        case .mastered:
+            deck.cards.filter { $0.fsrsState?.isMastered == true }
+        case .learning:
+            deck.cards.filter { card in
+                guard let state = card.fsrsState?.state else { return false }
+                return state == .learning || state == .relearning || state == .new
+            }
+        }
     }
 }
 

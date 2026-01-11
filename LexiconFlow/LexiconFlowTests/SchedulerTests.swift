@@ -205,6 +205,9 @@ struct SchedulerTests {
         try context.clearAll()
         let scheduler = Scheduler(modelContext: context)
 
+        // Set sequential mode for this test
+        AppSettings.newCardOrderMode = .sequential
+
         // Create cards with different creation dates
         let card3 = createTestFlashcard(context: context, word: "card3", state: .new)
         try context.save()
@@ -1010,6 +1013,236 @@ struct SchedulerTests {
 
         #expect(cards.count == 6)
         #expect(cards.allSatisfy { $0.fsrsState?.stateEnum == FlashcardState.new.rawValue })
+    }
+
+    // MARK: - Card Ordering Tests
+
+    @Test("Random mode returns different orders on consecutive calls")
+    func randomModeVaries() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // Create 20 new cards
+        for i in 1 ... 20 {
+            _ = createTestFlashcard(context: context, word: "card\(i)", state: .new)
+        }
+        try context.save()
+
+        // Set random mode
+        AppSettings.newCardOrderMode = .random
+
+        let batch1 = await scheduler.fetchCards(mode: .learning, limit: 10)
+        let batch2 = await scheduler.fetchCards(mode: .learning, limit: 10)
+
+        // Orders should differ (with high probability)
+        #expect(batch1.count == 10)
+        #expect(batch2.count == 10)
+
+        // Count matches between batches (should be low for random)
+        let matches = zip(batch1, batch2).count(where: { $0.0.word == $0.1.word })
+        #expect(matches < 5, "Random orders should have few positional matches")
+    }
+
+    @Test("Sequential mode returns cards sorted by creation date")
+    func sequentialModeOldestFirst() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // Create cards with specific creation dates
+        let card3 = createTestFlashcard(context: context, word: "card3", state: .new)
+        try context.save()
+        try await Task.sleep(for: .milliseconds(10))
+
+        let card1 = createTestFlashcard(context: context, word: "card1", state: .new)
+        try context.save()
+        try await Task.sleep(for: .milliseconds(10))
+
+        let card2 = createTestFlashcard(context: context, word: "card2", state: .new)
+        try context.save()
+
+        // Manually set creation dates
+        card1.createdAt = Date().addingTimeInterval(-300) // oldest
+        card2.createdAt = Date().addingTimeInterval(-60) // middle
+        card3.createdAt = Date() // newest
+        try context.save()
+
+        // Set sequential mode
+        AppSettings.newCardOrderMode = .sequential
+
+        let cards = await scheduler.fetchCards(mode: .learning, limit: 20)
+
+        #expect(cards.count == 3)
+        #expect(cards[0].word == "card1", "Oldest card should be first")
+        #expect(cards[1].word == "card2")
+        #expect(cards[2].word == "card3", "Newest card should be last")
+    }
+
+    @Test("Multi-deck interleaving distributes cards evenly")
+    func interleaveDistributesEvenly() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // Create 3 decks with 5 cards each
+        let deck1 = createTestDeck(context: context, name: "Deck1")
+        let deck2 = createTestDeck(context: context, name: "Deck2")
+        let deck3 = createTestDeck(context: context, name: "Deck3")
+        try context.save()
+
+        var allCards: [Flashcard] = []
+
+        // Create cards in round-robin order with controlled timestamps
+        for i in 1 ... 5 {
+            let card1 = createTestFlashcard(context: context, word: "d1_\(i)", state: .new)
+            card1.deck = deck1
+            card1.createdAt = Date().addingTimeInterval(-Double(1000 - i * 10)) // Ensure order within deck
+            allCards.append(card1)
+
+            let card2 = createTestFlashcard(context: context, word: "d2_\(i)", state: .new)
+            card2.deck = deck2
+            card2.createdAt = Date().addingTimeInterval(-Double(1000 - i * 10))
+            allCards.append(card2)
+
+            let card3 = createTestFlashcard(context: context, word: "d3_\(i)", state: .new)
+            card3.deck = deck3
+            card3.createdAt = Date().addingTimeInterval(-Double(1000 - i * 10))
+            allCards.append(card3)
+        }
+        try context.save()
+
+        // Enable interleaving
+        AppSettings.multiDeckInterleaveEnabled = true
+        AppSettings.newCardOrderMode = .sequential
+
+        let cards = scheduler.fetchCards(for: [deck1, deck2, deck3], mode: .learning, limit: 9)
+
+        #expect(cards.count == 9)
+
+        // Verify interleaving pattern: cards should alternate between decks
+        // Count how many times the deck changes (should be high for interleaved)
+        let deckTransitions = zip(cards, cards.dropFirst()).count(where: { $0.0.deck?.id != $0.1.deck?.id })
+        #expect(deckTransitions >= 6, "Should have many deck transitions (interleaved), got \(deckTransitions)")
+
+        // Verify we get cards from all 3 decks
+        let uniqueDeckIDs = Set(cards.compactMap { $0.deck?.id })
+        #expect(uniqueDeckIDs.count == 3, "Should have cards from all 3 decks")
+
+        // Verify each deck is represented (approximately 3 cards each from 9 total)
+        let deck1Count = cards.count(where: { $0.deck?.id == deck1.id })
+        let deck2Count = cards.count(where: { $0.deck?.id == deck2.id })
+        let deck3Count = cards.count(where: { $0.deck?.id == deck3.id })
+        #expect(deck1Count == 3, "Deck1 should have 3 cards")
+        #expect(deck2Count == 3, "Deck2 should have 3 cards")
+        #expect(deck3Count == 3, "Deck3 should have 3 cards")
+    }
+
+    @Test("Multi-deck random with interleaving maintains proportional representation")
+    func randomInterleaveProportional() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // Create decks with different sizes
+        let deck1 = createTestDeck(context: context, name: "Deck1") // 10 cards
+        let deck2 = createTestDeck(context: context, name: "Deck2") // 5 cards
+        try context.save()
+
+        for i in 1 ... 10 {
+            let card = createTestFlashcard(context: context, word: "d1_\(i)", state: .new)
+            card.deck = deck1
+        }
+
+        for i in 1 ... 5 {
+            let card = createTestFlashcard(context: context, word: "d2_\(i)", state: .new)
+            card.deck = deck2
+        }
+        try context.save()
+
+        AppSettings.multiDeckInterleaveEnabled = true
+        AppSettings.newCardOrderMode = .random
+
+        let cards = scheduler.fetchCards(for: [deck1, deck2], mode: .learning, limit: 12)
+
+        #expect(cards.count == 12)
+
+        // Verify proportional representation (2:1 ratio for deck sizes)
+        let deck1Count = cards.count(where: { $0.deck?.id == deck1.id })
+        let deck2Count = cards.count(where: { $0.deck?.id == deck2.id })
+
+        // With interleaving + random, should be approximately 2:1 ratio
+        // (not exact due to randomness, but roughly proportional)
+        let ratio = Double(deck1Count) / Double(deck2Count)
+        #expect(ratio > 1.5 && ratio < 2.5, "Ratio should be approximately 2:1")
+    }
+
+    @Test("Interleaving disabled preserves deck grouping")
+    func interleavingDisabled() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        let deck1 = createTestDeck(context: context, name: "Deck1")
+        let deck2 = createTestDeck(context: context, name: "Deck2")
+        try context.save()
+
+        // Create all deck1 cards first, then deck2 cards
+        // with controlled timestamps to ensure deck1 cards are older
+        for i in 1 ... 3 {
+            let card1 = createTestFlashcard(context: context, word: "d1_\(i)", state: .new)
+            card1.deck = deck1
+            card1.createdAt = Date().addingTimeInterval(-Double(10 + i)) // Older timestamps
+        }
+
+        for i in 1 ... 3 {
+            let card2 = createTestFlashcard(context: context, word: "d2_\(i)", state: .new)
+            card2.deck = deck2
+            card2.createdAt = Date().addingTimeInterval(-Double(3 + i)) // Newer timestamps
+        }
+        try context.save()
+
+        AppSettings.multiDeckInterleaveEnabled = false
+        AppSettings.newCardOrderMode = .sequential
+
+        let cards = scheduler.fetchCards(for: [deck1, deck2], mode: .learning, limit: 6)
+
+        #expect(cards.count == 6)
+
+        // Without interleaving, cards should be grouped by deck (sorted by createdAt)
+        // Since deck1 cards are older, all deck1 cards should come first
+        #expect(cards[0].word.hasPrefix("d1_"), "First card should be from deck1")
+        #expect(cards[1].word.hasPrefix("d1_"), "Second card should be from deck1")
+        #expect(cards[2].word.hasPrefix("d1_"), "Third card should be from deck1")
+        #expect(cards[3].word.hasPrefix("d2_"), "Fourth card should be from deck2")
+
+        // Check that there's only 1 transition (deck1 -> deck2)
+        let deckTransitions = zip(cards, cards.dropFirst()).count(where: { $0.0.deck?.id != $0.1.deck?.id })
+        #expect(deckTransitions == 1, "Should have exactly 1 transition (deck1 to deck2)")
+    }
+
+    @Test("Single deck with interleaving enabled works correctly")
+    func singleDeckInterleaving() async throws {
+        let context = freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        let deck1 = createTestDeck(context: context, name: "Deck1")
+        try context.save()
+
+        for i in 1 ... 5 {
+            let card = createTestFlashcard(context: context, word: "card\(i)", state: .new)
+            card.deck = deck1
+        }
+        try context.save()
+
+        AppSettings.multiDeckInterleaveEnabled = true
+        AppSettings.newCardOrderMode = .sequential
+
+        let cards = scheduler.fetchCards(for: [deck1], mode: .learning, limit: 5)
+
+        // Should behave like single-deck mode (no interleaving needed)
+        #expect(cards.count == 5)
     }
 }
 

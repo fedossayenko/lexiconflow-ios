@@ -34,6 +34,7 @@ struct StudyView: View {
     @State private var showDeckSelection = false
     @State private var sessionCards: [Flashcard] = []
     @State private var isRefreshing = false
+    @State private var isLoadingCards = false
 
     var body: some View {
         NavigationStack {
@@ -262,12 +263,21 @@ struct StudyView: View {
             AppSettings.selectedDeckIDs = validDeckIDs
         }
 
-        // Refresh counts
+        // Refresh counts immediately (uses cache)
         refreshCounts()
 
-        // Pre-fetch session cards
+        // Lazy load cards in background to avoid blocking UI
+        Task {
+            await loadSessionCards()
+        }
+    }
+
+    @MainActor
+    private func loadSessionCards() async {
+        isLoadingCards = true
         let scheduler = Scheduler(modelContext: modelContext)
         sessionCards = scheduler.fetchCards(for: selectedDecks, mode: studyMode, limit: AppSettings.studyLimit)
+        isLoadingCards = false
     }
 
     /// Performs pull-to-refresh with haptic feedback
@@ -292,10 +302,20 @@ struct StudyView: View {
     }
 
     private func refreshCounts() {
+        guard !selectedDecks.isEmpty else {
+            dueCount = 0
+            newCount = 0
+            totalCount = 0
+            return
+        }
+
         let scheduler = Scheduler(modelContext: modelContext)
-        dueCount = scheduler.dueCardCount(for: selectedDecks)
-        newCount = scheduler.newCardCount(for: selectedDecks)
-        totalCount = scheduler.totalCardCount(for: selectedDecks)
+        // Use batch fetch instead of 3 separate queries for better performance
+        let allStats = scheduler.fetchDeckStatistics(for: selectedDecks)
+
+        dueCount = allStats.values.reduce(0) { $0 + $1.due }
+        newCount = allStats.values.reduce(0) { $0 + $1.new }
+        totalCount = allStats.values.reduce(0) { $0 + $1.total }
     }
 
     private func startSession() {

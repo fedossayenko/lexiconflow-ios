@@ -135,6 +135,14 @@ final class DataImporter {
 
                 try modelContext.save()
 
+                // Invalidate statistics cache after importing cards
+                if let deckID = config.deck?.id {
+                    DeckStatisticsCache.shared.invalidate(deckID: deckID)
+                } else {
+                    // If no deck specified, clear all cache
+                    DeckStatisticsCache.shared.invalidate()
+                }
+
                 reportProgress(
                     result.importedCount,
                     total: config.totalCount,
