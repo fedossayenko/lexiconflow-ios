@@ -5,6 +5,7 @@
 //  Back of flashcard showing definition, translation, and AI-generated sentences
 //
 
+import OSLog
 import SwiftData
 import SwiftUI
 
@@ -13,6 +14,9 @@ struct CardBackView: View {
     @State private var showAllSentences = false
     @State private var isRegenerating = false
     @Environment(\.modelContext) private var modelContext
+
+    // Logger for diagnostics
+    private let logger = Logger(subsystem: "com.lexiconflow.cards", category: "CardBackView")
 
     // Toast State
     @State private var showToast = false
@@ -173,16 +177,32 @@ struct CardBackView: View {
     // MARK: - Helper Methods
 
     /// Regenerate AI sentences
+    ///
+    /// **Concurrency Pattern**: Capture all SwiftData model properties BEFORE entering Task
+    /// to avoid accessing @Model properties off the main actor.
     private func regenerateSentences() {
         self.isRegenerating = true
+
+        // Capture SwiftData model properties on MainActor BEFORE Task
+        // This prevents data races by avoiding cross-actor model access
+        let cardWord = self.card.word
+        let cardDefinition = self.card.definition
+        let cardTranslation = self.card.translation
+        let cardCEFR = self.card.cefrLevel
+
+        // Capture config from AppSettings on MainActor (DTO pattern)
+        let config = SentenceGenerationService.GenerationConfig(
+            aiSource: AppSettings.aiSourcePreference == .onDevice ? .onDevice : .cloud
+        )
 
         Task {
             do {
                 let response = try await SentenceGenerationService.shared.generateSentences(
-                    cardWord: self.card.word,
-                    cardDefinition: self.card.definition,
-                    cardTranslation: self.card.translation,
-                    cardCEFR: self.card.cefrLevel
+                    cardWord: cardWord,
+                    cardDefinition: cardDefinition,
+                    cardTranslation: cardTranslation,
+                    cardCEFR: cardCEFR,
+                    config: config
                 )
 
                 await MainActor.run {
@@ -192,21 +212,35 @@ struct CardBackView: View {
                         !$0.isFavorite && $0.source != .userCreated
                     }
 
-                    for sentence in toRemove {
-                        if let index = card.generatedSentences.firstIndex(of: sentence) {
-                            self.card.generatedSentences.remove(at: index)
+                    // O(n) removal using removeAll(where:) instead of O(n^2) index lookup
+                    self.card.generatedSentences.removeAll { sentence in
+                        if toRemove.contains(sentence) {
+                            self.modelContext.delete(sentence)
+                            return true
                         }
-                        self.modelContext.delete(sentence)
+                        return false
                     }
 
-                    // Add new sentences
+                    // Add new sentences with proper error handling
                     for item in response.items {
-                        if let newSentence = try? GeneratedSentence(
-                            sentenceText: item.sentence,
-                            cefrLevel: item.cefrLevel,
-                            source: .aiGenerated
-                        ) {
+                        do {
+                            let newSentence = try GeneratedSentence(
+                                sentenceText: item.sentence,
+                                cefrLevel: item.cefrLevel,
+                                source: .aiGenerated
+                            )
                             self.card.generatedSentences.append(newSentence)
+                        } catch {
+                            // Track sentence initialization errors with Analytics
+                            #if !DEBUG
+                                Analytics.trackError(
+                                    "sentence_init_failed",
+                                    error: error,
+                                    metadata: ["sentence": item.sentence.prefix(50)]
+                                )
+                            #endif
+                            // Skip invalid sentences and continue
+                            self.logger.warning("Skipping invalid sentence: \(error.localizedDescription)")
                         }
                     }
 

@@ -115,6 +115,12 @@ final class SentenceGenerationViewModel: ObservableObject {
         self.errorMessage = nil
 
         do {
+            // Create generation config from AppSettings (DTO pattern)
+            // Capture on MainActor before entering actor-isolated context
+            let config = SentenceGenerationService.GenerationConfig(
+                aiSource: AppSettings.aiSourcePreference == .onDevice ? .onDevice : .cloud
+            )
+
             // Call the sentence generation protocol
             // Note: CEFR level is no longer stored on Flashcard, generator will infer it
             let response = try await generator.generateSentences(
@@ -122,7 +128,8 @@ final class SentenceGenerationViewModel: ObservableObject {
                 definition: card.definition,
                 translation: card.translation,
                 cefrLevel: nil, // Generator will infer CEFR level
-                count: self.sentencesPerCard
+                count: self.sentencesPerCard,
+                config: config
             )
 
             // Store existing sentences for deletion after successful generation

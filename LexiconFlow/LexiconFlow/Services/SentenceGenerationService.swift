@@ -95,6 +95,20 @@ actor SentenceGenerationService {
 
     // MARK: - Sentence Generation Types
 
+    /// Configuration for sentence generation source
+    ///
+    /// **Purpose**: DTO pattern to avoid actor hopping to @MainActor AppSettings
+    /// **Sendable**: Safe to pass across actor boundaries
+    struct GenerationConfig: Sendable {
+        let aiSource: AISource
+
+        /// AI source preference for sentence generation
+        enum AISource: String, Sendable {
+            case onDevice
+            case cloud
+        }
+    }
+
     /// Data transfer object for flashcard data in batch operations
     struct CardData: Sendable {
         let id: UUID
@@ -214,6 +228,7 @@ actor SentenceGenerationService {
     ///   - cardTranslation: Optional translation
     ///   - cardCEFR: Optional CEFR level
     ///   - count: Number of sentences to generate (default: 3)
+    ///   - config: Generation configuration (AI source preference)
     ///
     /// - Returns: SentenceGenerationResponse with generated sentences
     /// - Throws: SentenceGenerationError if all generation methods fail
@@ -222,13 +237,16 @@ actor SentenceGenerationService {
         cardDefinition: String,
         cardTranslation: String? = nil,
         cardCEFR: String? = nil,
-        count: Int = Config.defaultSentencesPerCard
+        count: Int = Config.defaultSentencesPerCard,
+        config: GenerationConfig? = nil
     ) async throws -> SentenceGenerationResponse {
         var generationError: Error?
 
+        // Use provided config or default to on-device
+        let aiSource = config?.aiSource ?? .onDevice
+
         // 1. Try On-Device AI if preferred
-        // AppSettings is @MainActor, so we must await access
-        if await AppSettings.aiSourcePreference == .onDevice {
+        if aiSource == .onDevice {
             do {
                 let response = try await generateSentencesOnDevice(
                     cardWord: cardWord,
@@ -676,6 +694,7 @@ actor SentenceGenerationService {
         cardTranslation: String?,
         cardCEFR: String?,
         count: Int,
+        config: GenerationConfig? = nil,
         maxRetries: Int = Config.defaultMaxRetries
     ) async -> SentenceGenerationResult {
         let startTime = Date()
@@ -689,7 +708,8 @@ actor SentenceGenerationService {
                     cardDefinition: cardDefinition,
                     cardTranslation: cardTranslation,
                     cardCEFR: cardCEFR,
-                    count: count
+                    count: count,
+                    config: config
                 )
             },
             isRetryable: { (error: SentenceGenerationError) in

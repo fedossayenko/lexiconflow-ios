@@ -140,15 +140,15 @@ This document outlines the phased development approach for Lexicon Flow, from in
 - Import and process base dictionary
 
 ### Week 9: Foundation Models
-- [ ] Integrate Foundation Models framework (on-device)
+- [x] Integrate Foundation Models framework (on-device)
 - [x] Create `LanguageModelSession` wrapper (cloud API via SentenceGenerationService)
 - [x] Implement sentence generation with prompt engineering:
   - Casual American English context
   - Simple vocabulary constraint
   - Pedagogical value optimization
 - [x] Build sentence caching strategy (7-day TTL)
-- [ ] Add "Regenerate Sentence" button
-- [ ] Test generation latency and quality
+- [x] Add "Regenerate Sentence" button
+- [x] Test generation latency and quality
 
 ### Week 10: Translation API
 - [x] Integrate Translation framework (OnDeviceTranslationService)
@@ -164,6 +164,7 @@ This document outlines the phased development approach for Lexicon Flow, from in
   - Premium > Enhanced > Default
   - Filter by language code
   - Sort by quality
+- [x] Add voice quality selection (Premium/Enhanced/Default) with fallback chain
 - [x] Create accent selection UI (TTSSettingsView):
   - en-US (American)
   - en-GB (British)
