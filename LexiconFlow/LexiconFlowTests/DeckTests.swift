@@ -3,7 +3,7 @@
 //  LexiconFlowTests
 //
 //  Tests for Deck model
-//  Covers: Deck creation, relationships, cascade delete behavior
+//  Covers: Deck creation, relationships, nullify delete behavior (cards persist as orphans)
 //
 
 import Foundation
@@ -24,7 +24,7 @@ struct DeckTests {
 
     @Test("Deck creation with valid name")
     func deckCreationWithValidName() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let deck = Deck(name: "Spanish Vocabulary", icon: "🇪🇸")
@@ -38,7 +38,7 @@ struct DeckTests {
 
     @Test("Deck creation with empty name is allowed")
     func deckCreationWithEmptyName() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let deck = Deck(name: "", icon: "")
@@ -52,7 +52,7 @@ struct DeckTests {
 
     @Test("Deck creation with unicode characters")
     func deckCreationWithUnicode() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let deck = Deck(name: "日本語", icon: "🇯🇵")
@@ -67,7 +67,7 @@ struct DeckTests {
 
     @Test("Deck-card relationship: adding cards to deck")
     func deckCardRelationship() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let deck = Deck(name: "Test Deck", icon: "📚")
@@ -90,7 +90,7 @@ struct DeckTests {
 
     @Test("Deck-card relationship: deck.cards is populated")
     func deckCardsArray() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let deck = Deck(name: "Test Deck", icon: "📚")
@@ -114,7 +114,7 @@ struct DeckTests {
 
     @Test("Deck-card relationship: card with no deck")
     func cardWithNoDeck() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let card = Flashcard(word: "orphan", definition: "has no deck")
@@ -124,11 +124,11 @@ struct DeckTests {
         #expect(card.deck == nil)
     }
 
-    // MARK: - Cascade Delete Tests
+    // MARK: - Nullify Delete Tests
 
-    @Test("Cascade delete: deleting deck nullifies cards")
+    @Test("Nullify delete: deleting deck nullifies cards (creates orphans)")
     func deleteDeckNullifiesCards() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let deck = Deck(name: "Test Deck", icon: "📚")
@@ -158,9 +158,9 @@ struct DeckTests {
         #expect(cards.first?.deck == nil)
     }
 
-    @Test("Cascade delete: deleting deck with multiple cards")
+    @Test("Nullify delete: deleting deck with multiple cards (creates multiple orphans)")
     func deleteDeckWithMultipleCards() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let deck = Deck(name: "Test Deck", icon: "📚")
@@ -191,7 +191,7 @@ struct DeckTests {
 
     @Test("Query: fetch deck by name")
     func fetchDeckByName() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let deck1 = Deck(name: "Spanish", icon: "🇪🇸")
@@ -213,7 +213,7 @@ struct DeckTests {
 
     @Test("Query: fetch all decks sorted by name")
     func fetchAllDecksSorted() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         context.insert(Deck(name: "Zulu", icon: "🇿🇦"))
@@ -233,7 +233,7 @@ struct DeckTests {
 
     @Test("Query: fetch decks with no cards")
     func fetchEmptyDecks() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let emptyDeck = Deck(name: "Empty", icon: "📭")
@@ -259,7 +259,7 @@ struct DeckTests {
 
     @Test("Update: change deck name")
     func updateDeckName() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let deck = Deck(name: "Old Name", icon: "📚")
@@ -280,7 +280,7 @@ struct DeckTests {
 
     @Test("Update: move card from one deck to another")
     func moveCardBetweenDecks() throws {
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let deck1 = Deck(name: "Deck 1", icon: "1️⃣")

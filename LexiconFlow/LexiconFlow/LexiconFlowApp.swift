@@ -74,7 +74,17 @@ struct LexiconFlowApp: App {
             }
 
             // Return minimal container that allows app to launch and show error UI
-            return try! ModelContainer(for: EmptyModel.self)
+            // Using empty schema as absolute fallback
+            let emptyConfig = ModelConfiguration(isStoredInMemoryOnly: true)
+            do {
+                return try ModelContainer(for: EmptyModel.self, configurations: emptyConfig)
+            } catch {
+                // Absolute last resort - return container with empty schema
+                // This allows the app to launch but models will be unavailable
+                logger.critical("Even EmptyModel container failed: \(error.localizedDescription)")
+                let emptySchema = Schema([])
+                return try! ModelContainer(for: emptySchema, configurations: emptyConfig)
+            }
         #else
             // In RELEASE, log critical error and use truly minimal container
             // The app will launch with minimal functionality but can show error UI
@@ -82,7 +92,15 @@ struct LexiconFlowApp: App {
 
             // Return truly minimal container that allows app to launch
             // Models will be unavailable, but error UI can be shown
-            return try! ModelContainer(for: EmptyModel.self)
+            do {
+                return try ModelContainer(for: EmptyModel.self)
+            } catch {
+                // Absolute last resort - return container with empty schema
+                logger.critical("Even EmptyModel container failed: \(error.localizedDescription)")
+                let emptySchema = Schema([])
+                let emptyConfig = ModelConfiguration(isStoredInMemoryOnly: true)
+                return try! ModelContainer(for: emptySchema, configurations: emptyConfig)
+            }
         #endif
     }()
 
@@ -125,6 +143,26 @@ struct LexiconFlowApp: App {
             GeneratedSentence.self,
             CachedTranslation.self
         ])
+
+        // Pre-create Application Support directory to avoid timing issues in iOS Simulator
+        // This prevents CoreData "Failed to stat path" errors (errno 2) during ModelContainer initialization
+        // SwiftData auto-recovers, but pre-creating eliminates cosmetic error logs
+        if let applicationSupportURL = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first {
+            do {
+                try FileManager.default.createDirectory(
+                    at: applicationSupportURL,
+                    withIntermediateDirectories: true,
+                    attributes: nil
+                )
+                logger.debug("Application Support directory ready at: \(applicationSupportURL.path)")
+            } catch {
+                logger.warning("Failed to create Application Support directory: \(error.localizedDescription)")
+                // Continue anyway - SwiftData's NSPersistentStoreCoordinator will attempt recovery
+            }
+        }
 
         // Attempt 1: Try persistent SQLite storage (primary)
         let persistentConfig = ModelConfiguration(isStoredInMemoryOnly: false)
@@ -177,18 +215,18 @@ struct LexiconFlowApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .preferredColorScheme(preferredColorScheme)
+                .preferredColorScheme(self.preferredColorScheme)
                 .task {
-                    await ensureDefaultDeckExists()
-                    await ensureIELTSVocabularyExists()
+                    await self.ensureDefaultDeckExists()
+                    await self.ensureIELTSVocabularyExists()
 
                     // Clear expired translation cache
-                    await QuickTranslationService.shared.clearExpiredCache(container: sharedModelContainer)
+                    await QuickTranslationService.shared.clearExpiredCache(container: self.sharedModelContainer)
                 }
         }
-        .modelContainer(sharedModelContainer)
-        .onChange(of: scenePhase) { oldPhase, newPhase in
-            handleScenePhaseChange(from: oldPhase, to: newPhase)
+        .modelContainer(self.sharedModelContainer)
+        .onChange(of: self.scenePhase) { oldPhase, newPhase in
+            self.handleScenePhaseChange(from: oldPhase, to: newPhase)
         }
     }
 
@@ -207,7 +245,7 @@ struct LexiconFlowApp: App {
     /// Ensures a default deck exists for new users
     @MainActor
     private func ensureDefaultDeckExists() async {
-        let context = sharedModelContainer.mainContext
+        let context = self.sharedModelContainer.mainContext
         let descriptor = FetchDescriptor<Deck>()
         let existingDecks: [Deck]
         do {
@@ -260,7 +298,7 @@ struct LexiconFlowApp: App {
             return
         }
 
-        let context = sharedModelContainer.mainContext
+        let context = self.sharedModelContainer.mainContext
         let logger = Logger(subsystem: "com.lexiconflow.app", category: "LexiconFlowApp")
 
         // Check if IELTS decks already exist (handles re-install scenario)
@@ -332,9 +370,9 @@ struct LexiconFlowApp: App {
             // Aggregate DailyStats from completed StudySession records
             // This runs in the background to prepare pre-aggregated statistics for dashboard
             // Cancel any existing aggregation task before starting a new one
-            aggregationTask?.cancel()
-            aggregationTask = Task {
-                await aggregateDailyStatsInBackground()
+            self.aggregationTask?.cancel()
+            self.aggregationTask = Task {
+                await self.aggregateDailyStatsInBackground()
             }
         case .active:
             // Restart haptic engine when app returns to foreground

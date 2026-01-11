@@ -33,7 +33,7 @@ struct JSONExtractorTests {
         Hope this helps!
         """
 
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
 
         #expect(result == "{\"word\": \"hello\", \"translation\": \"привет\"}", "Should extract JSON from ```json block")
     }
@@ -48,7 +48,7 @@ struct JSONExtractorTests {
         ```
         """
 
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
 
         #expect(result == "{\"word\": \"hello\"}", "Should trim whitespace from extracted JSON")
     }
@@ -61,7 +61,7 @@ struct JSONExtractorTests {
         ```
         """
 
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
 
         #expect(result == "{\"word\": \"test\"}", "Should match ```JSON case-insensitively")
     }
@@ -75,7 +75,7 @@ struct JSONExtractorTests {
         ```
         """
 
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
 
         #expect(result == "{\"word\": \"hello\", \"translation\": \"привет\"}", "Should extract from generic ``` block")
     }
@@ -91,7 +91,7 @@ struct JSONExtractorTests {
         ```
         """
 
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
 
         #expect(result.contains("\"second\": \"value2\""), "Should prefer ```json block")
     }
@@ -102,7 +102,7 @@ struct JSONExtractorTests {
     func extractFromBraceDelimiters() {
         let input = "Some text here {\"word\": \"hello\"} and more text"
 
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
 
         #expect(result == "{\"word\": \"hello\"}", "Should extract from brace delimiters")
     }
@@ -111,7 +111,7 @@ struct JSONExtractorTests {
     func extractFromNestedBraces() {
         let input = "Prefix text {\"outer\": {\"inner\": \"value\"}} suffix"
 
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
 
         #expect(result == "{\"outer\": {\"inner\": \"value\"}}", "Should extract outermost braces")
     }
@@ -120,7 +120,7 @@ struct JSONExtractorTests {
     func extractFromArrayInBraces() {
         let input = "Text {\"items\": [1, 2, 3]} more text"
 
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
 
         #expect(result == "{\"items\": [1, 2, 3]}", "Should extract JSON with arrays")
     }
@@ -131,21 +131,21 @@ struct JSONExtractorTests {
     func returnOriginalWhenNoMatch() {
         let input = "Just plain text without any JSON"
 
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
 
         #expect(result == "Just plain text without any JSON", "Should return original text")
     }
 
     @Test("Handle empty string")
     func handleEmptyString() {
-        let result = JSONExtractor.extract(from: "", logger: logger)
+        let result = JSONExtractor.extract(from: "", logger: self.logger)
 
         #expect(result == "", "Should handle empty string")
     }
 
     @Test("Handle whitespace only")
     func handleWhitespaceOnly() {
-        let result = JSONExtractor.extract(from: "   \n\t   ", logger: logger)
+        let result = JSONExtractor.extract(from: "   \n\t   ", logger: self.logger)
 
         #expect(result.isEmpty, "Should trim to empty string")
     }
@@ -160,7 +160,7 @@ struct JSONExtractorTests {
         ```
         """
 
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
 
         #expect(result.contains("\"russian\": \"Привет\""), "Should preserve Cyrillic")
         #expect(result.contains("\"japanese\": \"こんにちは\""), "Should preserve Hiragana")
@@ -184,7 +184,7 @@ struct JSONExtractorTests {
         ```
         """
 
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
 
         #expect(result.contains("\"name\": \"Test User\""), "Should extract nested objects")
         #expect(result.contains("\"tags\": [\"learning\", \"vocab\"]"), "Should extract arrays")
@@ -206,7 +206,7 @@ struct JSONExtractorTests {
         Let me know if you need anything else!
         """
 
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
 
         #expect(result.contains("\"word\": \"ephemeral\""), "Should extract from multiline response")
         #expect(result.contains("\"translation\": \"мимолетный\""), "Should preserve all fields")
@@ -222,7 +222,7 @@ struct JSONExtractorTests {
         No closing backticks
         """
 
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
 
         // Should fall back to brace extraction
         #expect(result.contains("\"word\": \"test\""), "Should fall back to brace extraction")
@@ -240,7 +240,7 @@ struct JSONExtractorTests {
         ```
         """
 
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
 
         // Should extract first ```json block found
         #expect(result.contains("\"first\": \"value1\""), "Should extract first JSON block")
@@ -254,7 +254,7 @@ struct JSONExtractorTests {
         ```
         """
 
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
 
         // Extractor returns raw JSON, validation happens later
         #expect(result.contains("\"word\": \"test\""), "Should extract JSON with trailing comma")
@@ -268,7 +268,7 @@ struct JSONExtractorTests {
         ```
         """
 
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
 
         // Extractor returns what it finds, validation happens during JSON decoding
         #expect(result.contains("\"word\": \"test\""), "Should extract even if malformed")
@@ -296,7 +296,7 @@ struct JSONExtractorTests {
         This word comes from Greek and means a sudden realization.
         """
 
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
 
         #expect(result.contains("\"word\": \"epiphany\""), "Should extract word field")
         #expect(result.contains("\"translation\": \"озарение\""), "Should extract translation")
@@ -326,7 +326,7 @@ struct JSONExtractorTests {
         Hope these help with your vocabulary learning!
         """
 
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
 
         #expect(result.contains("\"sentences\""), "Should extract sentences array")
         #expect(result.contains("\"cefrLevel\": \"B2\""), "Should extract nested fields")
@@ -344,7 +344,7 @@ struct JSONExtractorTests {
         Connect to the internet for AI-generated examples.
         """
 
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
 
         #expect(result.contains("\"text\": \"The ephemeral joy"), "Should extract offline sentence")
         #expect(result.contains("\"source\": \"static\""), "Should extract source field")
@@ -368,7 +368,7 @@ struct JSONExtractorTests {
         """
 
         let start = Date()
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
         let duration = Date().timeIntervalSince(start)
 
         #expect(result.contains("\"items\": ["), "Should extract large JSON")
@@ -385,7 +385,7 @@ struct JSONExtractorTests {
         let input = blocks.joined(separator: "\n")
 
         let start = Date()
-        let result = JSONExtractor.extract(from: input, logger: logger)
+        let result = JSONExtractor.extract(from: input, logger: self.logger)
         let duration = Date().timeIntervalSince(start)
 
         #expect(result.contains("\"block\":"), "Should extract from first block")

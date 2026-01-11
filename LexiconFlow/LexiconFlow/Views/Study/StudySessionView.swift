@@ -27,7 +27,7 @@ struct StudySessionView: View {
         Group {
             if let viewModel {
                 if viewModel.isComplete {
-                    sessionCompleteView(vm: viewModel)
+                    self.sessionCompleteView(vm: viewModel)
                 } else if let currentCard = viewModel.currentCard {
                     VStack(spacing: 30) {
                         // Progress indicator
@@ -37,7 +37,7 @@ struct StudySessionView: View {
                             .padding(.top)
 
                         // Flashcard
-                        FlashcardView(card: currentCard, isFlipped: $isFlipped) { rating in
+                        FlashcardView(card: currentCard, isFlipped: self.$isFlipped) { rating in
                             // IMPORTANT: Capture card reference NOW before async Task
                             // Don't rely on viewModel.currentCard which might change
                             let cardToRate = currentCard
@@ -46,7 +46,7 @@ struct StudySessionView: View {
                             Task {
                                 await viewModel.submitRating(rating, card: cardToRate)
                                 withAnimation {
-                                    isFlipped = false
+                                    self.isFlipped = false
                                 }
                             }
                         }
@@ -55,14 +55,14 @@ struct StudySessionView: View {
                         .opacity(viewModel.isComplete ? 0 : 1) // Hide when complete
 
                         // Rating buttons (show after flip)
-                        if isFlipped {
+                        if self.isFlipped {
                             RatingButtonsView { rating in
                                 // Capture card reference before async
                                 let cardToRate = currentCard
                                 Task {
                                     await viewModel.submitRating(rating.rawValue, card: cardToRate)
                                     withAnimation {
-                                        isFlipped = false
+                                        self.isFlipped = false
                                     }
                                 }
                             }
@@ -74,12 +74,12 @@ struct StudySessionView: View {
                         }
                     }
                     .padding()
-                    .navigationTitle(mode == .learning ? "Learn New" : "Study")
+                    .navigationTitle(self.mode == .learning ? "Learn New" : "Study")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
                             Button("Exit") {
-                                onComplete()
+                                self.onComplete()
                             }
                         }
                     }
@@ -90,22 +90,22 @@ struct StudySessionView: View {
                 ProgressView("Loading session...")
             }
         }
-        .alert("Error", isPresented: $showError) {
+        .alert("Error", isPresented: self.$showError) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text(viewModel?.lastError?.localizedDescription ?? "An unknown error occurred")
+            Text(self.viewModel?.lastError?.localizedDescription ?? "An unknown error occurred")
         }
         .task {
             if viewModel == nil {
-                viewModel = StudySessionViewModel(modelContext: modelContext, decks: decks, mode: mode)
+                viewModel = StudySessionViewModel(modelContext: self.modelContext, decks: self.decks, mode: self.mode)
             }
             if let viewModel, viewModel.cards.isEmpty {
                 viewModel.loadCards()
             }
         }
-        .onChange(of: viewModel?.lastError != nil) { _, hasError in
+        .onChange(of: self.viewModel?.lastError != nil) { _, hasError in
             if hasError {
-                showError = true
+                self.showError = true
             }
         }
     }
@@ -123,7 +123,7 @@ struct StudySessionView: View {
                 .foregroundStyle(.secondary)
 
             Button("Done") {
-                onComplete()
+                self.onComplete()
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)

@@ -106,21 +106,21 @@ struct FlashcardReviewDTO: Sendable, Identifiable {
     ///
     /// **Example**: "Again", "Hard", "Good", "Easy"
     var ratingLabel: String {
-        CardRating.validate(rating).label
+        CardRating.validate(self.rating).label
     }
 
     /// System icon name for rating badge
     ///
     /// **Example**: "xmark.circle.fill", "star.fill"
     var ratingIcon: String {
-        CardRating.validate(rating).iconName
+        CardRating.validate(self.rating).iconName
     }
 
     /// Color name for rating badge
     ///
     /// **Example**: "red", "orange", "blue", "green"
     var ratingColor: String {
-        CardRating.validate(rating).color
+        CardRating.validate(self.rating).color
     }
 
     /// Badge text for state change highlighting
@@ -133,11 +133,11 @@ struct FlashcardReviewDTO: Sendable, Identifiable {
     /// - "Relearning" for failed review
     /// - nil for normal review (no state change)
     var stateChangeBadge: String? {
-        switch stateChange {
+        switch self.stateChange {
         case .none:
             nil
         case .firstReview, .graduated, .relearning:
-            stateChange.rawValue
+            self.stateChange.rawValue
         }
     }
 
@@ -148,7 +148,7 @@ struct FlashcardReviewDTO: Sendable, Identifiable {
     /// **Implementation**: Uses DateMath.formatElapsed for timezone-aware
     /// formatting that handles calendar boundaries correctly.
     var relativeDateString: String {
-        let daysSinceReview = DateMath.elapsedDays(since: reviewDate)
+        let daysSinceReview = DateMath.elapsedDays(since: self.reviewDate)
         return DateMath.formatElapsed(daysSinceReview)
     }
 
@@ -164,7 +164,7 @@ struct FlashcardReviewDTO: Sendable, Identifiable {
         formatter.timeStyle = .short
         formatter.locale = Locale.autoupdatingCurrent
         formatter.timeZone = TimeZone.autoupdatingCurrent
-        return formatter.string(from: reviewDate)
+        return formatter.string(from: self.reviewDate)
     }
 
     /// Scheduled interval description
@@ -174,17 +174,17 @@ struct FlashcardReviewDTO: Sendable, Identifiable {
     /// **Why computed**: Shows user when their next review was scheduled
     /// at the time of this review. Useful for understanding algorithm behavior.
     var scheduledIntervalDescription: String {
-        if scheduledDays <= TimeInterval.todayThreshold {
+        if self.scheduledDays <= TimeInterval.todayThreshold {
             return "today"
-        } else if scheduledDays < TimeInterval.oneDay {
+        } else if self.scheduledDays < TimeInterval.oneDay {
             let hours = Int(scheduledDays * 24)
             return "in \(hours)h"
-        } else if scheduledDays < TimeInterval.twoDays {
+        } else if self.scheduledDays < TimeInterval.twoDays {
             return "tomorrow"
-        } else if scheduledDays < TimeInterval.oneWeek {
+        } else if self.scheduledDays < TimeInterval.oneWeek {
             let days = Int(scheduledDays)
             return "in \(days)d"
-        } else if scheduledDays < TimeInterval.oneMonth {
+        } else if self.scheduledDays < TimeInterval.oneMonth {
             let weeks = Int(scheduledDays / TimeInterval.oneWeek)
             return "in \(weeks)w"
         } else {
@@ -200,7 +200,7 @@ struct FlashcardReviewDTO: Sendable, Identifiable {
     /// **Why this matters**: Shows whether user reviewed on schedule or
     /// early/late. Important for understanding FSRS behavior.
     var elapsedTimeDescription: String {
-        let difference = elapsedDays - scheduledDays
+        let difference = self.elapsedDays - self.scheduledDays
 
         if abs(difference) < TimeInterval.halfDay {
             return "on time"

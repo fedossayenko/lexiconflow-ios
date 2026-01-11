@@ -81,8 +81,24 @@ final class FSRSState {
 
     /// Computed property for type-safe state enum access
     var state: FlashcardState {
-        get { FlashcardState(rawValue: stateEnum) ?? .new }
-        set { stateEnum = newValue.rawValue }
+        get { FlashcardState(rawValue: self.stateEnum) ?? .new }
+        set { self.stateEnum = newValue.rawValue }
+    }
+
+    // MARK: - Mastery Properties
+
+    /// Mastery level based on stability
+    var masteryLevel: MasteryLevel {
+        MasteryLevel(stability: self.stability)
+    }
+
+    /// Whether card is considered "mastered"
+    ///
+    /// Considers both stability threshold (from MasteryLevel) and state.
+    /// Cards must have stability >= 30 days AND be in review state
+    /// to be considered mastered (excludes learning/relearning states).
+    var isMastered: Bool {
+        self.masteryLevel == .mastered && self.state == .review
     }
 
     /// Initialize with default values for a new card

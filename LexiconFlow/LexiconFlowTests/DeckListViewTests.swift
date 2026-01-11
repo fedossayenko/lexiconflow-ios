@@ -53,7 +53,7 @@ struct DeckListViewTests {
 
     @Test("DeckListView can be created")
     func deckListViewCreation() {
-        _ = createTestContainer()
+        _ = self.createTestContainer()
         _ = DeckListView()
 
         // Verify view can be created (smoke test)
@@ -62,13 +62,13 @@ struct DeckListViewTests {
 
     @Test("Decks are sorted by order")
     func decksSortedByOrder() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create decks with different orders
-        _ = createTestDeck(in: context, name: "Third", order: 2)
-        _ = createTestDeck(in: context, name: "First", order: 0)
-        _ = createTestDeck(in: context, name: "Second", order: 1)
+        _ = self.createTestDeck(in: context, name: "Third", order: 2)
+        _ = self.createTestDeck(in: context, name: "First", order: 0)
+        _ = self.createTestDeck(in: context, name: "Second", order: 1)
 
         try context.save()
 
@@ -86,7 +86,7 @@ struct DeckListViewTests {
 
     @Test("Empty database shows ContentUnavailableView")
     func emptyDatabaseShowsEmptyState() {
-        _ = createTestContainer()
+        _ = self.createTestContainer()
         _ = DeckListView()
 
         // Verify view handles empty database
@@ -115,14 +115,14 @@ struct DeckListViewTests {
 
     @Test("Due count computation excludes new cards")
     func dueCountExcludesNewCards() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = createTestDeck(in: context, name: "Test Deck")
+        let deck = self.createTestDeck(in: context, name: "Test Deck")
 
         // Create new cards (should not be counted)
-        _ = createTestCard(in: context, word: "NewCard1", deck: deck, state: .new)
-        _ = createTestCard(in: context, word: "NewCard2", deck: deck, state: .new)
+        _ = self.createTestCard(in: context, word: "NewCard1", deck: deck, state: .new)
+        _ = self.createTestCard(in: context, word: "NewCard2", deck: deck, state: .new)
 
         try context.save()
 
@@ -149,14 +149,14 @@ struct DeckListViewTests {
 
     @Test("Due count computation includes due review cards")
     func dueCountIncludesDueReviewCards() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = createTestDeck(in: context, name: "Test Deck")
+        let deck = self.createTestDeck(in: context, name: "Test Deck")
 
         // Create due review card
         let now = Date()
-        _ = createTestCard(in: context, word: "ReviewCard", deck: deck, dueDate: now, state: .review)
+        _ = self.createTestCard(in: context, word: "ReviewCard", deck: deck, dueDate: now, state: .review)
 
         try context.save()
 
@@ -182,14 +182,14 @@ struct DeckListViewTests {
 
     @Test("Due count computation excludes future cards")
     func dueCountExcludesFutureCards() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = createTestDeck(in: context, name: "Test Deck")
+        let deck = self.createTestDeck(in: context, name: "Test Deck")
 
         // Create future due card
         let future = Date().addingTimeInterval(86400) // Tomorrow
-        _ = createTestCard(in: context, word: "FutureCard", deck: deck, dueDate: future, state: .review)
+        _ = self.createTestCard(in: context, word: "FutureCard", deck: deck, dueDate: future, state: .review)
 
         try context.save()
 
@@ -216,17 +216,17 @@ struct DeckListViewTests {
 
     @Test("Due count is computed efficiently (O(n) not O(n*m))")
     func dueCountComputationEfficiency() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = createTestDeck(in: context, name: "Test Deck")
+        let deck = self.createTestDeck(in: context, name: "Test Deck")
 
         // Create multiple cards
         let now = Date()
         for i in 0 ..< 10 {
             let state: FlashcardState = i % 2 == 0 ? .review : .new
             let dueDate: Date? = state == .review ? now : Date().addingTimeInterval(86400)
-            _ = createTestCard(in: context, word: "Card\(i)", deck: deck, dueDate: dueDate, state: state)
+            _ = self.createTestCard(in: context, word: "Card\(i)", deck: deck, dueDate: dueDate, state: state)
         }
 
         try context.save()
@@ -254,13 +254,13 @@ struct DeckListViewTests {
 
     @Test("Delete decks at valid offsets")
     func deleteDecksAtValidOffsets() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create decks
-        _ = createTestDeck(in: context, name: "Deck1")
-        let deck2 = createTestDeck(in: context, name: "Deck2")
-        _ = createTestDeck(in: context, name: "Deck3")
+        _ = self.createTestDeck(in: context, name: "Deck1")
+        let deck2 = self.createTestDeck(in: context, name: "Deck2")
+        _ = self.createTestDeck(in: context, name: "Deck3")
 
         try context.save()
 
@@ -279,10 +279,10 @@ struct DeckListViewTests {
 
     @Test("Delete handles out of bounds offsets")
     func deleteHandlesOutOfBounds() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        _ = createTestDeck(in: context, name: "Deck1")
+        _ = self.createTestDeck(in: context, name: "Deck1")
 
         try context.save()
 
@@ -317,12 +317,12 @@ struct DeckListViewTests {
 
     @Test("DeckListView queries decks")
     func deckListViewQueriesDecks() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create decks
-        _ = createTestDeck(in: context, name: "Deck1")
-        _ = createTestDeck(in: context, name: "Deck2")
+        _ = self.createTestDeck(in: context, name: "Deck1")
+        _ = self.createTestDeck(in: context, name: "Deck2")
 
         try context.save()
 
@@ -333,11 +333,11 @@ struct DeckListViewTests {
 
     @Test("DeckListView queries FSRSStates")
     func deckListViewQueriesStates() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = createTestDeck(in: context, name: "Test Deck")
-        _ = createTestCard(in: context, word: "Card1", deck: deck, state: .review)
+        let deck = self.createTestDeck(in: context, name: "Test Deck")
+        _ = self.createTestCard(in: context, word: "Card1", deck: deck, state: .review)
 
         try context.save()
 
@@ -350,10 +350,10 @@ struct DeckListViewTests {
 
     @Test("View creation with single deck doesn't crash")
     func viewCreationWithSingleDeck() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        _ = createTestDeck(in: context, name: "Single Deck")
+        _ = self.createTestDeck(in: context, name: "Single Deck")
 
         try context.save()
 
@@ -364,12 +364,12 @@ struct DeckListViewTests {
 
     @Test("View creation with many decks doesn't crash")
     func viewCreationWithManyDecks() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         // Create 100 decks
         for i in 0 ..< 100 {
-            _ = createTestDeck(in: context, name: "Deck\(i)", order: i)
+            _ = self.createTestDeck(in: context, name: "Deck\(i)", order: i)
         }
 
         try context.save()
@@ -381,10 +381,10 @@ struct DeckListViewTests {
 
     @Test("Deck with zero cards shows correct due count")
     func deckWithZeroCardsDueCount() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        _ = createTestDeck(in: context, name: "Empty Deck")
+        _ = self.createTestDeck(in: context, name: "Empty Deck")
 
         try context.save()
 

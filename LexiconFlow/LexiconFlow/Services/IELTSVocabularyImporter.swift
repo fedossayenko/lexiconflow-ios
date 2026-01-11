@@ -21,14 +21,14 @@ import SwiftData
 private actor ProgressCounter {
     private var _value: Int = 0
 
-    var value: Int { _value }
+    var value: Int { self._value }
 
     func set(_ newValue: Int) {
-        _value = newValue
+        self._value = newValue
     }
 
     func increment(by: Int = 1) {
-        _value += by
+        self._value += by
     }
 }
 
@@ -126,12 +126,12 @@ final class IELTSVocabularyImporter {
         let levelResults: [String: LevelResult]
 
         var totalWords: Int {
-            importedCount + failedCount
+            self.importedCount + self.failedCount
         }
 
         var successRate: Double {
-            guard totalWords > 0 else { return 0 }
-            return Double(importedCount) / Double(totalWords)
+            guard self.totalWords > 0 else { return 0 }
+            return Double(self.importedCount) / Double(self.totalWords)
         }
     }
 
@@ -153,12 +153,12 @@ final class IELTSVocabularyImporter {
         let overallTotal: Int
 
         var percentageCompleted: Int {
-            guard overallTotal > 0 else { return 0 }
-            return (overallProgress * 100) / overallTotal
+            guard self.overallTotal > 0 else { return 0 }
+            return (self.overallProgress * 100) / self.overallTotal
         }
 
         var description: String {
-            "\(currentWord) [\(currentLevel)] - \(percentageCompleted)% (\(overallProgress)/\(overallTotal))"
+            "\(self.currentWord) [\(self.currentLevel)] - \(self.percentageCompleted)% (\(self.overallProgress)/\(self.overallTotal))"
         }
     }
 
@@ -209,26 +209,26 @@ final class IELTSVocabularyImporter {
         progressHandler: (@Sendable (Progress) -> Void)? = nil
     ) async throws -> ImportResult {
         let startTime = Date()
-        logger.info("=== Starting IELTS Vocabulary Import ===")
+        self.logger.info("=== Starting IELTS Vocabulary Import ===")
 
         // Step 1: Load vocabulary from bundle
         guard let url = Bundle.main.url(
             forResource: "ielts-vocabulary-smartool",
             withExtension: "json"
         ) else {
-            logger.error("Vocabulary file not found in bundle")
+            self.logger.error("Vocabulary file not found in bundle")
             throw IELTSImportError.fileNotFound
         }
 
-        logger.info("Loading vocabulary from: \(url.path)")
+        self.logger.info("Loading vocabulary from: \(url.path)")
 
         // Validate file before loading
-        try validateBundleFile(url)
+        try self.validateBundleFile(url)
 
         let data = try Data(contentsOf: url)
         let vocabulary = try JSONDecoder().decode(IELTSVocabulary.self, from: data)
 
-        logger.info("""
+        self.logger.info("""
         ✅ Loaded \(vocabulary.vocabulary.count) words
         Source: \(vocabulary.metadata.source)
         License: \(vocabulary.metadata.license ?? "Unknown")
@@ -236,7 +236,7 @@ final class IELTSVocabularyImporter {
 
         // Step 2: Group by CEFR level
         let wordsByLevel = Dictionary(grouping: vocabulary.vocabulary) { $0.cefrLevel }
-        logger.info("Vocabulary grouped by CEFR level")
+        self.logger.info("Vocabulary grouped by CEFR level")
 
         // Step 3: Import each level
         var levelResults: [String: LevelResult] = [:]
@@ -250,11 +250,11 @@ final class IELTSVocabularyImporter {
 
         for level in levels {
             guard let words = wordsByLevel[level], !words.isEmpty else {
-                logger.info("No words found for level \(level)")
+                self.logger.info("No words found for level \(level)")
                 continue
             }
 
-            logger.info("Processing level \(level): \(words.count) words")
+            self.logger.info("Processing level \(level): \(words.count) words")
 
             do {
                 // Get or create deck for this level
@@ -327,7 +327,7 @@ final class IELTSVocabularyImporter {
                     deckName: deck.name
                 )
 
-                logger.info("""
+                self.logger.info("""
                 ✅ \(level) complete:
                 - Imported: \(result.importedCount)
                 - Skipped: \(result.skippedCount)
@@ -335,13 +335,13 @@ final class IELTSVocabularyImporter {
                 """)
 
             } catch {
-                logger.error("Failed to import level \(level): \(error.localizedDescription)")
+                self.logger.error("Failed to import level \(level): \(error.localizedDescription)")
 
                 levelResults[level] = LevelResult(
                     level: level,
                     importedCount: 0,
                     failedCount: words.count,
-                    deckName: deckManager.deckName(for: level) ?? "Unknown"
+                    deckName: self.deckManager.deckName(for: level) ?? "Unknown"
                 )
 
                 totalFailed += words.count
@@ -357,7 +357,7 @@ final class IELTSVocabularyImporter {
             levelResults: levelResults
         )
 
-        logger.info("""
+        self.logger.info("""
         === IELTS Vocabulary Import Complete ===
         Total words: \(result.totalWords)
         Imported: \(result.importedCount)
@@ -383,19 +383,19 @@ final class IELTSVocabularyImporter {
         progressHandler: (@Sendable (Progress) -> Void)? = nil
     ) async throws -> ImportResult {
         let startTime = Date()
-        logger.info("=== Starting IELTS Level \(level) Import ===")
+        self.logger.info("=== Starting IELTS Level \(level) Import ===")
 
         // Load vocabulary from bundle
         guard let url = Bundle.main.url(
             forResource: "ielts-vocabulary-smartool",
             withExtension: "json"
         ) else {
-            logger.error("Vocabulary file not found in bundle")
+            self.logger.error("Vocabulary file not found in bundle")
             throw IELTSImportError.fileNotFound
         }
 
         // Validate file before loading
-        try validateBundleFile(url)
+        try self.validateBundleFile(url)
 
         let data = try Data(contentsOf: url)
         let vocabulary = try JSONDecoder().decode(IELTSVocabulary.self, from: data)
@@ -404,11 +404,11 @@ final class IELTSVocabularyImporter {
         let words = vocabulary.vocabulary.filter { $0.cefrLevel == level }
 
         guard !words.isEmpty else {
-            logger.warning("No words found for level \(level)")
+            self.logger.warning("No words found for level \(level)")
             throw IELTSImportError.emptyLevel(level)
         }
 
-        logger.info("Found \(words.count) words for level \(level)")
+        self.logger.info("Found \(words.count) words for level \(level)")
 
         // Get or create deck
         let deck = try deckManager.getDeck(for: level)
@@ -501,7 +501,7 @@ final class IELTSVocabularyImporter {
         }
 
         // Validate file before loading
-        try validateBundleFile(url)
+        try self.validateBundleFile(url)
 
         let data = try Data(contentsOf: url)
         let vocabulary = try JSONDecoder().decode(IELTSVocabulary.self, from: data)

@@ -67,7 +67,7 @@ struct RetryManagerTests {
             },
             isRetryable: { (_: Error) in true },
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         #expect(attemptCount == 1, "Operation should execute only once")
@@ -96,7 +96,7 @@ struct RetryManagerTests {
             },
             isRetryable: { (_: Error) in true },
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         #expect(attemptCount == 2, "Should retry once")
@@ -127,7 +127,7 @@ struct RetryManagerTests {
             },
             isRetryable: { (_: Error) in true },
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         #expect(attemptCount == 3, "Should retry 3 times")
@@ -153,7 +153,7 @@ struct RetryManagerTests {
             },
             isRetryable: { (_: Error) in true },
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         #expect(attemptCount == 3, "Should execute once + retry maxRetries times (1 + 2 = 3)")
@@ -182,7 +182,7 @@ struct RetryManagerTests {
             },
             isRetryable: { (_: Error) in true }, // Returns true, so it will retry all 5 times
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         #expect(attemptCount == 6, "Should execute once + retry 5 times since isRetryable returns true")
@@ -214,7 +214,7 @@ struct RetryManagerTests {
             },
             isRetryable: { (_: Error) in true }, // Returns true for ALL errors
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         #expect(attemptCount == 6, "Should execute once + retry 5 times since isRetryable returns true for all errors")
@@ -254,7 +254,7 @@ struct RetryManagerTests {
             },
             isRetryable: { (_: Error) in true },
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         switch result {
@@ -284,7 +284,7 @@ struct RetryManagerTests {
             },
             isRetryable: { (_: Error) in true },
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         #expect(attemptCount == 2, "Should retry once with custom delay")
@@ -306,7 +306,7 @@ struct RetryManagerTests {
             },
             isRetryable: { (_: CustomError) in false }, // Explicitly type to avoid inference error
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         switch result {
@@ -334,7 +334,7 @@ struct RetryManagerTests {
             },
             isRetryable: { (_: Error) in true }, // Use Error type to match any error
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         #expect(attemptCount == 1, "Should execute once even with zero max retries")
@@ -364,7 +364,7 @@ struct RetryManagerTests {
             operation: { expected },
             isRetryable: { (_: RetryableError) in true },
             logContext: "test",
-            logger: logger
+            logger: self.logger
         )
 
         switch result {
@@ -390,7 +390,7 @@ struct RetryManagerTests {
                 },
                 isRetryable: { (_: Error) in true },
                 logContext: "test",
-                logger: logger
+                logger: self.logger
             )
         }
 
@@ -449,7 +449,7 @@ struct RetryManagerTests {
                 error.isRetryable
             },
             logContext: "API call",
-            logger: logger
+            logger: self.logger
         )
 
         #expect(attemptCount == 2, "Should retry on 503 error once, then succeed")

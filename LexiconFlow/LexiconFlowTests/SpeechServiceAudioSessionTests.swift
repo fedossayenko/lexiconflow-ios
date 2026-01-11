@@ -43,10 +43,10 @@ struct SpeechServiceAudioSessionTests {
     @Test("configureAudioSession sets category to .playback")
     func audioSessionCategoryIsPlayback() async throws {
         // Given: Fresh audio session state
-        service.cleanup()
+        self.service.cleanup()
 
         // When: speak() triggers configuration
-        service.speak("test")
+        self.service.speak("test")
 
         // Then: Category should be .playback
         let session = AVAudioSession.sharedInstance()
@@ -56,10 +56,10 @@ struct SpeechServiceAudioSessionTests {
     @Test("configureAudioSession sets mode to .spokenAudio")
     func audioSessionModeIsSpokenAudio() async throws {
         // Given: Fresh audio session state
-        service.cleanup()
+        self.service.cleanup()
 
         // When: speak() triggers configuration
-        service.speak("test")
+        self.service.speak("test")
 
         // Then: Mode should be .spokenAudio
         let session = AVAudioSession.sharedInstance()
@@ -69,10 +69,10 @@ struct SpeechServiceAudioSessionTests {
     @Test("configureAudioSession sets .duckOthers option")
     func audioSessionDucksOtherAudio() async throws {
         // Given: Fresh audio session state
-        service.cleanup()
+        self.service.cleanup()
 
         // When: speak() triggers configuration
-        service.speak("test")
+        self.service.speak("test")
 
         // Then: Category options should include .duckOthers
         let session = AVAudioSession.sharedInstance()
@@ -82,10 +82,10 @@ struct SpeechServiceAudioSessionTests {
     @Test("configureAudioSession sets session active")
     func audioSessionBecomesActive() async throws {
         // Given: Fresh audio session state
-        service.cleanup()
+        self.service.cleanup()
 
         // When: speak() triggers configuration
-        service.speak("test")
+        self.service.speak("test")
 
         // Then: Speak should complete without error
         // Note: AVAudioSession.isActive is not available in iOS 26
@@ -96,11 +96,11 @@ struct SpeechServiceAudioSessionTests {
     @Test("configureAudioSession logs success")
     func audioSessionConfigurationLogsSuccess() async throws {
         // Given: Fresh audio session state
-        service.cleanup()
+        self.service.cleanup()
 
         // When: speak() triggers configuration
         // Note: Logging is internal, but we verify no crash occurs
-        service.speak("test")
+        self.service.speak("test")
 
         // Then: No exception thrown (logging succeeded)
         // In production, verify OSLog output
@@ -113,7 +113,7 @@ struct SpeechServiceAudioSessionTests {
 
         // When: speak() attempts to configure session
         // Note: This test verifies error handling path exists
-        service.speak("test")
+        self.service.speak("test")
 
         // Then: No crash (graceful degradation)
         // In production, verify Analytics.trackError was called
@@ -124,10 +124,10 @@ struct SpeechServiceAudioSessionTests {
     @Test("cleanup deactivates audio session when app backgrounds")
     func cleanupDeactivatesAudioSession() async throws {
         // Given: Active audio session
-        service.speak("test")
+        self.service.speak("test")
 
         // When: cleanup is called
-        service.cleanup()
+        self.service.cleanup()
 
         // Then: Cleanup completes without error
         // Note: AVAudioSession.isActive is not available in iOS 26
@@ -138,16 +138,16 @@ struct SpeechServiceAudioSessionTests {
     func cleanupStopsOngoingSpeech() async throws {
         // Given: Speaking in progress
         AppSettings.ttsEnabled = true
-        service.speak("test")
+        self.service.speak("test")
 
         // Wait for speech to start (simulated - actual timing may vary)
         try await Task.sleep(nanoseconds: 100000000) // 0.1 seconds
 
         // When: cleanup is called
-        service.cleanup()
+        self.service.cleanup()
 
         // Then: Speech should be stopped
-        #expect(service.isSpeaking == false)
+        #expect(self.service.isSpeaking == false)
     }
 
     // NOTE: cleanupResetsConfigurationFlag moved to ManualTests.swift
@@ -156,11 +156,11 @@ struct SpeechServiceAudioSessionTests {
     @Test("cleanup logs deactivation")
     func cleanupLogsDeactivation() async throws {
         // Given: Active audio session
-        service.speak("test")
+        self.service.speak("test")
 
         // When: cleanup is called
         // Note: Logging is internal, but we verify no crash occurs
-        service.cleanup()
+        self.service.cleanup()
 
         // Then: No exception thrown (logging succeeded)
     }
@@ -168,11 +168,11 @@ struct SpeechServiceAudioSessionTests {
     @Test("cleanup tracks errors to Analytics")
     func cleanupTracksErrors() async throws {
         // Given: Active audio session
-        service.speak("test")
+        self.service.speak("test")
 
         // When: cleanup is called with simulated error
         // Note: This verifies error handling path exists
-        service.cleanup()
+        self.service.cleanup()
 
         // Then: No crash (graceful degradation)
     }
@@ -180,12 +180,12 @@ struct SpeechServiceAudioSessionTests {
     @Test("cleanup is safe to call multiple times")
     func cleanupIsIdempotent() async throws {
         // Given: Active audio session
-        service.speak("test")
+        self.service.speak("test")
 
         // When: cleanup is called multiple times
-        service.cleanup()
-        service.cleanup()
-        service.cleanup()
+        self.service.cleanup()
+        self.service.cleanup()
+        self.service.cleanup()
 
         // Then: No crash or state corruption
         #expect(true) // Test passes if no crash
@@ -194,10 +194,10 @@ struct SpeechServiceAudioSessionTests {
     @Test("cleanup when session not configured is no-op")
     func cleanupWithoutConfigurationIsSafe() async throws {
         // Given: No audio session configured
-        service.cleanup()
+        self.service.cleanup()
 
         // When: cleanup is called again
-        service.cleanup()
+        self.service.cleanup()
 
         // Then: No crash
     }
@@ -210,10 +210,10 @@ struct SpeechServiceAudioSessionTests {
     @Test("speak calls configureAudioSession on first use")
     func speakConfiguresAudioSession() async throws {
         // Given: Fresh audio session state
-        service.cleanup()
+        self.service.cleanup()
 
         // When: speak() is called for first time
-        service.speak("test")
+        self.service.speak("test")
 
         // Then: Audio session should be configured
         let session = AVAudioSession.sharedInstance()
@@ -234,10 +234,10 @@ struct SpeechServiceAudioSessionTests {
     @Test("AVAudioSession error 4099 prevention")
     func preventsError4099() async throws {
         // Given: Active audio session
-        service.speak("test1")
+        self.service.speak("test1")
 
         // When: Explicit cleanup before termination
-        service.cleanup()
+        self.service.cleanup()
 
         // Then: No error 4099 should occur
         // (Verified by test completing without exception)
@@ -252,10 +252,10 @@ struct SpeechServiceAudioSessionTests {
     @Test("configureAudioSession handles AVAudioSession errors gracefully")
     func audioSessionConfigurationErrorIsHandled() async throws {
         // Given: Audio session may fail to configure
-        service.cleanup()
+        self.service.cleanup()
 
         // When: speak() attempts configuration with potentially invalid state
-        service.speak("test")
+        self.service.speak("test")
 
         // Then: No crash thrown (graceful degradation)
         // In production, verify error was logged to Analytics
@@ -264,11 +264,11 @@ struct SpeechServiceAudioSessionTests {
     @Test("cleanup handles deactivation errors")
     func cleanupErrorIsHandled() async throws {
         // Given: Active audio session
-        service.speak("test")
+        self.service.speak("test")
 
         // When: cleanup attempts deactivation
         // Note: Testing actual error scenario requires session manipulation
-        service.cleanup()
+        self.service.cleanup()
 
         // Then: No crash (errors are logged but don't throw)
     }
@@ -276,11 +276,11 @@ struct SpeechServiceAudioSessionTests {
     @Test("speech continues if audio session configuration fails")
     func speechContinuesOnConfigurationFailure() async throws {
         // Given: Potentially failing audio session
-        service.cleanup()
+        self.service.cleanup()
 
         // When: speak() is called
         // Note: Actual failure simulation difficult without session manipulation
-        service.speak("test")
+        self.service.speak("test")
 
         // Then: No crash (app continues running)
     }
@@ -288,12 +288,12 @@ struct SpeechServiceAudioSessionTests {
     @Test("error logging for troubleshooting")
     func errorsAreLoggedForTroubleshooting() async throws {
         // Given: Audio session in various states
-        service.cleanup()
+        self.service.cleanup()
 
         // When: Operations that may fail
-        service.speak("test")
-        service.cleanup()
-        service.restartEngine()
+        self.service.speak("test")
+        self.service.cleanup()
+        self.service.restartEngine()
 
         // Then: All operations complete without throwing
         // In production, verify OSLog and Analytics entries
@@ -308,13 +308,13 @@ struct SpeechServiceAudioSessionTests {
     func cleanupIsThreadSafe() async throws {
         // Given: Active audio session
         await MainActor.run {
-            service.speak("test")
+            self.service.speak("test")
         }
 
         // When: cleanup from background thread (should dispatch to MainActor)
         await Task.detached {
             await MainActor.run {
-                service.cleanup()
+                self.service.cleanup()
             }
         }.value
 
@@ -328,14 +328,14 @@ struct SpeechServiceAudioSessionTests {
     @Test("no data races when multiple speak calls happen")
     func concurrentSpeakCallsAreSafe() async throws {
         // Given: Fresh audio session
-        service.cleanup()
+        self.service.cleanup()
 
         // When: Multiple concurrent speak calls
         await withTaskGroup(of: Void.self) { group in
             for i in 0 ..< 10 {
                 group.addTask {
                     await MainActor.run {
-                        service.speak("test\(i)")
+                        self.service.speak("test\(i)")
                     }
                 }
             }
@@ -349,24 +349,24 @@ struct SpeechServiceAudioSessionTests {
     func audioSessionStateIsConsistentUnderConcurrency() async throws {
         // Given: Service configured
         await MainActor.run {
-            service.speak("test")
+            self.service.speak("test")
         }
 
         // When: Concurrent lifecycle operations
         await withTaskGroup(of: Void.self) { group in
             group.addTask {
                 await MainActor.run {
-                    service.cleanup()
+                    self.service.cleanup()
                 }
             }
             group.addTask {
                 await MainActor.run {
-                    service.speak("test2")
+                    self.service.speak("test2")
                 }
             }
             group.addTask {
                 await MainActor.run {
-                    service.restartEngine()
+                    self.service.restartEngine()
                 }
             }
         }
@@ -380,10 +380,10 @@ struct SpeechServiceAudioSessionTests {
     @Test("speak with empty text does not configure audio session")
     func emptyTextDoesNotConfigureAudioSession() async throws {
         // Given: Fresh audio session
-        service.cleanup()
+        self.service.cleanup()
 
         // When: speak() is called with empty text
-        service.speak("   ") // Whitespace only
+        self.service.speak("   ") // Whitespace only
 
         // Then: Audio session should not be configured
         #expect(true) // Test passes if no crash
@@ -393,20 +393,20 @@ struct SpeechServiceAudioSessionTests {
     func disabledTTSDoesNotConfigureAudioSession() async throws {
         // Given: TTS disabled
         AppSettings.ttsEnabled = false
-        service.cleanup()
+        self.service.cleanup()
 
         // When: speak() is called
-        service.speak("test")
+        self.service.speak("test")
 
         // Then: Audio session should not be configured
-        #expect(service.isSpeaking == false)
+        #expect(self.service.isSpeaking == false)
     }
 
     @Test("cleanup before any speak is safe")
     func cleanupBeforeFirstSpeakIsSafe() async throws {
         // Given: Fresh service instance
         // When: cleanup is called before any speak()
-        service.cleanup()
+        self.service.cleanup()
 
         // Then: No crash or error
     }
@@ -421,22 +421,22 @@ struct SpeechServiceAudioSessionTests {
     func appLifecycleSimulation() async throws {
         // Simulate typical app lifecycle:
         // 1. Launch (speak)
-        service.speak("launch")
+        self.service.speak("launch")
 
         // 2. Background (cleanup)
-        service.cleanup()
+        self.service.cleanup()
 
         // 3. Foreground (restart)
-        service.restartEngine()
+        self.service.restartEngine()
 
         // 4. Active use (speak)
-        service.speak("active")
+        self.service.speak("active")
 
         // 5. Background again (cleanup)
-        service.cleanup()
+        self.service.cleanup()
 
         // 6. Termination (final cleanup)
-        service.cleanup()
+        self.service.cleanup()
 
         // Then: All operations complete without crash
         #expect(true) // Test passes if no crash
@@ -445,14 +445,14 @@ struct SpeechServiceAudioSessionTests {
     @Test("audio session category persists after configuration")
     func audioSessionCategoryPersists() async throws {
         // Given: Configured audio session
-        service.speak("test1")
+        self.service.speak("test1")
 
         let session = AVAudioSession.sharedInstance()
         let initialCategory = session.category
 
         // When: Multiple speak calls
-        service.speak("test2")
-        service.speak("test3")
+        self.service.speak("test2")
+        self.service.speak("test3")
 
         // Then: Category should remain consistent
         #expect(session.category == initialCategory)
@@ -462,14 +462,14 @@ struct SpeechServiceAudioSessionTests {
     @Test("audio session mode persists after configuration")
     func audioSessionModePersists() async throws {
         // Given: Configured audio session
-        service.speak("test1")
+        self.service.speak("test1")
 
         let session = AVAudioSession.sharedInstance()
         let initialMode = session.mode
 
         // When: Multiple speak calls
-        service.speak("test2")
-        service.speak("test3")
+        self.service.speak("test2")
+        self.service.speak("test3")
 
         // Then: Mode should remain consistent
         #expect(session.mode == initialMode)

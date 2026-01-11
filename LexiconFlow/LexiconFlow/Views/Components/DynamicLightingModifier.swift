@@ -16,15 +16,21 @@ import SwiftUI
 struct DynamicLightingModifier: ViewModifier {
     let thickness: GlassThickness
     @State private var isPressed = false
+    @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
         content
             .overlay {
-                RoundedRectangle(cornerRadius: thickness.cornerRadius)
+                RoundedRectangle(cornerRadius: self.thickness.cornerRadius)
                     .fill(
                         RadialGradient(
                             colors: [
-                                .white.opacity(isPressed ? 0.1 : 0.05),
+                                // Adaptive ambient light: higher in light mode to counteract dark corners
+                                .white.opacity(
+                                    self.colorScheme == .dark
+                                        ? (self.isPressed ? 0.1 : 0.05) // Dark mode: lower intensity
+                                        : (self.isPressed ? 0.15 : 0.08) // Light mode: higher intensity
+                                ),
                                 .clear
                             ],
                             center: .topLeading,
@@ -33,7 +39,7 @@ struct DynamicLightingModifier: ViewModifier {
                         )
                     )
             }
-            .animation(.easeOut(duration: 0.2), value: isPressed)
+            .animation(.easeOut(duration: 0.2), value: self.isPressed)
     }
 }
 

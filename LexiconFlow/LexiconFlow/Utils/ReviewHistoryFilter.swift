@@ -90,7 +90,7 @@ enum ReviewHistoryFilter: String, CaseIterable, Sendable {
     /// - Parameter reviewDate: The date of the review to check
     /// - Returns: True if the review date falls within this filter's range
     func matches(_ reviewDate: Date) -> Bool {
-        let (startDate, endDate) = dateRange
+        let (startDate, endDate) = self.dateRange
 
         // No lower bound for allTime
         if let start = startDate {

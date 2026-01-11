@@ -89,13 +89,13 @@ struct ManualSpeechServiceAudioSessionTests {
     @Test("cleanup sets isAudioSessionConfigured to false")
     func cleanupResetsConfigurationFlag() async throws {
         // Given: Configured audio session
-        service.speak("test")
+        self.service.speak("test")
 
         // When: cleanup is called
-        service.cleanup()
+        self.service.cleanup()
 
         // Then: Next speak() should reconfigure (verify by checking behavior)
-        service.speak("test2")
+        self.service.speak("test2")
         // Note: isSpeaking is timing-dependent, may not be true immediately
         // In production, verify audio session reconfigures correctly
     }
@@ -117,14 +117,14 @@ struct ManualSpeechServiceAudioSessionTests {
     @Test("restartEngine reconfigures session when app foregrounds")
     func restartEngineReconfiguresSession() async throws {
         // Given: Cleaned up session
-        service.speak("test")
-        service.cleanup()
+        self.service.speak("test")
+        self.service.cleanup()
 
         // When: restartEngine is called
-        service.restartEngine()
+        self.service.restartEngine()
 
         // Then: Session should be reconfigured and active
-        service.speak("test2")
+        self.service.speak("test2")
         // Note: isSpeaking is timing-dependent, may not be true immediately
         // In production, verify speak() works after restartEngine
     }
@@ -148,12 +148,12 @@ struct ManualSpeechServiceAudioSessionTests {
     @Test("audio session configured only once (idempotent)")
     func speakConfiguresAudioSessionOnce() async throws {
         // Given: Fresh audio session state
-        service.cleanup()
+        self.service.cleanup()
 
         // When: speak() is called multiple times
-        service.speak("test1")
-        service.speak("test2")
-        service.speak("test3")
+        self.service.speak("test1")
+        self.service.speak("test2")
+        self.service.speak("test3")
 
         // Then: Audio session remains configured (no errors)
         // Note: isSpeaking is timing-dependent
@@ -178,14 +178,14 @@ struct ManualSpeechServiceAudioSessionTests {
     @Test("speak works after cleanup and restartEngine cycle")
     func speakWorksAfterLifecycleCycle() async throws {
         // Given: Audio session configured
-        service.speak("test1")
+        self.service.speak("test1")
 
         // When: Full lifecycle cycle
-        service.cleanup() // Background
-        service.restartEngine() // Foreground
+        self.service.cleanup() // Background
+        self.service.restartEngine() // Foreground
 
         // Then: speak() should still work
-        service.speak("test2")
+        self.service.speak("test2")
         // Note: isSpeaking is timing-dependent
     }
 
@@ -206,16 +206,16 @@ struct ManualSpeechServiceAudioSessionTests {
     @Test("multiple background/foreground transitions")
     func multipleLifecycleTransitions() async throws {
         // Given: Audio session configured
-        service.speak("test1")
+        self.service.speak("test1")
 
         // When: Multiple lifecycle cycles
         for _ in 0 ..< 5 {
-            service.cleanup()
-            service.restartEngine()
+            self.service.cleanup()
+            self.service.restartEngine()
         }
 
         // Then: speak() should still work
-        service.speak("test2")
+        self.service.speak("test2")
         // Note: isSpeaking is timing-dependent
     }
 
@@ -237,14 +237,14 @@ struct ManualSpeechServiceAudioSessionTests {
     @Test("audio session state consistency across lifecycle events")
     func audioSessionStateRemainsConsistent() async throws {
         // Given: Initial state
-        service.speak("test1")
+        self.service.speak("test1")
 
         // When: Lifecycle transitions
-        service.cleanup()
-        service.restartEngine()
+        self.service.cleanup()
+        self.service.restartEngine()
 
         // Then: speak() should still work
-        service.speak("test2")
+        self.service.speak("test2")
         // Note: isSpeaking is timing-dependent
     }
 
@@ -268,7 +268,7 @@ struct ManualSpeechServiceAudioSessionTests {
     func audioSessionConfigurationIsOnMainActor() async throws {
         // Given: Service is @MainActor isolated
         // When: Calling from MainActor context
-        service.speak("test")
+        self.service.speak("test")
 
         // Then: No concurrency issues
         // Note: isSpeaking is timing-dependent
@@ -291,17 +291,17 @@ struct ManualSpeechServiceAudioSessionTests {
     @Test("restartEngine is safe from background threads")
     func restartEngineIsThreadSafe() async throws {
         // Given: Cleaned up session
-        service.cleanup()
+        self.service.cleanup()
 
         // When: restartEngine from background thread
         await Task.detached {
             await MainActor.run {
-                service.restartEngine()
+                self.service.restartEngine()
             }
         }.value
 
         // Then: Session reconfigured safely
-        service.speak("test")
+        self.service.speak("test")
         // Note: isSpeaking is timing-dependent
     }
 
@@ -325,10 +325,10 @@ struct ManualSpeechServiceAudioSessionTests {
     func restartEngineBeforeFirstSpeakIsSafe() async throws {
         // Given: Fresh service instance
         // When: restartEngine is called before any speak()
-        service.restartEngine()
+        self.service.restartEngine()
 
         // Then: No crash or error, session configured
-        service.speak("test")
+        self.service.speak("test")
         // Note: isSpeaking is timing-dependent
     }
 
@@ -350,17 +350,17 @@ struct ManualSpeechServiceAudioSessionTests {
     @Test("rapid cleanup and restart cycles are safe")
     func rapidLifecycleCyclesAreSafe() async throws {
         // Given: Fresh audio session
-        service.cleanup()
+        self.service.cleanup()
 
         // When: Rapid cleanup/restart cycles
         for _ in 0 ..< 20 {
-            service.restartEngine()
-            service.cleanup()
+            self.service.restartEngine()
+            self.service.cleanup()
         }
 
         // Then: No crash or state corruption
-        service.restartEngine()
-        service.speak("test")
+        self.service.restartEngine()
+        self.service.speak("test")
         // Note: isSpeaking is timing-dependent
     }
 }

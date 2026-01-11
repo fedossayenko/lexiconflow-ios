@@ -185,7 +185,7 @@ struct QuickTranslationServiceTests {
 
     @Test("translate returns cached translation when available")
     func cacheHitReturnsCachedResult() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = ModelContext(container)
         let service = QuickTranslationService.shared
 
@@ -215,7 +215,7 @@ struct QuickTranslationServiceTests {
 
     @Test("translate ignores expired cache entries")
     func cacheHitIgnoresExpiredEntry() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = ModelContext(container)
 
         // Setup: Create expired translation (TTL = -1 day)
@@ -243,7 +243,7 @@ struct QuickTranslationServiceTests {
 
     @Test("translate returns cache miss when word not in cache")
     func cacheMissPerformsFreshTranslation() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let service = QuickTranslationService.shared
 
         // Test: Word not in cache should result in cache miss
@@ -266,7 +266,7 @@ struct QuickTranslationServiceTests {
 
     @Test("cache hit respects language pair")
     func cacheHitRespectsLanguagePair() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = ModelContext(container)
 
         // Setup: Create cached translation for en→es
@@ -302,7 +302,7 @@ struct QuickTranslationServiceTests {
 
     @Test("cache hit returns correct expiration date")
     func cacheHitReturnsCorrectExpiration() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = ModelContext(container)
         let service = QuickTranslationService.shared
 
@@ -335,7 +335,7 @@ struct QuickTranslationServiceTests {
 
     @Test("translate trims whitespace from word before caching")
     func translateTrimsWhitespace() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = ModelContext(container)
         let service = QuickTranslationService.shared
 
@@ -366,7 +366,7 @@ struct QuickTranslationServiceTests {
 
     @Test("cachedTranslation respects TTL expiration")
     func cacheTTLEnforcement() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = ModelContext(container)
 
         // Test: Create translations with various TTLs
@@ -397,7 +397,7 @@ struct QuickTranslationServiceTests {
 
     @Test("cache evicts oldest entries when full")
     func cacheLRUEviction() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = ModelContext(container)
 
         // Setup: Fill cache to max capacity (10,000 entries)
@@ -423,7 +423,7 @@ struct QuickTranslationServiceTests {
 
     @Test("clearExpiredCache removes expired entries")
     func clearExpiredCacheWorks() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = ModelContext(container)
         let service = QuickTranslationService.shared
 
@@ -468,7 +468,7 @@ struct QuickTranslationServiceTests {
 
     @Test("clearExpiredCache handles empty cache")
     func clearExpiredCacheHandlesEmpty() async {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let service = QuickTranslationService.shared
 
         // Should not crash on empty cache
@@ -479,7 +479,7 @@ struct QuickTranslationServiceTests {
 
     @Test("cache save respects maxCacheSize limit")
     func cacheSaveRespectsMaxSize() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = ModelContext(container)
         let service = QuickTranslationService.shared
 
@@ -495,7 +495,7 @@ struct QuickTranslationServiceTests {
 
     @Test("LRU eviction deletes oldest 10% of cache")
     func lruEvictionDeletesOldestPercent() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = ModelContext(container)
 
         // Setup: Create entries with different timestamps
@@ -534,7 +534,7 @@ struct QuickTranslationServiceTests {
 
     @Test("cache save updates cachedAt timestamp")
     func cacheSaveUpdatesTimestamp() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = ModelContext(container)
 
         let beforeSave = Date()
@@ -554,7 +554,7 @@ struct QuickTranslationServiceTests {
 
     @Test("translate throws emptyWord for empty string")
     func emptyWordThrows() async {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let service = QuickTranslationService.shared
 
         let request = QuickTranslationService.FlashcardTranslationRequest(
@@ -574,7 +574,7 @@ struct QuickTranslationServiceTests {
 
     @Test("translate throws emptyWord for whitespace only")
     func whitespaceWordThrows() async {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let service = QuickTranslationService.shared
 
         let request = QuickTranslationService.FlashcardTranslationRequest(
@@ -594,7 +594,7 @@ struct QuickTranslationServiceTests {
 
     @Test("translate throws languagePackMissing when packs unavailable")
     func languagePackMissingThrows() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = ModelContext(container)
 
         // Delete any existing cached translations to force miss
@@ -617,7 +617,7 @@ struct QuickTranslationServiceTests {
 
     @Test("translate throws offlineNoCache when offline and no cache")
     func offlineNoCacheThrows() async {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let service = QuickTranslationService.shared
 
         // Test the error exists
@@ -676,7 +676,7 @@ struct QuickTranslationServiceTests {
 
     @Test("translate is thread-safe from concurrent calls")
     func translateConcurrencySafety() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let service = QuickTranslationService.shared
 
         // Create multiple concurrent translation requests
@@ -721,7 +721,7 @@ struct QuickTranslationServiceTests {
 
     @Test("translate cancels gracefully")
     func translateCancellation() async {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let service = QuickTranslationService.shared
 
         let request = QuickTranslationService.FlashcardTranslationRequest(
@@ -744,7 +744,7 @@ struct QuickTranslationServiceTests {
 
     @Test("clearExpiredCache is main actor isolated")
     func clearExpiredCacheMainActorIsolation() async {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let service = QuickTranslationService.shared
 
         // Should run on MainActor for SwiftData
@@ -758,7 +758,7 @@ struct QuickTranslationServiceTests {
 
     @Test("translate saves to cache after fresh translation")
     func translateSavesToCache() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = ModelContext(container)
 
         // Verify initial cache is empty for this word
@@ -787,7 +787,7 @@ struct QuickTranslationServiceTests {
 
     @Test("SwiftData integration persists across operations")
     func swiftDataPersistence() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = ModelContext(container)
         let service = QuickTranslationService.shared
 
@@ -815,7 +815,7 @@ struct QuickTranslationServiceTests {
 
     @Test("cache size is tracked correctly")
     func cacheSizeTracking() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = ModelContext(container)
 
         // Add known number of entries
@@ -839,7 +839,7 @@ struct QuickTranslationServiceTests {
 
     @Test("findCachedTranslation returns nil for non-existent word")
     func findCachedReturnsNilForNonExistent() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = ModelContext(container)
 
         let now = Date()
@@ -870,7 +870,7 @@ struct QuickTranslationServiceTests {
 
     @Test("translate handles special characters in word")
     func translateHandlesSpecialCharacters() async {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let service = QuickTranslationService.shared
 
         let request = QuickTranslationService.FlashcardTranslationRequest(
@@ -889,7 +889,7 @@ struct QuickTranslationServiceTests {
 
     @Test("translate handles very long words")
     func translateHandlesLongWords() async {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let service = QuickTranslationService.shared
 
         let longWord = String(repeating: "a", count: 1000)
@@ -908,7 +908,7 @@ struct QuickTranslationServiceTests {
 
     @Test("translate handles unicode characters")
     func translateHandlesUnicode() async {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let service = QuickTranslationService.shared
 
         let request = QuickTranslationService.FlashcardTranslationRequest(
@@ -926,7 +926,7 @@ struct QuickTranslationServiceTests {
 
     @Test("translate handles emoji in word")
     func translateHandlesEmoji() async {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let service = QuickTranslationService.shared
 
         let request = QuickTranslationService.FlashcardTranslationRequest(
@@ -944,7 +944,7 @@ struct QuickTranslationServiceTests {
 
     @Test("translate handles RTL languages")
     func translateHandlesRTL() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = ModelContext(container)
 
         // Create cache entry for RTL language
@@ -970,7 +970,7 @@ struct QuickTranslationServiceTests {
 
     @Test("cache handles concurrent reads and writes")
     func cacheConcurrentReadsWrites() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
 
         // Simulate concurrent cache operations
         await withTaskGroup(of: Void.self) { group in
@@ -1008,7 +1008,7 @@ struct QuickTranslationServiceTests {
 
     @Test("translate with nil flashcardID works correctly")
     func translateWithNilFlashcardID() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let service = QuickTranslationService.shared
 
         let request = QuickTranslationService.FlashcardTranslationRequest(

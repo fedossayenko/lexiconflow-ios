@@ -16,7 +16,7 @@ struct TimeRangePicker: View {
     // MARK: - Body
 
     var body: some View {
-        Picker("Time Range", selection: $selection) {
+        Picker("Time Range", selection: self.$selection) {
             ForEach(StatisticsTimeRange.allCases, id: \.self) { timeRange in
                 Text(timeRange.displayName)
                     .tag(timeRange)

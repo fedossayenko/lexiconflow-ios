@@ -42,7 +42,7 @@ struct FlashcardMatchedViewTests {
 
     @Test("FlashcardMatchedView creates with namespace")
     func namespaceCreation() {
-        let card = createTestFlashcard()
+        let card = self.createTestFlashcard()
         let isFlipped = false
 
         // Verify view can be created
@@ -51,7 +51,7 @@ struct FlashcardMatchedViewTests {
 
     @Test("FlashcardMatchedView namespace shared across children")
     func namespaceSharedAcrossChildren() {
-        let card = createTestFlashcard()
+        let card = self.createTestFlashcard()
         let isFlipped = false
 
         // Verify namespace is shared between front and back views
@@ -60,8 +60,8 @@ struct FlashcardMatchedViewTests {
 
     @Test("Multiple instances have separate namespaces")
     func multipleInstancesSeparateNamespaces() {
-        let card1 = createTestFlashcard(word: "Test1")
-        let card2 = createTestFlashcard(word: "Test2")
+        let card1 = self.createTestFlashcard(word: "Test1")
+        let card2 = self.createTestFlashcard(word: "Test2")
 
         // Verify two instances can be created without interference
         let view1 = FlashcardMatchedView(card: card1, isFlipped: .constant(false))
@@ -72,7 +72,7 @@ struct FlashcardMatchedViewTests {
 
     @Test("CardFrontViewMatched has matched geometry ID for word")
     func frontViewWordMatchedID() {
-        let card = createTestFlashcard()
+        let card = self.createTestFlashcard()
         let namespace = Namespace().wrappedValue
 
         // Verify CardFrontViewMatched can be created with namespace
@@ -81,7 +81,7 @@ struct FlashcardMatchedViewTests {
 
     @Test("CardFrontViewMatched has matched geometry ID for phonetic")
     func frontViewPhoneticMatchedID() {
-        let card = createTestFlashcard(phonetic: "/test/")
+        let card = self.createTestFlashcard(phonetic: "/test/")
         let namespace = Namespace().wrappedValue
 
         // Verify phonetic section exists
@@ -90,7 +90,7 @@ struct FlashcardMatchedViewTests {
 
     @Test("CardBackViewMatched has matching IDs")
     func backViewMatchedIDs() {
-        let card = createTestFlashcard()
+        let card = self.createTestFlashcard()
         let namespace = Namespace().wrappedValue
 
         // Verify CardBackViewMatched uses same IDs: "word" and "phonetic"
@@ -109,7 +109,7 @@ struct FlashcardMatchedViewTests {
 
     @Test("Flip animation uses spring parameters")
     func flipAnimationSpringParameters() {
-        let card = createTestFlashcard()
+        let card = self.createTestFlashcard()
         let isFlipped = false
 
         // Verify animation is .spring(response: 0.4, dampingFraction: 0.75)
@@ -118,7 +118,7 @@ struct FlashcardMatchedViewTests {
 
     @Test("isFlipped false shows front view")
     func isFlippedFalseShowsFront() {
-        let card = createTestFlashcard()
+        let card = self.createTestFlashcard()
         let isFlipped = false
         let view = FlashcardMatchedView(card: card, isFlipped: .constant(isFlipped))
 
@@ -127,7 +127,7 @@ struct FlashcardMatchedViewTests {
 
     @Test("isFlipped true shows back view")
     func isFlippedTrueShowsBack() {
-        let card = createTestFlashcard()
+        let card = self.createTestFlashcard()
         let isFlipped = true
         let view = FlashcardMatchedView(card: card, isFlipped: .constant(isFlipped))
 
@@ -138,8 +138,8 @@ struct FlashcardMatchedViewTests {
 
     @Test("Deck name shows on front when available")
     func deckNameShowsOnFront() {
-        let deck = createTestDeck(name: "IELTS")
-        let card = createTestFlashcard(deck: deck)
+        let deck = self.createTestDeck(name: "IELTS")
+        let card = self.createTestFlashcard(deck: deck)
         let namespace = Namespace().wrappedValue
 
         // Verify deck name is displayed on CardFrontViewMatched
@@ -148,7 +148,7 @@ struct FlashcardMatchedViewTests {
 
     @Test("Phonetic hides when nil on front")
     func phoneticHidesWhenNil() {
-        let card = createTestFlashcard(phonetic: nil)
+        let card = self.createTestFlashcard(phonetic: nil)
         let namespace = Namespace().wrappedValue
 
         // Verify phonetic text is not shown
@@ -157,7 +157,7 @@ struct FlashcardMatchedViewTests {
 
     @Test("Translation shows on back when available")
     func translationShowsOnBack() {
-        let card = createTestFlashcard(translation: "тест")
+        let card = self.createTestFlashcard(translation: "тест")
         let namespace = Namespace().wrappedValue
 
         // Verify translation section is displayed on CardBackViewMatched
@@ -168,7 +168,7 @@ struct FlashcardMatchedViewTests {
 
     @Test("CardFrontViewMatched has accessibility label for word")
     func frontViewAccessibilityLabel() {
-        let card = createTestFlashcard(word: "Ephemeral", phonetic: "/əˈfem(ə)rəl/")
+        let card = self.createTestFlashcard(word: "Ephemeral", phonetic: "/əˈfem(ə)rəl/")
         let namespace = Namespace().wrappedValue
 
         // Verify accessibilityLabel("Word: Ephemeral") is set
@@ -177,7 +177,7 @@ struct FlashcardMatchedViewTests {
 
     @Test("CardFrontViewMatched has accessibility label for phonetic")
     func frontViewPhoneticAccessibilityLabel() {
-        let card = createTestFlashcard(phonetic: "/əˈfem(ə)rəl/")
+        let card = self.createTestFlashcard(phonetic: "/əˈfem(ə)rəl/")
         let namespace = Namespace().wrappedValue
 
         // Verify accessibilityLabel("Pronunciation: /əˈfem(ə)rəl/") is set
@@ -186,7 +186,7 @@ struct FlashcardMatchedViewTests {
 
     @Test("CardBackViewMatched has accessibility label for translation")
     func backViewAccessibilityLabel() {
-        let card = createTestFlashcard(translation: "тест")
+        let card = self.createTestFlashcard(translation: "тест")
         let namespace = Namespace().wrappedValue
 
         // Verify accessibilityLabel("Translation: тест") is set
@@ -195,7 +195,7 @@ struct FlashcardMatchedViewTests {
 
     @Test("CardFrontViewMatched contains accessibility children")
     func frontViewAccessibilityChildren() {
-        let card = createTestFlashcard()
+        let card = self.createTestFlashcard()
         let namespace = Namespace().wrappedValue
 
         // Verify .accessibilityElement(children: .contain) is set
@@ -207,20 +207,20 @@ struct FlashcardMatchedViewTests {
 
     @Test("FlashcardMatchedView handles empty word")
     func handlesEmptyWord() {
-        let card = createTestFlashcard(word: "")
+        let card = self.createTestFlashcard(word: "")
         let view = FlashcardMatchedView(card: card, isFlipped: .constant(false))
     }
 
     @Test("FlashcardMatchedView handles long word")
     func handlesLongWord() {
         let longWord = String(repeating: "a", count: 100)
-        let card = createTestFlashcard(word: longWord)
+        let card = self.createTestFlashcard(word: longWord)
         let view = FlashcardMatchedView(card: card, isFlipped: .constant(false))
     }
 
     @Test("FlashcardMatchedView handles special characters in phonetic")
     func handlesSpecialCharacters() {
-        let card = createTestFlashcard(phonetic: "/əˈfem(ə)rəl/")
+        let card = self.createTestFlashcard(phonetic: "/əˈfem(ə)rəl/")
         let view = FlashcardMatchedView(card: card, isFlipped: .constant(false))
     }
 }

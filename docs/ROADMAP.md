@@ -88,15 +88,16 @@ This document outlines the phased development approach for Lexicon Flow, from in
 - [x] Optimize for 120Hz ProMotion displays
 
 ### Week 6: Gesture System
-- [ ] Implement drag gesture on flashcard
-- [ ] Add visual feedback during drag:
+- [x] Implement drag gesture on flashcard
+- [x] Add visual feedback during drag:
   - Swipe right (Good) → Green tint, "swelling" effect
   - Swipe left (Again) → Red tint, "shrinking" effect
   - Swipe up (Easy) → Blue tint, lightening effect
   - Swipe down (Hard) → Orange tint, heavy effect
-- [ ] Tune gesture recognition thresholds
-- [ ] Add cancel gesture (swipe back to center)
-- [ ] Implement `.interactive()` modifier for reactive refraction
+- [x] Tune gesture recognition thresholds
+- [x] Add cancel gesture (swipe back to center)
+- [x] Implement `.interactive()` modifier for reactive refraction
+
 
 ### Week 7: Morphing Transitions
 - [x] Replace standard 3D flip with `glassEffectTransition(.materialize)`
@@ -118,8 +119,8 @@ This document outlines the phased development approach for Lexicon Flow, from in
 - [x] Implement haptic throttling (80ms interval)
 - [x] Add haptic lifecycle management (background/foreground)
 - [x] Create comprehensive test coverage (~40 new tests)
-- [ ] Implement harmonic chimes for streak building
-- [ ] Add audio feedback toggle in settings
+- [x] Implement harmonic chimes for streak building (AppSettings.streakChimesEnabled)
+- [x] Add audio feedback toggle in settings (AppSettings.audioEnabled)
 - [ ] A/B test gesture vs. button grading
 
 **Exit Criteria:**
@@ -139,13 +140,13 @@ This document outlines the phased development approach for Lexicon Flow, from in
 - Import and process base dictionary
 
 ### Week 9: Foundation Models
-- [ ] Integrate Foundation Models framework
-- [ ] Create `LanguageModelSession` wrapper
-- [ ] Implement sentence generation with prompt engineering:
+- [ ] Integrate Foundation Models framework (on-device)
+- [x] Create `LanguageModelSession` wrapper (cloud API via SentenceGenerationService)
+- [x] Implement sentence generation with prompt engineering:
   - Casual American English context
   - Simple vocabulary constraint
   - Pedagogical value optimization
-- [ ] Build sentence caching strategy (7-day TTL)
+- [x] Build sentence caching strategy (7-day TTL)
 - [ ] Add "Regenerate Sentence" button
 - [ ] Test generation latency and quality
 
@@ -160,26 +161,26 @@ This document outlines the phased development approach for Lexicon Flow, from in
 
 ### Week 11: Audio System
 - [x] Implement `AVSpeechSynthesizer` wrapper (SpeechService)
-- [ ] Build voice quality selector:
+- [x] Build voice quality selector:
   - Premium > Enhanced > Default
   - Filter by language code
   - Sort by quality
-- [ ] Create accent selection UI:
+- [x] Create accent selection UI (TTSSettingsView):
   - en-US (American)
   - en-GB (British)
   - en-AU (Australian)
   - en-IE (Irish)
-- [ ] Add playback rate controls
+- [x] Add playback rate controls (ttsSpeechRate, ttsPitchMultiplier)
 - [x] Implement "Auto-play on card flip" setting (TTSTiming: onView/onFlip/manual)
 - [ ] Detect and prompt for premium voice downloads
 
 ### Week 12: Dictionary Import
 - [ ] Source/acquire 10,000-word English dataset
-- [ ] Create JSON import format specification
-- [ ] Implement background import with `ModelActor`
-- [ ] Build import progress UI with cancellation
+- [x] Create JSON import format specification (DictionaryImporter)
+- [x] Implement background import with `ModelActor` (DictionaryImporter)
+- [x] Build import progress UI with cancellation
 - [ ] Add batch image processing
-- [ ] Test import performance (target: <30 seconds)
+- [x] Test import performance (target: <30 seconds)
 - [ ] Implement incremental updates
 
 **Exit Criteria:**
@@ -307,8 +308,8 @@ This document outlines the phased development approach for Lexicon Flow, from in
 ### Technical Milestones
 
 - [x] **Milestone 1: Core Algorithm** (Week 4)
-- [ ] **Milestone 2: Liquid UI Complete** (Week 8)
-- [ ] **Milestone 3: AI Features Working** (Week 12)
+- [x] **Milestone 2: Liquid UI Complete** (Week 8)
+- [x] **Milestone 3: AI Features Working** (Week 12) - Cloud API + Translation
 - [ ] **Milestone 4: Beta Ready** (Week 15)
 - [ ] **Milestone 5: App Store Submission** (Week 16)
 - [ ] **Milestone 6: First 1,000 Downloads** (Post-Launch Month 1)

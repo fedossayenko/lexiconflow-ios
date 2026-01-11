@@ -53,10 +53,10 @@ struct DeckDetailViewTests {
 
     @Test("DeckDetailView can be created with deck")
     func deckDetailViewCreation() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = createTestDeck(in: context, name: "Test Deck")
+        let deck = self.createTestDeck(in: context, name: "Test Deck")
         _ = DeckDetailView(deck: deck)
 
         // Verify view can be created with deck
@@ -65,10 +65,10 @@ struct DeckDetailViewTests {
 
     @Test("DeckDetailView uses Bindable for deck")
     func deckDetailViewUsesBindable() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = createTestDeck(in: context, name: "Bindable Deck")
+        let deck = self.createTestDeck(in: context, name: "Bindable Deck")
         _ = DeckDetailView(deck: deck)
 
         // Verify @Bindable is used for deck mutations
@@ -79,10 +79,10 @@ struct DeckDetailViewTests {
 
     @Test("Navigation title shows deck name")
     func navigationTitleShowsDeckName() {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = createTestDeck(in: context, name: "My Vocabulary Deck")
+        let deck = self.createTestDeck(in: context, name: "My Vocabulary Deck")
         _ = DeckDetailView(deck: deck)
 
         // Verify navigation title is deck.name
@@ -93,10 +93,10 @@ struct DeckDetailViewTests {
 
     @Test("Empty deck shows ContentUnavailableView")
     func emptyDeckShowsEmptyState() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = createTestDeck(in: context, name: "Empty Deck")
+        let deck = self.createTestDeck(in: context, name: "Empty Deck")
         try context.save()
 
         _ = DeckDetailView(deck: deck)
@@ -127,12 +127,12 @@ struct DeckDetailViewTests {
 
     @Test("Cards are displayed in list")
     func cardsDisplayedInList() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = createTestDeck(in: context, name: "Test Deck")
-        _ = createTestCard(in: context, word: "Hello", deck: deck)
-        _ = createTestCard(in: context, word: "World", deck: deck)
+        let deck = self.createTestDeck(in: context, name: "Test Deck")
+        _ = self.createTestCard(in: context, word: "Hello", deck: deck)
+        _ = self.createTestCard(in: context, word: "World", deck: deck)
 
         try context.save()
 
@@ -168,13 +168,13 @@ struct DeckDetailViewTests {
 
     @Test("Section header shows card count")
     func sectionHeaderShowsCount() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = createTestDeck(in: context, name: "Count Test")
-        createTestCard(in: context, word: "Card1", deck: deck)
-        createTestCard(in: context, word: "Card2", deck: deck)
-        createTestCard(in: context, word: "Card3", deck: deck)
+        let deck = self.createTestDeck(in: context, name: "Count Test")
+        self.createTestCard(in: context, word: "Card1", deck: deck)
+        self.createTestCard(in: context, word: "Card2", deck: deck)
+        self.createTestCard(in: context, word: "Card3", deck: deck)
 
         try context.save()
 
@@ -186,13 +186,13 @@ struct DeckDetailViewTests {
 
     @Test("Delete cards at valid offsets")
     func deleteCardsAtValidOffsets() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = createTestDeck(in: context, name: "Delete Test")
-        _ = createTestCard(in: context, word: "Keep", deck: deck)
-        let card2 = createTestCard(in: context, word: "Delete", deck: deck)
-        _ = createTestCard(in: context, word: "Keep", deck: deck)
+        let deck = self.createTestDeck(in: context, name: "Delete Test")
+        _ = self.createTestCard(in: context, word: "Keep", deck: deck)
+        let card2 = self.createTestCard(in: context, word: "Delete", deck: deck)
+        _ = self.createTestCard(in: context, word: "Keep", deck: deck)
 
         try context.save()
 
@@ -209,11 +209,11 @@ struct DeckDetailViewTests {
 
     @Test("Delete handles out of bounds offsets")
     func deleteHandlesOutOfBounds() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = createTestDeck(in: context, name: "Bounds Test")
-        createTestCard(in: context, word: "Card1", deck: deck)
+        let deck = self.createTestDeck(in: context, name: "Bounds Test")
+        self.createTestCard(in: context, word: "Card1", deck: deck)
 
         try context.save()
 
@@ -246,11 +246,11 @@ struct DeckDetailViewTests {
 
     @Test("Cards belong to deck")
     func cardsBelongToDeck() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = createTestDeck(in: context, name: "Relationship Test")
-        let card = createTestCard(in: context, word: "Belong", deck: deck)
+        let deck = self.createTestDeck(in: context, name: "Relationship Test")
+        let card = self.createTestCard(in: context, word: "Belong", deck: deck)
 
         try context.save()
 
@@ -260,14 +260,14 @@ struct DeckDetailViewTests {
 
     @Test("Multiple decks have separate cards")
     func multipleDeckSeparateCards() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck1 = createTestDeck(in: context, name: "Deck 1")
-        let deck2 = createTestDeck(in: context, name: "Deck 2")
+        let deck1 = self.createTestDeck(in: context, name: "Deck 1")
+        let deck2 = self.createTestDeck(in: context, name: "Deck 2")
 
-        let card1 = createTestCard(in: context, word: "Card1", deck: deck1)
-        let card2 = createTestCard(in: context, word: "Card2", deck: deck2)
+        let card1 = self.createTestCard(in: context, word: "Card1", deck: deck1)
+        let card2 = self.createTestCard(in: context, word: "Card2", deck: deck2)
 
         try context.save()
 
@@ -281,11 +281,11 @@ struct DeckDetailViewTests {
 
     @Test("View creation with single card doesn't crash")
     func viewCreationWithSingleCard() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = createTestDeck(in: context, name: "Single Card")
-        createTestCard(in: context, word: "Only", deck: deck)
+        let deck = self.createTestDeck(in: context, name: "Single Card")
+        self.createTestCard(in: context, word: "Only", deck: deck)
 
         try context.save()
 
@@ -296,14 +296,14 @@ struct DeckDetailViewTests {
 
     @Test("View creation with many cards doesn't crash")
     func viewCreationWithManyCards() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = createTestDeck(in: context, name: "Many Cards")
+        let deck = self.createTestDeck(in: context, name: "Many Cards")
 
         // Create 100 cards
         for i in 0 ..< 100 {
-            createTestCard(in: context, word: "Card\(i)", deck: deck)
+            self.createTestCard(in: context, word: "Card\(i)", deck: deck)
         }
 
         try context.save()
@@ -315,11 +315,11 @@ struct DeckDetailViewTests {
 
     @Test("Deck with special characters in name")
     func deckWithSpecialCharacters() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = createTestDeck(in: context, name: "日本語 🇯🇵Deck")
-        createTestCard(in: context, word: "Test", deck: deck)
+        let deck = self.createTestDeck(in: context, name: "日本語 🇯🇵Deck")
+        self.createTestCard(in: context, word: "Test", deck: deck)
 
         try context.save()
 
@@ -331,11 +331,11 @@ struct DeckDetailViewTests {
 
     @Test("Deck with very long name")
     func deckWithVeryLongName() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
         let longName = String(repeating: "A", count: 1000)
-        let deck = createTestDeck(in: context, name: longName)
+        let deck = self.createTestDeck(in: context, name: longName)
 
         try context.save()
 
@@ -347,10 +347,10 @@ struct DeckDetailViewTests {
 
     @Test("Card with empty definition")
     func cardWithEmptyDefinition() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = createTestDeck(in: context, name: "Empty Def Test")
+        let deck = self.createTestDeck(in: context, name: "Empty Def Test")
         let card = Flashcard(word: "Test", definition: "", phonetic: nil)
         card.deck = deck
         context.insert(card)
@@ -365,10 +365,10 @@ struct DeckDetailViewTests {
 
     @Test("Card with very long definition")
     func cardWithVeryLongDefinition() async throws {
-        let container = createTestContainer()
+        let container = self.createTestContainer()
         let context = container.mainContext
 
-        let deck = createTestDeck(in: context, name: "Long Def Test")
+        let deck = self.createTestDeck(in: context, name: "Long Def Test")
         let longDefinition = String(repeating: "Definition text. ", count: 100)
         let card = Flashcard(word: "Test", definition: longDefinition, phonetic: nil)
         card.deck = deck
@@ -380,5 +380,294 @@ struct DeckDetailViewTests {
 
         // Verify long definitions are handled (limited to 2 lines by UI)
         #expect(card.definition.count > 0, "Card with long definition should be handled")
+    }
+
+    // MARK: - Mastery Filter Tests
+
+    @Test("Mastery filter shows all cards by default")
+    func masteryFilterShowsAllCards() async throws {
+        let container = self.createTestContainer()
+        let context = container.mainContext
+
+        let deck = self.createTestDeck(in: context, name: "Test Deck")
+
+        // Create cards with different mastery levels
+        let card1 = Flashcard(word: "Beginner", definition: "Low stability")
+        card1.deck = deck
+        context.insert(card1)
+
+        let state1 = FSRSState(
+            stability: 1.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        card1.fsrsState = state1
+        context.insert(state1)
+
+        let card2 = Flashcard(word: "Mastered", definition: "High stability")
+        card2.deck = deck
+        context.insert(card2)
+
+        let state2 = FSRSState(
+            stability: 30.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        card2.fsrsState = state2
+        context.insert(state2)
+
+        try context.save()
+
+        // All cards should be visible with .all filter
+        #expect(deck.cards.count == 2, "All cards should be shown with .all filter")
+        #expect(card1.fsrsState?.masteryLevel == .beginner, "First card should be beginner")
+        #expect(card2.fsrsState?.masteryLevel == .mastered, "Second card should be mastered")
+    }
+
+    @Test("Mastery filter shows only mastered cards")
+    func masteryFilterShowsOnlyMastered() async throws {
+        let container = self.createTestContainer()
+        let context = container.mainContext
+
+        let deck = self.createTestDeck(in: context, name: "Test Deck")
+
+        // Create beginner card
+        let card1 = Flashcard(word: "Beginner", definition: "Low")
+        card1.deck = deck
+        context.insert(card1)
+
+        let state1 = FSRSState(
+            stability: 3.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        card1.fsrsState = state1
+        context.insert(state1)
+
+        // Create mastered card
+        let card2 = Flashcard(word: "Mastered", definition: "High")
+        card2.deck = deck
+        context.insert(card2)
+
+        let state2 = FSRSState(
+            stability: 35.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        card2.fsrsState = state2
+        context.insert(state2)
+
+        try context.save()
+
+        // Filter for mastered cards: stability >= 30 AND state == .review
+        let masteredCards = deck.cards.filter { card in
+            guard let state = card.fsrsState else { return false }
+            return state.stability >= 30.0 && state.stateEnum == FlashcardState.review.rawValue
+        }
+
+        #expect(masteredCards.count == 1, "Should show only 1 mastered card")
+        #expect(masteredCards.first?.word == "Mastered", "Should be the high stability card")
+    }
+
+    @Test("Mastery filter shows learning cards")
+    func masteryFilterShowsLearning() async throws {
+        let container = self.createTestContainer()
+        let context = container.mainContext
+
+        let deck = self.createTestDeck(in: context, name: "Test Deck")
+
+        // Create new card (learning)
+        let card1 = Flashcard(word: "New", definition: "New card")
+        card1.deck = deck
+        context.insert(card1)
+
+        let state1 = FSRSState(
+            stability: 0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.new.rawValue
+        )
+        card1.fsrsState = state1
+        context.insert(state1)
+
+        // Create learning card
+        let card2 = Flashcard(word: "Learning", definition: "Learning")
+        card2.deck = deck
+        context.insert(card2)
+
+        let state2 = FSRSState(
+            stability: 2.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.learning.rawValue
+        )
+        card2.fsrsState = state2
+        context.insert(state2)
+
+        // Create relearning card
+        let card3 = Flashcard(word: "Relearning", definition: "Relearning")
+        card3.deck = deck
+        context.insert(card3)
+
+        let state3 = FSRSState(
+            stability: 1.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.relearning.rawValue
+        )
+        card3.fsrsState = state3
+        context.insert(state3)
+
+        // Create mastered card (should be excluded)
+        let card4 = Flashcard(word: "Mastered", definition: "Mastered")
+        card4.deck = deck
+        context.insert(card4)
+
+        let state4 = FSRSState(
+            stability: 30.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        card4.fsrsState = state4
+        context.insert(state4)
+
+        try context.save()
+
+        // Filter for learning cards: state in [.new, .learning, .relearning]
+        let learningCards = deck.cards.filter { card in
+            guard let state = card.fsrsState else { return false }
+            return state.stateEnum == FlashcardState.new.rawValue
+                || state.stateEnum == FlashcardState.learning.rawValue
+                || state.stateEnum == FlashcardState.relearning.rawValue
+        }
+
+        #expect(learningCards.count == 3, "Should show 3 learning cards (new, learning, relearning)")
+        #expect(learningCards.allSatisfy { $0.word != "Mastered" }, "Should not include mastered cards")
+    }
+
+    @Test("Cards without FSRSState are included in all filter")
+    func cardsWithoutStateIncludedInAll() async throws {
+        let container = self.createTestContainer()
+        let context = container.mainContext
+
+        let deck = self.createTestDeck(in: context, name: "Test Deck")
+
+        // Create card without FSRS state
+        let card = Flashcard(word: "NoState", definition: "No FSRS state")
+        card.deck = deck
+        context.insert(card)
+
+        try context.save()
+
+        // .all filter should include all cards regardless of state
+        #expect(deck.cards.count == 1, "All filter should include cards without state")
+    }
+
+    @Test("MasteryLevel computed property returns correct level")
+    func masteryLevelComputedProperty() async throws {
+        let container = self.createTestContainer()
+        let context = container.mainContext
+
+        // Test beginner (0-3 days)
+        let state1 = FSRSState(
+            stability: 2.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        context.insert(state1)
+
+        // Test intermediate (3-14 days)
+        let state2 = FSRSState(
+            stability: 8.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        context.insert(state2)
+
+        // Test advanced (14-30 days)
+        let state3 = FSRSState(
+            stability: 20.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        context.insert(state3)
+
+        // Test mastered (30+ days)
+        let state4 = FSRSState(
+            stability: 40.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        context.insert(state4)
+
+        try context.save()
+
+        #expect(state1.masteryLevel == .beginner, "Stability 2.0 should be beginner")
+        #expect(state2.masteryLevel == .intermediate, "Stability 8.0 should be intermediate")
+        #expect(state3.masteryLevel == .advanced, "Stability 20.0 should be advanced")
+        #expect(state4.masteryLevel == .mastered, "Stability 40.0 should be mastered")
+    }
+
+    @Test("isMastered returns true only when stability >= 30 and state is review")
+    func isMasteredComputedProperty() async throws {
+        let container = self.createTestContainer()
+        let context = container.mainContext
+
+        // Test mastered with review state
+        let masteredReview = FSRSState(
+            stability: 30.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        context.insert(masteredReview)
+
+        // Test high stability with learning state
+        let masteredLearning = FSRSState(
+            stability: 35.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.learning.rawValue
+        )
+        context.insert(masteredLearning)
+
+        // Test low stability with review state
+        let beginnerReview = FSRSState(
+            stability: 10.0,
+            difficulty: 5.0,
+            retrievability: 0.9,
+            dueDate: Date(),
+            stateEnum: FlashcardState.review.rawValue
+        )
+        context.insert(beginnerReview)
+
+        try context.save()
+
+        #expect(masteredReview.isMastered == true, "Stability 30+ with review state should be mastered")
+        #expect(masteredLearning.isMastered == false, "Learning state should not be mastered even with high stability")
+        #expect(beginnerReview.isMastered == false, "Low stability should not be mastered")
     }
 }

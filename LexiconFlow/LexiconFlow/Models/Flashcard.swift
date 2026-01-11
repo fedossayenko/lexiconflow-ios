@@ -57,10 +57,13 @@ final class Flashcard {
     // MARK: - Relationships
 
     /// The deck this card belongs to (optional for CloudKit compatibility)
-    /// - Inverse defined on Deck.cards to avoid circular reference
-    /// - SwiftData auto-initializes this property
-    /// - Note: Cascade delete rule matches Deck.cards to avoid constraint violations
-    @Relationship(deleteRule: .cascade) var deck: Deck?
+    ///
+    /// **Nil Value**: Card is orphaned (deck was deleted, or card created without deck)
+    /// **Delete Rule**: .nullify ensures cards persist when deck is deleted (preserves FSRS progress)
+    /// **Orphan Management**: Orphaned cards are visible in "Orphaned Cards" section
+    /// **Inverse**: Defined on Deck.cards to avoid circular macro expansion
+    /// **SwiftData**: Auto-initializes this property
+    @Relationship(deleteRule: .nullify) var deck: Deck?
 
     /// All review logs for this card
     /// - Deleting card cascades to delete all logs
@@ -121,7 +124,7 @@ final class Flashcard {
     /// - Throws: `FlashcardError.invalidCEFRLevel` if the level is not valid
     func setCEFRLevel(_ level: String?) throws {
         guard let level else {
-            cefrLevel = nil
+            self.cefrLevel = nil
             return
         }
 
@@ -130,7 +133,7 @@ final class Flashcard {
             throw FlashcardError.invalidCEFRLevel(level)
         }
 
-        cefrLevel = level
+        self.cefrLevel = level
     }
 }
 

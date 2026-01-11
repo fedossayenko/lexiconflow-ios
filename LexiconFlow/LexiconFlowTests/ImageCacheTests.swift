@@ -77,7 +77,7 @@ struct ImageCacheTests {
     @Test("image returns cached UIImage on subsequent calls")
     func cacheHitReturnsSameInstance() {
         let cache = ImageCache.shared
-        let imageData = createTestImageData()
+        let imageData = self.createTestImageData()
 
         // First call - cache miss, should decode
         let image1 = cache.image(for: imageData)
@@ -93,7 +93,7 @@ struct ImageCacheTests {
     @Test("image decodes and caches on first call")
     func cacheMissDecodesAndCaches() {
         let cache = ImageCache.shared
-        let imageData = createTestImageData()
+        let imageData = self.createTestImageData()
 
         // First call should decode
         let image = cache.image(for: imageData)
@@ -104,7 +104,7 @@ struct ImageCacheTests {
     @Test("image returns nil for corrupted data")
     func imageReturnsNilForCorruptedData() {
         let cache = ImageCache.shared
-        let corruptedData = createCorruptedImageData()
+        let corruptedData = self.createCorruptedImageData()
 
         let image = cache.image(for: corruptedData)
 
@@ -124,8 +124,8 @@ struct ImageCacheTests {
     @Test("image caches different data separately")
     func imageCachesDifferentDataSeparately() {
         let cache = ImageCache.shared
-        let redImageData = createTestImageData(color: .red)
-        let blueImageData = createTestImageData(color: .blue)
+        let redImageData = self.createTestImageData(color: .red)
+        let blueImageData = self.createTestImageData(color: .blue)
 
         let redImage = cache.image(for: redImageData)
         let blueImage = cache.image(for: blueImageData)
@@ -144,7 +144,7 @@ struct ImageCacheTests {
         // Cache is configured with countLimit = 100
         // We can't easily test exact eviction without triggering memory pressure
         // But we can verify the cache exists and accepts images
-        let imageData = createTestImageData()
+        let imageData = self.createTestImageData()
 
         for i in 0 ..< 10 {
             let image = cache.image(for: imageData)
@@ -159,7 +159,7 @@ struct ImageCacheTests {
         // Add multiple images
         for i in 0 ..< 10 {
             let color = UIColor(hue: CGFloat(i) / 10.0, saturation: 1.0, brightness: 1.0, alpha: 1.0)
-            let imageData = createTestImageData(color: color)
+            let imageData = self.createTestImageData(color: color)
             _ = cache.image(for: imageData)
         }
 
@@ -170,8 +170,8 @@ struct ImageCacheTests {
     @Test("cache handles FIFO eviction pattern")
     func cacheHandlesFIFOEviction() {
         let cache = ImageCache.shared
-        let imageData1 = createTestImageData(color: .red)
-        let imageData2 = createTestImageData(color: .blue)
+        let imageData1 = self.createTestImageData(color: .red)
+        let imageData2 = self.createTestImageData(color: .blue)
 
         // Add two images
         _ = cache.image(for: imageData1)
@@ -188,7 +188,7 @@ struct ImageCacheTests {
     @Test("cache survives memory pressure")
     func cacheSurvivesMemoryWarning() {
         let cache = ImageCache.shared
-        let imageData = createTestImageData()
+        let imageData = self.createTestImageData()
 
         // Add image
         _ = cache.image(for: imageData)
@@ -207,7 +207,7 @@ struct ImageCacheTests {
     @Test("cache is thread-safe for concurrent access")
     func cacheConcurrentAccess() {
         let cache = ImageCache.shared
-        let imageData = createTestImageData()
+        let imageData = self.createTestImageData()
 
         // Simulate concurrent reads - if this completes without crash, test passes
         DispatchQueue.concurrentPerform(iterations: 10) { _ in
@@ -225,7 +225,7 @@ struct ImageCacheTests {
         // Simulate concurrent writes
         DispatchQueue.concurrentPerform(iterations: 10) { i in
             let color = UIColor(hue: CGFloat(i) / 10.0, saturation: 1.0, brightness: 1.0, alpha: 1.0)
-            let imageData = createTestImageData(color: color)
+            let imageData = self.createTestImageData(color: color)
             _ = cache.image(for: imageData)
         }
 
@@ -236,7 +236,7 @@ struct ImageCacheTests {
     @Test("cache handles concurrent reads and writes")
     func cacheConcurrentReadsWrites() {
         let cache = ImageCache.shared
-        let imageData = createTestImageData()
+        let imageData = self.createTestImageData()
 
         // Mix of reads and writes
         DispatchQueue.concurrentPerform(iterations: 20) { i in
@@ -246,7 +246,7 @@ struct ImageCacheTests {
             } else {
                 // Write with different color
                 let color = UIColor(hue: CGFloat(i) / 20.0, saturation: 1.0, brightness: 1.0, alpha: 1.0)
-                let newImageData = createTestImageData(color: color)
+                let newImageData = self.createTestImageData(color: color)
                 _ = cache.image(for: newImageData)
             }
         }
@@ -263,7 +263,7 @@ struct ImageCacheTests {
 
         // Add some images
         for _ in 0 ..< 5 {
-            let imageData = createTestImageData()
+            let imageData = self.createTestImageData()
             _ = cache.image(for: imageData)
         }
 
@@ -271,7 +271,7 @@ struct ImageCacheTests {
         cache.clearCache()
 
         // Verify cache was cleared (new images should be decoded)
-        let imageData = createTestImageData()
+        let imageData = self.createTestImageData()
         let image = cache.image(for: imageData)
 
         #expect(image != nil, "Should decode new image after clear")
@@ -294,7 +294,7 @@ struct ImageCacheTests {
     @Test("image handles duplicate cache keys")
     func imageHandlesDuplicateKeys() {
         let cache = ImageCache.shared
-        let imageData = createTestImageData()
+        let imageData = self.createTestImageData()
 
         // Add same data multiple times
         let image1 = cache.image(for: imageData)
@@ -334,8 +334,8 @@ struct ImageCacheTests {
 
     @Test("cacheKey generates unique keys for different data")
     func cacheKeyUniqueness() {
-        let data1 = createTestImageData(color: .red)
-        let data2 = createTestImageData(color: .blue)
+        let data1 = self.createTestImageData(color: .red)
+        let data2 = self.createTestImageData(color: .blue)
 
         // Generate keys using SHA-256 (matching ImageCache implementation)
         let hash1 = SHA256.hash(data: data1)
@@ -377,7 +377,7 @@ struct ImageCacheTests {
     @Test("cache handles rapid succession of operations")
     func cacheHandlesRapidOperations() {
         let cache = ImageCache.shared
-        let imageData = createTestImageData()
+        let imageData = self.createTestImageData()
 
         // Rapid operations
         for _ in 0 ..< 100 {

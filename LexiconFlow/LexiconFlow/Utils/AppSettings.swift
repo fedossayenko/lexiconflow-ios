@@ -161,6 +161,16 @@ enum AppSettings {
     /// Daily study goal in number of cards
     @AppStorage("dailyGoal") static var dailyGoal: Int = 20
 
+    // MARK: - Card Ordering Settings
+
+    /// New card ordering mode for Learning mode
+    /// Default: .random (based on cognitive science research)
+    @AppStorage("newCardOrderMode") static var newCardOrderMode: NewCardOrderMode = .random
+
+    /// Whether to interleave cards from multiple decks
+    /// Default: true (improves learning through spacing effect)
+    @AppStorage("multiDeckInterleaveEnabled") static var multiDeckInterleaveEnabled: Bool = true
+
     // MARK: - Data Import Settings
 
     /// Whether IELTS vocabulary has been pre-populated
@@ -171,10 +181,19 @@ enum AppSettings {
     /// Used to skip onboarding on subsequent app launches
     @AppStorage("hasCompletedOnboarding") static var hasCompletedOnboarding: Bool = false
 
+    /// Whether user has seen the orphaned cards onboarding notification
+    /// Tracks if the user has been informed about the orphaned cards feature
+    @AppStorage("hasShownOrphanedCardsPrompt") static var hasShownOrphanedCardsPrompt: Bool = false
+
     // MARK: - Statistics Settings (NEW)
 
     /// Selected time range for statistics dashboard ("7d", "30d", "all")
     @AppStorage("statisticsTimeRange") static var statisticsTimeRange: String = "7d"
+
+    // MARK: - Mastery Settings (NEW)
+
+    /// Whether to show mastery badges on cards
+    @AppStorage("showMasteryBadges") static var showMasteryBadges: Bool = true
 
     // MARK: - Deck Selection Settings (NEW)
 
@@ -291,9 +310,86 @@ enum AppSettings {
     /// Disabled by default to maintain current ZStack transition behavior.
     @AppStorage("matchedGeometryEffectEnabled") static var matchedGeometryEffectEnabled: Bool = false
 
+    /// Performance mode for visual effects
+    ///
+    /// **Options:**
+    /// - `.full`: All visual effects enabled (best for devices with 6GB+ RAM)
+    /// - `.reduced`: Reduced visual effects (recommended for simulator and older devices)
+    /// - `.minimal`: Minimal visual effects (for maximum performance)
+    ///
+    /// **Auto-detection**: The app automatically detects device capabilities and sets
+    /// the appropriate mode. Users can override this in Appearance Settings.
+    @AppStorage("performanceMode") static var performanceMode: PerformanceMode = .auto
+
+    // MARK: - Types
+
+    /// Dark mode preference options
+    enum DarkModePreference: String, CaseIterable, Sendable {
+        case system
+        case light
+        case dark
+
+        var displayName: String {
+            switch self {
+            case .system: "System"
+            case .light: "Light"
+            case .dark: "Dark"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .system: "iphone"
+            case .light: "sun.max.fill"
+            case .dark: "moon.fill"
+            }
+        }
+    }
+
+    /// Performance mode for visual effects
+    enum PerformanceMode: String, CaseIterable, Sendable {
+        case auto
+        case full
+        case reduced
+        case minimal
+
+        var displayName: String {
+            switch self {
+            case .auto: "Auto"
+            case .full: "Full"
+            case .reduced: "Reduced"
+            case .minimal: "Minimal"
+            }
+        }
+
+        var description: String {
+            switch self {
+            case .auto: "Automatically detect device capabilities"
+            case .full: "All visual effects enabled (6GB+ RAM)"
+            case .reduced: "Reduced effects for better performance"
+            case .minimal: "Minimal effects for maximum performance"
+            }
+        }
+
+        /// Resolves auto mode to actual performance level based on device capabilities
+        var resolved: PerformanceMode {
+            guard self == .auto else { return self }
+
+            // Detect simulator
+            if ProcessInfo.processInfo.environment["SIMULATOR_DEVICE_NAME"] != nil {
+                return .reduced
+            }
+
+            // Detect device RAM (simplified check)
+            var size = 0
+            var sizeLen = MemoryLayout<Int>.size
+            sysctlbyname("hw.memsize", &size, &sizeLen, nil, 0)
+            return size < 6_000_000_000 ? .reduced : .full // < 6GB RAM
+        }
+    }
+
     // MARK: - Glass Configuration
 
-    /// Centralized glass effect configuration
     ///
     /// Provides consistent glass effect behavior across all components
     /// based on user preferences set in Appearance Settings.
@@ -306,10 +402,10 @@ enum AppSettings {
 
         /// Returns effective thickness based on intensity setting
         func effectiveThickness(base: GlassThickness) -> GlassThickness {
-            guard isEnabled else { return .thin }
+            guard self.isEnabled else { return .thin }
 
             // Map intensity to thickness levels
-            switch intensity {
+            switch self.intensity {
             case 0.0 ..< 0.3:
                 return base == .thick ? .regular : .thin
             case 0.3 ..< 0.7:
@@ -320,8 +416,10 @@ enum AppSettings {
         }
 
         /// Opacity multiplier for visual effects
+        /// Returns 0.0 when disabled for complete removal, making the toggle more obvious
         var opacityMultiplier: Double {
-            isEnabled ? intensity : 0.3
+            guard self.isEnabled else { return 0.0 }
+            return self.intensity
         }
     }
 
@@ -355,7 +453,8 @@ enum AppSettings {
                 "glassEffectsEnabled": true,
                 "glassEffectIntensity": 0.7,
                 "gestureSensitivity": 1.0,
-                "matchedGeometryEffectEnabled": false
+                "matchedGeometryEffectEnabled": false,
+                "performanceMode": "auto"
             ] as [String: Any]
 
             for (key, value) in defaults {
@@ -365,30 +464,7 @@ enum AppSettings {
         }
     #endif
 
-    // MARK: - Types
-
-    /// Dark mode preference options
-    enum DarkModePreference: String, CaseIterable, Sendable {
-        case system
-        case light
-        case dark
-
-        var displayName: String {
-            switch self {
-            case .system: "System"
-            case .light: "Light"
-            case .dark: "Dark"
-            }
-        }
-
-        var icon: String {
-            switch self {
-            case .system: "iphone"
-            case .light: "sun.max.fill"
-            case .dark: "moon.fill"
-            }
-        }
-    }
+    // MARK: - Types (Additional)
 
     /// Study mode options
     enum StudyModeOption: String, CaseIterable, Sendable {
@@ -441,6 +517,56 @@ enum AppSettings {
         }
     }
 
+    /// Mastery level filter options for deck views
+    enum MasteryFilter: String, CaseIterable, Sendable {
+        case all
+        case mastered
+        case learning
+
+        var displayName: String {
+            switch self {
+            case .all: "All Cards"
+            case .mastered: "Mastered"
+            case .learning: "Learning"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .all: "square.grid.2x2"
+            case .mastered: "star.circle.fill"
+            case .learning: "graduationcap.fill"
+            }
+        }
+    }
+
+    /// New card ordering mode
+    enum NewCardOrderMode: String, CaseIterable, Sendable {
+        case random
+        case sequential
+
+        var displayName: String {
+            switch self {
+            case .random: "Random"
+            case .sequential: "Oldest First"
+            }
+        }
+
+        var description: String {
+            switch self {
+            case .random: "Shuffle new cards for better retention"
+            case .sequential: "Study cards in order of creation"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .random: "shuffle"
+            case .sequential: "list.bullet"
+            }
+        }
+    }
+
     // MARK: - Migration
 
     /// Migrate from boolean ttsAutoPlayOnFlip to TTSTiming enum
@@ -452,7 +578,7 @@ enum AppSettings {
         guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
 
         // Migrate existing boolean setting to enum
-        ttsTiming = ttsAutoPlayOnFlip ? .onFlip : .onView
+        self.ttsTiming = self.ttsAutoPlayOnFlip ? .onFlip : .onView
 
         // Mark migration as complete
         UserDefaults.standard.set(true, forKey: migrationKey)

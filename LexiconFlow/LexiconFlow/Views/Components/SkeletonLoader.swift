@@ -54,16 +54,16 @@ struct SkeletonLoader: View {
         GeometryReader { _ in
             ZStack {
                 // Base color
-                shapeViewFilled
+                self.shapeViewFilled
 
                 // Shimmer gradient overlay
-                if shimmer {
-                    shimmerOverlay
-                        .mask(shapeViewFilled)
+                if self.shimmer {
+                    self.shimmerOverlay
+                        .mask(self.shapeViewFilled)
                 }
             }
         }
-        .frame(width: width, height: height)
+        .frame(width: self.width, height: self.height)
         .accessibilityHidden(true) // Hide from screen readers
     }
 
@@ -80,13 +80,13 @@ struct SkeletonLoader: View {
                 endPoint: .trailing
             )
             .frame(width: geometry.size.width)
-            .offset(x: shimmerOffset)
+            .offset(x: self.shimmerOffset)
             .onAppear {
                 withAnimation(
                     Animation.linear(duration: ShimmerAnimation.duration)
                         .repeatForever(autoreverses: false)
                 ) {
-                    shimmerOffset = geometry.size.width
+                    self.shimmerOffset = geometry.size.width
                 }
             }
         }
@@ -95,9 +95,9 @@ struct SkeletonLoader: View {
     /// Shape view with fill applied
     @ViewBuilder
     private var shapeViewFilled: some View {
-        switch shape {
+        switch self.shape {
         case .roundedRectangle:
-            RoundedRectangle(cornerRadius: cornerRadius)
+            RoundedRectangle(cornerRadius: self.cornerRadius)
                 .fill(Color(.systemGray5))
         case .circle:
             Circle()
@@ -111,9 +111,9 @@ struct SkeletonLoader: View {
     /// Shape view based on shape type (for masking)
     @ViewBuilder
     private var shapeView: some View {
-        switch shape {
+        switch self.shape {
         case .roundedRectangle:
-            RoundedRectangle(cornerRadius: cornerRadius)
+            RoundedRectangle(cornerRadius: self.cornerRadius)
         case .circle:
             Circle()
         case .rectangle:

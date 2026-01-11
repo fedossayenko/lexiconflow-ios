@@ -121,6 +121,20 @@ enum Theme {
         /// Relearning state color
         static let stateRelearning = Color.orange
 
+        // MARK: Mastery Level Colors
+
+        /// Beginner mastery level (0-3 days stability)
+        static let masteryBeginner = Color.green
+
+        /// Intermediate mastery level (3-14 days stability)
+        static let masteryIntermediate = Color.blue
+
+        /// Advanced mastery level (14-30 days stability)
+        static let masteryAdvanced = Color.orange
+
+        /// Mastered level (30+ days stability)
+        static let masteryMastered = Color.purple
+
         // MARK: Metric Colors
 
         /// Primary metric color (e.g., retention rate)
@@ -196,12 +210,12 @@ enum Theme {
     ///   - style: The badge style (compact or standard)
     /// - Returns: A tuple of (color, opacity) for badge styling
     static func cefrBadgeStyle(for level: String, style: BadgeStyle = .standard) -> (color: Color, opacity: Double) {
-        let color = cefrColor(for: level)
+        let color = self.cefrColor(for: level)
         let opacity: Double = switch style {
         case .compact:
-            cefrBadgeOpacity(for: level) * 0.8 // Slightly lighter for compact
+            self.cefrBadgeOpacity(for: level) * 0.8 // Slightly lighter for compact
         case .standard:
-            cefrBadgeOpacity(for: level)
+            self.cefrBadgeOpacity(for: level)
         }
 
         return (color, opacity)
@@ -263,7 +277,7 @@ enum Theme {
     /// - Returns: A view builder function that creates the badge
     @ViewBuilder
     static func cefrBadge(level: String, compact: Bool = false) -> some View {
-        let style = cefrBadgeStyle(for: level, style: compact ? .compact : .standard)
+        let style = self.cefrBadgeStyle(for: level, style: compact ? .compact : .standard)
 
         HStack(spacing: compact ? 4 : 6) {
             if !compact {
@@ -278,7 +292,7 @@ enum Theme {
         .padding(.vertical, compact ? 2 : 4)
         .background(style.color.opacity(style.opacity))
         .foregroundStyle(style.color)
-        .cornerRadius(compact ? cornerRadiusSmall : cornerRadiusMedium)
+        .cornerRadius(compact ? self.cornerRadiusSmall : self.cornerRadiusMedium)
     }
 }
 
