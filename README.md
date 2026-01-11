@@ -94,6 +94,9 @@ See [TESTING.md](docs/TESTING.md) for testing guide.
 | **Neural TTS** | Four accent options (US, UK, AU, IE) with premium voices |
 | **TTS Timing Options** | Flexible pronunciation auto-play (on view, on flip, manual) |
 | **Translation API** | On-device translation with offline support |
+| **Bidirectional Learning** | Recognition (English→Russian) and Production (Russian→English) card types |
+| **Study Direction Modes** | Recognition Only, Production Only, or Both (balanced proficiency) |
+| **Direction-Aware Cards** | Separate forward/reverse cards with independent FSRS tracking |
 | **Cram Mode** | Study anytime without breaking the algorithm |
 | **Lock Screen Widgets** | AccessoryCircular and AccessoryRectangular widgets |
 | **Live Activities** | Dynamic Island and Lock Screen session tracking |

@@ -257,26 +257,90 @@ LexiconFlow's multi-modal learning architecture supports **modality-specific mas
 - Multi-modal learning: S₀ = 1.4-1.6 days (+40-60% improvement)
 - Mastery thresholds achieved 40-60% faster with multi-modal encoding
 
-### Bidirectional Mastery
+### Bidirectional Mastery ✅ Implemented
 
-**Planned Enhancement**: After implementing bidirectional learning (Phase 5), mastery tracking will support **Recognition vs Production** modes.
+LexiconFlow now supports **bidirectional mastery tracking** for Recognition (L2→L1) and Production (L1→L2) learning modes.
 
 **Bidirectional Mastery Levels**:
 
-| Mode | Description | Mastery Indicator |
-|------|-------------|-------------------|
-| **Recognition** | Russian→English | Can understand when encountered |
-| **Production** | English→Russian | Can actively use in communication |
+| Mode | Card Type | Description | Mastery Indicator |
+|------|-----------|-------------|-------------------|
+| **Recognition** | Forward (English→Russian) | Can understand when encountered | Receptive vocabulary |
+| **Production** | Reverse (Russian→English) | Can actively use in communication | Productive vocabulary |
 
-**Expected Behavior**:
-- Forward cards (Recognition): Build receptive vocabulary
-- Reverse cards (Production): Build productive vocabulary
-- Combined mastery: True proficiency requires both modes at Mastered level
+**Implementation**:
+
+**Separate FSRS States**:
+- Forward and reverse cards have independent FSRS states
+- Each card type has its own stability, difficulty, retrievability
+- Mastery level calculated per-card based on individual FSRS state
+
+**Direction-Aware Rendering**:
+```swift
+// CardFrontView displays different content based on direction
+var displayWord: String {
+    switch card.cardType {
+    case .forward: return card.word  // English
+    case .reverse: return card.translation ?? card.word  // Russian
+    }
+}
+
+// CardBackView shows appropriate answer
+var answerWord: String? {
+    switch card.cardType {
+    case .forward: return card.translation  // Russian answer
+    case .reverse: return card.word  // English answer
+    }
+}
+```
+
+**Study Direction Settings**:
+- `.recognitionOnly` - Study only forward cards (build receptive vocabulary)
+- `.productionOnly` - Study only reverse cards (build productive vocabulary)
+- `.both` - Study all cards (balanced proficiency)
+
+**Mastery Tracking**:
+```swift
+// Each card tracks mastery independently
+extension FSRSState {
+    var masteryLevel: MasteryLevel {
+        MasteryLevel(stability: stability)
+    }
+
+    var isMastered: Bool {
+        stability >= 30.0 && stateEnum == FlashcardState.review.rawValue
+    }
+}
+
+// Combined bidirectional mastery
+extension Flashcard {
+    var bidirectionalMastery: (forward: MasteryLevel?, reverse: MasteryLevel?) {
+        // Access both forward and reverse card mastery
+        // Returns tuple of mastery levels for comprehensive assessment
+    }
+}
+```
+
+**Combined Mastery Proficiency**:
+- True language proficiency requires mastery in **both directions**
+- Recognition mastery enables reading/listening comprehension
+- Production mastery enables speaking/writing fluency
+- Combined mastery = "Mastered" status on both card types
 
 **Research Basis** (Palmberg, 2016; Nation, 2001):
-- Production lags behind recognition in acquisition
+- Production lags 20-30% behind recognition in acquisition
 - Testing both prevents "illusion of competence"
 - Bidirectional testing reveals knowledge gaps
+- True proficiency requires mastery in both directions
+
+**Testing Coverage**:
+- `CardFrontViewTests.swift` - 17 tests for direction-aware display
+- `CardBackViewTests.swift` - 14 tests for direction-aware answers
+- `FlashcardTests.swift` - 9 tests for CardType enum
+- `AppSettingsTests.swift` - 10 tests for StudyDirection settings
+- Total: 50 tests for bidirectional mastery tracking
+
+See [BIDIRECTIONAL_LEARNING_STRATEGY.md](BIDIRECTIONAL_LEARNING_STRATEGY.md) for complete pedagogical documentation.
 
 ### Per-Modality Mastery Tracking (Future)
 

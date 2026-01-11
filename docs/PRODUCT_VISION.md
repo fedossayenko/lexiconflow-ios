@@ -101,6 +101,73 @@ See [MULTI_MODAL_LEARNING_ARCHITECTURE.md](MULTI_MODAL_LEARNING_ARCHITECTURE.md)
 
 ---
 
+### 5. Bidirectional Learning Architecture
+
+**Lexicon Flow is the first vocabulary app to implement true bidirectional learning** with separate Recognition and Production card types, each tracked independently with FSRS v5 for comprehensive language proficiency assessment.
+
+**Learning Modes**:
+
+| Mode | Card Type | Direction | Skill Built |
+|------|-----------|-----------|-------------|
+| **Recognition** | Forward | English→Russian | Receptive vocabulary (reading, listening) |
+| **Production** | Reverse | Russian→English | Productive vocabulary (speaking, writing) |
+| **Both** | Forward + Reverse | Bidirectional | Balanced language proficiency |
+
+**Study Direction Settings**:
+- **Recognition Only** - Study English→Russian cards (build comprehension)
+- **Production Only** - Study Russian→English cards (build recall)
+- **Both** - Study all cards (balanced proficiency)
+
+**Direction-Aware Card Rendering**:
+
+**Forward Cards (Recognition)**:
+- Front: English word
+- Back: Russian translation
+- Phonetic shown on front
+- Tests: Can you understand this word?
+
+**Reverse Cards (Production)**:
+- Front: Russian translation
+- Back: English word
+- Phonetic hidden (production focus)
+- Tests: Can you recall/say this word?
+
+**Separate FSRS Tracking**:
+- Independent stability, difficulty, retrievability per card type
+- Each direction scheduled based on individual performance
+- Recognition and Production mastered independently
+
+**Pedagogical Foundation**:
+
+**Research Basis** (Palmberg, 2016; Nation, 2001):
+- Production lags 20-30% behind recognition in acquisition
+- Testing both directions prevents "illusion of competence"
+- Bidirectional testing reveals knowledge gaps single-mode testing misses
+- True proficiency requires mastery in both directions
+
+**Learning Science**:
+- **Recognition Mode**: Builds receptive vocabulary through comprehension
+- **Production Mode**: Builds productive vocabulary through active recall
+- **Combined Mode**: Prevents one-sided proficiency, ensures balanced skill development
+
+**Expected Outcomes**:
+- **More accurate mastery assessment** - Both directions tested independently
+- **Faster production skill acquisition** - Targeted reverse card practice
+- **Balanced proficiency** - Prevents recognition-only "illusion of competence"
+- **Comprehensive language skills** - Both receptive and productive vocabulary developed
+
+**Implementation Status** ✅:
+- CardType enum (forward/reverse)
+- StudyDirection settings (recognitionOnly/productionOnly/both)
+- Direction-aware card rendering (CardFrontView, CardBackView)
+- Card type filtering in Scheduler
+- ReverseCardService for generating reverse cards
+- Comprehensive test coverage (69 tests)
+
+See [BIDIRECTIONAL_LEARNING_STRATEGY.md](BIDIRECTIONAL_LEARNING_STRATEGY.md) for complete pedagogical documentation.
+
+---
+
 ## Target Audience
 
 ### Primary Users

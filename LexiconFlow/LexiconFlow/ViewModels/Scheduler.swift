@@ -1197,7 +1197,8 @@ final class Scheduler {
     ///   - cardType: The card's type
     ///   - direction: The current study direction setting
     /// - Returns: True if the card should be included in the study session
-    private func matchesStudyDirection(_ cardType: CardType, _ direction: AppSettings.StudyDirection) -> Bool {
+    /// Internal for testability
+    func matchesStudyDirection(_ cardType: CardType, _ direction: AppSettings.StudyDirection) -> Bool {
         switch direction {
         case .recognitionOnly:
             // Only forward cards (nil defaults to forward for backward compatibility)

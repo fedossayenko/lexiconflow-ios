@@ -1574,6 +1574,203 @@ let predicate = #Predicate<Flashcard> { card in
 
 ---
 
+## Bidirectional Learning Architecture
+
+### Overview
+
+LexiconFlow supports **bidirectional learning** through separate Recognition (L2→L1) and Production (L1→L2) card types. This allows users to study vocabulary in both directions, building comprehensive language proficiency.
+
+### Card Type System
+
+**CardType Enum**:
+```swift
+enum CardType: String, Codable, Sendable {
+    case forward    // Recognition: English→Russian
+    case reverse    // Production: Russian→English
+}
+```
+
+**Data Model**:
+```swift
+@Model
+final class Flashcard {
+    // ... existing properties ...
+
+    // Card type direction (backward compatible)
+    var cardTypeRaw: String?
+
+    // Computed property with backward compatibility
+    var cardType: CardType {
+        get {
+            guard let raw = cardTypeRaw else { return .forward }
+            return CardType(rawValue: raw) ?? .forward
+        }
+        set {
+            cardTypeRaw = newValue.rawValue
+        }
+    }
+}
+```
+
+**Display Properties**:
+- `displayName`: "Recognition" (forward) or "Production" (reverse)
+- `iconName`: "arrow.right" (forward) or "arrow.left" (reverse)
+- `arrowSymbol`: "→" (forward) or "←" (reverse)
+
+### Study Direction Settings
+
+**StudyDirection Enum** (AppSettings):
+```swift
+enum StudyDirection: String, Codable, Sendable {
+    case recognitionOnly  // Study forward cards only
+    case productionOnly   // Study reverse cards only
+    case both             // Study all cards
+}
+```
+
+**User Settings**:
+- `@AppStorage("studyDirection")` - Persists user preference
+- Default: `.recognitionOnly` (backward compatible)
+
+### Direction-Aware Card Rendering
+
+**CardFrontView** computed properties:
+```swift
+var displayWord: String {
+    switch card.cardType {
+    case .forward:
+        return card.word  // Show English
+    case .reverse:
+        return card.translation ?? card.word  // Show Russian (fallback to English)
+    }
+}
+
+var displayPhonetic: String? {
+    card.cardType == .forward ? card.phonetic : nil  // Hide phonetic for reverse
+}
+
+var shouldShowPhonetic: Bool {
+    card.cardType == .forward && card.phonetic != nil
+}
+```
+
+**CardBackView** computed properties:
+```swift
+var frontWordReminder: String {
+    switch card.cardType {
+    case .forward:
+        return card.word  // English word reminder
+    case .reverse:
+        return card.translation ?? card.word  // Russian translation reminder
+    }
+}
+
+var answerWord: String? {
+    switch card.cardType {
+    case .forward:
+        return card.translation  // Show Russian answer
+    case .reverse:
+        return card.word  // Show English answer
+    }
+}
+
+var answerLabel: String {
+    card.cardType == .forward ? "Translation" : "Word"
+}
+```
+
+### Card Type Filtering
+
+**Scheduler.matchesStudyDirection()**:
+```swift
+func matchesStudyDirection(_ card: Flashcard, direction: AppSettings.StudyDirection) -> Bool {
+    switch direction {
+    case .recognitionOnly:
+        return card.cardType == .forward
+    case .productionOnly:
+        return card.cardType == .reverse
+    case .both:
+        return true
+    }
+}
+```
+
+**Fetch Logic**:
+- `fetchDueCards()` filters by `AppSettings.studyDirection`
+- In-memory filtering O(n) - SwiftData predicate limitations require post-fetch
+- Backward compatible: `nil` cardTypeRaw defaults to `.forward`
+
+### Reverse Card Generation Service
+
+**ReverseCardService** (@MainActor):
+```swift
+@MainActor
+final class ReverseCardService {
+    /// Generate reverse cards for eligible flashcards
+    func generateReverseCards(for flashcards: [Flashcard], context: ModelContext) -> Int
+
+    /// Check if reverse card already exists
+    func hasReverseCard(for flashcard: Flashcard, context: ModelContext) -> Bool
+}
+```
+
+**Generation Logic**:
+- Only generates for cards with translations
+- Skips if reverse card already exists (deduplication)
+- Cards share same `word` and `deck` relationship
+- Separate FSRS states for independent scheduling
+
+### Backward Compatibility
+
+**Migration Strategy**:
+- Existing cards have `cardTypeRaw == nil`
+- Computed property defaults to `.forward` for nil values
+- No data loss - all existing cards work as Recognition cards
+- Optional reverse card generation for existing vocabulary
+
+**Handling nil Translations**:
+- Reverse cards with `translation == nil` fall back to displaying English word
+- Graceful degradation prevents broken UI
+- User sees both sides as English (indicates missing translation)
+
+### Pedagogical Benefits
+
+**Recognition Mode** (Forward Cards):
+- Builds receptive vocabulary
+- Tests comprehension when encountering words
+- Reading and listening skills
+
+**Production Mode** (Reverse Cards):
+- Builds productive vocabulary
+- Tests active recall and usage
+- Speaking and writing skills
+
+**Combined Mode** (Both):
+- Balanced language proficiency
+- Prevents "illusion of competence"
+- Comprehensive mastery assessment
+
+**Research Basis** (Palmberg, 2016; Nation, 2001):
+- Production lags behind recognition in acquisition
+- Bidirectional testing reveals knowledge gaps
+- True proficiency requires both modes
+
+### Testing Coverage
+
+Bidirectional learning has **comprehensive test coverage**:
+- `CardFrontViewTests.swift` - 17 tests for direction-aware computed properties
+- `CardBackViewTests.swift` - 14 tests for answer/label logic
+- `FlashcardTests.swift` - 9 tests for CardType enum
+- `AppSettingsTests.swift` - 10 tests for StudyDirection enum
+- `SchedulerTests.swift` - 8 tests for card type filtering
+- `ReverseCardServiceTests.swift` - 11 tests for reverse card generation
+
+**Total**: 69 bidirectional learning tests
+
+See [BIDIRECTIONAL_LEARNING_STRATEGY.md](BIDIRECTIONAL_LEARNING_STRATEGY.md) for complete pedagogical documentation.
+
+---
+
 ## Project Structure
 
 ```

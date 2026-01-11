@@ -139,10 +139,15 @@ jobs:
       - name: Create CI marker file
         run: touch /tmp/lexiconflow-ci-running
 
+      - name: Clean Test Results
+        working-directory: ./LexiconFlow
+        run: |
+          rm -rf TestResults.xcresult || true
+
       - name: Test with Coverage
         working-directory: ./LexiconFlow
         run: |
-          SUPPRESS_APPINTENTS_METADATA=1 xcodebuild test \
+          SUPPRESS_APPINTENTS_METADATA=1 LEXICONFLOW_SKIP_NETWORK_TESTS=1 xcodebuild test \
             -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
             -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.1' \
@@ -213,6 +218,11 @@ jobs:
 
       - name: Create CI marker file
         run: touch /tmp/lexiconflow-ci-running
+
+      - name: Clean Integration Test Results
+        working-directory: ./LexiconFlow
+        run: |
+          rm -rf TestResultsIntegration.xcresult || true
 
       - name: Run Integration Tests
         working-directory: ./LexiconFlow

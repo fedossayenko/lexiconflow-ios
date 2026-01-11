@@ -111,13 +111,17 @@ final class ReverseCardService {
             return false
         }
 
+        // Capture values for predicate (required by SwiftData)
+        let word = flashcard.word
+        let translationValue = translation
+
         // Query for existing reverse card
-        // Criteria: Same deck, same word (as translation), reverse type
-        // Note: Use string literal instead of CardType.reverse.rawValue to avoid SwiftData key path issues
+        // Criteria: Same word, same translation, reverse type
+        // Note: Use captured values to avoid SwiftData key path issues
         let predicate = #Predicate<Flashcard> { card in
             card.cardTypeRaw == "reverse" &&
-                card.word == translation &&
-                card.translation != nil
+                card.word == word &&
+                card.translation == translationValue
         }
 
         let descriptor = FetchDescriptor<Flashcard>(

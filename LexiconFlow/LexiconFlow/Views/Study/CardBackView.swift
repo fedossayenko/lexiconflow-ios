@@ -302,7 +302,8 @@ struct CardBackView: View {
     // MARK: - Helper Functions
 
     /// Color for card type styling
-    private func cardTypeColor(for type: CardType) -> Color {
+    /// Internal for testability
+    func cardTypeColor(for type: CardType) -> Color {
         switch type {
         case .forward:
             .blue

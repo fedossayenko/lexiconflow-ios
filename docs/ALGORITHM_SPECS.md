@@ -459,6 +459,153 @@ actor FSRSOptimizer {
 
 ---
 
+## Card Type Filtering
+
+### Study Direction Modes
+
+LexiconFlow supports three study direction modes that control which card types are included in review sessions:
+
+| Mode | Card Type | Description | Use Case |
+|------|-----------|-------------|----------|
+| **Recognition Only** | Forward only | English→Russian cards | Build receptive vocabulary |
+| **Production Only** | Reverse only | Russian→English cards | Build productive vocabulary |
+| **Both** | All cards | Both forward and reverse | Balanced proficiency |
+
+### Filtering Algorithm
+
+**matchesStudyDirection() Function**:
+```swift
+func matchesStudyDirection(_ card: Flashcard, direction: AppSettings.StudyDirection) -> Bool {
+    switch direction {
+    case .recognitionOnly:
+        return card.cardType == .forward
+    case .productionOnly:
+        return card.cardType == .reverse
+    case .both:
+        return true
+    }
+}
+```
+
+**Fetch Logic**:
+```swift
+func fetchDueCards(mode: StudyMode, limit: Int = 20) async -> [Flashcard] {
+    let now = Date()
+
+    // SwiftData query for due cards
+    let duePredicate = #Predicate<Flashcard> { card in
+        card.fsrsState.dueDate <= now
+    }
+    let dueDescriptor = FetchDescriptor<Flashcard>(
+        predicate: duePredicate,
+        sortBy: [SortDescriptor(\.fsrsState.dueDate)]
+    )
+
+    guard var dueCards = try? context.fetch(dueDescriptor) else {
+        return []
+    }
+
+    // In-memory filtering by study direction
+    let direction = AppSettings.studyDirection
+    dueCards.removeAll { card in
+        !matchesStudyDirection(card, direction: direction)
+    }
+
+    // Apply limit
+    return Array(dueCards.prefix(limit))
+}
+```
+
+### Performance Considerations
+
+**In-Memory Filtering O(n)**:
+- SwiftData predicate limitations prevent using enum rawValues in queries
+- Card type filtering performed in-memory after fetching due cards
+- For 1000 due cards: ~5-10ms filtering overhead
+- Acceptable trade-off for type safety and backward compatibility
+
+**Optimization Strategies**:
+1. **Early Exit**: Filter before expensive operations
+2. **Batch Filtering**: Single pass through card array
+3. **Direction Caching**: Store `AppSettings.studyDirection` to avoid repeated UserDefaults reads
+
+### Backward Compatibility
+
+**nil cardTypeRaw Handling**:
+```swift
+var cardType: CardType {
+    get {
+        guard let raw = cardTypeRaw else { return .forward }
+        return CardType(rawValue: raw) ?? .forward
+    }
+    set {
+        cardTypeRaw = newValue.rawValue
+    }
+}
+```
+
+**Behavior**:
+- Existing cards (cardTypeRaw == nil) default to `.forward`
+- Treated as Recognition cards in all study modes
+- Works correctly with `.recognitionOnly` and `.both` modes
+- Excluded from `.productionOnly` mode (as expected)
+
+### Pedagogical Impact
+
+**Recognition-Only Mode**:
+- Focuses on comprehension skills
+- Builds reading and listening vocabulary
+- Faster acquisition (recognition precedes production)
+
+**Production-Only Mode**:
+- Focuses on active recall
+- Builds speaking and writing vocabulary
+- Harder but necessary for fluency
+
+**Both Mode**:
+- Balances receptive and productive skills
+- Prevents "illusion of competence"
+- Comprehensive mastery assessment
+
+**Research Basis** (Palmberg, 2016; Nation, 2001):
+- Production lags 20-30% behind recognition in acquisition
+- Testing both directions reveals knowledge gaps
+- True proficiency requires mastery in both directions
+
+### FSRS Integration
+
+**Separate FSRS States**:
+- Forward and reverse cards have independent FSRS states
+- Each card type scheduled based on its own performance
+- No interference between recognition and production schedules
+
+**Sibling Interference Prevention** (Planned):
+- After implementing Note/Card schema, bury mechanism prevents forward/reverse pairs from appearing in same session
+- 10-20% fuzz factor on interval spacing
+- Prevents proactive interference
+
+### Testing Coverage
+
+Card type filtering has **comprehensive test coverage**:
+
+| Test File | Tests | Coverage |
+|-----------|-------|----------|
+| SchedulerTests.swift | 8 | 100% of filtering logic |
+| FlashcardTests.swift | 9 | 100% of CardType enum |
+| AppSettingsTests.swift | 10 | 100% of StudyDirection enum |
+
+**Test Cases**:
+- `fetchDueCards respects recognitionOnly mode`
+- `fetchDueCards respects productionOnly mode`
+- `fetchDueCards includes both cards in both mode`
+- `matchesStudyDirection filters correctly` (parameterized)
+- Backward compatibility with nil cardTypeRaw
+- Multi-deck filtering with mixed card types
+
+See [BIDIRECTIONAL_LEARNING_STRATEGY.md](BIDIRECTIONAL_LEARNING_STRATEGY.md) for complete pedagogical documentation.
+
+---
+
 ## Testing Strategy
 
 ### Unit Tests

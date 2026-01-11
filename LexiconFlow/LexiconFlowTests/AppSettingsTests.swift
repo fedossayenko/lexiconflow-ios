@@ -829,4 +829,90 @@ struct AppSettingsTests {
         // Reset
         AppSettings.gestureSensitivity = 1.0
     }
+
+    // MARK: - StudyDirection Enum Tests
+
+    @Test("AppSettings: StudyDirection recognitionOnly has correct display name")
+    func recognitionOnlyDisplayName() throws {
+        #expect(AppSettings.StudyDirection.recognitionOnly.displayName == "Recognition")
+        #expect(AppSettings.StudyDirection.productionOnly.displayName == "Production")
+        #expect(AppSettings.StudyDirection.both.displayName == "Both")
+    }
+
+    @Test("AppSettings: StudyDirection recognitionOnly has correct description")
+    func recognitionOnlyDescription() throws {
+        let desc = AppSettings.StudyDirection.recognitionOnly.description
+        #expect(desc.contains("English→Russian"))
+        #expect(desc.contains("receptive"))
+    }
+
+    @Test("AppSettings: StudyDirection productionOnly has correct description")
+    func productionOnlyDescription() throws {
+        let desc = AppSettings.StudyDirection.productionOnly.description
+        #expect(desc.contains("Russian→English"))
+        #expect(desc.contains("productive"))
+    }
+
+    @Test("AppSettings: StudyDirection both has correct description")
+    func bothDescription() throws {
+        let desc = AppSettings.StudyDirection.both.description
+        #expect(desc.contains("Mixed session"))
+    }
+
+    @Test("AppSettings: StudyDirection recognitionOnly has correct icon")
+    func recognitionOnlyIcon() throws {
+        #expect(AppSettings.StudyDirection.recognitionOnly.icon == "arrow.right")
+        #expect(AppSettings.StudyDirection.productionOnly.icon == "arrow.left")
+        #expect(AppSettings.StudyDirection.both.icon == "arrow.left.arrow.right")
+    }
+
+    @Test("AppSettings: StudyDirection defaults to recognitionOnly")
+    func studyDirectionDefaultsToRecognitionOnly() throws {
+        // Reset to default
+        AppSettings.studyDirection = .recognitionOnly
+
+        #expect(AppSettings.studyDirection == .recognitionOnly)
+    }
+
+    @Test("AppSettings: StudyDirection can be set to productionOnly")
+    func studyDirectionCanBeSetToProductionOnly() throws {
+        AppSettings.studyDirection = .productionOnly
+
+        #expect(AppSettings.studyDirection == .productionOnly)
+
+        // Reset to default
+        AppSettings.studyDirection = .recognitionOnly
+    }
+
+    @Test("AppSettings: StudyDirection can be set to both")
+    func studyDirectionCanBeSetToBoth() throws {
+        AppSettings.studyDirection = .both
+
+        #expect(AppSettings.studyDirection == .both)
+
+        // Reset to default
+        AppSettings.studyDirection = .recognitionOnly
+    }
+
+    @Test("AppSettings: StudyDirection persists in @AppStorage")
+    func studyDirectionPersists() throws {
+        AppSettings.studyDirection = .both
+
+        // Verify persistence
+        let stored = UserDefaults.standard.string(forKey: "studyDirection")
+        #expect(stored == "both")
+
+        // Reset to default
+        AppSettings.studyDirection = .recognitionOnly
+    }
+
+    @Test("AppSettings: StudyDirection enum has all cases")
+    func studyDirectionAllCases() throws {
+        let allCases = AppSettings.StudyDirection.allCases
+
+        #expect(allCases.count == 3)
+        #expect(allCases.contains(.recognitionOnly))
+        #expect(allCases.contains(.productionOnly))
+        #expect(allCases.contains(.both))
+    }
 }
