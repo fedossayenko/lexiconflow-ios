@@ -518,4 +518,13 @@ class HapticService {
     func restartEngine() {
         self.setupHapticEngine()
     }
+
+    // MARK: - Test Support
+
+    /// Reset singleton for test isolation
+    /// WARNING: Only call from test code
+    @MainActor
+    static func resetForTesting() {
+        self.shared.reset()
+    }
 }

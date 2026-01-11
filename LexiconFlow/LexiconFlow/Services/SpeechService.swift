@@ -197,6 +197,15 @@ class SpeechService {
         }
     }
 
+    // MARK: - Test Support
+
+    /// Reset singleton for test isolation
+    /// WARNING: Only call from test code
+    @MainActor
+    static func resetForTesting() {
+        self.shared.cleanup()
+    }
+
     // MARK: - Private Helpers
 
     /// Get voice for specific language code based on user's quality preference

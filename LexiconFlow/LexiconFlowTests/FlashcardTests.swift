@@ -480,4 +480,119 @@ struct FlashcardTests {
 
         #expect(flashcard.word.count == 1000)
     }
+
+    // MARK: - CardType Enum Tests
+
+    @Test("CardType forward has correct display name")
+    func cardTypeForwardDisplayName() throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        #expect(CardType.forward.displayName == "Recognition")
+        #expect(CardType.reverse.displayName == "Production")
+    }
+
+    @Test("CardType forward has correct icon name")
+    func cardTypeForwardIconName() throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        #expect(CardType.forward.iconName == "arrow.right")
+        #expect(CardType.reverse.iconName == "arrow.left")
+    }
+
+    @Test("CardType forward has correct arrow symbol")
+    func cardTypeForwardArrowSymbol() throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        #expect(CardType.forward.arrowSymbol == "→")
+        #expect(CardType.reverse.arrowSymbol == "←")
+    }
+
+    @Test("CardType defaults to forward when cardTypeRaw is nil")
+    func cardTypeDefaultsToForwardWhenNil() throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        let flashcard = Flashcard(word: "test", definition: "test")
+        context.insert(flashcard)
+        try context.save()
+
+        #expect(flashcard.cardTypeRaw == nil)
+        #expect(flashcard.cardType == .forward)
+    }
+
+    @Test("CardType returns forward when cardTypeRaw is forward")
+    func cardTypeReturnsForwardWhenSet() throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        let flashcard = Flashcard(word: "test", definition: "test")
+        flashcard.cardTypeRaw = "forward"
+        context.insert(flashcard)
+        try context.save()
+
+        #expect(flashcard.cardType == .forward)
+    }
+
+    @Test("CardType returns reverse when cardTypeRaw is reverse")
+    func cardTypeReturnsReverseWhenSet() throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        let flashcard = Flashcard(word: "test", definition: "test")
+        flashcard.cardTypeRaw = "reverse"
+        context.insert(flashcard)
+        try context.save()
+
+        #expect(flashcard.cardType == .reverse)
+    }
+
+    @Test("CardType setter updates cardTypeRaw correctly")
+    func cardTypeSetterUpdatesCardTypeRaw() throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        let flashcard = Flashcard(word: "test", definition: "test")
+        context.insert(flashcard)
+
+        flashcard.cardType = .reverse
+        try context.save()
+
+        #expect(flashcard.cardTypeRaw == "reverse")
+        #expect(flashcard.cardType == .reverse)
+    }
+
+    @Test("CardType handles invalid rawValue gracefully")
+    func cardTypeHandlesInvalidRawValueGracefully() throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        let flashcard = Flashcard(word: "test", definition: "test")
+        flashcard.cardTypeRaw = "invalid_type"
+        context.insert(flashcard)
+        try context.save()
+
+        // Invalid rawValue should default to .forward
+        #expect(flashcard.cardType == .forward)
+    }
+
+    @Test("CardType survives roundtrip through database")
+    func cardTypePersistence() throws {
+        let context = self.freshContext()
+        try context.clearAll()
+
+        let flashcard = Flashcard(word: "test", definition: "test")
+        flashcard.cardType = .reverse
+        context.insert(flashcard)
+        try context.save()
+
+        // Fetch and verify
+        let fetchedCards = try context.fetch(FetchDescriptor<Flashcard>())
+        let fetched = fetchedCards.first
+
+        #expect(fetched?.cardType == .reverse)
+        #expect(fetched?.cardTypeRaw == "reverse")
+    }
 }

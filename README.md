@@ -26,6 +26,7 @@ Lexicon Flow is a native iOS application for English vocabulary acquisition usin
 |---------|-------------|--------------|
 | **Algorithm** | SM-2 (rigid) | FSRS v5 (adaptive) |
 | **UI Design** | Generic/Flat | iOS 26 "Liquid Glass" |
+| **Learning Modality** | Visual-only | Multi-modal (4 channels) |
 | **Content** | Static database | On-device AI (Foundation Models - disabled, planned Phase 3) |
 | **Audio** | Standard TTS | Neural voices (4 accents) |
 | **Translation** | Cloud APIs | On-device API |
@@ -42,6 +43,10 @@ Lexicon Flow is a native iOS application for English vocabulary acquisition usin
 | [Algorithm Specifications](docs/ALGORITHM_SPECS.md) | FSRS v5 implementation details |
 | [Product Vision](docs/PRODUCT_VISION.md) | Market positioning and philosophy |
 | [Development Roadmap](docs/ROADMAP.md) | 16-week phased development plan |
+| [Multi-Modal Learning Architecture](docs/MULTI_MODAL_LEARNING_ARCHITECTURE.md) | Pedagogical foundation & design |
+| [Gesture-Based Learning Pedagogy](docs/GESTURE_BASED_LEARNING_PEDAGOGY.md) | Kinesthetic learning rationale |
+| [Audio Learning Pedagogy](docs/AUDIO_LEARNING_PEDAGOGY.md) | Auditory learning & TTS |
+| [Bidirectional Learning Strategy](docs/BIDIRECTIONAL_LEARNING_STRATEGY.md) | Recognition/Production modes |
 
 ---
 
@@ -89,12 +94,34 @@ See [TESTING.md](docs/TESTING.md) for testing guide.
 | **Neural TTS** | Four accent options (US, UK, AU, IE) with premium voices |
 | **TTS Timing Options** | Flexible pronunciation auto-play (on view, on flip, manual) |
 | **Translation API** | On-device translation with offline support |
+| **Bidirectional Learning** | Recognition (English→Russian) and Production (Russian→English) card types |
+| **Study Direction Modes** | Recognition Only, Production Only, or Both (balanced proficiency) |
+| **Direction-Aware Cards** | Separate forward/reverse cards with independent FSRS tracking |
 | **Cram Mode** | Study anytime without breaking the algorithm |
 | **Lock Screen Widgets** | AccessoryCircular and AccessoryRectangular widgets |
 | **Live Activities** | Dynamic Island and Lock Screen session tracking |
 | **Freemium Model** | Full FSRS for free; Pro for unlimited AI and cloud sync |
 
-### Future (Post-Launch)
+---
+
+## Multi-Modal Learning Architecture
+
+LexiconFlow uses **four learning modalities** to enhance memory consolidation:
+
+| Modality | Implementation | Pedagogical Benefit |
+|----------|---------------|---------------------|
+| **Visual** | Glass-effect flashcards with mastery badges | Reading comprehension |
+| **Auditory** | Neural TTS with 4 accent options | Pronunciation modeling |
+| **Kinesthetic** | 4-direction swipe gestures with haptic feedback | Motor memory |
+| **Contextual** | AI-generated example sentences | Vocabulary-in-context |
+
+**Scientific Foundation**: Dual Coding Theory (Paivio, 1986) + Embodied Cognition = 40-60% better retention.
+
+See [MULTI_MODAL_LEARNING_ARCHITECTURE.md](docs/MULTI_MODAL_LEARNING_ARCHITECTURE.md) for complete pedagogical details.
+
+---
+
+## Future (Post-Launch)
 
 - Multi-language support (Spanish, French, German, Mandarin)
 - Mac app via Mac Catalyst

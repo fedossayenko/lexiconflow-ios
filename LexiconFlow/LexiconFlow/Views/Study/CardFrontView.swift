@@ -11,9 +11,47 @@ struct CardFrontView: View {
     @Bindable var card: Flashcard
     @State private var isSpeaking = false
 
+    // MARK: - Computed Properties
+
+    /// The word to display based on card type
+    /// - Forward (Recognition): English word
+    /// - Reverse (Production): Russian translation
+    var displayWord: String {
+        switch self.card.cardType {
+        case .forward:
+            self.card.word
+        case .reverse:
+            self.card.translation ?? self.card.word
+        }
+    }
+
+    /// The phonetic pronunciation to display (only for forward cards)
+    var displayPhonetic: String? {
+        self.card.cardType == .forward ? self.card.phonetic : nil
+    }
+
+    /// Whether to show phonetic (only for forward cards)
+    var shouldShowPhonetic: Bool {
+        self.card.cardType == .forward && self.card.phonetic != nil
+    }
+
     var body: some View {
         VStack(spacing: 24) {
             Spacer()
+
+            // Card type badge (above deck name)
+            HStack(spacing: 6) {
+                Image(systemName: self.card.cardType.iconName)
+                    .font(.caption2)
+                Text(self.card.cardType.displayName)
+                    .font(.caption2)
+            }
+            .foregroundStyle(self.cardTypeColor(for: self.card.cardType))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(self.cardTypeColor(for: self.card.cardType).opacity(0.15))
+            .clipShape(Capsule())
+            .accessibilityLabel("Card type: \(self.card.cardType.displayName)")
 
             // Deck name (if available)
             if let deck = card.deck {
@@ -27,15 +65,15 @@ struct CardFrontView: View {
                     .accessibilityLabel("Deck: \(deck.name)")
             }
 
-            // Word
-            Text(self.card.word)
+            // Word (direction-aware)
+            Text(self.displayWord)
                 .font(.system(size: 42, weight: .bold, design: .rounded))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
-                .accessibilityLabel("Word: \(self.card.word)")
+                .accessibilityLabel("Word: \(self.displayWord)")
 
-            // Phonetic with speaker button
-            if let phonetic = card.phonetic {
+            // Phonetic with speaker button (forward cards only)
+            if self.shouldShowPhonetic, let phonetic = displayPhonetic {
                 HStack(spacing: 8) {
                     Text(phonetic)
                         .font(.title3)
@@ -74,17 +112,32 @@ struct CardFrontView: View {
     // MARK: - Speech Handlers
 
     /// Speak the word using text-to-speech
+    /// - Forward cards: Speak English word
+    /// - Reverse cards: Speak Russian translation
     private func speakWord() {
         self.isSpeaking = true
-        SpeechService.shared.speak(self.card.word)
+        SpeechService.shared.speak(self.displayWord)
 
         // Reset after estimated duration (roughly 0.1s per character)
-        let estimatedDuration = Double(card.word.count) * 0.1
+        let estimatedDuration = Double(displayWord.count) * 0.1
         Task {
             try? await Task.sleep(nanoseconds: UInt64(estimatedDuration * 1000000000))
             await MainActor.run {
                 self.isSpeaking = false
             }
+        }
+    }
+
+    // MARK: - Helper Functions
+
+    /// Color for card type badge
+    /// Internal for testability
+    func cardTypeColor(for type: CardType) -> Color {
+        switch type {
+        case .forward:
+            .blue
+        case .reverse:
+            .orange
         }
     }
 }

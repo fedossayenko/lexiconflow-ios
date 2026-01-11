@@ -9,8 +9,8 @@
 //  - Batch translation behavior
 //  - Keychain integration
 //
-//  NOTE: Full network testing requires URLSession injection (Phase 2)
-//  These tests cover testable logic without network mocking
+//  NOTE: Network-dependent tests are disabled by default in CI via LEXICONFLOW_SKIP_NETWORK_TESTS
+//  These tests validate error handling behavior and can be run locally for manual verification
 //
 
 import Foundation
@@ -22,6 +22,11 @@ import Testing
 @Suite(.serialized)
 @MainActor
 struct TranslationServiceTests {
+    /// Environment variable to disable network-dependent tests
+    /// Set LEXICONFLOW_SKIP_NETWORK_TESTS=1 to skip tests requiring API calls
+    /// Note: Lazy static initializer is immutable and Sendable-safe
+    private static let shouldSkipNetworkTests: Bool = ProcessInfo.processInfo.environment["LEXICONFLOW_SKIP_NETWORK_TESTS"] == "1"
+
     // MARK: - Singleton Tests
 
     @Test("TranslationService singleton is consistent")
@@ -550,7 +555,7 @@ struct TranslationServiceTests {
 
     // MARK: - Critical Integration Tests
 
-    @Test("Batch translation reports progress through handler")
+    @Test("Batch translation reports progress through handler", .disabled(if: shouldSkipNetworkTests, "Network tests disabled via LEXICONFLOW_SKIP_NETWORK_TESTS"))
     func batchTranslationReportsProgress() async throws {
         // This test verifies the progress handler is called correctly
         // Note: Without URLSession mocking, we verify structure only
@@ -603,7 +608,7 @@ struct TranslationServiceTests {
         try KeychainManager.deleteAPIKey()
     }
 
-    @Test("Batch translation can be cancelled mid-execution")
+    @Test("Batch translation can be cancelled mid-execution", .disabled(if: shouldSkipNetworkTests, "Network tests disabled via LEXICONFLOW_SKIP_NETWORK_TESTS"))
     func cancelBatchTranslation() async throws {
         let context = TestContainers.freshContext()
         try? context.clearAll()
@@ -646,7 +651,7 @@ struct TranslationServiceTests {
         try KeychainManager.deleteAPIKey()
     }
 
-    @Test("Batch translation handles partial failures correctly")
+    @Test("Batch translation handles partial failures correctly", .disabled(if: shouldSkipNetworkTests, "Network tests disabled via LEXICONFLOW_SKIP_NETWORK_TESTS"))
     func partialFailureRollback() async throws {
         let context = TestContainers.freshContext()
         try? context.clearAll()
@@ -687,7 +692,7 @@ struct TranslationServiceTests {
         try KeychainManager.deleteAPIKey()
     }
 
-    @Test("Concurrent batches don't interfere with each other")
+    @Test("Concurrent batches don't interfere with each other", .disabled(if: shouldSkipNetworkTests, "Network tests disabled via LEXICONFLOW_SKIP_NETWORK_TESTS"))
     func concurrentBatchesDontInterfere() async throws {
         let context = TestContainers.freshContext()
         try? context.clearAll()
@@ -726,7 +731,7 @@ struct TranslationServiceTests {
         try KeychainManager.deleteAPIKey()
     }
 
-    @Test("maxConcurrency parameter is respected during batch translation")
+    @Test("maxConcurrency parameter is respected during batch translation", .disabled(if: shouldSkipNetworkTests, "Network tests disabled via LEXICONFLOW_SKIP_NETWORK_TESTS"))
     func maxConcurrencyIsRespected() async throws {
         let context = TestContainers.freshContext()
         try? context.clearAll()
@@ -755,7 +760,7 @@ struct TranslationServiceTests {
         try KeychainManager.deleteAPIKey()
     }
 
-    @Test("Rapid sequential batch translations don't cause state corruption")
+    @Test("Rapid sequential batch translations don't cause state corruption", .disabled(if: shouldSkipNetworkTests, "Network tests disabled via LEXICONFLOW_SKIP_NETWORK_TESTS"))
     func rapidSequentialBatches() async throws {
         let context = TestContainers.freshContext()
         try? context.clearAll()

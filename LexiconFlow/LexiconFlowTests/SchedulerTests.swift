@@ -1647,4 +1647,188 @@ struct SwiftDataRollbackTests {
         // Verify cache was invalidated
         #expect(cache.get(deckID: deck.id) == nil, "Cache should be invalidated after card import")
     }
+
+    // MARK: - Bidirectional Learning Tests
+
+    @Test("Scheduler: matchesStudyDirection filters forward cards in recognitionOnly")
+    func matchesStudyDirectionFiltersForwardCards() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // recognitionOnly: only forward cards
+        #expect(await scheduler.matchesStudyDirection(.forward, .recognitionOnly) == true)
+        #expect(await scheduler.matchesStudyDirection(.reverse, .recognitionOnly) == false)
+    }
+
+    @Test("Scheduler: matchesStudyDirection filters reverse cards in productionOnly")
+    func matchesStudyDirectionFiltersReverseCards() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // productionOnly: only reverse cards
+        #expect(await scheduler.matchesStudyDirection(.reverse, .productionOnly) == true)
+        #expect(await scheduler.matchesStudyDirection(.forward, .productionOnly) == false)
+    }
+
+    @Test("Scheduler: matchesStudyDirection returns true for both mode")
+    func matchesStudyDirectionReturnsTrueForBoth() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        // both: all cards included
+        #expect(await scheduler.matchesStudyDirection(.forward, .both) == true)
+        #expect(await scheduler.matchesStudyDirection(.reverse, .both) == true)
+    }
+
+    @Test("Scheduler: fetchDueCards respects recognitionOnly mode")
+    func fetchDueCardsRespectsRecognitionOnly() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        AppSettings.studyDirection = .recognitionOnly
+
+        let deck = self.createTestDeck(context: context)
+
+        let forwardCard = self.createTestFlashcard(context: context, word: "forward", state: .review, dueOffset: -3600)
+        forwardCard.cardType = .forward
+        forwardCard.deck = deck
+
+        let reverseCard = self.createTestFlashcard(context: context, word: "reverse", state: .review, dueOffset: -3600)
+        reverseCard.cardType = .reverse
+        reverseCard.deck = deck
+
+        try context.save()
+
+        let dueCards = await scheduler.fetchCards(mode: .scheduled, limit: 20)
+
+        // Should only return forward cards
+        #expect(dueCards.count == 1)
+        #expect(dueCards.allSatisfy { $0.cardType == .forward })
+
+        // Reset
+        AppSettings.studyDirection = .recognitionOnly
+    }
+
+    @Test("Scheduler: fetchDueCards respects productionOnly mode")
+    func fetchDueCardsRespectsProductionOnly() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        AppSettings.studyDirection = .productionOnly
+
+        let deck = self.createTestDeck(context: context)
+
+        let forwardCard = self.createTestFlashcard(context: context, word: "forward", state: .review, dueOffset: -3600)
+        forwardCard.cardType = .forward
+        forwardCard.deck = deck
+
+        let reverseCard = self.createTestFlashcard(context: context, word: "reverse", state: .review, dueOffset: -3600)
+        reverseCard.cardType = .reverse
+        reverseCard.deck = deck
+
+        try context.save()
+
+        let dueCards = await scheduler.fetchCards(mode: .scheduled, limit: 20)
+
+        // Should only return reverse cards
+        #expect(dueCards.count == 1)
+        #expect(dueCards.allSatisfy { $0.cardType == .reverse })
+
+        // Reset
+        AppSettings.studyDirection = .recognitionOnly
+    }
+
+    @Test("Scheduler: fetchDueCards returns both when direction is both")
+    func fetchDueCardsReturnsBoth() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        AppSettings.studyDirection = .both
+
+        let deck = self.createTestDeck(context: context)
+
+        let forwardCard = self.createTestFlashcard(context: context, word: "forward", state: .review, dueOffset: -3600)
+        forwardCard.cardType = .forward
+        forwardCard.deck = deck
+
+        let reverseCard = self.createTestFlashcard(context: context, word: "reverse", state: .review, dueOffset: -3600)
+        reverseCard.cardType = .reverse
+        reverseCard.deck = deck
+
+        try context.save()
+
+        let dueCards = await scheduler.fetchCards(mode: .scheduled, limit: 20)
+
+        // Should return both forward and reverse cards
+        #expect(dueCards.count == 2)
+        #expect(dueCards.contains { $0.cardType == .forward })
+        #expect(dueCards.contains { $0.cardType == .reverse })
+
+        // Reset
+        AppSettings.studyDirection = .recognitionOnly
+    }
+
+    @Test("Scheduler: matchesStudyDirection handles backward compatibility nil cardTypeRaw")
+    func matchesStudyDirectionHandlesBackwardCompatibility() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        AppSettings.studyDirection = .recognitionOnly
+
+        // Create card with nil cardTypeRaw (simulates legacy card)
+        let card = self.createTestFlashcard(context: context, word: "legacy", state: .review, dueOffset: -3600)
+        card.cardTypeRaw = nil
+
+        try context.save()
+
+        // Legacy card should be treated as forward (recognitionOnly mode includes it)
+        let matches = await scheduler.matchesStudyDirection(card.cardType, .recognitionOnly)
+
+        #expect(matches == true)
+
+        // Reset
+        AppSettings.studyDirection = .recognitionOnly
+    }
+
+    @Test("Scheduler: multi-deck due cards respect study direction")
+    func multiDeckDueCardsRespectStudyDirection() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        AppSettings.studyDirection = .recognitionOnly
+
+        let deck1 = self.createTestDeck(context: context, name: "Deck1")
+        let deck2 = self.createTestDeck(context: context, name: "Deck2")
+
+        let f1 = self.createTestFlashcard(context: context, word: "f1", state: .review, dueOffset: -3600)
+        f1.deck = deck1
+        f1.cardType = .forward
+
+        let r1 = self.createTestFlashcard(context: context, word: "r1", state: .review, dueOffset: -3600)
+        r1.deck = deck1
+        r1.cardType = .reverse
+
+        let f2 = self.createTestFlashcard(context: context, word: "f2", state: .review, dueOffset: -3600)
+        f2.deck = deck2
+        f2.cardType = .forward
+
+        try context.save()
+
+        let cards = scheduler.fetchCards(for: [deck1, deck2], mode: .scheduled, limit: 20)
+
+        // Should only return forward cards from both decks
+        #expect(cards.count == 2)
+        #expect(cards.allSatisfy { $0.cardType == .forward })
+
+        // Reset
+        AppSettings.studyDirection = .recognitionOnly
+    }
 }

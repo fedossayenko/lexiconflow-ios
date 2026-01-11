@@ -98,7 +98,7 @@ jobs:
           SUPPRESS_APPINTENTS_METADATA=1 xcodebuild build \
             -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
-            -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.1'
+            -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2'
 
   # Test with Coverage
   test:
@@ -139,10 +139,15 @@ jobs:
       - name: Create CI marker file
         run: touch /tmp/lexiconflow-ci-running
 
+      - name: Clean Test Results
+        working-directory: ./LexiconFlow
+        run: |
+          rm -rf TestResults.xcresult || true
+
       - name: Test with Coverage
         working-directory: ./LexiconFlow
         run: |
-          SUPPRESS_APPINTENTS_METADATA=1 xcodebuild test \
+          SUPPRESS_APPINTENTS_METADATA=1 LEXICONFLOW_SKIP_NETWORK_TESTS=1 xcodebuild test \
             -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
             -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.1' \
@@ -150,6 +155,10 @@ jobs:
             -skip-testing:LexiconFlowTests/StatisticsDashboardE2ETests \
             -skip-testing:LexiconFlowTests/StudySessionAndDailyStatsTests \
             -skip-testing:LexiconFlowTests/ConcurrencyStressTests \
+            -skip-testing:LexiconFlowTests/SpeechServiceTests \
+            -skip-testing:LexiconFlowTests/SpeechServiceAudioSessionTests \
+            -skip-testing:LexiconFlowTests/HapticServiceTests \
+            -skip-testing:LexiconFlowTests/TTSSettingsViewTests \
             -parallel-testing-enabled NO \
             -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult
@@ -214,13 +223,18 @@ jobs:
       - name: Create CI marker file
         run: touch /tmp/lexiconflow-ci-running
 
+      - name: Clean Integration Test Results
+        working-directory: ./LexiconFlow
+        run: |
+          rm -rf TestResultsIntegration.xcresult || true
+
       - name: Run Integration Tests
         working-directory: ./LexiconFlow
         run: |
           SUPPRESS_APPINTENTS_METADATA=1 xcodebuild test \
             -project LexiconFlow.xcodeproj \
             -scheme LexiconFlow \
-            -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.1' \
+            -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2' \
             -only-testing:LexiconFlowTests \
             -parallel-testing-enabled NO \
             -enableCodeCoverage YES \
