@@ -83,8 +83,8 @@ final class FlashcardDetailViewModel: ObservableObject {
             // Automatically invalidate cache when filter changes
             // This ensures cache is invalidated whether filter is set via
             // selectFilter() method or modified directly
-            if oldValue != selectedFilter {
-                cacheInvalidated = true
+            if oldValue != self.selectedFilter {
+                self.cacheInvalidated = true
             }
         }
     }
@@ -148,7 +148,7 @@ final class FlashcardDetailViewModel: ObservableObject {
     /// always reflects the current database state.
     private var allReviews: [FlashcardReview] {
         // SwiftData relationship is automatically maintained
-        flashcard.reviewLogs
+        self.flashcard.reviewLogs
     }
 
     /// Filtered review history as DTOs with state changes
@@ -165,45 +165,45 @@ final class FlashcardDetailViewModel: ObservableObject {
     /// correctness when filters change.
     var filteredReviews: [FlashcardReviewDTO] {
         // Return cached value if valid
-        if !cacheInvalidated {
-            return cachedFilteredReviews
+        if !self.cacheInvalidated {
+            return self.cachedFilteredReviews
         }
 
         // Recalculate and cache
-        let matchingReviews = allReviews.filter { review in
+        let matchingReviews = self.allReviews.filter { review in
             self.selectedFilter.matches(review.reviewDate)
         }
-        cachedFilteredReviews = convertToDTOs(matchingReviews)
-        cacheInvalidated = false
-        return cachedFilteredReviews
+        self.cachedFilteredReviews = self.convertToDTOs(matchingReviews)
+        self.cacheInvalidated = false
+        return self.cachedFilteredReviews
     }
 
     /// Total review count (for header stats)
     var totalReviewCount: Int {
-        allReviews.count
+        self.allReviews.count
     }
 
     /// Average rating (for header stats)
     ///
     /// **Returns**: nil if no reviews exist
     var averageRating: Double? {
-        guard !allReviews.isEmpty else { return nil }
+        guard !self.allReviews.isEmpty else { return nil }
 
-        let sum = allReviews.reduce(0.0) { partialResult, review in
+        let sum = self.allReviews.reduce(0.0) { partialResult, review in
             partialResult + Double(review.rating)
         }
 
-        return sum / Double(allReviews.count)
+        return sum / Double(self.allReviews.count)
     }
 
     /// Current FSRS state for header display
     var currentFSRSState: FlashcardState? {
-        flashcard.fsrsState?.state
+        self.flashcard.fsrsState?.state
     }
 
     /// Current stability value for header display
     var currentStability: Double? {
-        flashcard.fsrsState?.stability
+        self.flashcard.fsrsState?.stability
     }
 
     // MARK: - State Change Detection
@@ -254,7 +254,7 @@ final class FlashcardDetailViewModel: ObservableObject {
             let isFirstReview = (index == 0)
 
             // Infer current state using FSRS transition rules
-            let currentState = inferCurrentState(
+            let currentState = self.inferCurrentState(
                 previousState: previousState,
                 rating: review.rating,
                 isFirstReview: isFirstReview
@@ -379,18 +379,18 @@ final class FlashcardDetailViewModel: ObservableObject {
         do {
             // Export filtered reviews as DTOs
             let csv = try await exporter.exportFilteredCSV(
-                filteredReviews,
-                for: flashcard,
-                filter: selectedFilter
+                self.filteredReviews,
+                for: self.flashcard,
+                filter: self.selectedFilter
             )
 
             // Generate filename
-            let filename = exporter.generateFilename(for: flashcard)
+            let filename = self.exporter.generateFilename(for: self.flashcard)
 
             // Update published properties for ShareLink
-            exportCSVString = csv
-            exportFilename = filename
-            exportError = nil
+            self.exportCSVString = csv
+            self.exportFilename = filename
+            self.exportError = nil
 
             Self.logger.info("CSV export successful: \(csv.utf8.count) bytes")
 
@@ -401,7 +401,7 @@ final class FlashcardDetailViewModel: ObservableObject {
             Analytics.trackError("review_history_export_failed", error: error)
 
             // Set user-facing error
-            exportError = FlashcardDetailError.exportFailed(
+            self.exportError = FlashcardDetailError.exportFailed(
                 underlying: error.localizedDescription
             )
         }
@@ -419,9 +419,9 @@ extension FlashcardDetailViewModel {
     ///
     /// - Parameter filter: The new filter to apply
     func selectFilter(_ filter: ReviewHistoryFilter) {
-        selectedFilter = filter
+        self.selectedFilter = filter
         // Cache is automatically invalidated by didSet
         // Trigger recalculation immediately for UI responsiveness
-        _ = filteredReviews
+        _ = self.filteredReviews
     }
 }

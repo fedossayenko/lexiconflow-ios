@@ -27,14 +27,14 @@ struct RetentionRateData: Sendable {
     let failedCount: Int
 
     /// Total number of reviews
-    var totalCount: Int { successfulCount + failedCount }
+    var totalCount: Int { self.successfulCount + self.failedCount }
 
     /// Trend data points for graph rendering (date, rate)
     let trendData: [(date: Date, rate: Double)]
 
     /// Formatted percentage (e.g., "85%")
     var formattedPercentage: String {
-        "\(Int(rate * 100))%"
+        "\(Int(self.rate * 100))%"
     }
 }
 
@@ -92,23 +92,23 @@ struct FSRSMetricsData: Sendable {
 
     /// Formatted average stability (e.g., "12.5 days")
     var formattedStability: String {
-        if averageStability >= 365.0 {
-            let years = averageStability / 365.0
+        if self.averageStability >= 365.0 {
+            let years = self.averageStability / 365.0
             return String(format: "%.1f years", years)
-        } else if averageStability >= 30.0 {
-            let months = averageStability / 30.0
+        } else if self.averageStability >= 30.0 {
+            let months = self.averageStability / 30.0
             return String(format: "%.1f months", months)
-        } else if averageStability >= 7.0 {
-            let weeks = averageStability / 7.0
+        } else if self.averageStability >= 7.0 {
+            let weeks = self.averageStability / 7.0
             return String(format: "%.1f weeks", weeks)
         } else {
-            return String(format: "%.1f days", averageStability)
+            return String(format: "%.1f days", self.averageStability)
         }
     }
 
     /// Formatted average difficulty (e.g., "5.2 / 10")
     var formattedDifficulty: String {
-        String(format: "%.1f / 10", averageDifficulty)
+        String(format: "%.1f / 10", self.averageDifficulty)
     }
 }
 
@@ -170,7 +170,7 @@ struct CachedMetrics {
 
     /// Checks if cache is still valid based on TTL
     func isValid(ttl: TimeInterval) -> Bool {
-        Date().timeIntervalSince(timestamp) < ttl
+        Date().timeIntervalSince(self.timestamp) < ttl
     }
 }
 
@@ -223,21 +223,21 @@ final class StatisticsService {
     /// Checks if metrics cache is still valid
     func isCacheValid() -> Bool {
         guard let timestamp = cacheTimestamp else { return false }
-        return Date().timeIntervalSince(timestamp) < cacheTTL
+        return Date().timeIntervalSince(timestamp) < self.cacheTTL
     }
 
     /// Invalidates the metrics cache
     ///
     /// Call this after data changes (new reviews, card deletions, etc.)
     func invalidateCache() {
-        cachedMetrics = nil
-        cacheTimestamp = nil
-        logger.debug("Metrics cache invalidated")
+        self.cachedMetrics = nil
+        self.cacheTimestamp = nil
+        self.logger.debug("Metrics cache invalidated")
     }
 
     /// Private initializer for singleton pattern
     private init() {
-        logger.info("StatisticsService initialized")
+        self.logger.info("StatisticsService initialized")
     }
 
     // MARK: - Retention Rate
@@ -259,9 +259,9 @@ final class StatisticsService {
         timeRange: StatisticsTimeRange = .allTime,
         startDate: Date? = nil
     ) -> RetentionRateData {
-        let filterStartDate = startDate ?? startDateForTimeRange(timeRange)
+        let filterStartDate = startDate ?? self.startDateForTimeRange(timeRange)
 
-        logger.debug("Calculating retention rate from \(filterStartDate)")
+        self.logger.debug("Calculating retention rate from \(filterStartDate)")
 
         // Fetch all reviews within time range
         let reviewsDescriptor = FetchDescriptor<FlashcardReview>(
@@ -274,7 +274,7 @@ final class StatisticsService {
             let reviews = try context.fetch(reviewsDescriptor)
 
             guard !reviews.isEmpty else {
-                logger.info("No reviews found for retention rate calculation")
+                self.logger.info("No reviews found for retention rate calculation")
                 return RetentionRateData(
                     rate: 0.0,
                     successfulCount: 0,
@@ -290,9 +290,9 @@ final class StatisticsService {
             let rate = Double(successfulReviews.count) / Double(reviews.count)
 
             // Generate trend data (grouped by day)
-            let trendData = generateRetentionTrend(reviews: reviews, startDate: filterStartDate)
+            let trendData = self.generateRetentionTrend(reviews: reviews, startDate: filterStartDate)
 
-            logger.info("""
+            self.logger.info("""
             Retention rate calculated:
             - Rate: \(Int(rate * 100))%
             - Successful: \(successfulReviews.count)
@@ -307,7 +307,7 @@ final class StatisticsService {
                 trendData: trendData
             )
         } catch {
-            logger.error("Failed to calculate retention rate: \(error.localizedDescription)")
+            self.logger.error("Failed to calculate retention rate: \(error.localizedDescription)")
             return RetentionRateData(
                 rate: 0.0,
                 successfulCount: 0,
@@ -330,15 +330,15 @@ final class StatisticsService {
     func getCachedMetrics(context: ModelContext) -> CachedMetrics {
         // Check cache first
         if let cached = cachedMetrics, cached.isValid(ttl: cacheTTL) {
-            logger.debug("Returning cached metrics")
+            self.logger.debug("Returning cached metrics")
             return cached
         }
 
         // Cache miss - calculate metrics
-        logger.debug("Cache miss - calculating metrics")
+        self.logger.debug("Cache miss - calculating metrics")
 
         // Calculate retention rate
-        let retentionData = calculateRetentionRate(context: context, timeRange: .sevenDays)
+        let retentionData = self.calculateRetentionRate(context: context, timeRange: .sevenDays)
 
         // Calculate total and due cards
         let totalCards: Int
@@ -355,7 +355,7 @@ final class StatisticsService {
                 return state.stateEnum != FlashcardState.new.rawValue && state.dueDate <= now
             })
         } catch {
-            logger.error("Failed to fetch card counts: \(error.localizedDescription)")
+            self.logger.error("Failed to fetch card counts: \(error.localizedDescription)")
             totalCards = 0
             dueCards = 0
         }
@@ -368,8 +368,8 @@ final class StatisticsService {
             timestamp: Date()
         )
 
-        cachedMetrics = metrics
-        cacheTimestamp = Date()
+        self.cachedMetrics = metrics
+        self.cacheTimestamp = Date()
 
         return metrics
     }
@@ -422,9 +422,9 @@ final class StatisticsService {
         context: ModelContext,
         timeRange: StatisticsTimeRange = .allTime
     ) -> StudyStreakData {
-        let startDate = startDateForTimeRange(timeRange)
+        let startDate = self.startDateForTimeRange(timeRange)
 
-        logger.debug("Calculating study streak from \(startDate)")
+        self.logger.debug("Calculating study streak from \(startDate)")
 
         // Fetch all study sessions within time range
         // NOTE: endTime filter applied in-memory (SwiftData predicates don't support optional comparisons)
@@ -450,7 +450,7 @@ final class StatisticsService {
             }
 
             guard !dailyStudyTime.isEmpty else {
-                logger.info("No study sessions found for streak calculation")
+                self.logger.info("No study sessions found for streak calculation")
                 return StudyStreakData(
                     currentStreak: 0,
                     longestStreak: 0,
@@ -463,8 +463,8 @@ final class StatisticsService {
 
             // Calculate streaks
             let sortedDays = dailyStudyTime.keys.sorted()
-            let currentStreak = calculateCurrentStreak(activeDays: sortedDays)
-            let longestStreak = calculateLongestStreak(activeDays: sortedDays)
+            let currentStreak = self.calculateCurrentStreak(activeDays: sortedDays)
+            let longestStreak = self.calculateLongestStreak(activeDays: sortedDays)
 
             // Check if studied today
             let today = DateMath.startOfDay(for: Date())
@@ -473,7 +473,7 @@ final class StatisticsService {
             // Pre-compute total study time (performance optimization)
             let totalStudyTime = dailyStudyTime.values.reduce(0, +)
 
-            logger.info("""
+            self.logger.info("""
             Study streak calculated:
             - Current: \(currentStreak) days
             - Longest: \(longestStreak) days
@@ -491,7 +491,7 @@ final class StatisticsService {
                 totalStudyTime: totalStudyTime
             )
         } catch {
-            logger.error("Failed to calculate study streak: \(error.localizedDescription)")
+            self.logger.error("Failed to calculate study streak: \(error.localizedDescription)")
             return StudyStreakData(
                 currentStreak: 0,
                 longestStreak: 0,
@@ -574,9 +574,9 @@ final class StatisticsService {
         context: ModelContext,
         timeRange: StatisticsTimeRange = .allTime
     ) -> FSRSMetricsData {
-        let startDate = startDateForTimeRange(timeRange)
+        let startDate = self.startDateForTimeRange(timeRange)
 
-        logger.debug("Calculating FSRS metrics from \(startDate)")
+        self.logger.debug("Calculating FSRS metrics from \(startDate)")
 
         // Fetch all FSRS states with reviews since start date
         let statesDescriptor = FetchDescriptor<FSRSState>(
@@ -594,7 +594,7 @@ final class StatisticsService {
             }
 
             guard !reviewedStates.isEmpty else {
-                logger.info("No reviewed cards found for FSRS metrics")
+                self.logger.info("No reviewed cards found for FSRS metrics")
                 return FSRSMetricsData(
                     averageStability: 0.0,
                     averageDifficulty: 5.0,
@@ -613,10 +613,10 @@ final class StatisticsService {
             let averageDifficulty = totalDifficulty / Double(reviewedStates.count)
 
             // Generate distributions
-            let stabilityDistribution = generateStabilityDistribution(reviewedStates)
-            let difficultyDistribution = generateDifficultyDistribution(reviewedStates)
+            let stabilityDistribution = self.generateStabilityDistribution(reviewedStates)
+            let difficultyDistribution = self.generateDifficultyDistribution(reviewedStates)
 
-            logger.info("""
+            self.logger.info("""
             FSRS metrics calculated:
             - Avg stability: \(String(format: "%.2f", averageStability)) days
             - Avg difficulty: \(String(format: "%.2f", averageDifficulty)) / 10
@@ -633,7 +633,7 @@ final class StatisticsService {
                 reviewedCards: reviewedStates.count
             )
         } catch {
-            logger.error("Failed to calculate FSRS metrics: \(error.localizedDescription)")
+            self.logger.error("Failed to calculate FSRS metrics: \(error.localizedDescription)")
             return FSRSMetricsData(
                 averageStability: 0.0,
                 averageDifficulty: 5.0,
@@ -743,7 +743,7 @@ final class StatisticsService {
     ///
     /// - Throws: SwiftData fetch/save errors
     func aggregateDailyStats(context: ModelContext) async throws -> Int {
-        logger.info("Starting daily stats aggregation")
+        self.logger.info("Starting daily stats aggregation")
 
         // Fetch all sessions (endTime and dailyStats filters applied in-memory)
         // NOTE: SwiftData predicates don't support optional comparisons
@@ -756,7 +756,7 @@ final class StatisticsService {
             let sessionsToAggregate = sessions.filter { $0.endTime != nil && $0.dailyStats == nil }
 
             guard !sessionsToAggregate.isEmpty else {
-                logger.info("No new sessions to aggregate")
+                self.logger.info("No new sessions to aggregate")
                 return 0
             }
 
@@ -813,7 +813,7 @@ final class StatisticsService {
                         }
                     }
 
-                    logger.debug("Updated DailyStats for \(day)")
+                    self.logger.debug("Updated DailyStats for \(day)")
                 } else {
                     // Create new record
                     let dailyStats = DailyStats(
@@ -831,7 +831,7 @@ final class StatisticsService {
                         session.dailyStats = dailyStats
                     }
 
-                    logger.debug("Created DailyStats for \(day)")
+                    self.logger.debug("Created DailyStats for \(day)")
                 }
 
                 aggregatedCount += 1
@@ -840,10 +840,10 @@ final class StatisticsService {
             // Atomic save - all or nothing
             try context.save()
 
-            logger.info("Daily stats aggregation complete: \(aggregatedCount) days updated")
+            self.logger.info("Daily stats aggregation complete: \(aggregatedCount) days updated")
             return aggregatedCount
         } catch {
-            logger.error("Failed to aggregate daily stats: \(error.localizedDescription)")
+            self.logger.error("Failed to aggregate daily stats: \(error.localizedDescription)")
             Analytics.trackError("aggregate_daily_stats", error: error)
             throw error
         }

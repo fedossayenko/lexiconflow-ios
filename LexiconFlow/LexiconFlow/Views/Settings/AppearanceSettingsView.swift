@@ -37,7 +37,7 @@ struct AppearanceSettingsView: View {
     private var previewBackground: some View {
         // Creates a gradient that shows theme difference clearly
         LinearGradient(
-            colors: themeAwareGradientColors,
+            colors: self.themeAwareGradientColors,
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
@@ -151,7 +151,7 @@ struct AppearanceSettingsView: View {
             Section {
                 VStack(spacing: 16) {
                     // Dynamic background to demonstrate theme
-                    previewBackground
+                    self.previewBackground
                         .frame(height: 100)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .overlay {
@@ -159,7 +159,7 @@ struct AppearanceSettingsView: View {
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(.clear)
                                 .frame(height: 80)
-                                .glassEffect(previewGlassThickness)
+                                .glassEffect(self.previewGlassThickness)
                                 .overlay {
                                     VStack(alignment: .leading, spacing: 4) {
                                         HStack {

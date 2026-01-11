@@ -47,30 +47,30 @@ struct AddFlashcardView: View {
         NavigationStack {
             Form {
                 Section("Word") {
-                    TextField("Word", text: $word)
+                    TextField("Word", text: self.$word)
                         .textInputAutocapitalization(.words)
                         .accessibilityLabel("Word")
                         .accessibilityHint("Enter the vocabulary word")
                 }
 
                 Section("Definition") {
-                    TextField("Definition", text: $definition, axis: .vertical)
+                    TextField("Definition", text: self.$definition, axis: .vertical)
                         .lineLimit(3 ... 6)
                         .accessibilityLabel("Definition")
                         .accessibilityHint("Enter the word definition")
                 }
 
                 Section("Phonetic (Optional)") {
-                    TextField("Phonetic", text: $phonetic)
+                    TextField("Phonetic", text: self.$phonetic)
                         .textInputAutocapitalization(.never)
                         .accessibilityLabel("Phonetic")
                         .accessibilityHint("Enter pronunciation guide (optional)")
                 }
 
                 Section {
-                    Picker("Deck", selection: $selectedDeck) {
+                    Picker("Deck", selection: self.$selectedDeck) {
                         Text("No Deck").tag(nil as Deck?)
-                        ForEach(allDecks) { deck in
+                        ForEach(self.allDecks) { deck in
                             Text(deck.name).tag(deck as Deck?)
                         }
                     }
@@ -92,7 +92,7 @@ struct AddFlashcardView: View {
 
                             Button("Remove Image") {
                                 self.imageData = nil
-                                selectedImage = nil
+                                self.selectedImage = nil
                             }
                             .foregroundStyle(Theme.Colors.destructive)
                             .accessibilityLabel("Remove Image")
@@ -100,7 +100,7 @@ struct AddFlashcardView: View {
                         }
                     }
 
-                    PhotosPicker(selection: $selectedImage, matching: .images) {
+                    PhotosPicker(selection: self.$selectedImage, matching: .images) {
                         Label(
                             imageData == nil ? "Add Image" : "Change Image",
                             systemImage: imageData == nil ? "photo" : "arrow.triangle.2.circlepath"
@@ -115,8 +115,8 @@ struct AddFlashcardView: View {
                 // Inline buttons to avoid UIKitToolbar warning in sheet presentations
                 Section {
                     Button(action: {
-                        saveTask?.cancel()
-                        dismiss()
+                        self.saveTask?.cancel()
+                        self.dismiss()
                     }) {
                         Text("Cancel")
                             .frame(maxWidth: .infinity)
@@ -126,15 +126,15 @@ struct AddFlashcardView: View {
                     .accessibilityHint("Discard changes and close")
 
                     Button(action: {
-                        saveTask = Task { await saveCard() }
+                        self.saveTask = Task { await self.saveCard() }
                     }) {
                         HStack(spacing: 8) {
-                            if isSaving {
-                                if isGeneratingSentences {
+                            if self.isSaving {
+                                if self.isGeneratingSentences {
                                     ProgressView()
                                         .controlSize(.small)
                                     Text("Generating sentences...")
-                                } else if isTranslating {
+                                } else if self.isTranslating {
                                     ProgressView()
                                         .controlSize(.small)
                                     Text("Translating...")
@@ -149,43 +149,43 @@ struct AddFlashcardView: View {
                         }
                         .frame(maxWidth: .infinity)
                     }
-                    .disabled(word.isEmpty || definition.isEmpty || isSaving || isTranslating || isGeneratingSentences || isCheckingLanguageAvailability)
+                    .disabled(self.word.isEmpty || self.definition.isEmpty || self.isSaving || self.isTranslating || self.isGeneratingSentences || self.isCheckingLanguageAvailability)
                     .accessibilityLabel("Save")
                     .accessibilityHint("Save the new flashcard")
                 }
             }
             .navigationTitle("New Flashcard")
-            .onChange(of: selectedImage) { _, newItem in
+            .onChange(of: self.selectedImage) { _, newItem in
                 Task {
                     guard let newItem else { return }
                     do {
                         let data = try await newItem.loadTransferable(type: Data.self)
-                        imageData = data
+                        self.imageData = data
                     } catch {
-                        errorMessage = "Failed to load image: \(error.localizedDescription)"
-                        logger.error("Image loading failed: \(error.localizedDescription)")
+                        self.errorMessage = "Failed to load image: \(error.localizedDescription)"
+                        self.logger.error("Image loading failed: \(error.localizedDescription)")
                         Analytics.trackError("image_load_failed", error: error)
                     }
                 }
             }
             .onAppear {
-                selectedDeck = deck
+                self.selectedDeck = self.deck
             }
-            .alert("Error", isPresented: .constant(errorMessage != nil)) {
+            .alert("Error", isPresented: .constant(self.errorMessage != nil)) {
                 Button("OK", role: .cancel) {
-                    errorMessage = nil
+                    self.errorMessage = nil
                 }
             } message: {
-                Text(errorMessage ?? "An unknown error occurred")
+                Text(self.errorMessage ?? "An unknown error occurred")
             }
-            .alert("Download Language Pack", isPresented: $showLanguageDownloadPrompt) {
+            .alert("Download Language Pack", isPresented: self.$showLanguageDownloadPrompt) {
                 Button("Cancel", role: .cancel) {
-                    missingLanguage = nil
+                    self.missingLanguage = nil
                 }
                 Button("Download") {
                     if let language = missingLanguage {
                         Task {
-                            await downloadLanguagePack(language)
+                            await self.downloadLanguagePack(language)
                         }
                     }
                 }
@@ -197,38 +197,38 @@ struct AddFlashcardView: View {
                 }
             }
         }
-        .translationTask(downloadConfiguration) { session in
+        .translationTask(self.downloadConfiguration) { session in
             // This closure is called when downloadConfiguration changes
             // prepareTranslation() triggers the system download prompt for language packs
             do {
                 try await session.prepareTranslation()
-                logger.info("Language pack download completed successfully")
+                self.logger.info("Language pack download completed successfully")
 
                 // Show success message and clear error
-                errorMessage = "Language pack downloaded. You can now save the card."
+                self.errorMessage = "Language pack downloaded. You can now save the card."
                 try? await Task.sleep(nanoseconds: 2000000000)
-                errorMessage = nil
+                self.errorMessage = nil
 
             } catch {
-                logger.error("Language pack download failed: \(error.localizedDescription)")
+                self.logger.error("Language pack download failed: \(error.localizedDescription)")
                 Analytics.trackError("language_pack_download_failed", error: error)
-                errorMessage = "Failed to download language pack: \(error.localizedDescription)"
+                self.errorMessage = "Failed to download language pack: \(error.localizedDescription)"
 
                 // Auto-dismiss after 3 seconds
                 try? await Task.sleep(nanoseconds: 3000000000)
-                errorMessage = nil
+                self.errorMessage = nil
             }
 
             // Reset state
-            missingLanguage = nil
-            downloadConfiguration = nil
+            self.missingLanguage = nil
+            self.downloadConfiguration = nil
         }
     }
 
     private func saveCard() async {
         guard !Task.isCancelled else { return }
 
-        isSaving = true
+        self.isSaving = true
         defer {
             Task { @MainActor in
                 isSaving = false
@@ -241,19 +241,19 @@ struct AddFlashcardView: View {
         let flashcard = Flashcard(
             word: word,
             definition: definition,
-            phonetic: phonetic.isEmpty ? nil : phonetic,
-            imageData: imageData
+            phonetic: phonetic.isEmpty ? nil : self.phonetic,
+            imageData: self.imageData
         )
-        flashcard.deck = selectedDeck
+        flashcard.deck = self.selectedDeck
 
         // 2. Automatic translation (on-device only)
-        isTranslating = true
+        self.isTranslating = true
 
         if AppSettings.isTranslationEnabled {
-            await performOnDeviceTranslation(flashcard: flashcard)
+            await self.performOnDeviceTranslation(flashcard: flashcard)
         }
 
-        isTranslating = false
+        self.isTranslating = false
 
         // 2b. Automatic sentence generation (if translation and sentence generation enabled)
         // Note: Sentence generation uses cloud TranslationService separately
@@ -262,12 +262,12 @@ struct AddFlashcardView: View {
            AppSettings.isSentenceGenerationEnabled,
            TranslationService.shared.isConfigured
         {
-            isGeneratingSentences = true
+            self.isGeneratingSentences = true
 
             let sentenceVM = SentenceGenerationViewModel(modelContext: modelContext)
             await sentenceVM.generateSentences(for: flashcard)
 
-            isGeneratingSentences = false
+            self.isGeneratingSentences = false
         }
 
         // 3. Create FSRSState for the card
@@ -282,22 +282,22 @@ struct AddFlashcardView: View {
 
         // 4. Insert and save in one atomic operation
         do {
-            modelContext.insert(flashcard)
-            modelContext.insert(state)
-            try modelContext.save()
+            self.modelContext.insert(flashcard)
+            self.modelContext.insert(state)
+            try self.modelContext.save()
 
             // Invalidate statistics cache after adding card
             if let deckID = selectedDeck?.id {
                 DeckStatisticsCache.shared.invalidate(deckID: deckID)
             }
 
-            dismiss()
+            self.dismiss()
         } catch {
             // Rollback: delete from context if save fails
-            modelContext.delete(flashcard)
-            modelContext.delete(state)
+            self.modelContext.delete(flashcard)
+            self.modelContext.delete(state)
             Analytics.trackError("save_flashcard", error: error)
-            errorMessage = "Failed to save flashcard: \(error.localizedDescription)"
+            self.errorMessage = "Failed to save flashcard: \(error.localizedDescription)"
         }
     }
 
@@ -309,28 +309,28 @@ struct AddFlashcardView: View {
         let sourceLanguage = AppSettings.translationSourceLanguage
         let targetLanguage = AppSettings.translationTargetLanguage
 
-        logger.info("Attempting on-device translation: \(sourceLanguage) -> \(targetLanguage)")
+        self.logger.info("Attempting on-device translation: \(sourceLanguage) -> \(targetLanguage)")
 
         // Check language pack availability
-        isCheckingLanguageAvailability = true
+        self.isCheckingLanguageAvailability = true
 
         let sourceAvailable = await OnDeviceTranslationService.shared.isLanguageAvailable(sourceLanguage)
         let targetAvailable = await OnDeviceTranslationService.shared.isLanguageAvailable(targetLanguage)
 
-        isCheckingLanguageAvailability = false
+        self.isCheckingLanguageAvailability = false
 
         // Prompt for language pack download if needed
         if !sourceAvailable {
-            missingLanguage = AppSettings.supportedLanguages.first { $0.code == sourceLanguage }?.name ?? sourceLanguage
-            showLanguageDownloadPrompt = true
-            logger.warning("Source language pack not available: \(sourceLanguage)")
+            self.missingLanguage = AppSettings.supportedLanguages.first { $0.code == sourceLanguage }?.name ?? sourceLanguage
+            self.showLanguageDownloadPrompt = true
+            self.logger.warning("Source language pack not available: \(sourceLanguage)")
             return
         }
 
         if !targetAvailable {
-            missingLanguage = AppSettings.supportedLanguages.first { $0.code == targetLanguage }?.name ?? targetLanguage
-            showLanguageDownloadPrompt = true
-            logger.warning("Target language pack not available: \(targetLanguage)")
+            self.missingLanguage = AppSettings.supportedLanguages.first { $0.code == targetLanguage }?.name ?? targetLanguage
+            self.showLanguageDownloadPrompt = true
+            self.logger.warning("Target language pack not available: \(targetLanguage)")
             return
         }
 
@@ -344,7 +344,7 @@ struct AddFlashcardView: View {
 
             // Translate the word
             let translatedWord = try await OnDeviceTranslationService.shared.translate(
-                text: word,
+                text: self.word,
                 from: sourceLanguage,
                 to: targetLanguage
             )
@@ -353,7 +353,7 @@ struct AddFlashcardView: View {
             // We don't get CEFR level or context sentence from iOS Translation framework
             flashcard.translation = translatedWord
 
-            logger.info("On-device translation successful: '\(word)' -> '\(translatedWord)'")
+            self.logger.info("On-device translation successful: '\(self.word)' -> '\(translatedWord)'")
 
         } catch let error as OnDeviceTranslationError {
             logger.error("On-device translation failed: \(error.localizedDescription)")
@@ -380,9 +380,9 @@ struct AddFlashcardView: View {
             }
 
         } catch {
-            logger.error("Unexpected on-device translation error: \(error.localizedDescription)")
+            self.logger.error("Unexpected on-device translation error: \(error.localizedDescription)")
             Analytics.trackError("on_device_translation_unexpected", error: error)
-            errorMessage = "Translation failed, but card will be saved without it"
+            self.errorMessage = "Translation failed, but card will be saved without it"
         }
     }
 
@@ -393,14 +393,14 @@ struct AddFlashcardView: View {
     /// API that properly triggers the system download prompt for language packs.
     @MainActor
     private func downloadLanguagePack(_ languageCode: String) async {
-        logger.info("Requesting language pack download for: \(languageCode)")
+        self.logger.info("Requesting language pack download for: \(languageCode)")
 
         let language = Locale.Language(identifier: languageCode)
         let target = Locale.Language(identifier: AppSettings.translationSourceLanguage)
 
         // Create configuration to trigger download via .translationTask()
         // This is the Apple-documented pattern for language pack downloads
-        downloadConfiguration = TranslationSession.Configuration(
+        self.downloadConfiguration = TranslationSession.Configuration(
             source: language,
             target: target
         )

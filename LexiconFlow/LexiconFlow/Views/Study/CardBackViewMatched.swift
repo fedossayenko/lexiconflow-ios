@@ -38,11 +38,11 @@ struct CardBackViewMatched: View {
             Spacer()
 
             // Word reminder (matched - from front, now smaller and at top)
-            Text(card.word)
+            Text(self.card.word)
                 .font(.title3)
                 .foregroundStyle(.secondary)
-                .matchedGeometryEffect(id: MatchedID.word.rawValue, in: namespace)
-                .accessibilityLabel("Word: \(card.word)")
+                .matchedGeometryEffect(id: MatchedID.word.rawValue, in: self.namespace)
+                .accessibilityLabel("Word: \(self.card.word)")
 
             // Translation - NEW (no match - fades in)
             if let translation = card.translation {
@@ -88,16 +88,16 @@ struct CardBackViewMatched: View {
                 Text(phonetic)
                     .font(.title3)
                     .foregroundStyle(.secondary)
-                    .matchedGeometryEffect(id: MatchedID.phonetic.rawValue, in: namespace)
+                    .matchedGeometryEffect(id: MatchedID.phonetic.rawValue, in: self.namespace)
                     .accessibilityLabel("Pronunciation: \(phonetic)")
             }
 
             // Definition (no match - fades in)
-            Text(card.definition)
+            Text(self.card.definition)
                 .font(.body)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
-                .accessibilityLabel("Definition: \(card.definition)")
+                .accessibilityLabel("Definition: \(self.card.definition)")
 
             // Image (if available) (no match - fades in)
             // PERFORMANCE: Uses ImageCache to avoid repeated JPEG/PNG decoding
@@ -115,7 +115,7 @@ struct CardBackViewMatched: View {
             }
 
             // AI-Generated Sentences Section (no match - fades in)
-            sentenceSection
+            self.sentenceSection
 
             Spacer()
         }
@@ -130,7 +130,7 @@ struct CardBackViewMatched: View {
     @ViewBuilder
     private var sentenceSection: some View {
         // Filter valid (non-expired) sentences
-        let validSentences = card.generatedSentences.filter { !$0.isExpired }
+        let validSentences = self.card.generatedSentences.filter { !$0.isExpired }
 
         // Only show section if there are valid sentences
         if !validSentences.isEmpty {
@@ -143,7 +143,7 @@ struct CardBackViewMatched: View {
                     .padding(.horizontal)
 
                 // Sentences display
-                sentencesList(sentences: validSentences)
+                self.sentencesList(sentences: validSentences)
             }
             .padding(.vertical, 8)
         }
@@ -151,7 +151,7 @@ struct CardBackViewMatched: View {
 
     /// Display generated sentences (read-only)
     private func sentencesList(sentences: [GeneratedSentence]) -> some View {
-        let sentencesToShow = showAllSentences ? sentences : Array(sentences.prefix(2))
+        let sentencesToShow = self.showAllSentences ? sentences : Array(sentences.prefix(2))
 
         return VStack(spacing: 12) {
             ForEach(sentencesToShow, id: \.id) { sentence in
@@ -159,10 +159,10 @@ struct CardBackViewMatched: View {
             }
 
             // Show more button
-            if sentences.count > 2, !showAllSentences {
+            if sentences.count > 2, !self.showAllSentences {
                 Button("Show \(sentences.count - 2) more sentences") {
                     withAnimation {
-                        showAllSentences = true
+                        self.showAllSentences = true
                     }
                 }
                 .font(.caption)

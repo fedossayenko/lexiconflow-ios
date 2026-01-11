@@ -16,13 +16,13 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if hasCompletedOnboarding {
+            if self.hasCompletedOnboarding {
                 MainTabView()
             } else {
                 OnboardingView()
             }
         }
-        .onChange(of: hasCompletedOnboarding) { _, newValue in
+        .onChange(of: self.hasCompletedOnboarding) { _, newValue in
             AppSettings.hasCompletedOnboarding = newValue
         }
     }

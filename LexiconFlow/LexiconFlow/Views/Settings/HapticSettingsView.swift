@@ -31,9 +31,9 @@ struct HapticSettingsView: View {
     var body: some View {
         Form {
             Section {
-                Toggle("Audio Feedback", isOn: audioEnabledBinding)
+                Toggle("Audio Feedback", isOn: self.audioEnabledBinding)
                     .accessibilityLabel("Enable audio feedback")
-                Toggle("Haptic Feedback", isOn: isEnabledBinding)
+                Toggle("Haptic Feedback", isOn: self.isEnabledBinding)
                     .accessibilityLabel("Enable haptic feedback")
             } header: {
                 Text("Feedback")
@@ -43,9 +43,9 @@ struct HapticSettingsView: View {
 
             if AppSettings.hapticEnabled {
                 Button {
-                    testHaptic()
+                    self.testHaptic()
                 } label: {
-                    if isTesting {
+                    if self.isTesting {
                         HStack(spacing: 8) {
                             ProgressView()
                                 .controlSize(.small)
@@ -57,21 +57,21 @@ struct HapticSettingsView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .accessibilityLabel("Test haptic feedback")
-                .disabled(isTesting)
+                .disabled(self.isTesting)
             }
         }
         .navigationTitle("Haptic Feedback")
     }
 
     func testHaptic() {
-        isTesting = true
-        hapticService.triggerSuccess()
+        self.isTesting = true
+        self.hapticService.triggerSuccess()
 
         // Reset after a short delay
         Task {
             try? await Task.sleep(nanoseconds: 500000000) // 0.5 seconds
             await MainActor.run {
-                isTesting = false
+                self.isTesting = false
             }
         }
     }

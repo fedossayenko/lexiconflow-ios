@@ -66,7 +66,7 @@ final class DataImporter {
         Self.logger.info("Starting import of \(totalCount) cards in batches of \(batchSize)")
 
         // Pre-fetch existing words for O(1) duplicate checking
-        let allExistingWords = prefetchExistingWords()
+        let allExistingWords = self.prefetchExistingWords()
 
         // Process in batches
         let config = BatchProcessingConfig(
@@ -81,7 +81,7 @@ final class DataImporter {
         let result = await processBatches(config)
 
         // Log completion and analytics
-        logImportCompletion(result, duration: result.duration)
+        self.logImportCompletion(result, duration: result.duration)
 
         // Invalidate statistics cache after data import
         StatisticsService.shared.invalidateCache()
@@ -133,7 +133,7 @@ final class DataImporter {
                 result.skippedCount += batchStats.skipped
                 result.errors.append(contentsOf: batchStats.errors)
 
-                try modelContext.save()
+                try self.modelContext.save()
 
                 // Invalidate statistics cache after importing cards
                 if let deckID = config.deck?.id {
@@ -143,7 +143,7 @@ final class DataImporter {
                     DeckStatisticsCache.shared.invalidate()
                 }
 
-                reportProgress(
+                self.reportProgress(
                     result.importedCount,
                     total: config.totalCount,
                     batchNumber: batchNumber,
@@ -151,10 +151,10 @@ final class DataImporter {
                     handler: config.progressHandler
                 )
 
-                trackBatchPerformance(batchNumber, batchCount: batch.count, startTime: config.startTime)
+                self.trackBatchPerformance(batchNumber, batchCount: batch.count, startTime: config.startTime)
 
             } catch {
-                handleBatchError(error, batchNumber: batchNumber, batchCount: batch.count, result: &result)
+                self.handleBatchError(error, batchNumber: batchNumber, batchCount: batch.count, result: &result)
             }
         }
 
@@ -303,11 +303,11 @@ final class DataImporter {
                 dueDate: Date(),
                 stateEnum: FlashcardState.new.rawValue
             )
-            modelContext.insert(state)
+            self.modelContext.insert(state)
             flashcard.fsrsState = state
 
             // Insert flashcard
-            modelContext.insert(flashcard)
+            self.modelContext.insert(flashcard)
 
             stats.success += 1
         }
@@ -360,13 +360,13 @@ struct ImportProgress: Sendable {
 
     /// Progress as percentage (0-100)
     var percentage: Int {
-        guard total > 0 else { return 0 }
-        return (current * 100) / total
+        guard self.total > 0 else { return 0 }
+        return (self.current * 100) / self.total
     }
 
     /// Human-readable progress string
     var description: String {
-        "\(current)/\(total) (\(percentage)%) - Batch \(batchNumber)/\(totalBatches)"
+        "\(self.current)/\(self.total) (\(self.percentage)%) - Batch \(self.batchNumber)/\(self.totalBatches)"
     }
 }
 
@@ -386,7 +386,7 @@ struct ImportResult: Sendable {
 
     /// Whether import was completely successful
     var isSuccess: Bool {
-        errors.isEmpty && importedCount > 0
+        self.errors.isEmpty && self.importedCount > 0
     }
 }
 

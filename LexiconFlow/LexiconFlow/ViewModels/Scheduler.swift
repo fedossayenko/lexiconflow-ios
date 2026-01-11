@@ -83,11 +83,11 @@ final class Scheduler {
         let effectiveLimit = limit ?? AppSettings.studyLimit
         switch mode {
         case .scheduled:
-            return fetchDueCards(for: deck, limit: effectiveLimit)
+            return self.fetchDueCards(for: deck, limit: effectiveLimit)
         case .learning:
-            return fetchNewCards(for: deck, limit: effectiveLimit)
+            return self.fetchNewCards(for: deck, limit: effectiveLimit)
         case .cram:
-            return fetchCramCards(for: deck, limit: effectiveLimit)
+            return self.fetchCramCards(for: deck, limit: effectiveLimit)
         }
     }
 
@@ -101,18 +101,18 @@ final class Scheduler {
     func fetchCards(for decks: [Deck], mode: StudyMode = .scheduled, limit: Int? = nil) -> [Flashcard] {
         // Early return: no decks selected
         guard !decks.isEmpty else {
-            logger.info("No decks selected, returning empty card list")
+            self.logger.info("No decks selected, returning empty card list")
             return []
         }
 
         let effectiveLimit = limit ?? AppSettings.studyLimit
         switch mode {
         case .scheduled:
-            return fetchDueCards(for: decks, limit: effectiveLimit)
+            return self.fetchDueCards(for: decks, limit: effectiveLimit)
         case .learning:
-            return fetchNewCards(for: decks, limit: effectiveLimit)
+            return self.fetchNewCards(for: decks, limit: effectiveLimit)
         case .cram:
-            return fetchCramCards(for: decks, limit: effectiveLimit)
+            return self.fetchCramCards(for: decks, limit: effectiveLimit)
         }
     }
 
@@ -159,7 +159,7 @@ final class Scheduler {
             return Array(cards.prefix(limit))
         } catch {
             Analytics.trackError("fetch_due_cards", error: error)
-            logger.error("Error fetching due cards: \(error)")
+            self.logger.error("Error fetching due cards: \(error)")
             return []
         }
     }
@@ -214,7 +214,7 @@ final class Scheduler {
             return ordered
         } catch {
             Analytics.trackError("fetch_new_cards", error: error)
-            logger.error("Error fetching new cards: \(error)")
+            self.logger.error("Error fetching new cards: \(error)")
             return []
         }
     }
@@ -236,10 +236,10 @@ final class Scheduler {
         )
 
         do {
-            return try modelContext.fetchCount(stateDescriptor)
+            return try self.modelContext.fetchCount(stateDescriptor)
         } catch {
             Analytics.trackError("due_card_count", error: error)
-            logger.error("Error counting due cards: \(error)")
+            self.logger.error("Error counting due cards: \(error)")
             return 0
         }
     }
@@ -257,10 +257,10 @@ final class Scheduler {
         )
 
         do {
-            return try modelContext.fetchCount(stateDescriptor)
+            return try self.modelContext.fetchCount(stateDescriptor)
         } catch {
             Analytics.trackError("new_card_count", error: error)
-            logger.error("Error counting new cards: \(error)")
+            self.logger.error("Error counting new cards: \(error)")
             return 0
         }
     }
@@ -279,7 +279,7 @@ final class Scheduler {
 
         // Check cache first for O(1) lookup
         if let cached = DeckStatisticsCache.shared.get(deckID: deckID) {
-            logger.debug("Cache hit for deck \(deckID)")
+            self.logger.debug("Cache hit for deck \(deckID)")
             return cached
         }
 
@@ -317,7 +317,7 @@ final class Scheduler {
 
         } catch {
             Analytics.trackError("deck_statistics_fetch", error: error)
-            logger.error("Error fetching deck statistics: \(error)")
+            self.logger.error("Error fetching deck statistics: \(error)")
             return DeckStatistics(due: 0, new: 0, total: 0)
         }
     }
@@ -345,7 +345,7 @@ final class Scheduler {
 
         // If all decks were cached, return early
         if missingDeckIDs.isEmpty {
-            logger.debug("All \(results.count) decks served from cache")
+            self.logger.debug("All \(results.count) decks served from cache")
             return results
         }
 
@@ -393,13 +393,13 @@ final class Scheduler {
             // Batch cache all fetched results
             DeckStatisticsCache.shared.setBatch(fetchedResults)
 
-            logger.debug("Fetched \(fetchedResults.count) decks from DB, \(results.count - fetchedResults.count) from cache")
+            self.logger.debug("Fetched \(fetchedResults.count) decks from DB, \(results.count - fetchedResults.count) from cache")
 
             return results
 
         } catch {
             Analytics.trackError("deck_statistics_batch_fetch", error: error)
-            logger.error("Error fetching batch deck statistics: \(error)")
+            self.logger.error("Error fetching batch deck statistics: \(error)")
 
             // Return zero stats for all decks on error (use cached if available)
             for deck in decks where results[deck.id] == nil {
@@ -414,7 +414,7 @@ final class Scheduler {
     /// - Parameter deck: The deck to count cards for
     /// - Returns: Number of cards currently due for review in the deck
     func dueCardCount(for deck: Deck) -> Int {
-        fetchDeckStatistics(for: deck).due
+        self.fetchDeckStatistics(for: deck).due
     }
 
     /// Count new cards for a specific deck
@@ -422,7 +422,7 @@ final class Scheduler {
     /// - Parameter deck: The deck to count cards for
     /// - Returns: Number of new cards awaiting initial review in the deck
     func newCardCount(for deck: Deck) -> Int {
-        fetchDeckStatistics(for: deck).new
+        self.fetchDeckStatistics(for: deck).new
     }
 
     /// Count total cards for a specific deck
@@ -430,7 +430,7 @@ final class Scheduler {
     /// - Parameter deck: The deck to count cards for
     /// - Returns: Total number of cards in the deck
     func totalCardCount(for deck: Deck) -> Int {
-        fetchDeckStatistics(for: deck).total
+        self.fetchDeckStatistics(for: deck).total
     }
 
     /// Fetch cards for cram (practice) mode from a single deck
@@ -469,7 +469,7 @@ final class Scheduler {
             return cards.randomSample(limit)
         } catch {
             Analytics.trackError("fetch_cram_cards", error: error)
-            logger.error("Error fetching cram cards: \(error)")
+            self.logger.error("Error fetching cram cards: \(error)")
             return []
         }
     }
@@ -516,7 +516,7 @@ final class Scheduler {
             return Array(cards.prefix(limit))
         } catch {
             Analytics.trackError("fetch_due_cards_multi", error: error)
-            logger.error("Error fetching due cards for multiple decks: \(error)")
+            self.logger.error("Error fetching due cards for multiple decks: \(error)")
             return []
         }
     }
@@ -561,11 +561,11 @@ final class Scheduler {
                 case .random:
                     // Shuffle cards within each deck, then interleave using round-robin
                     // This ensures random cards from each deck while maintaining proportional representation
-                    return interleaveCardsShuffled(cards, limit: limit)
+                    return self.interleaveCardsShuffled(cards, limit: limit)
                 case .sequential:
                     // Sort by creation date first, then interleave (to maintain order within decks)
                     let sorted = cards.sorted { $0.createdAt < $1.createdAt }
-                    return interleaveCards(sorted, limit: limit)
+                    return self.interleaveCards(sorted, limit: limit)
                 }
             } else {
                 // Single deck or interleaving disabled
@@ -579,7 +579,7 @@ final class Scheduler {
             }
         } catch {
             Analytics.trackError("fetch_new_cards_multi", error: error)
-            logger.error("Error fetching new cards for multiple decks: \(error)")
+            self.logger.error("Error fetching new cards for multiple decks: \(error)")
             return []
         }
     }
@@ -620,7 +620,7 @@ final class Scheduler {
             return cards.randomSample(limit)
         } catch {
             Analytics.trackError("fetch_cram_cards_multi", error: error)
-            logger.error("Error fetching cram cards for multiple decks: \(error)")
+            self.logger.error("Error fetching cram cards for multiple decks: \(error)")
             return []
         }
     }
@@ -652,7 +652,7 @@ final class Scheduler {
             })
         } catch {
             Analytics.trackError("due_card_count_multi", error: error)
-            logger.error("Error counting due cards for multiple decks: \(error)")
+            self.logger.error("Error counting due cards for multiple decks: \(error)")
             return 0
         }
     }
@@ -681,7 +681,7 @@ final class Scheduler {
             })
         } catch {
             Analytics.trackError("new_card_count_multi", error: error)
-            logger.error("Error counting new cards for multiple decks: \(error)")
+            self.logger.error("Error counting new cards for multiple decks: \(error)")
             return 0
         }
     }
@@ -708,7 +708,7 @@ final class Scheduler {
             })
         } catch {
             Analytics.trackError("total_card_count_multi", error: error)
-            logger.error("Error counting total cards for multiple decks: \(error)")
+            self.logger.error("Error counting total cards for multiple decks: \(error)")
             return 0
         }
     }
@@ -740,7 +740,7 @@ final class Scheduler {
 
         // Validate: flashcard must have FSRSState
         guard flashcard.fsrsState != nil else {
-            logger.error("Cannot process review: FSRSState is nil for \(flashcard.word)")
+            self.logger.error("Cannot process review: FSRSState is nil for \(flashcard.word)")
             return nil
         }
 
@@ -759,13 +759,13 @@ final class Scheduler {
             )
             log.card = flashcard
             log.studySession = studySession
-            modelContext.insert(log)
+            self.modelContext.insert(log)
 
             // CRITICAL: Propagate save errors instead of silent failure
             do {
-                try modelContext.save()
-                // Invalidate statistics cache after review
-                DeckStatisticsCache.shared.invalidate(deckID: flashcard.deck?.id)
+                try self.modelContext.save()
+                // NOTE: Cram mode doesn't change due dates, so DeckStatisticsCache remains valid
+                // Only invalidate StatisticsService since reviews are logged for analytics
                 StatisticsService.shared.invalidateCache()
                 return log
             } catch {
@@ -773,7 +773,7 @@ final class Scheduler {
                     "rating": "\(rating)",
                     "card": flashcard.word
                 ])
-                logger.error("Failed to save cram review: \(error)")
+                self.logger.error("Failed to save cram review: \(error)")
                 // In production: show user alert
                 return nil
             }
@@ -789,7 +789,7 @@ final class Scheduler {
             )
 
             // Apply the DTO updates to our SwiftData model
-            applyFSRSResult(result, to: flashcard, at: now, rating: rating)
+            self.applyFSRSResult(result, to: flashcard, at: now, rating: rating)
 
             // Create review log
             let log = FlashcardReview(
@@ -800,10 +800,10 @@ final class Scheduler {
             )
             log.card = flashcard
             log.studySession = studySession
-            modelContext.insert(log)
+            self.modelContext.insert(log)
 
             // Save changes
-            try modelContext.save()
+            try self.modelContext.save()
 
             // Invalidate statistics cache after review
             DeckStatisticsCache.shared.invalidate(deckID: flashcard.deck?.id)
@@ -822,7 +822,7 @@ final class Scheduler {
                 "rating": "\(rating)",
                 "card": flashcard.word
             ])
-            logger.error("Error processing review: \(error)")
+            self.logger.error("Error processing review: \(error)")
             return nil
         }
     }
@@ -852,7 +852,7 @@ final class Scheduler {
                 dueDate: result.dueDate,
                 stateEnum: result.stateEnum
             )
-            modelContext.insert(state)
+            self.modelContext.insert(state)
             flashcard.fsrsState = state
         }
 
@@ -907,7 +907,7 @@ final class Scheduler {
                 state.lastReviewDate = nil // Reset last review on forget
             }
 
-            try modelContext.save()
+            try self.modelContext.save()
 
             // Invalidate statistics cache after reset
             DeckStatisticsCache.shared.invalidate(deckID: flashcard.deck?.id)
@@ -921,7 +921,7 @@ final class Scheduler {
             Analytics.trackError("reset_card", error: error, metadata: [
                 "card": flashcard.word
             ])
-            logger.error("Failed to save reset: \(error)")
+            self.logger.error("Failed to save reset: \(error)")
             return false
         }
     }
@@ -1023,7 +1023,7 @@ final class Scheduler {
 
         // Distribute remaining cards (due to rounding) to largest deck(s)
         let remaining = limit - allocatedTotal
-        distributeRemainder(
+        self.distributeRemainder(
             allocations: &deckAllocations,
             deckGroups: deckGroups,
             sortedDeckIDs: sortedDeckIDs,
@@ -1126,21 +1126,21 @@ final class Scheduler {
         #if DEBUG
             // Debug: print card counts per deck before interleaving
             for (deckID, groupCards) in deckGroups {
-                logger.debug("Deck \(deckID?.uuidString ?? "nil"): \(groupCards.count) cards")
+                self.logger.debug("Deck \(deckID?.uuidString ?? "nil"): \(groupCards.count) cards")
             }
         #endif
 
         let sortedDeckIDs = deckGroups.keys.compactMap(\.self).sorted()
 
         // Calculate proportional allocation for each deck
-        let deckAllocations = calculateProportionalAllocation(
+        let deckAllocations = self.calculateProportionalAllocation(
             deckGroups: deckGroups,
             sortedDeckIDs: sortedDeckIDs,
             limit: limit
         )
 
         // Sample cards proportionally from each deck (with shuffling)
-        let result = sampleCardsProportionally(
+        let result = self.sampleCardsProportionally(
             deckGroups: deckGroups,
             sortedDeckIDs: sortedDeckIDs,
             allocations: deckAllocations,
@@ -1151,7 +1151,7 @@ final class Scheduler {
             // Debug: print final result distribution
             let resultDeckGroups = Dictionary(grouping: result) { $0.deck?.id }
             for (deckID, groupCards) in resultDeckGroups {
-                logger.debug("Result deck \(deckID?.uuidString ?? "nil"): \(groupCards.count) cards")
+                self.logger.debug("Result deck \(deckID?.uuidString ?? "nil"): \(groupCards.count) cards")
             }
         #endif
 

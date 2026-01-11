@@ -64,7 +64,7 @@ struct AddDeckViewTests {
     @Test("AddDeckView can be created")
     func viewCanBeCreated() async throws {
         // Given: Test model context
-        _ = createTestContext()
+        _ = self.createTestContext()
 
         // When: Creating AddDeckView
         let view = AddDeckView()
@@ -77,7 +77,7 @@ struct AddDeckViewTests {
     @Test("deck name field accepts input")
     func nameFieldAcceptsInput() async throws {
         // Given: AddDeckView with name binding
-        _ = createTestContext()
+        _ = self.createTestContext()
         var name = "Test Deck"
 
         // When: Setting name value
@@ -90,7 +90,7 @@ struct AddDeckViewTests {
     @Test("icon picker shows all options")
     func iconPickerShowsAllOptions() async throws {
         // Given: AddDeckView
-        _ = createTestContext()
+        _ = self.createTestContext()
         let view = AddDeckView()
 
         // When: Accessing deck icons (private property, verified via compilation)
@@ -103,8 +103,8 @@ struct AddDeckViewTests {
     @Test("Save button creates deck")
     func saveButtonCreatesDeck() async throws {
         // Given: Test context
-        let context = createTestContext()
-        clearAllDecks(in: context)
+        let context = self.createTestContext()
+        self.clearAllDecks(in: context)
 
         // When: Creating a new deck
         let newDeck = Deck(
@@ -126,7 +126,7 @@ struct AddDeckViewTests {
     @Test("Save button is disabled when name is empty")
     func saveButtonDisabledWhenEmpty() async throws {
         // Given: AddDeckView with empty name
-        _ = createTestContext()
+        _ = self.createTestContext()
         @State var name = ""
 
         // When: Checking if name is empty
@@ -139,7 +139,7 @@ struct AddDeckViewTests {
     @Test("Cancel button dismisses view")
     func cancelButtonDismissesView() async throws {
         // Given: AddDeckView
-        _ = createTestContext()
+        _ = self.createTestContext()
         let view = AddDeckView()
 
         // When: Tapping cancel (simulated by accessing dismiss)
@@ -152,7 +152,7 @@ struct AddDeckViewTests {
     @Test("keyboard dismissal works")
     func keyboardDismissalWorks() async throws {
         // Given: AddDeckView with TextField
-        _ = createTestContext()
+        _ = self.createTestContext()
         let view = AddDeckView()
 
         // When: TextField has textInputAutocapitalization
@@ -165,7 +165,7 @@ struct AddDeckViewTests {
     @Test("accessibility labels are correct")
     func accessibilityLabelsAreCorrect() async throws {
         // Given: AddDeckView
-        _ = createTestContext()
+        _ = self.createTestContext()
         let view = AddDeckView()
 
         // When: Rendering view
@@ -182,7 +182,7 @@ struct AddDeckViewTests {
     @Test("focus management works")
     func focusManagementWorks() async throws {
         // Given: AddDeckView
-        _ = createTestContext()
+        _ = self.createTestContext()
         let view = AddDeckView()
 
         // When: View renders
@@ -195,8 +195,8 @@ struct AddDeckViewTests {
     @Test("error handling for invalid names")
     func errorHandlingForInvalidNames() async throws {
         // Given: Test context
-        let context = createTestContext()
-        clearAllDecks(in: context)
+        let context = self.createTestContext()
+        self.clearAllDecks(in: context)
 
         // When: Creating deck with special characters
         let deck1 = Deck(name: "Test<>Deck", icon: "folder.fill", order: 0)
@@ -213,7 +213,7 @@ struct AddDeckViewTests {
     @Test("inline buttons replace toolbar")
     func inlineButtonsReplaceToolbar() async throws {
         // Given: AddDeckView
-        _ = createTestContext()
+        _ = self.createTestContext()
         let view = AddDeckView()
 
         // When: Rendering view
@@ -229,7 +229,7 @@ struct AddDeckViewTests {
     @Test("buttons have full width frame")
     func buttonsHaveFullWidth() async throws {
         // Given: AddDeckView
-        _ = createTestContext()
+        _ = self.createTestContext()
         let view = AddDeckView()
 
         // When: Rendering view
@@ -242,7 +242,7 @@ struct AddDeckViewTests {
     @Test("buttons have correct styling")
     func buttonsHaveCorrectStyling() async throws {
         // Given: AddDeckView
-        _ = createTestContext()
+        _ = self.createTestContext()
         let view = AddDeckView()
 
         // When: Rendering view
@@ -257,7 +257,7 @@ struct AddDeckViewTests {
     @Test("icon grid is accessible")
     func iconGridIsAccessible() async throws {
         // Given: AddDeckView
-        _ = createTestContext()
+        _ = self.createTestContext()
         let view = AddDeckView()
 
         // When: Rendering icon grid
@@ -270,7 +270,7 @@ struct AddDeckViewTests {
     @Test("icon buttons have accessibility hints")
     func iconButtonsHaveAccessibilityHints() async throws {
         // Given: AddDeckView
-        _ = createTestContext()
+        _ = self.createTestContext()
         let view = AddDeckView()
 
         // When: Rendering icon buttons
@@ -285,8 +285,8 @@ struct AddDeckViewTests {
     @Test("deck order is calculated correctly")
     func deckOrderIsCalculated() async throws {
         // Given: Existing decks
-        let context = createTestContext()
-        clearAllDecks(in: context)
+        let context = self.createTestContext()
+        self.clearAllDecks(in: context)
         let deck1 = Deck(name: "Deck 1", icon: "folder.fill", order: 0)
         let deck2 = Deck(name: "Deck 2", icon: "star.fill", order: 1)
         context.insert(deck1)
@@ -320,7 +320,7 @@ struct AddDeckViewTests {
     @Test("view has navigation title")
     func viewHasNavigationTitle() async throws {
         // Given: AddDeckView
-        _ = createTestContext()
+        _ = self.createTestContext()
         let view = AddDeckView()
 
         // When: Rendering view
@@ -333,7 +333,7 @@ struct AddDeckViewTests {
     @Test("text input autocapitalization is words")
     func textInputAutocapitalizationIsWords() async throws {
         // Given: AddDeckView
-        _ = createTestContext()
+        _ = self.createTestContext()
         let view = AddDeckView()
 
         // When: Rendering TextField
@@ -346,7 +346,7 @@ struct AddDeckViewTests {
     @Test("default icon is folder.fill")
     func defaultIconIsFolderFill() async throws {
         // Given: AddDeckView
-        _ = createTestContext()
+        _ = self.createTestContext()
 
         // When: Accessing initial selectedIcon
         @State var selectedIcon = "folder.fill"
@@ -376,7 +376,7 @@ struct AddDeckViewTests {
     @Test("icon grid uses adaptive columns")
     func iconGridUsesAdaptiveColumns() async throws {
         // Given: AddDeckView
-        _ = createTestContext()
+        _ = self.createTestContext()
         let view = AddDeckView()
 
         // When: Rendering icon grid
@@ -389,7 +389,7 @@ struct AddDeckViewTests {
     @Test("selected icon has visual feedback")
     func selectedIconHasVisualFeedback() async throws {
         // Given: AddDeckView
-        _ = createTestContext()
+        _ = self.createTestContext()
         @State var selectedIcon = "star.fill"
 
         // When: Comparing icons
@@ -404,8 +404,8 @@ struct AddDeckViewTests {
     @Test("multiple decks can be created")
     func multipleDecksCanBeCreated() async throws {
         // Given: Test context
-        let context = createTestContext()
-        clearAllDecks(in: context)
+        let context = self.createTestContext()
+        self.clearAllDecks(in: context)
 
         // When: Creating multiple decks
         for i in 1 ... 5 {

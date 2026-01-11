@@ -37,33 +37,33 @@ struct DeckListView: View {
     var body: some View {
         NavigationStack {
             List {
-                if decks.isEmpty {
+                if self.decks.isEmpty {
                     ContentUnavailableView {
                         Label("No Decks", systemImage: "book.fill")
                     } description: {
                         Text("Create your first deck to get started")
                     } actions: {
                         Button("Create Deck") {
-                            showingAddDeck = true
+                            self.showingAddDeck = true
                         }
                     }
                 } else {
                     // PERFORMANCE: Use prefix to limit initial rendering
-                    ForEach(decks.prefix(visibleCount), id: \.id) { deck in
+                    ForEach(self.decks.prefix(self.visibleCount), id: \.id) { deck in
                         NavigationLink(destination: DeckDetailView(deck: deck)) {
-                            DeckRowView(deck: deck, dueCount: deckDueCounts[deck.id, default: 0])
+                            DeckRowView(deck: deck, dueCount: self.deckDueCounts[deck.id, default: 0])
                         }
                         // PERFORMANCE: Load more when reaching end of visible list
                         .onAppear {
                             guard let lastVisibleDeck = decks.prefix(visibleCount).last,
                                   deck.id == lastVisibleDeck.id else { return }
-                            loadMoreIfNeeded()
+                            self.loadMoreIfNeeded()
                         }
                     }
-                    .onDelete(perform: initiateDeckDeletion)
+                    .onDelete(perform: self.initiateDeckDeletion)
 
                     // Orphaned Cards Section (shown when orphans exist)
-                    if !orphanedCards.isEmpty {
+                    if !self.orphanedCards.isEmpty {
                         Section {
                             NavigationLink(destination: OrphanedCardsView()) {
                                 HStack(spacing: 12) {
@@ -76,7 +76,7 @@ struct DeckListView: View {
                                             .font(.headline)
                                             .foregroundStyle(.primary)
 
-                                        Text("\(orphanedCards.count) card\(orphanedCards.count == 1 ? "" : "s") need reassignment")
+                                        Text("\(self.orphanedCards.count) card\(self.orphanedCards.count == 1 ? "" : "s") need reassignment")
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
@@ -98,30 +98,30 @@ struct DeckListView: View {
             .navigationTitle("Decks")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    Button(action: { showingAddDeck = true }) {
+                    Button(action: { self.showingAddDeck = true }) {
                         Image(systemName: "plus")
                     }
                 }
             }
-            .sheet(isPresented: $showingAddDeck) {
+            .sheet(isPresented: self.$showingAddDeck) {
                 AddDeckView()
                     .presentationCornerRadius(24)
                     .presentationDragIndicator(.visible)
             }
             .onAppear {
-                loadDeckDueCounts()
+                self.loadDeckDueCounts()
             }
-            .onChange(of: decks) { _, _ in
-                loadDeckDueCounts()
+            .onChange(of: self.decks) { _, _ in
+                self.loadDeckDueCounts()
             }
-            .alert("Delete Deck?", isPresented: $showingDeleteConfirmation) {
+            .alert("Delete Deck?", isPresented: self.$showingDeleteConfirmation) {
                 Button("Cancel", role: .cancel) {
-                    deckToDelete = nil
+                    self.deckToDelete = nil
                 }
                 Button("Delete", role: .destructive) {
                     if let deck = deckToDelete {
-                        performDeckDeletion(deck)
-                        deckToDelete = nil
+                        self.performDeckDeletion(deck)
+                        self.deckToDelete = nil
                     }
                 }
             } message: {
@@ -153,16 +153,16 @@ struct DeckListView: View {
         }
 
         // Reuse scheduler instance for performance (memoization)
-        if scheduler == nil {
-            scheduler = Scheduler(modelContext: modelContext)
+        if self.scheduler == nil {
+            self.scheduler = Scheduler(modelContext: self.modelContext)
         }
 
-        let visibleDecksArray = Array(decks.prefix(visibleCount))
-        let allStats = scheduler?.fetchDeckStatistics(for: visibleDecksArray) ?? [:]
+        let visibleDecksArray = Array(decks.prefix(self.visibleCount))
+        let allStats = self.scheduler?.fetchDeckStatistics(for: visibleDecksArray) ?? [:]
 
         // Extract only due counts
-        deckDueCounts = allStats.mapValues { $0.due }
-        countsTimestamp = Date()
+        self.deckDueCounts = allStats.mapValues { $0.due }
+        self.countsTimestamp = Date()
     }
 
     // MARK: - Lazy Loading
@@ -173,16 +173,16 @@ struct DeckListView: View {
     /// the last currently-visible deck. This prevents loading all 1000+
     /// decks upfront while maintaining smooth scrolling experience.
     private func loadMoreIfNeeded() {
-        let totalCount = decks.count
+        let totalCount = self.decks.count
         // Don't load more if we're already showing all decks
-        guard visibleCount < totalCount else { return }
+        guard self.visibleCount < totalCount else { return }
 
         // Load 50 more decks (or remaining if less than 50)
-        let increment = min(50, totalCount - visibleCount)
-        visibleCount += increment
+        let increment = min(50, totalCount - self.visibleCount)
+        self.visibleCount += increment
 
         // Reload counts when loading more decks
-        loadDeckDueCounts()
+        self.loadDeckDueCounts()
     }
 
     // MARK: - Deck Deletion
@@ -193,10 +193,10 @@ struct DeckListView: View {
     /// confirmation dialog that explains orphaned card creation.
     private func initiateDeckDeletion(at offsets: IndexSet) {
         guard let index = offsets.first else { return }
-        guard index >= 0, index < decks.count else { return }
+        guard index >= 0, index < self.decks.count else { return }
 
-        deckToDelete = decks[index]
-        showingDeleteConfirmation = true
+        self.deckToDelete = self.decks[index]
+        self.showingDeleteConfirmation = true
     }
 
     /// Performs the actual deck deletion after confirmation
@@ -204,10 +204,10 @@ struct DeckListView: View {
     /// Deletes the deck and invalidates caches. Cards are preserved as
     /// orphans due to .nullify delete rule.
     private func performDeckDeletion(_ deck: Deck) {
-        modelContext.delete(deck)
+        self.modelContext.delete(deck)
 
         do {
-            try modelContext.save()
+            try self.modelContext.save()
         } catch {
             Analytics.trackError("deck_deletion", error: error)
         }

@@ -87,13 +87,13 @@ struct FlashcardViewTests {
 
     @Test("Card stores word correctly")
     func cardStoresWord() async throws {
-        let card = createTestFlashcard(word: "Ephemeral")
+        let card = self.createTestFlashcard(word: "Ephemeral")
         #expect(card.word == "Ephemeral", "Card should store the word correctly")
     }
 
     @Test("Card stores definition correctly")
     func cardStoresDefinition() async throws {
-        let card = createTestFlashcard(definition: "Lasting for a very short time")
+        let card = self.createTestFlashcard(definition: "Lasting for a very short time")
         #expect(card.definition == "Lasting for a very short time", "Card should store the definition correctly")
     }
 
@@ -107,7 +107,7 @@ struct FlashcardViewTests {
 
     @Test("Card with stability has FSRSState attached")
     func cardWithStabilityHasFSRSState() async throws {
-        let card = createTestFlashcard(stability: 25.0)
+        let card = self.createTestFlashcard(stability: 25.0)
         #expect(card.fsrsState != nil, "Card should have FSRSState attached")
         #expect(card.fsrsState?.stability == 25.0, "FSRSState should store the stability value")
     }
@@ -120,7 +120,7 @@ struct FlashcardViewTests {
 
     @Test("FSRSState stores all required properties")
     func fsrsStateStoresRequiredProperties() async throws {
-        let card = createTestFlashcard(stability: 15.0)
+        let card = self.createTestFlashcard(stability: 15.0)
         let state = card.fsrsState
 
         #expect(state?.stability == 15.0, "Stability should be stored")
@@ -133,25 +133,25 @@ struct FlashcardViewTests {
 
     @Test("Card handles zero stability")
     func cardHandlesZeroStability() async throws {
-        let card = createTestFlashcard(stability: 0.0)
+        let card = self.createTestFlashcard(stability: 0.0)
         #expect(card.fsrsState?.stability == 0.0, "Zero stability should be stored correctly")
     }
 
     @Test("Card handles very high stability")
     func cardHandlesHighStability() async throws {
-        let card = createTestFlashcard(stability: 1000.0)
+        let card = self.createTestFlashcard(stability: 1000.0)
         #expect(card.fsrsState?.stability == 1000.0, "High stability should be stored correctly")
     }
 
     @Test("Card handles negative stability")
     func cardHandlesNegativeStability() async throws {
-        let card = createTestFlashcard(stability: -1.0)
+        let card = self.createTestFlashcard(stability: -1.0)
         #expect(card.fsrsState?.stability == -1.0, "Negative stability should be stored (though invalid)")
     }
 
     @Test("Card handles fractional stability")
     func cardHandlesFractionalStability() async throws {
-        let card = createTestFlashcard(stability: 9.9)
+        let card = self.createTestFlashcard(stability: 9.9)
         #expect(card.fsrsState?.stability == 9.9, "Fractional stability should be stored correctly")
     }
 
@@ -159,7 +159,7 @@ struct FlashcardViewTests {
 
     @Test("FlashcardView can be created with card")
     func flashcardViewCreationWithCard() async throws {
-        let card = createTestFlashcard(word: "TestWord")
+        let card = self.createTestFlashcard(word: "TestWord")
         let view = FlashcardView(card: card, isFlipped: .constant(false))
 
         // Verify view can be created
@@ -168,7 +168,7 @@ struct FlashcardViewTests {
 
     @Test("FlashcardView can be created with onSwipe callback")
     func flashcardViewCreationWithCallback() async throws {
-        let card = createTestFlashcard()
+        let card = self.createTestFlashcard()
         var callbackInvoked = false
         var capturedRating: Int?
 
@@ -187,7 +187,7 @@ struct FlashcardViewTests {
 
     @Test("FlashcardView with isFlipped binding")
     func flashcardViewWithFlippedBinding() async throws {
-        let card = createTestFlashcard()
+        let card = self.createTestFlashcard()
         let isFlipped = true
 
         let view = FlashcardView(card: card, isFlipped: .constant(isFlipped))

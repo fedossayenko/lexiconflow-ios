@@ -402,10 +402,10 @@ enum AppSettings {
 
         /// Returns effective thickness based on intensity setting
         func effectiveThickness(base: GlassThickness) -> GlassThickness {
-            guard isEnabled else { return .thin }
+            guard self.isEnabled else { return .thin }
 
             // Map intensity to thickness levels
-            switch intensity {
+            switch self.intensity {
             case 0.0 ..< 0.3:
                 return base == .thick ? .regular : .thin
             case 0.3 ..< 0.7:
@@ -418,8 +418,8 @@ enum AppSettings {
         /// Opacity multiplier for visual effects
         /// Returns 0.0 when disabled for complete removal, making the toggle more obvious
         var opacityMultiplier: Double {
-            guard isEnabled else { return 0.0 }
-            return intensity
+            guard self.isEnabled else { return 0.0 }
+            return self.intensity
         }
     }
 
@@ -578,7 +578,7 @@ enum AppSettings {
         guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
 
         // Migrate existing boolean setting to enum
-        ttsTiming = ttsAutoPlayOnFlip ? .onFlip : .onView
+        self.ttsTiming = self.ttsAutoPlayOnFlip ? .onFlip : .onView
 
         // Mark migration as complete
         UserDefaults.standard.set(true, forKey: migrationKey)

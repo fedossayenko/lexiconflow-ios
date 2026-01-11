@@ -124,7 +124,7 @@ final class Flashcard {
     /// - Throws: `FlashcardError.invalidCEFRLevel` if the level is not valid
     func setCEFRLevel(_ level: String?) throws {
         guard let level else {
-            cefrLevel = nil
+            self.cefrLevel = nil
             return
         }
 
@@ -133,7 +133,7 @@ final class Flashcard {
             throw FlashcardError.invalidCEFRLevel(level)
         }
 
-        cefrLevel = level
+        self.cefrLevel = level
     }
 }
 

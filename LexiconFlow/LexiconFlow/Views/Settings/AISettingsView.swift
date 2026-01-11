@@ -18,7 +18,7 @@ struct AISettingsView: View {
         Form {
             // AI Source Selection
             Section {
-                Picker("AI Source", selection: $aiSourcePreference) {
+                Picker("AI Source", selection: self.$aiSourcePreference) {
                     ForEach(AppSettings.AISource.allCases, id: \.self) { source in
                         HStack(spacing: 12) {
                             Image(systemName: source.icon)
@@ -36,7 +36,7 @@ struct AISettingsView: View {
                 }
                 .pickerStyle(.inline)
                 .accessibilityLabel("AI source preference")
-                .onChange(of: aiSourcePreference) { _, newValue in
+                .onChange(of: self.aiSourcePreference) { _, newValue in
                     AppSettings.aiSourcePreference = newValue
                 }
 
@@ -56,21 +56,21 @@ struct AISettingsView: View {
                         .foregroundStyle(.secondary)
 
                     VStack(alignment: .leading, spacing: 6) {
-                        aiSourceDescriptionRow(
+                        self.aiSourceDescriptionRow(
                             icon: "cpu",
                             title: "On-Device AI",
                             description: "Uses Apple's Foundation Models (iOS 26+). Private, offline-capable."
                         )
-                        aiSourceDescriptionRow(
+                        self.aiSourceDescriptionRow(
                             icon: "arrow.down",
                             description: "Falls back to Cloud API if unavailable."
                         )
-                        aiSourceDescriptionRow(
+                        self.aiSourceDescriptionRow(
                             icon: "cloud",
                             title: "Cloud API",
                             description: "Uses Z.ai API. Requires API key and internet connection."
                         )
-                        aiSourceDescriptionRow(
+                        self.aiSourceDescriptionRow(
                             icon: "arrow.down",
                             description: "Falls back to static sentences if no API key."
                         )
@@ -127,7 +127,7 @@ struct AISettingsView: View {
         .navigationTitle("AI Settings")
         .onAppear {
             // Sync state with AppSettings on view appear
-            aiSourcePreference = AppSettings.aiSourcePreference
+            self.aiSourcePreference = AppSettings.aiSourcePreference
         }
     }
 

@@ -43,7 +43,7 @@ struct OrphanedCardsView: View {
 
     var body: some View {
         List {
-            if orphanedCards.isEmpty {
+            if self.orphanedCards.isEmpty {
                 // Empty state when no orphaned cards
                 ContentUnavailableView {
                     Label("No Orphaned Cards", systemImage: "folder.badge.checkmark")
@@ -53,23 +53,23 @@ struct OrphanedCardsView: View {
             } else {
                 // List of orphaned cards with multi-select
                 Section {
-                    ForEach(orphanedCards) { card in
+                    ForEach(self.orphanedCards) { card in
                         OrphanedCardRow(
                             card: card,
-                            isSelected: selectedCards.contains(card.id)
+                            isSelected: self.selectedCards.contains(card.id)
                         )
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            toggleSelection(card.id)
+                            self.toggleSelection(card.id)
                         }
                     }
                 } header: {
-                    Text("\(orphanedCards.count) Orphaned Card\(orphanedCards.count == 1 ? "" : "s")")
+                    Text("\(self.orphanedCards.count) Orphaned Card\(self.orphanedCards.count == 1 ? "" : "s")")
                 } footer: {
-                    if !selectedCards.isEmpty {
+                    if !self.selectedCards.isEmpty {
                         // Bulk action toolbar when cards are selected
                         HStack(spacing: 16) {
-                            Text("\(selectedCards.count) selected")
+                            Text("\(self.selectedCards.count) selected")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
 
@@ -77,7 +77,7 @@ struct OrphanedCardsView: View {
 
                             // Reassign button
                             Button {
-                                showingReassignSheet = true
+                                self.showingReassignSheet = true
                             } label: {
                                 Label("Reassign", systemImage: "folder.badge.plus")
                             }
@@ -85,7 +85,7 @@ struct OrphanedCardsView: View {
 
                             // Delete button
                             Button {
-                                showingDeleteConfirmation = true
+                                self.showingDeleteConfirmation = true
                             } label: {
                                 Label("Delete", systemImage: "trash")
                             }
@@ -101,42 +101,42 @@ struct OrphanedCardsView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 // Clear selection button (only visible when cards are selected)
-                if !selectedCards.isEmpty {
+                if !self.selectedCards.isEmpty {
                     Button("Deselect All") {
-                        selectedCards.removeAll()
+                        self.selectedCards.removeAll()
                     }
                 }
             }
         }
-        .sheet(isPresented: $showingReassignSheet) {
+        .sheet(isPresented: self.$showingReassignSheet) {
             OrphanedCardDeckReassignmentView(
-                targetDeck: $targetDeck,
+                targetDeck: self.$targetDeck,
                 onConfirm: { deck in
-                    targetDeck = deck
-                    reassignSelectedCards(to: deck)
+                    self.targetDeck = deck
+                    self.reassignSelectedCards(to: deck)
                 }
             )
         }
-        .alert("Confirm Deletion", isPresented: $showingDeleteConfirmation) {
+        .alert("Confirm Deletion", isPresented: self.$showingDeleteConfirmation) {
             Button("Cancel", role: .cancel) {
                 // Clear selection on cancel
-                selectedCards.removeAll()
+                self.selectedCards.removeAll()
             }
             Button("Delete", role: .destructive) {
                 Task {
-                    await deleteSelectedCards()
+                    await self.deleteSelectedCards()
                 }
             }
         } message: {
-            if selectedCards.count == 1 {
+            if self.selectedCards.count == 1 {
                 Text("Permanently delete 1 orphaned card? This action cannot be undone.")
             } else {
-                Text("Permanently delete \(selectedCards.count) orphaned cards? This action cannot be undone.")
+                Text("Permanently delete \(self.selectedCards.count) orphaned cards? This action cannot be undone.")
             }
         }
-        .alert("Error", isPresented: .constant(errorMessage != nil)) {
+        .alert("Error", isPresented: .constant(self.errorMessage != nil)) {
             Button("OK") {
-                errorMessage = nil
+                self.errorMessage = nil
             }
         } message: {
             if let errorMessage {
@@ -149,32 +149,32 @@ struct OrphanedCardsView: View {
 
     /// Toggle selection state for a card
     private func toggleSelection(_ id: UUID) {
-        if selectedCards.contains(id) {
-            selectedCards.remove(id)
+        if self.selectedCards.contains(id) {
+            self.selectedCards.remove(id)
         } else {
-            selectedCards.insert(id)
+            self.selectedCards.insert(id)
         }
     }
 
     /// Reassign selected cards to the specified deck
     private func reassignSelectedCards(to deck: Deck) {
-        let cardsToReassign = orphanedCards.filter { selectedCards.contains($0.id) }
+        let cardsToReassign = self.orphanedCards.filter { self.selectedCards.contains($0.id) }
 
         Task { @MainActor in
             do {
                 let reassigned = try await service.reassignCards(
                     cardsToReassign,
                     to: deck,
-                    context: modelContext
+                    context: self.modelContext
                 )
 
                 // Clear selection after successful reassignment
-                selectedCards.removeAll()
-                logger.info("Successfully reassigned \(reassigned) cards to deck \(deck.name)")
+                self.selectedCards.removeAll()
+                self.logger.info("Successfully reassigned \(reassigned) cards to deck \(deck.name)")
 
             } catch {
-                logger.error("Failed to reassign cards: \(error)")
-                errorMessage = "Failed to reassign cards: \(error.localizedDescription)"
+                self.logger.error("Failed to reassign cards: \(error)")
+                self.errorMessage = "Failed to reassign cards: \(error.localizedDescription)"
                 Analytics.trackError("reassign_orphaned_cards", error: error)
             }
         }
@@ -182,21 +182,21 @@ struct OrphanedCardsView: View {
 
     /// Delete selected cards
     private func deleteSelectedCards() async {
-        let cardsToDelete = orphanedCards.filter { selectedCards.contains($0.id) }
+        let cardsToDelete = self.orphanedCards.filter { self.selectedCards.contains($0.id) }
 
         do {
             let deleted = try await service.deleteOrphanedCards(
                 cardsToDelete,
-                context: modelContext
+                context: self.modelContext
             )
 
             // Clear selection after successful deletion
-            selectedCards.removeAll()
-            logger.info("Successfully deleted \(deleted) orphaned cards")
+            self.selectedCards.removeAll()
+            self.logger.info("Successfully deleted \(deleted) orphaned cards")
 
         } catch {
-            logger.error("Failed to delete orphaned cards: \(error)")
-            errorMessage = "Failed to delete cards: \(error.localizedDescription)"
+            self.logger.error("Failed to delete orphaned cards: \(error)")
+            self.errorMessage = "Failed to delete cards: \(error.localizedDescription)"
             Analytics.trackError("delete_orphaned_cards", error: error)
         }
     }
@@ -215,7 +215,7 @@ struct OrphanedCardRow: View {
     var body: some View {
         HStack(spacing: 12) {
             // Selection indicator
-            if isSelected {
+            if self.isSelected {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.blue)
                     .font(.title3)
@@ -228,12 +228,12 @@ struct OrphanedCardRow: View {
             // Card content
             VStack(alignment: .leading, spacing: 4) {
                 // Word
-                Text(card.word)
+                Text(self.card.word)
                     .font(.headline)
                     .foregroundStyle(.primary)
 
                 // Definition (truncated if too long)
-                Text(card.definition)
+                Text(self.card.definition)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
@@ -268,25 +268,25 @@ struct OrphanedCardDeckReassignmentView: View {
     var body: some View {
         NavigationStack {
             List {
-                if decks.isEmpty {
+                if self.decks.isEmpty {
                     ContentUnavailableView {
                         Label("No Decks", systemImage: "book.fill")
                     } description: {
                         Text("Create a deck first before reassigning cards")
                     }
                 } else {
-                    ForEach(decks) { deck in
+                    ForEach(self.decks) { deck in
                         Button {
-                            targetDeck = deck
-                            onConfirm(deck)
-                            dismiss()
+                            self.targetDeck = deck
+                            self.onConfirm(deck)
+                            self.dismiss()
                         } label: {
                             HStack {
                                 Image(systemName: deck.icon ?? "folder.fill")
                                     .foregroundStyle(.blue)
                                 Text(deck.name)
                                 Spacer()
-                                if targetDeck?.id == deck.id {
+                                if self.targetDeck?.id == deck.id {
                                     Image(systemName: "checkmark")
                                         .foregroundStyle(.blue)
                                 }
@@ -300,7 +300,7 @@ struct OrphanedCardDeckReassignmentView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
-                        dismiss()
+                        self.dismiss()
                     }
                 }
             }

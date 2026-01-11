@@ -45,13 +45,13 @@ struct IELTSImportIntegrationTests {
     func fullImportCreatesAllDecks() async throws {
         // Skip test if vocabulary file is not available
         do {
-            try requireVocabularyFile()
+            try self.requireVocabularyFile()
         } catch {
             print("⚠️ Skipping IELTS import test: vocabulary file not found in bundle")
             return
         }
 
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let importer = IELTSVocabularyImporter(modelContext: context)
@@ -70,13 +70,13 @@ struct IELTSImportIntegrationTests {
     func cEFRLevelsAssignedCorrectly() async throws {
         // Skip test if vocabulary file is not available
         do {
-            try requireVocabularyFile()
+            try self.requireVocabularyFile()
         } catch {
             print("⚠️ Skipping IELTS import test: vocabulary file not found in bundle")
             return
         }
 
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let importer = IELTSVocabularyImporter(modelContext: context)
@@ -101,13 +101,13 @@ struct IELTSImportIntegrationTests {
     func importCreatesFSRSState() async throws {
         // Skip test if vocabulary file is not available
         do {
-            try requireVocabularyFile()
+            try self.requireVocabularyFile()
         } catch {
             print("⚠️ Skipping IELTS import test: vocabulary file not found in bundle")
             return
         }
 
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let importer = IELTSVocabularyImporter(modelContext: context)
@@ -131,13 +131,13 @@ struct IELTSImportIntegrationTests {
     func importIsIdempotent() async throws {
         // Skip test if vocabulary file is not available
         do {
-            try requireVocabularyFile()
+            try self.requireVocabularyFile()
         } catch {
             print("⚠️ Skipping IELTS import test: vocabulary file not found in bundle")
             return
         }
 
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let importer = IELTSVocabularyImporter(modelContext: context)
@@ -156,13 +156,13 @@ struct IELTSImportIntegrationTests {
     func importResultAccuracy() async throws {
         // Skip test if vocabulary file is not available
         do {
-            try requireVocabularyFile()
+            try self.requireVocabularyFile()
         } catch {
             print("⚠️ Skipping IELTS import test: vocabulary file not found in bundle")
             return
         }
 
-        let context = freshContext()
+        let context = self.freshContext()
         try context.clearAll()
 
         let importer = IELTSVocabularyImporter(modelContext: context)

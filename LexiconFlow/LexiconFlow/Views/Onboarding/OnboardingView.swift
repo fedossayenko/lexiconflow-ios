@@ -38,9 +38,9 @@ struct OnboardingView: View {
     ]
 
     var body: some View {
-        TabView(selection: $currentPage) {
-            ForEach(0 ..< pages.count, id: \.self) { index in
-                OnboardingPageView(page: pages[index])
+        TabView(selection: self.$currentPage) {
+            ForEach(0 ..< self.pages.count, id: \.self) { index in
+                OnboardingPageView(page: self.pages[index])
                     .tag(index)
             }
         }
@@ -49,9 +49,9 @@ struct OnboardingView: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Onboarding pages")
         .toolbar {
-            if currentPage == pages.count - 1 {
+            if self.currentPage == self.pages.count - 1 {
                 ToolbarItem(placement: .bottomBar) {
-                    Button(action: completeOnboarding) {
+                    Button(action: self.completeOnboarding) {
                         HStack {
                             Image(systemName: "star.fill")
                             Text("Get Started")
@@ -60,34 +60,34 @@ struct OnboardingView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
-                    .disabled(isCreatingSampleDeck)
+                    .disabled(self.isCreatingSampleDeck)
                     .accessibilityLabel("Get Started")
                 }
             }
         }
-        .alert("Error", isPresented: .constant(errorMessage != nil)) {
+        .alert("Error", isPresented: .constant(self.errorMessage != nil)) {
             Button("Retry", role: .cancel) {
-                errorMessage = nil
-                completeOnboarding()
+                self.errorMessage = nil
+                self.completeOnboarding()
             }
             Button("Cancel", role: .destructive) {
-                errorMessage = nil
-                isCreatingSampleDeck = false
+                self.errorMessage = nil
+                self.isCreatingSampleDeck = false
             }
         } message: {
-            Text(errorMessage ?? "An unknown error occurred")
+            Text(self.errorMessage ?? "An unknown error occurred")
         }
     }
 
     // MARK: - Sample Deck
 
     private func completeOnboarding() {
-        isCreatingSampleDeck = true
+        self.isCreatingSampleDeck = true
 
         Task { @MainActor in
             // Create sample deck
             let sampleDeck = Deck(name: "Sample Vocabulary", icon: "star.fill", order: 0)
-            modelContext.insert(sampleDeck)
+            self.modelContext.insert(sampleDeck)
 
             // Create sample flashcards
             let sampleCards = [
@@ -116,19 +116,19 @@ struct OnboardingView: View {
                 )
                 card.fsrsState = state
 
-                modelContext.insert(card)
-                modelContext.insert(state)
+                self.modelContext.insert(card)
+                self.modelContext.insert(state)
             }
 
             // Save to persistent store
             do {
-                try modelContext.save()
+                try self.modelContext.save()
                 AppSettings.hasCompletedOnboarding = true // Update single source of truth
-                hasCompletedOnboarding = true
+                self.hasCompletedOnboarding = true
             } catch {
                 Analytics.trackError("onboarding_save", error: error)
-                errorMessage = "Failed to create sample deck: \(error.localizedDescription)"
-                isCreatingSampleDeck = false
+                self.errorMessage = "Failed to create sample deck: \(error.localizedDescription)"
+                self.isCreatingSampleDeck = false
             }
         }
     }
@@ -151,17 +151,17 @@ struct OnboardingPageView: View {
         VStack(spacing: 40) {
             Spacer()
 
-            Image(systemName: page.icon)
+            Image(systemName: self.page.icon)
                 .font(.system(size: 80))
                 .foregroundStyle(.blue)
 
             VStack(spacing: 16) {
-                Text(page.title)
+                Text(self.page.title)
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .multilineTextAlignment(.center)
 
-                Text(page.description)
+                Text(self.page.description)
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

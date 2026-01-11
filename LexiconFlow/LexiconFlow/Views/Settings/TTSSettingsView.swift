@@ -57,10 +57,10 @@ struct TTSSettingsView: View {
     var body: some View {
         Form {
             Section {
-                Toggle("Text-to-Speech", isOn: isEnabledBinding)
+                Toggle("Text-to-Speech", isOn: self.isEnabledBinding)
                     .accessibilityLabel("Enable text-to-speech")
 
-                Picker("Pronunciation Timing", selection: timingBinding) {
+                Picker("Pronunciation Timing", selection: self.timingBinding) {
                     ForEach(AppSettings.TTSTiming.allCases, id: \.self) { timing in
                         VStack(alignment: .leading, spacing: 2) {
                             Text(timing.displayName)
@@ -82,9 +82,9 @@ struct TTSSettingsView: View {
 
             if AppSettings.ttsEnabled {
                 Section {
-                    Picker("Voice Accent", selection: voiceLanguageBinding) {
+                    Picker("Voice Accent", selection: self.voiceLanguageBinding) {
                         ForEach(AppSettings.supportedTTSAccents, id: \.code) { accent in
-                            if availableVoices.contains(accent.code) {
+                            if self.availableVoices.contains(accent.code) {
                                 Text(accent.name)
                                     .tag(accent.code)
                             }
@@ -98,7 +98,7 @@ struct TTSSettingsView: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    if !availableVoices.contains(AppSettings.ttsVoiceLanguage) {
+                    if !self.availableVoices.contains(AppSettings.ttsVoiceLanguage) {
                         HStack(spacing: 8) {
                             Image(systemName: "exclamationmark.triangle.fill")
                                 .foregroundStyle(.orange)
@@ -125,7 +125,7 @@ struct TTSSettingsView: View {
                         }
 
                         Slider(
-                            value: speechRateBinding,
+                            value: self.speechRateBinding,
                             in: 0.0 ... 1.0,
                             step: 0.1
                         )
@@ -144,7 +144,7 @@ struct TTSSettingsView: View {
                         }
 
                         Slider(
-                            value: pitchMultiplierBinding,
+                            value: self.pitchMultiplierBinding,
                             in: 0.5 ... 2.0,
                             step: 0.1
                         )
@@ -159,9 +159,9 @@ struct TTSSettingsView: View {
 
                 Section {
                     Button {
-                        testSpeech()
+                        self.testSpeech()
                     } label: {
-                        if isTesting {
+                        if self.isTesting {
                             HStack(spacing: 8) {
                                 ProgressView()
                                     .controlSize(.small)
@@ -173,7 +173,7 @@ struct TTSSettingsView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .accessibilityLabel("Test pronunciation")
-                    .disabled(isTesting)
+                    .disabled(self.isTesting)
                 } header: {
                     Text("Test")
                 }
@@ -181,7 +181,7 @@ struct TTSSettingsView: View {
         }
         .navigationTitle("Text-to-Speech")
         .task {
-            loadAvailableVoices()
+            self.loadAvailableVoices()
             AppSettings.migrateTTSTimingIfNeeded()
         }
     }
@@ -189,10 +189,10 @@ struct TTSSettingsView: View {
     /// Load available voices for device capability detection
     private func loadAvailableVoices() {
         let allVoices = SpeechService.shared.availableVoices()
-        availableVoices = Array(Set(allVoices.map(\.language))).sorted()
+        self.availableVoices = Array(Set(allVoices.map(\.language))).sorted()
 
         // Auto-select first available accent if selected is not available
-        if !availableVoices.contains(AppSettings.ttsVoiceLanguage) {
+        if !self.availableVoices.contains(AppSettings.ttsVoiceLanguage) {
             if let firstAvailable = availableVoices.first {
                 AppSettings.ttsVoiceLanguage = firstAvailable
             }
@@ -201,7 +201,7 @@ struct TTSSettingsView: View {
 
     /// Test speech with sample word
     func testSpeech() {
-        isTesting = true
+        self.isTesting = true
         SpeechService.shared.speak("Ephemeral")
 
         // Reset after estimated duration (roughly 0.1s per character)
@@ -209,7 +209,7 @@ struct TTSSettingsView: View {
         Task {
             try? await Task.sleep(nanoseconds: UInt64(estimatedDuration * 1000000000))
             await MainActor.run {
-                isTesting = false
+                self.isTesting = false
             }
         }
     }

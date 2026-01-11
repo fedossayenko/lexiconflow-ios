@@ -23,7 +23,7 @@ struct MainTabView: View {
     @State private var navigateToOrphanedCards = false
 
     var body: some View {
-        TabView(selection: $selectedTab) {
+        TabView(selection: self.$selectedTab) {
             NavigationStack {
                 DeckListView()
             }
@@ -40,9 +40,9 @@ struct MainTabView: View {
                 Label("Study", systemImage: "brain.fill")
             }
             .tag(1)
-            .badge(dueCardCount)
+            .badge(self.dueCardCount)
             .accessibilityIdentifier("study_tab")
-            .accessibilityLabel(dueCardCount > 0 ? "Study, \(dueCardCount) cards due" : "Study")
+            .accessibilityLabel(self.dueCardCount > 0 ? "Study, \(self.dueCardCount) cards due" : "Study")
 
             NavigationStack {
                 StatisticsDashboardView()
@@ -63,16 +63,16 @@ struct MainTabView: View {
             .accessibilityIdentifier("settings_tab")
         }
         .onAppear {
-            refreshDueCount()
-            checkOrphanedCards()
+            self.refreshDueCount()
+            self.checkOrphanedCards()
         }
-        .onChange(of: selectedTab) { _, newValue in
+        .onChange(of: self.selectedTab) { _, newValue in
             if newValue == 1 {
-                refreshDueCount()
+                self.refreshDueCount()
             }
             // Navigate to orphaned cards when flag is set
-            if navigateToOrphanedCards, newValue == 0 {
-                navigateToOrphanedCards = false
+            if self.navigateToOrphanedCards, newValue == 0 {
+                self.navigateToOrphanedCards = false
                 // Trigger navigation after a slight delay to ensure tab switch completes
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     // The NavigationLink in DeckListView will handle the actual navigation
@@ -80,19 +80,19 @@ struct MainTabView: View {
             }
         }
         .onChange(of: AppSettings.selectedDeckIDs) { _, _ in
-            refreshDueCount()
+            self.refreshDueCount()
         }
-        .alert("Orphaned Cards Found", isPresented: $showingOrphanedCardsAlert) {
+        .alert("Orphaned Cards Found", isPresented: self.$showingOrphanedCardsAlert) {
             Button("View Orphaned Cards") {
-                showingOrphanedCardsAlert = false
-                selectedTab = 0
-                navigateToOrphanedCards = true
+                self.showingOrphanedCardsAlert = false
+                self.selectedTab = 0
+                self.navigateToOrphanedCards = true
             }
             Button("Later", role: .cancel) {
-                showingOrphanedCardsAlert = false
+                self.showingOrphanedCardsAlert = false
             }
         } message: {
-            Text("You have \(orphanedCardsCount) card\(orphanedCardsCount == 1 ? "" : "s") without deck assignment. These appear when decks are deleted. You can reassign them to existing decks in the Orphaned Cards section.")
+            Text("You have \(self.orphanedCardsCount) card\(self.orphanedCardsCount == 1 ? "" : "s") without deck assignment. These appear when decks are deleted. You can reassign them to existing decks in the Orphaned Cards section.")
         }
     }
 
@@ -106,21 +106,21 @@ struct MainTabView: View {
         // Only check once per app install
         guard !AppSettings.hasShownOrphanedCardsPrompt else { return }
 
-        let count = OrphanedCardsService.shared.orphanedCardCount(context: modelContext)
+        let count = OrphanedCardsService.shared.orphanedCardCount(context: self.modelContext)
         guard count > 0 else {
             // Mark as shown even if no orphans (no need to check again)
             AppSettings.hasShownOrphanedCardsPrompt = true
             return
         }
 
-        orphanedCardsCount = count
-        showingOrphanedCardsAlert = true
+        self.orphanedCardsCount = count
+        self.showingOrphanedCardsAlert = true
         AppSettings.hasShownOrphanedCardsPrompt = true
     }
 
     private var selectedDecks: [Deck] {
         let selectedIDs = AppSettings.selectedDeckIDs
-        return decks.filter { selectedIDs.contains($0.id) }
+        return self.decks.filter { selectedIDs.contains($0.id) }
     }
 
     private func refreshDueCount() {
@@ -133,11 +133,11 @@ struct MainTabView: View {
         }
 
         // Memoize scheduler to avoid creating new instance on every tab switch
-        if scheduler == nil {
-            scheduler = Scheduler(modelContext: modelContext)
+        if self.scheduler == nil {
+            self.scheduler = Scheduler(modelContext: self.modelContext)
         }
-        dueCardCount = scheduler?.dueCardCount(for: selectedDecks) ?? 0
-        lastBadgeUpdate = Date()
+        self.dueCardCount = self.scheduler?.dueCardCount(for: self.selectedDecks) ?? 0
+        self.lastBadgeUpdate = Date()
     }
 }
 

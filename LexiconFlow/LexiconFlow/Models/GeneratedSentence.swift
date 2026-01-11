@@ -49,12 +49,12 @@ final class GeneratedSentence {
 
     /// Whether this sentence has expired (past TTL)
     var isExpired: Bool {
-        Date() > expiresAt
+        Date() > self.expiresAt
     }
 
     /// Days remaining until expiration (negative if expired)
     var daysUntilExpiration: Int {
-        Calendar.current.dateComponents([.day], from: Date(), to: expiresAt).day ?? 0
+        Calendar.current.dateComponents([.day], from: Date(), to: self.expiresAt).day ?? 0
     }
 
     // MARK: - Initialization
@@ -103,7 +103,7 @@ final class GeneratedSentence {
         self.sentenceText = sentenceText
         self.cefrLevel = normalizedLevel
         self.generatedAt = generatedAt
-        expiresAt = Calendar.autoupdatingCurrent.date(
+        self.expiresAt = Calendar.autoupdatingCurrent.date(
             byAdding: .day,
             value: ttlDays,
             to: generatedAt

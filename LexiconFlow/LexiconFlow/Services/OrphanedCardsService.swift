@@ -45,11 +45,11 @@ final class OrphanedCardsService: Sendable {
 
         do {
             let orphans = try context.fetch(descriptor)
-            logger.debug("Found \(orphans.count) orphaned cards")
+            self.logger.debug("Found \(orphans.count) orphaned cards")
             return orphans
         } catch {
             Analytics.trackError("fetch_orphaned_cards", error: error)
-            logger.error("Failed to fetch orphaned cards: \(error)")
+            self.logger.error("Failed to fetch orphaned cards: \(error)")
             return []
         }
     }
@@ -73,7 +73,7 @@ final class OrphanedCardsService: Sendable {
         try context.save()
         DeckStatisticsCache.shared.invalidate()
 
-        logger.info("Reassigned \(cards.count) cards to deck \(deck.name)")
+        self.logger.info("Reassigned \(cards.count) cards to deck \(deck.name)")
         Analytics.trackEvent("cards_reassigned", metadata: [
             "count": String(cards.count),
             "deck_id": deck.id.uuidString,
@@ -101,7 +101,7 @@ final class OrphanedCardsService: Sendable {
         try context.save()
         DeckStatisticsCache.shared.invalidate()
 
-        logger.info("Deleted \(cards.count) orphaned cards")
+        self.logger.info("Deleted \(cards.count) orphaned cards")
         Analytics.trackEvent("orphaned_cards_deleted", metadata: [
             "count": String(cards.count)
         ])
@@ -117,6 +117,6 @@ final class OrphanedCardsService: Sendable {
     /// - Parameter context: SwiftData model context for the query
     /// - Returns: Number of orphaned cards (0 if none found)
     func orphanedCardCount(context: ModelContext) -> Int {
-        fetchOrphanedCards(context: context).count
+        self.fetchOrphanedCards(context: context).count
     }
 }

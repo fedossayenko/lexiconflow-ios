@@ -8,8 +8,9 @@
 --wrap-arguments before-first
 --wrap-collections before-first
 
-# Explicit self - remove redundant self to match SwiftFormat lint expectations
---self remove
+# Explicit self - insert explicit self for Swift 6 strict concurrency
+# Swift 6 requires explicit self. in closure capture semantics (@MainActor classes)
+--self insert
 
 # Empty braces
 --empty-braces no-space

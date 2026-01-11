@@ -24,8 +24,8 @@ struct AnalyticsTests {
 
     /// Setup mock backend before each test
     private static func setupMockBackend() {
-        Analytics.setBackend(mockBackend)
-        mockBackend.clear()
+        Analytics.setBackend(self.mockBackend)
+        self.mockBackend.clear()
     }
 
     /// Teardown after each test

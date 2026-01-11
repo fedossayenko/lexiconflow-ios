@@ -55,7 +55,7 @@ struct TranslationTestItem: Sendable {
     /// Calculate similarity between expected and actual translation
     /// Uses a simple normalized metric based on character overlap
     func calculateSimilarity(with actual: String) -> Double {
-        let expectedLower = expectedTranslation.lowercased().trimmingCharacters(in: .whitespaces)
+        let expectedLower = self.expectedTranslation.lowercased().trimmingCharacters(in: .whitespaces)
         let actualLower = actual.lowercased().trimmingCharacters(in: .whitespaces)
 
         // Exact match
@@ -411,7 +411,7 @@ struct OnDeviceTranslationValidationTests {
         var passCount = 0
         var failCount = 0
 
-        for testItem in englishToRussianTests {
+        for testItem in self.englishToRussianTests {
             do {
                 let translation = try await service.translate(
                     text: testItem.sourceText,
@@ -451,7 +451,7 @@ struct OnDeviceTranslationValidationTests {
         var passCount = 0
         var failCount = 0
 
-        for testItem in englishToSpanishTests {
+        for testItem in self.englishToSpanishTests {
             do {
                 let translation = try await service.translate(
                     text: testItem.sourceText,
@@ -488,7 +488,7 @@ struct OnDeviceTranslationValidationTests {
         var passCount = 0
         var failCount = 0
 
-        for testItem in englishToFrenchTests {
+        for testItem in self.englishToFrenchTests {
             do {
                 let translation = try await service.translate(
                     text: testItem.sourceText,
@@ -525,7 +525,7 @@ struct OnDeviceTranslationValidationTests {
         var passCount = 0
         var failCount = 0
 
-        for testItem in englishToGermanTests {
+        for testItem in self.englishToGermanTests {
             do {
                 let translation = try await service.translate(
                     text: testItem.sourceText,
@@ -562,7 +562,7 @@ struct OnDeviceTranslationValidationTests {
         var passCount = 0
         var failCount = 0
 
-        for testItem in englishToJapaneseTests {
+        for testItem in self.englishToJapaneseTests {
             do {
                 let translation = try await service.translate(
                     text: testItem.sourceText,
@@ -778,11 +778,11 @@ struct OnDeviceTranslationValidationTests {
     @Test("Validate total translation test count meets minimum requirement", .enabled(if: !isCIEnvironment))
     func totalTranslationTestCount() {
         // Count all test items across all language pairs
-        let totalTests = englishToRussianTests.count +
-            englishToSpanishTests.count +
-            englishToFrenchTests.count +
-            englishToGermanTests.count +
-            englishToJapaneseTests.count
+        let totalTests = self.englishToRussianTests.count +
+            self.englishToSpanishTests.count +
+            self.englishToFrenchTests.count +
+            self.englishToGermanTests.count +
+            self.englishToJapaneseTests.count
 
         #expect(totalTests >= 20, "Expected at least 20 total translation tests, got \(totalTests)")
         print("✓ Total translation quality tests: \(totalTests)")
@@ -1310,7 +1310,7 @@ struct OnDeviceTranslationValidationTests {
 
         // Perform batch translation with progress tracking
         let batchSize = 20
-        let testWords = generateTestWords(count: batchSize)
+        let testWords = self.generateTestWords(count: batchSize)
 
         var progressUpdates: [OnDeviceTranslationService.BatchTranslationProgress] = []
         var maxConcurrentUpdates = 0
@@ -1488,7 +1488,7 @@ struct OnDeviceTranslationValidationTests {
         await service.setLanguages(source: "en", target: "es")
 
         // Generate 100 test words to simulate flashcard batch
-        let testWords = generateTestWords(count: 100)
+        let testWords = self.generateTestWords(count: 100)
 
         print("🚀 Starting performance benchmark: \(testWords.count) words")
 
@@ -1564,7 +1564,7 @@ struct OnDeviceTranslationValidationTests {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
-        let testWords = generateTestWords(count: 50)
+        let testWords = self.generateTestWords(count: 50)
         let concurrencyLevels = [1, 3, 5, 10]
 
         print("🚀 Testing varying concurrency levels with \(testWords.count) words")
@@ -1623,7 +1623,7 @@ struct OnDeviceTranslationValidationTests {
         print("🔍 Testing memory stability with increasing batch sizes")
 
         for batchSize in batchSizes {
-            let testWords = generateTestWords(count: batchSize)
+            let testWords = self.generateTestWords(count: batchSize)
 
             print("   Testing batch size: \(batchSize)")
 
@@ -1659,7 +1659,7 @@ struct OnDeviceTranslationValidationTests {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
-        let testWords = generateTestWords(count: 30)
+        let testWords = self.generateTestWords(count: 30)
 
         print("🎯 Testing UI responsiveness with progress updates")
 
@@ -1730,7 +1730,7 @@ struct OnDeviceTranslationValidationTests {
         let service = OnDeviceTranslationService.shared
         await service.setLanguages(source: "en", target: "es")
 
-        let testWords = generateTestWords(count: 20)
+        let testWords = self.generateTestWords(count: 20)
 
         print("🔐 Testing concurrency safety (deadlocks and race conditions)")
 
@@ -1765,7 +1765,7 @@ struct OnDeviceTranslationValidationTests {
 
         // Test 3: Verify cancellation doesn't cause deadlocks
         print("   Test 3: Cancellation safety")
-        let cancellationTestWords = generateTestWords(count: 50)
+        let cancellationTestWords = self.generateTestWords(count: 50)
 
         // Start a batch and cancel it immediately
         Task {
@@ -1804,7 +1804,7 @@ struct OnDeviceTranslationValidationTests {
         await service.setLanguages(source: "en", target: "es")
 
         // Establish performance baseline for 150 cards
-        let testWords = generateTestWords(count: 150)
+        let testWords = self.generateTestWords(count: 150)
 
         print("📊 Establishing performance baseline for \(testWords.count) cards")
 
@@ -1991,7 +1991,7 @@ struct OnDeviceTranslationValidationTests {
         print("🧪 Testing very long text translation (1000+ characters)")
 
         // Generate a very long text (1000+ characters)
-        let longText = generateLongText(characterCount: 1000)
+        let longText = self.generateLongText(characterCount: 1000)
 
         print("   Generated text length: \(longText.count) characters")
 
@@ -2006,7 +2006,7 @@ struct OnDeviceTranslationValidationTests {
             #expect(!translation.isEmpty, "Translation should not be empty")
 
             // Verify translation is reasonable (not just a repetition of source)
-            let similarity = calculateCharacterOverlap(source: longText, target: translation)
+            let similarity = self.calculateCharacterOverlap(source: longText, target: translation)
             print("   Character overlap: \(String(format: "%.2f", similarity))")
 
             // Translation should be different from source

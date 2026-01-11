@@ -197,18 +197,18 @@ struct LexiconFlowApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .preferredColorScheme(preferredColorScheme)
+                .preferredColorScheme(self.preferredColorScheme)
                 .task {
-                    await ensureDefaultDeckExists()
-                    await ensureIELTSVocabularyExists()
+                    await self.ensureDefaultDeckExists()
+                    await self.ensureIELTSVocabularyExists()
 
                     // Clear expired translation cache
-                    await QuickTranslationService.shared.clearExpiredCache(container: sharedModelContainer)
+                    await QuickTranslationService.shared.clearExpiredCache(container: self.sharedModelContainer)
                 }
         }
-        .modelContainer(sharedModelContainer)
-        .onChange(of: scenePhase) { oldPhase, newPhase in
-            handleScenePhaseChange(from: oldPhase, to: newPhase)
+        .modelContainer(self.sharedModelContainer)
+        .onChange(of: self.scenePhase) { oldPhase, newPhase in
+            self.handleScenePhaseChange(from: oldPhase, to: newPhase)
         }
     }
 
@@ -227,7 +227,7 @@ struct LexiconFlowApp: App {
     /// Ensures a default deck exists for new users
     @MainActor
     private func ensureDefaultDeckExists() async {
-        let context = sharedModelContainer.mainContext
+        let context = self.sharedModelContainer.mainContext
         let descriptor = FetchDescriptor<Deck>()
         let existingDecks: [Deck]
         do {
@@ -280,7 +280,7 @@ struct LexiconFlowApp: App {
             return
         }
 
-        let context = sharedModelContainer.mainContext
+        let context = self.sharedModelContainer.mainContext
         let logger = Logger(subsystem: "com.lexiconflow.app", category: "LexiconFlowApp")
 
         // Check if IELTS decks already exist (handles re-install scenario)
@@ -352,9 +352,9 @@ struct LexiconFlowApp: App {
             // Aggregate DailyStats from completed StudySession records
             // This runs in the background to prepare pre-aggregated statistics for dashboard
             // Cancel any existing aggregation task before starting a new one
-            aggregationTask?.cancel()
-            aggregationTask = Task {
-                await aggregateDailyStatsInBackground()
+            self.aggregationTask?.cancel()
+            self.aggregationTask = Task {
+                await self.aggregateDailyStatsInBackground()
             }
         case .active:
             // Restart haptic engine when app returns to foreground

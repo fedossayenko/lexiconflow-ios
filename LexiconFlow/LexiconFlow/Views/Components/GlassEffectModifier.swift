@@ -75,7 +75,7 @@ struct GlassEffectModifier<S: InsettableShape>: ViewModifier {
 
     func body(content: Content) -> some View {
         let config = AppSettings.glassConfiguration
-        let effectiveOpacity = thickness.overlayOpacity * config.opacityMultiplier
+        let effectiveOpacity = self.thickness.overlayOpacity * config.opacityMultiplier
 
         @ViewBuilder var glassContent: some View {
             content

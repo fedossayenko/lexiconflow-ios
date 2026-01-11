@@ -82,12 +82,12 @@ final class CachedTranslation {
 
     /// Whether this cache entry has expired
     var isExpired: Bool {
-        Date() > expiresAt
+        Date() > self.expiresAt
     }
 
     /// Days remaining until expiration (negative if expired)
     var daysUntilExpiration: Int {
-        Calendar.current.dateComponents([.day], from: Date(), to: expiresAt).day ?? 0
+        Calendar.current.dateComponents([.day], from: Date(), to: self.expiresAt).day ?? 0
     }
 
     // MARK: - Initialization
@@ -149,7 +149,7 @@ final class CachedTranslation {
         self.sourceLanguage = trimmedSource
         self.targetLanguage = trimmedTarget
         self.cachedAt = cachedAt
-        expiresAt = Calendar.autoupdatingCurrent.date(
+        self.expiresAt = Calendar.autoupdatingCurrent.date(
             byAdding: .day,
             value: ttlDays,
             to: cachedAt

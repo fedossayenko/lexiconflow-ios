@@ -50,7 +50,7 @@ struct DeckStudyListViewTests {
 
     @Test("Empty state shows with navigation to AddDeckView")
     func emptyStateNavigation() async {
-        let container = makeTestContainer()
+        let container = self.makeTestContainer()
         let context = ModelContext(container)
 
         // Don't insert any decks
@@ -67,9 +67,9 @@ struct DeckStudyListViewTests {
 
     @Test("Deck list populates with @Query sorting")
     func deckListPopulation() async {
-        let container = makeTestContainer()
+        let container = self.makeTestContainer()
         let context = ModelContext(container)
-        _ = insertDecks(context: context)
+        _ = self.insertDecks(context: context)
 
         let view = DeckStudyListView()
             .modelContainer(container)
@@ -86,9 +86,9 @@ struct DeckStudyListViewTests {
 
     @Test("Statistics refresh on appear")
     func statsRefreshOnAppear() async {
-        let container = makeTestContainer()
+        let container = self.makeTestContainer()
         let context = ModelContext(container)
-        let (deck1, deck2, deck3) = insertDecks(context: context)
+        let (deck1, deck2, deck3) = self.insertDecks(context: context)
 
         let view = DeckStudyListView()
             .modelContainer(container)
@@ -109,9 +109,9 @@ struct DeckStudyListViewTests {
 
     @Test("DeckStudyRow component renders correctly")
     func deckStudyRowRendering() async {
-        let container = makeTestContainer()
+        let container = self.makeTestContainer()
         let context = ModelContext(container)
-        let (deck1, _, _) = insertDecks(context: context)
+        let (deck1, _, _) = self.insertDecks(context: context)
 
         let stats = DeckStudyStats(newCount: 0, dueCount: 1, totalCount: 1)
         let row = DeckStudyRow(deck: deck1, stats: stats)
@@ -123,9 +123,9 @@ struct DeckStudyListViewTests {
 
     @Test("Navigation destination to DeckStudyDetailView")
     func navigationToDetailView() async {
-        let container = makeTestContainer()
+        let container = self.makeTestContainer()
         let context = ModelContext(container)
-        let (deck1, _, _) = insertDecks(context: context)
+        let (deck1, _, _) = self.insertDecks(context: context)
 
         let view = DeckStudyListView()
             .modelContainer(container)
@@ -167,9 +167,9 @@ struct DeckStudyListViewTests {
 
     @Test("Loading state shows during stats load")
     func loadingStateDisplay() async {
-        let container = makeTestContainer()
+        let container = self.makeTestContainer()
         let context = ModelContext(container)
-        _ = insertDecks(context: context)
+        _ = self.insertDecks(context: context)
 
         let view = DeckStudyListView()
             .modelContainer(container)

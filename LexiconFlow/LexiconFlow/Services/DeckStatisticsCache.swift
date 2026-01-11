@@ -67,7 +67,7 @@ final class DeckStatisticsCache: Sendable {
     /// - Returns: Cached `DeckStatistics` if valid, `nil` otherwise
     func get(deckID: UUID) -> DeckStatistics? {
         guard let timestamp else {
-            logger.debug("Cache miss: no timestamp (cache empty)")
+            self.logger.debug("Cache miss: no timestamp (cache empty)")
             Analytics.trackEvent("deck_statistics_cache_miss", metadata: ["reason": "empty"])
             return nil
         }
@@ -75,8 +75,8 @@ final class DeckStatisticsCache: Sendable {
         // Use mock time in tests if provided
         let now = Self.currentTime()
         let age = now.timeIntervalSince(timestamp)
-        guard age < ttl else {
-            logger.debug("Cache miss: TTL exceeded (\(age)s > \(ttl)s)")
+        guard age < self.ttl else {
+            self.logger.debug("Cache miss: TTL exceeded (\(age)s > \(self.ttl)s)")
             Analytics.trackEvent("deck_statistics_cache_miss", metadata: [
                 "reason": "ttl_expired",
                 "age_seconds": String(format: "%.1f", age)
@@ -84,15 +84,15 @@ final class DeckStatisticsCache: Sendable {
             return nil
         }
 
-        let stats = cache[deckID]
+        let stats = self.cache[deckID]
         if stats != nil {
-            logger.debug("Cache hit: deck \(deckID)")
+            self.logger.debug("Cache hit: deck \(deckID)")
             Analytics.trackEvent("deck_statistics_cache_hit", metadata: [
                 "deck_id": deckID.uuidString,
                 "age_seconds": String(format: "%.1f", age)
             ])
         } else {
-            logger.debug("Cache miss: deck \(deckID) not in cache")
+            self.logger.debug("Cache miss: deck \(deckID) not in cache")
             Analytics.trackEvent("deck_statistics_cache_miss", metadata: [
                 "reason": "not_in_cache",
                 "deck_id": deckID.uuidString
@@ -109,9 +109,9 @@ final class DeckStatisticsCache: Sendable {
     ///   - stats: The statistics to cache
     ///   - deckID: The deck's UUID to associate with these statistics
     func set(_ stats: DeckStatistics, for deckID: UUID) {
-        cache[deckID] = stats
-        timestamp = Self.currentTime()
-        logger.debug("Cache set: deck \(deckID) (due: \(stats.due), new: \(stats.new), total: \(stats.total))")
+        self.cache[deckID] = stats
+        self.timestamp = Self.currentTime()
+        self.logger.debug("Cache set: deck \(deckID) (due: \(stats.due), new: \(stats.new), total: \(stats.total))")
         Analytics.trackEvent("deck_statistics_cache_set", metadata: [
             "deck_id": deckID.uuidString,
             "due": String(stats.due),
@@ -127,9 +127,9 @@ final class DeckStatisticsCache: Sendable {
     ///
     /// - Parameter statistics: Dictionary mapping deck IDs to their statistics
     func setBatch(_ statistics: [UUID: DeckStatistics]) {
-        cache.merge(statistics) { _, new in new }
-        timestamp = Self.currentTime()
-        logger.debug("Cache batch: \(statistics.count) decks")
+        self.cache.merge(statistics) { _, new in new }
+        self.timestamp = Self.currentTime()
+        self.logger.debug("Cache batch: \(statistics.count) decks")
     }
 
     /// Invalidate cache for a specific deck or entire cache.
@@ -143,17 +143,17 @@ final class DeckStatisticsCache: Sendable {
     /// - Parameter deckID: Optional deck ID to invalidate. If `nil`, clears entire cache.
     func invalidate(deckID: UUID? = nil) {
         if let deckID {
-            cache.removeValue(forKey: deckID)
-            logger.debug("Cache invalidated: deck \(deckID)")
+            self.cache.removeValue(forKey: deckID)
+            self.logger.debug("Cache invalidated: deck \(deckID)")
             Analytics.trackEvent("deck_statistics_cache_invalidate", metadata: [
                 "scope": "single_deck",
                 "deck_id": deckID.uuidString
             ])
         } else {
-            let count = cache.count
-            cache.removeAll()
-            timestamp = nil
-            logger.debug("Cache cleared: all decks")
+            let count = self.cache.count
+            self.cache.removeAll()
+            self.timestamp = nil
+            self.logger.debug("Cache cleared: all decks")
             Analytics.trackEvent("deck_statistics_cache_invalidate", metadata: [
                 "scope": "all_decks",
                 "previous_count": String(count)
@@ -166,7 +166,7 @@ final class DeckStatisticsCache: Sendable {
     /// - Parameter deckID: The deck's UUID to check
     /// - Returns: `true` if cache has a valid entry for this deck
     func isValid(deckID: UUID) -> Bool {
-        get(deckID: deckID) != nil
+        self.get(deckID: deckID) != nil
     }
 
     /// Get the age of the cache in seconds.
@@ -203,25 +203,25 @@ final class DeckStatisticsCache: Sendable {
         ///
         /// - Parameter provider: Closure that returns the current mock date
         static func setTimeProviderForTesting(_ provider: @escaping () -> Date) {
-            timeProvider = provider
+            self.timeProvider = provider
         }
 
         /// Reset the time provider to use system time (for test cleanup).
         static func resetTimeProvider() {
-            timeProvider = nil
+            self.timeProvider = nil
         }
 
         /// Get the current time, using mock provider if set.
         ///
         /// - Returns: Current time from mock provider (if set) or system time
         static func currentTime() -> Date {
-            timeProvider?() ?? Date()
+            self.timeProvider?() ?? Date()
         }
 
         /// Clear all cache entries without logging (for testing).
         func clearForTesting() {
-            cache.removeAll()
-            timestamp = nil
+            self.cache.removeAll()
+            self.timestamp = nil
         }
 
         /// Set a custom TTL for testing purposes.
@@ -232,18 +232,18 @@ final class DeckStatisticsCache: Sendable {
         /// - Parameter ttl: Custom time-to-live in seconds
         func setTTLForTesting(_ ttl: TimeInterval) {
             self.ttl = ttl
-            logger.debug("TTL set to \(ttl)s for testing")
+            self.logger.debug("TTL set to \(ttl)s for testing")
         }
 
         /// Reset TTL to default value (for test cleanup).
         func resetTTL() {
-            ttl = 30.0
-            logger.debug("TTL reset to 30s (default)")
+            self.ttl = 30.0
+            self.logger.debug("TTL reset to 30s (default)")
         }
 
         /// Get current cache size for testing.
         var size: Int {
-            cache.count
+            self.cache.count
         }
     }
 #endif

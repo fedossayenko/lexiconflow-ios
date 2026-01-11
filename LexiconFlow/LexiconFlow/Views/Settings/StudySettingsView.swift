@@ -23,23 +23,23 @@ struct StudySettingsView: View {
         Form {
             // Study Session Limits
             Section {
-                Picker("Cards per Session", selection: $studyLimit) {
-                    ForEach(limitOptions, id: \.self) { limit in
+                Picker("Cards per Session", selection: self.$studyLimit) {
+                    ForEach(self.limitOptions, id: \.self) { limit in
                         Text("\(limit) cards").tag(limit)
                     }
                 }
                 .accessibilityLabel("Cards per session")
-                .onChange(of: studyLimit) { _, newValue in
+                .onChange(of: self.studyLimit) { _, newValue in
                     AppSettings.studyLimit = newValue
                 }
 
-                Picker("Daily Goal", selection: $dailyGoal) {
-                    ForEach(goalOptions, id: \.self) { goal in
+                Picker("Daily Goal", selection: self.$dailyGoal) {
+                    ForEach(self.goalOptions, id: \.self) { goal in
                         Text("\(goal) cards").tag(goal)
                     }
                 }
                 .accessibilityLabel("Daily study goal")
-                .onChange(of: dailyGoal) { _, newValue in
+                .onChange(of: self.dailyGoal) { _, newValue in
                     AppSettings.dailyGoal = newValue
                 }
             } header: {
@@ -50,7 +50,7 @@ struct StudySettingsView: View {
 
             // Study Mode
             Section {
-                Picker("Default Mode", selection: $studyMode) {
+                Picker("Default Mode", selection: self.$studyMode) {
                     ForEach(AppSettings.StudyModeOption.allCases, id: \.rawValue) { mode in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(mode.displayName)
@@ -63,7 +63,7 @@ struct StudySettingsView: View {
                     }
                 }
                 .accessibilityLabel("Default study mode")
-                .onChange(of: studyMode) { _, newValue in
+                .onChange(of: self.studyMode) { _, newValue in
                     AppSettings.defaultStudyMode = newValue
                 }
             } header: {
