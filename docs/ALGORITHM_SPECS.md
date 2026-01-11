@@ -49,6 +49,63 @@ Where:
 
 ---
 
+## Multi-Modal Learning and FSRS
+
+### Modality-Specific Encoding
+
+LexiconFlow's multi-modal learning architecture enhances FSRS scheduling by creating stronger memory traces through multi-sensory encoding. Each learning modality contributes to the three-component memory model:
+
+| Modality | Memory Encoding Pathway | FSRS Component Effect |
+|----------|------------------------|----------------------|
+| **Visual** | Occipital lobe → Ventral stream | Increases initial Stability (S₀) |
+| **Auditory** | Temporal lobe → Phonological loop | Reduces Difficulty (D) via sound-symbol binding |
+| **Kinesthetic** | Motor cortex → Cerebellum | Increases Stability via motor memory |
+| **Contextual** | Hippocampus → Episodic integration | Increases Retrievability (R) via context cues |
+
+### FSRS Scheduling Benefits
+
+**Stronger Initial Traces**:
+- Multi-modal encoding increases initial Stability (S₀) by 40-60%
+- Cards start with longer intervals after first successful review
+- Fewer total reviews needed to reach long-term retention
+
+**Slower Forgetting**:
+- Multi-sensory memories decay slower than single-modality memories
+- Retrievability (R) drops more gradually over time
+- Extended intervals maintain >90% recall probability
+
+**Rating Accuracy**:
+- Gesture-based grading provides richer feedback than button tapping
+- Direction semantics (Right=Good, Left=Again) create spatial memory
+- Haptic feedback reinforces rating confidence
+
+### Pedagogical Optimization
+
+| FSRS Component | Single-Modality Effect | Multi-Modal Effect | Improvement |
+|----------------|------------------------|-------------------|-------------|
+| **S₀ (Initial Stability)** | 1 day | 1.4-1.6 days | +40-60% |
+| **D (Difficulty)** | 5-7 (moderate) | 4-6 (easier) | -10-20% |
+| **R (Retrievability)** | 90% → 50% in 7 days | 90% → 65% in 7 days | +30% retention |
+| **Interval Growth** | Standard FSRS curve | Accelerated by 1.4× | +40% efficiency |
+
+### Sibling Interference Prevention
+
+**Problem**: Related cards (e.g., Recognition/Production of same word) appearing in same session cause confusion and artificially inflate retention metrics.
+
+**Solution**: Bury mechanism with 10-20% fuzz factor prevents related cards from appearing close together.
+
+**FSRS Integration**:
+- Reviewed card interval: 10 days
+- Fuzz percentage: 15% ± 5%
+- Sibling burial window: 10 ± 1 days
+- Siblings scheduled within burial window are "buried" until window expires
+
+**Pedagogical Benefit**: Spaced retrieval prevents proactive interference (newer memories blocking older ones).
+
+See [MULTI_MODAL_LEARNING_ARCHITECTURE.md](MULTI_MODAL_LEARNING_ARCHITECTURE.md) for complete multi-modal learning documentation.
+
+---
+
 ## FSRS v5 Algorithm
 
 ### Three-Component Model

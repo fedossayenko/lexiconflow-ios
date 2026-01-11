@@ -262,6 +262,130 @@ This document outlines the phased development approach for Lexicon Flow, from in
 
 ---
 
+## Phase 5: Multi-Modal Expansion (Weeks 17-20)
+
+### Objectives
+- Implement bidirectional learning (Recognition + Production modes)
+- Add advanced card types (Audio-only, Cloze deletion)
+- Deploy sibling interference prevention
+- Complete multi-modal learning architecture
+
+### Week 17: Data Migration (Note/Card Schema)
+
+**Objective**: Migrate existing Flashcard data to Note/Card schema without data loss.
+
+**Tasks**:
+- [ ] Create `Note` and `Card` SwiftData models
+- [ ] Build `DataMigrationService` for schema migration
+- [ ] Implement migration: Flashcard → Note + 1 Forward Card
+- [ ] Preserve FSRS state and review logs during migration
+- [ ] Generate inactive Reverse and Audio cards for each Note
+- [ ] Test data integrity and rollback mechanism
+- [ ] Migrate existing 10,000+ flashcards
+
+**Exit Criteria**:
+- All existing flashcards migrated to Notes
+- Each Note has 1 active Forward card (preserves FSRS state)
+- Each Note has 2 inactive cards (Reverse, Audio)
+- Zero data loss: All translations, definitions, images preserved
+
+**See**: [BIDIRECTIONAL_LEARNING_STRATEGY.md](BIDIRECTIONAL_LEARNING_STRATEGY.md) for detailed migration strategy.
+
+### Week 18: Bidirectional Learning
+
+**Objective**: Implement Recognition (Russian→English) and Production (English→Russian) modes.
+
+**Tasks**:
+- [ ] Create `StudyDirection` enum: `.recognitionOnly`, `.productionOnly`, `.both`
+- [ ] Build `CardType` enum: `.forward`, `.reverse`, `.audio`, `.cloze`
+- [ ] Implement direction-aware card rendering:
+  - Forward cards show English → Russian
+  - Reverse cards show Russian → English
+- [ ] Add study mode selection UI
+- [ ] Implement card type filtering in card queue
+- [ ] Generate reverse cards for existing Notes (opt-in)
+- [ ] Test bidirectional learning workflows
+
+**Exit Criteria**:
+- Users can select study direction (Recognition/Production/Both)
+- Cards render correctly based on direction
+- Reverse cards can be generated and activated
+- Settings UI for mode selection
+
+**Pedagogical Benefit**:
+- Recognition mode builds receptive vocabulary (reading, listening)
+- Production mode builds productive vocabulary (speaking, writing)
+- Combined mode provides balanced language proficiency
+
+### Week 19: Advanced Card Types
+
+**Objective**: Implement Audio-only and Cloze deletion card types.
+
+**Tasks**:
+- [ ] Implement Audio-only cards:
+  - Front: Spoken word (no text initially)
+  - Back: Word + meaning
+  - Auto-play TTS on card appear
+  - Voice-only mode toggle
+- [ ] Implement Cloze deletion cards:
+  - Front: Sentence with missing word
+  - Back: Complete sentence + vocabulary
+  - AI-generated cloze templates
+  - Cloze position randomization
+- [ ] Add card type management UI:
+  - Enable/disable per card type
+  - Card type settings in deck configuration
+  - Batch card type activation
+- [ ] Implement card type analytics:
+  - Track performance per card type
+  - Show modality-specific mastery
+- [ ] Test advanced card types
+
+**Exit Criteria**:
+- Audio-only cards work with TTS auto-play
+- Cloze deletion cards generate and render correctly
+- Users can enable/disable card types
+- Analytics track performance per card type
+
+**Pedagogical Benefit**:
+- Audio-only cards prevent visual crutch, strengthen listening
+- Cloze cards provide contextual learning, syntax practice
+
+### Week 20: Sibling Interference Prevention
+
+**Objective**: Implement bury mechanism to prevent related cards appearing in same session.
+
+**Tasks**:
+- [ ] Implement `SiblingInterferenceService` actor:
+  - Bury logic with 10-20% fuzz factor
+  - Sibling detection via Note.cards relationship
+  - Burial duration calculation
+- [ ] Add `buriedUntil` and `isBuried` to `FSRSState`
+- [ ] Update card queue filtering:
+  - Exclude buried cards from due count
+  - Show burial reason in UI
+  - Manual unbury option
+- [ ] Implement sibling burial toggle in settings:
+  - Enable/disable sibling interference prevention
+  - Configurable fuzz percentage (10-20%)
+- [ ] Add burial analytics:
+  - Track buried card count
+  - Measure burial effectiveness
+- [ ] Test sibling interference scenarios
+
+**Exit Criteria**:
+- Related cards don't appear in same session
+- Burial mechanism respects fuzz percentage
+- Settings UI for sibling burial configuration
+- Analytics demonstrate reduced interference
+
+**Pedagogical Benefit**:
+- Prevents proactive interference (newer memories blocking older)
+- Improves retention metrics accuracy
+- Spaced retrieval enhances long-term memory
+
+---
+
 ## Post-Launch Roadmap
 
 ### Version 1.1 (Month 2)

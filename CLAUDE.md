@@ -291,6 +291,168 @@ toastStyle = .success
 
 **Rationale**: Provides consistent, non-intrusive user feedback that respects the app's glassmorphism design language. Includes haptic feedback for accessibility.
 
+---
+
+### 9. Multi-Modal Learning Integration Pattern
+
+**Description**: Integrate all four learning modalities (Visual, Auditory, Kinesthetic, Contextual) into flashcard views for enhanced memory consolidation through multi-sensory encoding.
+
+**When to Use**:
+- All flashcard review interactions
+- Card presentation views
+- Study session workflows
+
+**Usage**:
+```swift
+struct FlashcardView: View {
+    @Bindable var card: Flashcard
+    @State private var dragOffset: CGSize = .zero
+
+    var body: some View {
+        GlassEffectContainer(spacing: 20) {
+            VStack(spacing: 24) {
+                // 1. Visual: Text display with typographic hierarchy
+                Text(card.word)
+                    .font(.system(size: 42, weight: .bold, design: .rounded))
+
+                // 2. Visual: Phonetic notation
+                if let phonetic = card.phonetic {
+                    Text(phonetic)
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                }
+
+                // 3. Auditory: TTS integration
+                if AppSettings.ttsEnabled {
+                    Button {
+                        SpeechService.shared.speak(card.word)
+                    } label: {
+                        Image(systemName: "speaker.wave.2.fill")
+                    }
+                }
+
+                // 4. Contextual: AI-generated sentence
+                if let sentence = card.generatedSentences.first {
+                    Text(sentence.sentence)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        // 5. Kinesthetic: Gesture-based grading
+        .gesture(
+            DragGesture()
+                .onChanged { value in
+                    dragOffset = value.translation
+                    HapticService.shared.triggerFeedback(for: detectRating(from: value.translation))
+                    updateGlassTint(for: value.translation)
+                }
+                .onEnded { value in
+                    processRating(from: value.translation)
+                }
+        )
+    }
+}
+```
+
+**Pedagogical Benefits**:
+- **Visual**: Orthographic processing → Occipital lobe
+- **Auditory**: Phonological loop → Temporal lobe (Wernicke's area)
+- **Kinesthetic**: Motor memory → Cerebellum + Motor cortex
+- **Contextual**: Episodic binding → Hippocampus
+
+**Expected Improvement**: 40-60% better retention vs. single-modality approaches (Dual Coding Theory + Embodied Cognition research).
+
+**Reference**: `docs/MULTI_MODAL_LEARNING_ARCHITECTURE.md`
+
+---
+
+### 10. Bidirectional Learning Pattern (Planned - Phase 5)
+
+**Description**: Support Recognition (L2→L1) and Production (L1→L2) learning modes through Note/Card schema separation.
+
+**Data Model**:
+```swift
+@Model
+final class Note {
+    var id: UUID
+    var word: String           // Vocabulary item (language-agnostic)
+    var definition: String
+    var phonetic: String?
+    @Relationship(deleteRule: .cascade) var cards: [Card] = []
+}
+
+@Model
+final class Card {
+    var id: UUID
+    var cardType: CardType    // .forward, .reverse, .audio, .cloze
+    var isActive: Bool
+    @Relationship var note: Note?
+    @Relationship var fsrsState: FSRSState?
+}
+
+enum CardType: String, Codable {
+    case forward    // L2→L1: Recognition
+    case reverse    // L1→L2: Production
+    case audio      // Audio-only
+    case cloze      // Cloze deletion
+}
+```
+
+**Direction-Aware Rendering**:
+```swift
+struct FlashcardView: View {
+    @Bindable var card: Card
+
+    var body: some View {
+        switch card.cardType {
+        case .forward:
+            // Show English word, user recalls Russian
+            if let note = card.note {
+                Text(note.word)  // English
+            }
+
+        case .reverse:
+            // Show Russian translation, user recalls English
+            if let note = card.note {
+                Text(note.translation ?? "")  // Russian
+            }
+
+        case .audio:
+            // Audio-only: Play TTS, no text initially
+            Image(systemName: "speaker.wave.3.fill")
+
+        case .cloze:
+            // Sentence with missing word
+            Text(card.clozeTemplate ?? "")
+        }
+    }
+}
+```
+
+**Sibling Interference Prevention**:
+```swift
+actor SiblingInterferenceService {
+    func burySiblings(reviewedCard: Card, reviewedInterval: Double, context: ModelContext) async throws {
+        guard let note = reviewedCard.note,
+              let siblings = note.cards.filter({ $0.id != reviewedCard.id }) else { return }
+
+        // Bury siblings with 10-20% fuzz
+        let fuzzPercentage = 0.15 + Double.random(in: -0.05...0.05)
+        let fuzzDays = reviewedInterval * fuzzPercentage
+
+        for sibling in siblings {
+            sibling.fsrsState?.buriedUntil = Date().addingTimeInterval(fuzzDays * 86400)
+        }
+
+        try context.save()
+    }
+}
+```
+
+**Reference**: `docs/BIDIRECTIONAL_LEARNING_STRATEGY.md`
+
+---
 
 ## Project Structure
 

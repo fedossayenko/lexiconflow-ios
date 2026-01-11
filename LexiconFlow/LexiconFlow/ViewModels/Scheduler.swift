@@ -121,6 +121,11 @@ final class Scheduler {
     /// Due cards are those that need review (review/learning/relearning states).
     /// New cards are excluded as they haven't been learned yet.
     ///
+    /// **Card Type Filtering:** Based on `AppSettings.studyDirection`:
+    /// - `.recognitionOnly`: Only forward cards (English→Russian)
+    /// - `.productionOnly`: Only reverse cards (Russian→English)
+    /// - `.both`: All cards (no type filtering)
+    ///
     /// - Parameters:
     ///   - deck: Optional deck to filter cards (nil = all decks)
     ///   - limit: Maximum number of cards to return
@@ -130,6 +135,9 @@ final class Scheduler {
 
         // Capture deck ID for in-memory filtering
         let deckID = deck?.id
+
+        // Capture study direction for bidirectional learning
+        let studyDirection = AppSettings.studyDirection
 
         // Query FSRSState at DB level for due cards (simple predicate)
         let statePredicate = #Predicate<FSRSState> { state in
@@ -143,16 +151,23 @@ final class Scheduler {
         do {
             let states = try modelContext.fetch(stateDescriptor)
 
-            // Convert to cards and filter by deck in-memory (avoid multi-level optional in predicate)
+            // Convert to cards and filter by deck and card type in-memory
             let cards = states.compactMap { state -> Flashcard? in
                 guard let card = state.card else {
                     self.logger.warning("FSRSState with nil card relationship detected")
                     return nil
                 }
+
                 // Filter by deck in-memory
                 if let deckID, card.deck?.id != deckID {
                     return nil
                 }
+
+                // Filter by card type based on study direction
+                if !self.matchesStudyDirection(card.cardType, studyDirection) {
+                    return nil
+                }
+
                 return card
             }
 
@@ -488,6 +503,9 @@ final class Scheduler {
         // Extract deck IDs for in-memory filtering
         let deckIDs = Set(decks.map(\.id))
 
+        // Capture study direction for bidirectional learning
+        let studyDirection = AppSettings.studyDirection
+
         // Query FSRSState at DB level for due cards (simple predicate)
         let statePredicate = #Predicate<FSRSState> { state in
             state.dueDate <= now && state.stateEnum != "new"
@@ -500,7 +518,7 @@ final class Scheduler {
         do {
             let states = try modelContext.fetch(stateDescriptor)
 
-            // Convert to cards and filter by selected decks in-memory
+            // Convert to cards and filter by deck and card type in-memory
             let cards = states.compactMap { state -> Flashcard? in
                 guard let card = state.card else {
                     self.logger.warning("FSRSState with nil card relationship detected")
@@ -508,6 +526,10 @@ final class Scheduler {
                 }
                 // Only include cards from selected decks
                 guard let deckID = card.deck?.id, deckIDs.contains(deckID) else {
+                    return nil
+                }
+                // Filter by card type based on study direction
+                if !self.matchesStudyDirection(card.cardType, studyDirection) {
                     return nil
                 }
                 return card
@@ -1160,6 +1182,33 @@ final class Scheduler {
         #endif
 
         return result
+    }
+
+    // MARK: - Bidirectional Learning Helpers
+
+    /// Check if a card type matches the current study direction setting
+    ///
+    /// **Filtering Logic:**
+    /// - `.recognitionOnly`: Forward cards only (cardTypeRaw == "forward" OR nil)
+    /// - `.productionOnly`: Reverse cards only (cardTypeRaw == "reverse")
+    /// - `.both`: All cards (no filtering)
+    ///
+    /// - Parameters:
+    ///   - cardType: The card's type
+    ///   - direction: The current study direction setting
+    /// - Returns: True if the card should be included in the study session
+    private func matchesStudyDirection(_ cardType: CardType, _ direction: AppSettings.StudyDirection) -> Bool {
+        switch direction {
+        case .recognitionOnly:
+            // Only forward cards (nil defaults to forward for backward compatibility)
+            cardType == .forward
+        case .productionOnly:
+            // Only reverse cards
+            cardType == .reverse
+        case .both:
+            // All cards included
+            true
+        }
     }
 }
 

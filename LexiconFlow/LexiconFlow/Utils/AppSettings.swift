@@ -45,6 +45,40 @@ enum AppSettings {
         }
     }
 
+    /// Study direction for bidirectional learning
+    enum StudyDirection: String, CaseIterable, Sendable {
+        case recognitionOnly // Forward cards only (English→Russian)
+        case productionOnly // Reverse cards only (Russian→English)
+        case both // Mixed session (both directions)
+
+        var displayName: String {
+            switch self {
+            case .recognitionOnly: "Recognition"
+            case .productionOnly: "Production"
+            case .both: "Both"
+            }
+        }
+
+        var description: String {
+            switch self {
+            case .recognitionOnly:
+                "English→Russian (Builds receptive vocabulary)"
+            case .productionOnly:
+                "Russian→English (Builds productive vocabulary)"
+            case .both:
+                "Mixed session (both Recognition and Production)"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .recognitionOnly: "arrow.right"
+            case .productionOnly: "arrow.left"
+            case .both: "arrow.left.arrow.right"
+            }
+        }
+    }
+
     // MARK: - Translation Settings
 
     /// Whether automatic translation is enabled
@@ -75,6 +109,18 @@ enum AppSettings {
     /// - When `.onDevice`: Falls back to `.cloud` if Foundation Models unavailable
     /// - When `.cloud`: Falls back to static sentences if no API key
     @AppStorage("aiSourcePreference") static var aiSourcePreference: AISource = .onDevice
+
+    // MARK: - Bidirectional Learning Settings
+
+    /// Study direction for bidirectional learning
+    ///
+    /// **Options:**
+    /// - `.recognitionOnly`: Forward cards only (English→Russian)
+    /// - `.productionOnly`: Reverse cards only (Russian→English)
+    /// - `.both`: Mixed session (both directions)
+    ///
+    /// **Default:** Recognition-only mode for new users
+    @AppStorage("studyDirection") static var studyDirection: StudyDirection = .recognitionOnly
 
     /// Supported translation languages for on-device translation (24 languages supported by iOS Translation framework)
     static let supportedLanguages: [(code: String, name: String)] = [

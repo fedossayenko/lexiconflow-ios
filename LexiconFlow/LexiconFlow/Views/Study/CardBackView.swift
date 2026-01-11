@@ -23,36 +23,73 @@ struct CardBackView: View {
     @State private var toastMessage = ""
     @State private var toastStyle: ToastStyle = .info
 
+    // MARK: - Computed Properties (Direction-Aware)
+
+    /// The word shown on the front (reminder)
+    /// - Forward (Recognition): English word
+    /// - Reverse (Production): Russian translation
+    var frontWordReminder: String {
+        switch self.card.cardType {
+        case .forward:
+            self.card.word
+        case .reverse:
+            self.card.translation ?? self.card.word
+        }
+    }
+
+    /// The answer word (what user should recall)
+    /// - Forward (Recognition): Russian translation
+    /// - Reverse (Production): English word
+    var answerWord: String? {
+        switch self.card.cardType {
+        case .forward:
+            self.card.translation
+        case .reverse:
+            self.card.word
+        }
+    }
+
+    /// Label for the answer section
+    var answerLabel: String {
+        switch self.card.cardType {
+        case .forward:
+            "Translation"
+        case .reverse:
+            "Word"
+        }
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
                 Spacer()
 
-                // Word reminder (smaller)
-                Text(self.card.word)
+                // Front word reminder (smaller)
+                Text(self.frontWordReminder)
                     .font(.title3)
                     .foregroundStyle(.secondary)
-                    .accessibilityLabel("Word: \(self.card.word)")
+                    .accessibilityLabel("Front was: \(self.frontWordReminder)")
 
-                // Translation - NEW
-                if let translation = card.translation {
+                // Answer section (direction-aware)
+                if let answer = answerWord {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Translation")
+                        Text(self.answerLabel)
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
-                        Text(translation)
+                        Text(answer)
                             .font(.title3)
                             .fontWeight(.semibold)
                             .foregroundStyle(.primary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .padding()
-                    .background(Color.accentColor.opacity(0.1))
+                    .background(self.cardTypeColor(for: self.card.cardType).opacity(0.15))
+                    .foregroundStyle(self.cardTypeColor(for: self.card.cardType))
                     .cornerRadius(12)
                     .padding(.horizontal)
-                    .accessibilityLabel("Translation: \(translation)")
+                    .accessibilityLabel("\(self.answerLabel): \(answer)")
                 }
 
                 // CEFR Level Badge (if available)
@@ -259,6 +296,18 @@ struct CardBackView: View {
             await MainActor.run {
                 self.isRegenerating = false
             }
+        }
+    }
+
+    // MARK: - Helper Functions
+
+    /// Color for card type styling
+    private func cardTypeColor(for type: CardType) -> Color {
+        switch type {
+        case .forward:
+            .blue
+        case .reverse:
+            .orange
         }
     }
 }

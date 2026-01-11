@@ -43,6 +43,20 @@ final class Flashcard {
     /// - Validated against allowed values: A1, A2, B1, B2, C1, C2
     var cefrLevel: String?
 
+    // MARK: - Bidirectional Learning Fields
+
+    /// Card type for bidirectional learning (Recognition/Production modes)
+    /// - nil for existing cards (defaults to forward/Recognition mode)
+    /// - "forward" = English→Russian (Recognition mode)
+    /// - "reverse" = Russian→English (Production mode)
+    ///
+    /// **Pedagogical Basis**:
+    /// - Recognition (Forward): Builds receptive vocabulary (reading, listening)
+    /// - Production (Reverse): Builds productive vocabulary (speaking, writing)
+    ///
+    /// **Implementation Note**: Stored as String? for backward compatibility
+    var cardTypeRaw: String?
+
     // MARK: - Optional Fields
 
     /// Phonetic pronunciation (IPA notation) - optional
@@ -116,6 +130,18 @@ final class Flashcard {
         // Relationships are auto-initialized by SwiftData
     }
 
+    // MARK: - Computed Properties
+
+    /// Card type for bidirectional learning (Recognition/Production modes)
+    ///
+    /// **Returns**: `CardType` value (defaults to `.forward` if cardTypeRaw is nil)
+    ///
+    /// **Backward Compatibility**: Existing cards with `cardTypeRaw = nil` default to `.forward` (Recognition mode)
+    var cardType: CardType {
+        get { CardType(rawValue: self.cardTypeRaw ?? CardType.forward.rawValue) ?? .forward }
+        set { self.cardTypeRaw = newValue.rawValue }
+    }
+
     // MARK: - CEFR Level Validation
 
     /// Validates and sets CEFR level for this flashcard
@@ -154,6 +180,41 @@ enum FlashcardError: LocalizedError, @unchecked Sendable {
         switch self {
         case .invalidCEFRLevel:
             "Use a valid CEFR level: A1, A2, B1, B2, C1, or C2."
+        }
+    }
+}
+
+// MARK: - Card Type
+
+/// Card type for bidirectional learning (Recognition/Production modes)
+enum CardType: String, Codable, Sendable {
+    /// Forward card: English→Russian (Recognition mode)
+    case forward
+
+    /// Reverse card: Russian→English (Production mode)
+    case reverse
+
+    /// Display name for UI
+    var displayName: String {
+        switch self {
+        case .forward: "Recognition"
+        case .reverse: "Production"
+        }
+    }
+
+    /// SF Symbol icon for UI
+    var iconName: String {
+        switch self {
+        case .forward: "arrow.right"
+        case .reverse: "arrow.left"
+        }
+    }
+
+    /// Arrow symbol for visual direction indicator
+    var arrowSymbol: String {
+        switch self {
+        case .forward: "→"
+        case .reverse: "←"
         }
     }
 }

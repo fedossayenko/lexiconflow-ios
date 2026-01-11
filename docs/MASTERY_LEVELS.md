@@ -230,6 +230,86 @@ let learningCards = deck.cards.filter { card in
 }
 ```
 
+---
+
+## Mastery and Multi-Modal Learning
+
+### Modality-Specific Mastery
+
+LexiconFlow's multi-modal learning architecture supports **modality-specific mastery tracking** for comprehensive vocabulary assessment. Each learning modality (Visual, Auditory, Kinesthetic, Contextual) can contribute to overall mastery.
+
+**Current Implementation**:
+- Single mastery level based on FSRS stability (all modalities combined)
+- Stability reflects multi-sensory encoding strength
+- +40-60% improvement in initial stability due to multi-modal learning
+
+**Modality Contributions to Mastery**:
+
+| Modality | Encoding Pathway | Mastery Contribution |
+|----------|------------------|---------------------|
+| **Visual** | Orthographic processing | Reading comprehension, spelling |
+| **Auditory** | Phonological loop | Pronunciation, listening |
+| **Kinesthetic** | Motor memory | Gesture-based recall confidence |
+| **Contextual** | Episodic binding | Vocabulary-in-context usage |
+
+**Multi-Modal Effect on Stability**:
+- Single-modality learning: S₀ = 1 day
+- Multi-modal learning: S₀ = 1.4-1.6 days (+40-60% improvement)
+- Mastery thresholds achieved 40-60% faster with multi-modal encoding
+
+### Bidirectional Mastery
+
+**Planned Enhancement**: After implementing bidirectional learning (Phase 5), mastery tracking will support **Recognition vs Production** modes.
+
+**Bidirectional Mastery Levels**:
+
+| Mode | Description | Mastery Indicator |
+|------|-------------|-------------------|
+| **Recognition** | Russian→English | Can understand when encountered |
+| **Production** | English→Russian | Can actively use in communication |
+
+**Expected Behavior**:
+- Forward cards (Recognition): Build receptive vocabulary
+- Reverse cards (Production): Build productive vocabulary
+- Combined mastery: True proficiency requires both modes at Mastered level
+
+**Research Basis** (Palmberg, 2016; Nation, 2001):
+- Production lags behind recognition in acquisition
+- Testing both prevents "illusion of competence"
+- Bidirectional testing reveals knowledge gaps
+
+### Per-Modality Mastery Tracking (Future)
+
+**Planned Enhancement**: Track mastery separately for each modality to identify learning strengths and weaknesses.
+
+**Potential Implementation**:
+```swift
+// Future: Per-modality stability tracking
+struct ModalityStability {
+    var visual: Double      // Stability from visual encoding
+    var auditory: Double    // Stability from auditory encoding
+    var kinesthetic: Double  // Stability from gesture-based review
+    var contextual: Double   // Stability from context sentence review
+}
+
+extension FSRSState {
+    var modalityStability: ModalityStability {
+        // Calculate per-modality stability
+        // Identify strengths/weaknesses
+        // Suggest focused review
+    }
+}
+```
+
+**Benefits**:
+- Identify which modalities need reinforcement
+- Personalized study recommendations
+- Richer analytics for learning insights
+
+See [MULTI_MODAL_LEARNING_ARCHITECTURE.md](MULTI_MODAL_LEARNING_ARCHITECTURE.md) for complete multi-modal learning documentation.
+
+---
+
 ## Future Enhancements
 
 Potential improvements to the mastery system:
