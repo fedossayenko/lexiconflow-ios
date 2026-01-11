@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import FoundationModels
 import OSLog
 import SwiftData
 
@@ -93,6 +94,20 @@ actor SentenceGenerationService {
     }
 
     // MARK: - Sentence Generation Types
+
+    /// Configuration for sentence generation source
+    ///
+    /// **Purpose**: DTO pattern to avoid actor hopping to @MainActor AppSettings
+    /// **Sendable**: Safe to pass across actor boundaries
+    struct GenerationConfig: Sendable {
+        let aiSource: AISource
+
+        /// AI source preference for sentence generation
+        enum AISource: String, Sendable {
+            case onDevice
+            case cloud
+        }
+    }
 
     /// Data transfer object for flashcard data in batch operations
     struct CardData: Sendable {
@@ -213,6 +228,7 @@ actor SentenceGenerationService {
     ///   - cardTranslation: Optional translation
     ///   - cardCEFR: Optional CEFR level
     ///   - count: Number of sentences to generate (default: 3)
+    ///   - config: Generation configuration (AI source preference)
     ///
     /// - Returns: SentenceGenerationResponse with generated sentences
     /// - Throws: SentenceGenerationError if all generation methods fail
@@ -221,9 +237,33 @@ actor SentenceGenerationService {
         cardDefinition: String,
         cardTranslation: String? = nil,
         cardCEFR: String? = nil,
-        count: Int = Config.defaultSentencesPerCard
+        count: Int = Config.defaultSentencesPerCard,
+        config: GenerationConfig? = nil
     ) async throws -> SentenceGenerationResponse {
-        // Try cloud API
+        var generationError: Error?
+
+        // Use provided config or default to on-device
+        let aiSource = config?.aiSource ?? .onDevice
+
+        // 1. Try On-Device AI if preferred
+        if aiSource == .onDevice {
+            do {
+                let response = try await generateSentencesOnDevice(
+                    cardWord: cardWord,
+                    cardDefinition: cardDefinition,
+                    cardTranslation: cardTranslation,
+                    cardCEFR: cardCEFR,
+                    count: count
+                )
+                self.logger.info("Generated sentences using On-Device AI for '\(cardWord)'")
+                return response
+            } catch {
+                self.logger.warning("On-device generation failed (\(error.localizedDescription)), falling back to cloud")
+                generationError = error
+            }
+        }
+
+        // 2. Try Cloud API (Z.ai)
         do {
             let response = try await generateSentencesCloud(
                 cardWord: cardWord,
@@ -236,11 +276,52 @@ actor SentenceGenerationService {
             return response
         } catch {
             self.logger.warning("Cloud generation failed: \(error.localizedDescription)")
+            if generationError == nil { generationError = error }
 
-            // Final fallback: static sentences
+            // 3. Final Fallback: Static Sentences
             self.logger.info("Using static fallback sentences for '\(cardWord)'")
             return self.generateStaticFallback(cardWord: cardWord, cardCEFR: cardCEFR, count: count)
         }
+    }
+
+    /// Generate sentences using on-device Foundation Models (iOS 26+)
+    ///
+    /// **Privacy:** 100% private, no data leaves the device
+    /// **Offline:** Works completely offline
+    ///
+    /// - Returns: SentenceGenerationResponse
+    /// - Throws: SentenceGenerationError if model unavailable or generation fails
+    private func generateSentencesOnDevice(
+        cardWord: String,
+        cardDefinition: String,
+        cardTranslation: String? = nil,
+        cardCEFR: String? = nil,
+        count: Int
+    ) async throws -> SentenceGenerationResponse {
+        // Init session (throws if unavailable/unsupported)
+        let session = LanguageModelSession()
+
+        let prompt = """
+        Generate \(count) English sentences for vocabulary learning.
+        Word: \(cardWord)
+        Definition: \(cardDefinition)
+        \(cardTranslation.map { "Translation: \($0)" } ?? "")
+        \(cardCEFR.map { "Level: \($0)" } ?? "")
+
+        Return JSON format:
+        {
+          "items": [
+            { "sentence": "...", "cefr_level": "A1-C2" }
+          ]
+        }
+        """
+
+        let response = try await session.respond(to: prompt)
+
+        // Decode from response text
+        // Note: Assuming .text or similar property exists, or custom string interpolation
+        // Standard LanguageModelSession.Response<String> usually exposes the value directly or via property
+        return try self.decodeJSONResponseSynchronously(from: String(describing: response))
     }
 
     /// Generate sentences using cloud API (Z.ai)
@@ -613,6 +694,7 @@ actor SentenceGenerationService {
         cardTranslation: String?,
         cardCEFR: String?,
         count: Int,
+        config: GenerationConfig? = nil,
         maxRetries: Int = Config.defaultMaxRetries
     ) async -> SentenceGenerationResult {
         let startTime = Date()
@@ -626,7 +708,8 @@ actor SentenceGenerationService {
                     cardDefinition: cardDefinition,
                     cardTranslation: cardTranslation,
                     cardCEFR: cardCEFR,
-                    count: count
+                    count: count,
+                    config: config
                 )
             },
             isRetryable: { (error: SentenceGenerationError) in

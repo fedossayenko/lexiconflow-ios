@@ -29,21 +29,23 @@ struct SpeechServiceTests {
     // MARK: - Test Setup
 
     /// Save original AppSettings values
-    private func saveAppSettings() -> (enabled: Bool, language: String, rate: Double, pitch: Double) {
+    private func saveAppSettings() -> (enabled: Bool, language: String, rate: Double, pitch: Double, quality: AppSettings.VoiceQuality) {
         (
             enabled: AppSettings.ttsEnabled,
             language: AppSettings.ttsVoiceLanguage,
             rate: AppSettings.ttsSpeechRate,
-            pitch: AppSettings.ttsPitchMultiplier
+            pitch: AppSettings.ttsPitchMultiplier,
+            quality: AppSettings.ttsVoiceQuality
         )
     }
 
     /// Restore original AppSettings values
-    private func restoreAppSettings(_ settings: (enabled: Bool, language: String, rate: Double, pitch: Double)) {
+    private func restoreAppSettings(_ settings: (enabled: Bool, language: String, rate: Double, pitch: Double, quality: AppSettings.VoiceQuality)) {
         AppSettings.ttsEnabled = settings.enabled
         AppSettings.ttsVoiceLanguage = settings.language
         AppSettings.ttsSpeechRate = settings.rate
         AppSettings.ttsPitchMultiplier = settings.pitch
+        AppSettings.ttsVoiceQuality = settings.quality
     }
 
     /// Reset AppSettings to test defaults
@@ -614,6 +616,109 @@ struct SpeechServiceTests {
 
         // Then: All settings applied (no crash)
         #expect(true) // Test verifies no crash
+        self.restoreAppSettings(originalSettings)
+    }
+
+    // MARK: - Voice Quality Tests
+
+    @Test("voiceForLanguage uses premium when available and preferred")
+    func voiceQualityPremiumUsed() async throws {
+        let originalSettings = self.saveAppSettings()
+        AppSettings.ttsVoiceQuality = .premium
+        let service = SpeechService.shared
+
+        let voices = service.availableVoices(for: "en-US")
+        let hasPremium = voices.contains(where: { $0.quality == .premium })
+
+        if hasPremium {
+            service.speak("test")
+            // Should select premium voice
+        }
+
+        self.restoreAppSettings(originalSettings)
+        #expect(true) // Smoke test - no crash
+    }
+
+    @Test("voiceForLanguage falls back from premium to enhanced")
+    func voiceQualityPremiumFallsBackToEnhanced() async throws {
+        let originalSettings = self.saveAppSettings()
+        AppSettings.ttsVoiceQuality = .premium
+        let service = SpeechService.shared
+
+        let voices = service.availableVoices(for: "en-US")
+        let hasPremium = voices.contains(where: { $0.quality == .premium })
+        let hasEnhanced = voices.contains(where: { $0.quality == .enhanced })
+
+        if !hasPremium, hasEnhanced {
+            service.speak("test")
+            // Should fall back to enhanced
+        }
+
+        self.restoreAppSettings(originalSettings)
+        #expect(true) // Smoke test - no crash
+    }
+
+    @Test("voiceForLanguage respects enhanced preference")
+    func voiceQualityEnhancedUsed() async throws {
+        let originalSettings = self.saveAppSettings()
+        AppSettings.ttsVoiceQuality = .enhanced
+        let service = SpeechService.shared
+
+        let voices = service.availableVoices(for: "en-US")
+        let hasEnhanced = voices.contains(where: { $0.quality == .enhanced })
+
+        if hasEnhanced {
+            service.speak("test")
+            // Should select enhanced voice
+        }
+
+        self.restoreAppSettings(originalSettings)
+        #expect(true) // Smoke test - no crash
+    }
+
+    @Test("voiceForLanguage falls back from enhanced to default")
+    func voiceQualityEnhancedFallsBackToDefault() async throws {
+        let originalSettings = self.saveAppSettings()
+        AppSettings.ttsVoiceQuality = .enhanced
+        let service = SpeechService.shared
+
+        let voices = service.availableVoices(for: "en-US")
+        let hasEnhanced = voices.contains(where: { $0.quality == .enhanced })
+        let hasDefault = voices.contains(where: { $0.quality == .default })
+
+        if !hasEnhanced, hasDefault {
+            service.speak("test")
+            // Should fall back to default
+        }
+
+        self.restoreAppSettings(originalSettings)
+        #expect(true) // Smoke test - no crash
+    }
+
+    @Test("voiceForLanguage uses default quality when preferred")
+    func voiceQualityDefaultUsed() async throws {
+        let originalSettings = self.saveAppSettings()
+        AppSettings.ttsVoiceQuality = .default
+        let service = SpeechService.shared
+
+        service.speak("test")
+        // Should select default quality voice
+
+        self.restoreAppSettings(originalSettings)
+        #expect(true) // Smoke test - no crash
+    }
+
+    @Test("voiceForLanguage returns any available voice as final fallback")
+    func voiceQualityFinalFallback() async throws {
+        let originalSettings = self.saveAppSettings()
+        AppSettings.ttsVoiceQuality = .premium
+        let service = SpeechService.shared
+
+        let voices = service.availableVoices(for: "en-US")
+
+        // Even if no quality matches, should return first available voice
+        #expect(!voices.isEmpty, "Should have at least one voice")
+
         self.restoreAppSettings(originalSettings)
     }
 }

@@ -25,6 +25,7 @@ protocol SentenceGenerationProtocol: Sendable {
     ///   - translation: Optional translation
     ///   - cefrLevel: Optional CEFR level
     ///   - count: Number of sentences to generate (default: 3)
+    ///   - config: Generation configuration (AI source preference)
     ///
     /// - Returns: SentenceGenerationResponse with generated sentences
     /// - Throws: SentenceGenerationError if the request fails
@@ -33,7 +34,8 @@ protocol SentenceGenerationProtocol: Sendable {
         definition: String,
         translation: String?,
         cefrLevel: String?,
-        count: Int
+        count: Int,
+        config: SentenceGenerationService.GenerationConfig?
     ) async throws -> SentenceGenerationResponse
 
     /// Batch generate sentences for multiple flashcards
@@ -77,14 +79,16 @@ struct ProductionSentenceGenerator: SentenceGenerationProtocol {
         definition: String,
         translation: String? = nil,
         cefrLevel: String? = nil,
-        count: Int = 3
+        count: Int = 3,
+        config: SentenceGenerationService.GenerationConfig? = nil
     ) async throws -> SentenceGenerationResponse {
         try await self.service.generateSentences(
             cardWord: word,
             cardDefinition: definition,
             cardTranslation: translation,
             cardCEFR: cefrLevel,
-            count: count
+            count: count,
+            config: config
         )
     }
 

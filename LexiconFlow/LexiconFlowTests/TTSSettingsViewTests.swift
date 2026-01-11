@@ -625,6 +625,129 @@ struct TTSSettingsViewTests {
             }
         }
     }
+
+    // MARK: - Voice Quality Picker Tests
+
+    @Test("Voice quality picker shows all three options")
+    func voiceQualityPickerShowsAllOptions() async throws {
+        // Given: VoiceQuality enum
+        let allCases = AppSettings.VoiceQuality.allCases
+
+        // Then: Should have exactly 3 cases
+        #expect(allCases.count == 3)
+        #expect(allCases.contains(.premium))
+        #expect(allCases.contains(.enhanced))
+        #expect(allCases.contains(.default))
+    }
+
+    @Test("Voice quality picker updates AppSettings")
+    func voiceQualityPickerUpdatesSettings() async throws {
+        // Given: Initial quality
+        let initial = AppSettings.ttsVoiceQuality
+
+        // When: Setting quality to premium
+        AppSettings.ttsVoiceQuality = .premium
+        #expect(AppSettings.ttsVoiceQuality == .premium)
+
+        // When: Setting quality to default
+        AppSettings.ttsVoiceQuality = .default
+        #expect(AppSettings.ttsVoiceQuality == .default)
+
+        // Reset
+        AppSettings.ttsVoiceQuality = initial
+    }
+
+    @Test("Voice quality display name updates in selected text")
+    func voiceQualityDisplayNameUpdates() async throws {
+        // Given: Voice quality and accent
+        AppSettings.ttsVoiceQuality = .premium
+        AppSettings.ttsVoiceLanguage = "en-US"
+
+        // When: Checking display text
+        // Then: Should show "American English (Premium)"
+        #expect(AppSettings.ttsVoiceQuality.displayName == "Premium")
+
+        AppSettings.ttsVoiceQuality = .enhanced
+
+        // Then: Should show "American English (Enhanced)"
+        #expect(AppSettings.ttsVoiceQuality.displayName == "Enhanced")
+    }
+
+    @Test("Voice quality picker works with all accent combinations")
+    func voiceQualityWithAllAccents() async throws {
+        // Given: All supported accents
+        for accent in AppSettings.supportedTTSAccents {
+            // When: Setting accent with each quality option
+            AppSettings.ttsVoiceLanguage = accent.code
+
+            for quality in AppSettings.VoiceQuality.allCases {
+                AppSettings.ttsVoiceQuality = quality
+
+                // Then: Should work without conflict
+                #expect(AppSettings.ttsVoiceQuality == quality)
+                #expect(AppSettings.ttsVoiceLanguage == accent.code)
+            }
+        }
+    }
+
+    @Test("Voice quality persists across app restarts")
+    func voiceQualityPersists() async throws {
+        // Given: Fresh defaults
+        AppSettings.ttsVoiceQuality = .premium
+
+        // When: Simulating app restart by re-reading from @AppStorage
+        let storedValue = UserDefaults.standard.string(forKey: "ttsVoiceQuality")
+
+        // Then: Value should persist
+        #expect(storedValue == "premium")
+
+        // Reset
+        AppSettings.ttsVoiceQuality = .enhanced
+    }
+
+    @Test("Voice quality default is enhanced")
+    func voiceQualityDefault() async throws {
+        // Given: Fresh UserDefaults (reset quality)
+        UserDefaults.standard.removeObject(forKey: "ttsVoiceQuality")
+
+        // When: Accessing ttsVoiceQuality
+        let quality = AppSettings.ttsVoiceQuality
+
+        // Then: Should default to .enhanced
+        #expect(quality == .enhanced)
+    }
+
+    @Test("Voice quality displayName is unique")
+    func voiceQualityDisplayNamesAreUnique() async throws {
+        // Given: VoiceQuality enum
+        // When: Getting all display names
+        let displayNames = AppSettings.VoiceQuality.allCases.map(\.displayName)
+
+        // Then: Should all be unique
+        let uniqueNames = Set(displayNames)
+        #expect(displayNames.count == uniqueNames.count)
+    }
+
+    @Test("Voice quality description is informative")
+    func voiceQualityDescriptions() async throws {
+        // Given: VoiceQuality enum
+        // When: Accessing descriptions
+        #expect(AppSettings.VoiceQuality.premium.description.contains("neural"))
+        #expect(AppSettings.VoiceQuality.enhanced.description.contains("quality"))
+        #expect(AppSettings.VoiceQuality.default.description.contains("pre-installed"))
+    }
+
+    @Test("Voice quality icon is valid SF Symbol")
+    func voiceQualityIcons() async throws {
+        // Given: VoiceQuality enum
+        // When: Accessing icons
+        let premiumIcon = Image(systemName: AppSettings.VoiceQuality.premium.icon)
+        let enhancedIcon = Image(systemName: AppSettings.VoiceQuality.enhanced.icon)
+        let defaultIcon = Image(systemName: AppSettings.VoiceQuality.default.icon)
+
+        // Then: Should not crash if icons are valid
+        _ = (premiumIcon, enhancedIcon, defaultIcon)
+    }
 }
 
 // MARK: - Test Helpers

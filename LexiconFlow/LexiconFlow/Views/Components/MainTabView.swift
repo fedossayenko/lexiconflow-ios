@@ -10,7 +10,7 @@ import SwiftUI
 
 struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
-    @State private var selectedTab = 0
+    @Binding var selectedTab: Int
     @State private var dueCardCount = 0
     @State private var scheduler: Scheduler? // Memoized scheduler for performance
     @State private var lastBadgeUpdate: Date? // Debouncing for badge updates
@@ -142,6 +142,6 @@ struct MainTabView: View {
 }
 
 #Preview {
-    MainTabView()
+    MainTabView(selectedTab: .constant(0))
         .modelContainer(for: [Flashcard.self, Deck.self, FSRSState.self, FlashcardReview.self, StudySession.self, DailyStats.self], inMemory: true)
 }

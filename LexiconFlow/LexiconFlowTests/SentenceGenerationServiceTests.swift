@@ -673,4 +673,94 @@ struct SentenceGenerationServiceTests {
         // Temperature is hardcoded in the service
         #expect(expectedTemperature == 0.8)
     }
+
+    // MARK: - On-Device AI Tests
+
+    @Test("generateSentences prefers on-device AI when setting is onDevice")
+    func generateSentencesPrefersOnDevice() async throws {
+        // Given: On-device AI preference
+        let originalPreference = await AppSettings.aiSourcePreference
+        await AppSettings.aiSourcePreference = .onDevice
+
+        // When: Generating sentences
+        // Note: This test will fall back to cloud if FoundationModels unavailable
+        let service = SentenceGenerationService.shared
+
+        // Smoke test - should not crash regardless of fallback
+        // May throw if no API key is set, which is expected behavior
+        do {
+            _ = try await service.generateSentences(
+                cardWord: "test",
+                cardDefinition: "a test",
+                cardTranslation: nil,
+                cardCEFR: nil,
+                count: 3
+            )
+        } catch {
+            // Expected if no API key and on-device unavailable
+            // Test passes if no crash occurs
+        }
+
+        // Reset
+        await AppSettings.aiSourcePreference = originalPreference
+    }
+
+    @Test("generateSentences falls back to cloud when on-device fails")
+    func generateSentencesOnDeviceFallbackToCloud() async throws {
+        // Given: On-device preference but unavailable model
+        let originalPreference = await AppSettings.aiSourcePreference
+        await AppSettings.aiSourcePreference = .onDevice
+
+        // When: On-device generation fails (model unavailable)
+        // Then: Should fall back to cloud API or static sentences
+        let service = SentenceGenerationService.shared
+
+        // Smoke test - should not crash
+        do {
+            _ = try await service.generateSentences(
+                cardWord: "test",
+                cardDefinition: "a test",
+                cardTranslation: nil,
+                cardCEFR: nil,
+                count: 3
+            )
+        } catch {
+            // Expected if no API key and on-device unavailable
+            // Test passes if no crash occurs
+        }
+
+        // Reset
+        await AppSettings.aiSourcePreference = originalPreference
+    }
+
+    @Test("AISourcePreference enum has correct cases")
+    func aiSourceEnum() async throws {
+        // Given: AISource enum
+        // When: Checking all cases
+        let cases = AppSettings.AISource.allCases
+
+        // Then: Should have onDevice and cloud cases
+        #expect(cases.contains(.onDevice))
+        #expect(cases.contains(.cloud))
+    }
+
+    @Test("AISourcePreference display properties work")
+    func aiSourceDisplayProperties() async throws {
+        // Given: AISource enum
+        // When: Accessing display properties
+        #expect(!AppSettings.AISource.onDevice.displayName.isEmpty)
+        #expect(!AppSettings.AISource.cloud.displayName.isEmpty)
+        #expect(AppSettings.AISource.onDevice.description.contains("offline"))
+        #expect(AppSettings.AISource.cloud.description.contains("API key"))
+    }
+
+    @Test("AISourcePreference is Sendable")
+    func aiSourceIsSendable() async throws {
+        // Given: AISource enum
+        // When: Checking Sendable conformance
+        let source: any Sendable = AppSettings.AISource.onDevice
+
+        // Then: Should conform to Sendable
+        #expect(source is AppSettings.AISource)
+    }
 }

@@ -809,6 +809,9 @@ final class Scheduler {
             DeckStatisticsCache.shared.invalidate(deckID: flashcard.deck?.id)
             StatisticsService.shared.invalidateCache()
 
+            // Sync to widgets (fire and forget to avoid UI blocking if possible, though strict MainActor enforces serial execution)
+            StatisticsService.shared.syncToWidgets(context: self.modelContext)
+
             Analytics.trackEvent("card_reviewed", metadata: [
                 "rating": "\(rating)",
                 "state": result.stateEnum,
@@ -911,6 +914,7 @@ final class Scheduler {
 
             // Invalidate statistics cache after reset
             DeckStatisticsCache.shared.invalidate(deckID: flashcard.deck?.id)
+            StatisticsService.shared.syncToWidgets(context: self.modelContext)
 
             Analytics.trackEvent("card_reset", metadata: [
                 "card": flashcard.word

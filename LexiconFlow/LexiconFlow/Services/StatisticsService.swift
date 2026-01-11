@@ -848,4 +848,44 @@ final class StatisticsService {
             throw error
         }
     }
+
+    // MARK: - Widget Synchronization
+
+    /// Sync current stats to WidgetDataManager
+    ///
+    /// Calculates streak, due count, and last study date, then pushes to shared App Group storage.
+    /// This allows widgets to stay up-to-date with the main app's state.
+    ///
+    /// - Parameter context: SwiftData ModelContext for queries
+    func syncToWidgets(context: ModelContext) {
+        let streakData = self.calculateStudyStreak(context: context)
+        let currentStreak = streakData.currentStreak
+
+        // Calculate due count (reusing logic from Scheduler via raw query for efficiency)
+        let now = Date()
+        let stateDescriptor = FetchDescriptor<FSRSState>(
+            predicate: #Predicate<FSRSState> { state in
+                state.dueDate <= now && state.stateEnum != "new"
+            }
+        )
+        let dueCount = (try? context.fetchCount(stateDescriptor)) ?? 0
+
+        // Get last study date
+        // Note: studySessions are sorted by startTime by default in SwiftData? No warranty.
+        // We'll query for the most recent session.
+        var lastStudyDate: Date?
+        var descriptor = FetchDescriptor<StudySession>(sortBy: [SortDescriptor(\.startTime, order: .reverse)])
+        descriptor.fetchLimit = 1
+
+        if let lastSession = (try? context.fetch(descriptor))?.first {
+            lastStudyDate = lastSession.startTime
+        }
+
+        self.logger.info("Syncing to widgets: Streak=\(currentStreak), Due=\(dueCount)")
+        WidgetDataManager.shared.updateStats(
+            dueCount: dueCount,
+            streakCount: currentStreak,
+            lastStudyDate: lastStudyDate
+        )
+    }
 }

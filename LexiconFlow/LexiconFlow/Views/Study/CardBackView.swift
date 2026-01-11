@@ -5,12 +5,23 @@
 //  Back of flashcard showing definition, translation, and AI-generated sentences
 //
 
+import OSLog
 import SwiftData
 import SwiftUI
 
 struct CardBackView: View {
     @Bindable var card: Flashcard
     @State private var showAllSentences = false
+    @State private var isRegenerating = false
+    @Environment(\.modelContext) private var modelContext
+
+    // Logger for diagnostics
+    private let logger = Logger(subsystem: "com.lexiconflow.cards", category: "CardBackView")
+
+    // Toast State
+    @State private var showToast = false
+    @State private var toastMessage = ""
+    @State private var toastStyle: ToastStyle = .info
 
     var body: some View {
         ScrollView {
@@ -93,6 +104,7 @@ struct CardBackView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Card back")
+        .toast(isPresented: self.$showToast, message: self.toastMessage, style: self.toastStyle)
     }
 
     // MARK: - Sentence Section
@@ -105,12 +117,33 @@ struct CardBackView: View {
         // Only show section if there are valid sentences
         if !validSentences.isEmpty {
             VStack(alignment: .leading, spacing: 16) {
-                // Header (no button)
-                Text("AI Sentences")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
+                // Header
+                HStack {
+                    Text("AI Sentences")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+
+                    Spacer()
+
+                    if AppSettings.isSentenceGenerationEnabled {
+                        Button {
+                            HapticService.shared.triggerLight()
+                            self.regenerateSentences()
+                        } label: {
+                            if self.isRegenerating {
+                                ProgressView()
+                                    .controlSize(.mini)
+                            } else {
+                                Label("Regenerate", systemImage: "arrow.triangle.2.circlepath")
+                                    .labelStyle(.iconOnly)
+                                    .font(.caption2)
+                            }
+                        }
+                        .disabled(self.isRegenerating)
+                        .accessibilityLabel("Regenerate sentences")
+                    }
+                }
+                .padding(.horizontal)
 
                 // Sentences display
                 self.sentencesList(sentences: validSentences)
@@ -142,6 +175,92 @@ struct CardBackView: View {
     }
 
     // MARK: - Helper Methods
+
+    /// Regenerate AI sentences
+    ///
+    /// **Concurrency Pattern**: Capture all SwiftData model properties BEFORE entering Task
+    /// to avoid accessing @Model properties off the main actor.
+    private func regenerateSentences() {
+        self.isRegenerating = true
+
+        // Capture SwiftData model properties on MainActor BEFORE Task
+        // This prevents data races by avoiding cross-actor model access
+        let cardWord = self.card.word
+        let cardDefinition = self.card.definition
+        let cardTranslation = self.card.translation
+        let cardCEFR = self.card.cefrLevel
+
+        // Capture config from AppSettings on MainActor (DTO pattern)
+        let config = SentenceGenerationService.GenerationConfig(
+            aiSource: AppSettings.aiSourcePreference == .onDevice ? .onDevice : .cloud
+        )
+
+        Task {
+            do {
+                let response = try await SentenceGenerationService.shared.generateSentences(
+                    cardWord: cardWord,
+                    cardDefinition: cardDefinition,
+                    cardTranslation: cardTranslation,
+                    cardCEFR: cardCEFR,
+                    config: config
+                )
+
+                await MainActor.run {
+                    // Remove non-favorite generated sentences to avoid clutter
+                    // We keep favorites and user created ones
+                    let toRemove = self.card.generatedSentences.filter {
+                        !$0.isFavorite && $0.source != .userCreated
+                    }
+
+                    // O(n) removal using removeAll(where:) instead of O(n^2) index lookup
+                    self.card.generatedSentences.removeAll { sentence in
+                        if toRemove.contains(sentence) {
+                            self.modelContext.delete(sentence)
+                            return true
+                        }
+                        return false
+                    }
+
+                    // Add new sentences with proper error handling
+                    for item in response.items {
+                        do {
+                            let newSentence = try GeneratedSentence(
+                                sentenceText: item.sentence,
+                                cefrLevel: item.cefrLevel,
+                                source: .aiGenerated
+                            )
+                            self.card.generatedSentences.append(newSentence)
+                        } catch {
+                            // Track sentence initialization errors with Analytics
+                            #if !DEBUG
+                                Analytics.trackError(
+                                    "sentence_init_failed",
+                                    error: error,
+                                    metadata: ["sentence": item.sentence.prefix(50)]
+                                )
+                            #endif
+                            // Skip invalid sentences and continue
+                            self.logger.warning("Skipping invalid sentence: \(error.localizedDescription)")
+                        }
+                    }
+
+                    self.toastMessage = "New examples ready!"
+                    self.toastStyle = .success
+                    self.showToast = true
+                }
+            } catch {
+                await MainActor.run {
+                    self.toastMessage = "Generation failed"
+                    self.toastStyle = .error
+                    self.showToast = true
+                }
+            }
+
+            await MainActor.run {
+                self.isRegenerating = false
+            }
+        }
+    }
 }
 
 // MARK: - Helper Methods

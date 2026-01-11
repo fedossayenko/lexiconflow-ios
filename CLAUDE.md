@@ -251,6 +251,46 @@ DeckStatisticsCache.shared.size // Current entry count
 - `deck_statistics_cache_set` - New entry stored
 - `deck_statistics_cache_invalidate` - Cache invalidated
 
+### 8. Toast Notification Pattern
+
+**Description**: Non-intrusive, glassmorphic toast notifications for user feedback
+
+**When to Use**:
+- Success/error feedback for async operations
+- Non-blocking user notifications
+- Temporary status updates
+
+**Usage**:
+```swift
+// In your view
+@State private var showToast = false
+@State private var toastMessage = ""
+@State private var toastStyle: ToastStyle = .info
+
+someView
+    .toast(
+        isPresented: $showToast,
+        message: toastMessage,
+        style: toastStyle,
+        duration: 2.5
+    )
+
+// Trigger toast
+showToast = true
+toastMessage = "Operation completed successfully"
+toastStyle = .success
+```
+
+**Styles Available**:
+- `.success` - Green checkmark for successful operations
+- `.error` - Red triangle for errors
+- `.info` - Blue circle for informational messages
+- `.warning` - Orange exclamation for warnings
+
+**Reference**: `LexiconFlow/LexiconFlow/Views/Components/ToastView.swift`
+
+**Rationale**: Provides consistent, non-intrusive user feedback that respects the app's glassmorphism design language. Includes haptic feedback for accessibility.
+
 
 ## Project Structure
 

@@ -150,6 +150,9 @@ enum AppSettings {
         ("en-ZA", "South African English")
     ]
 
+    /// Voice quality preference for TTS
+    @AppStorage("ttsVoiceQuality") static var ttsVoiceQuality: VoiceQuality = .enhanced
+
     // MARK: - Study Session Settings (NEW)
 
     /// Maximum number of cards to fetch per study session
@@ -453,6 +456,7 @@ enum AppSettings {
                 "glassEffectsEnabled": true,
                 "glassEffectIntensity": 0.7,
                 "gestureSensitivity": 1.0,
+                "ttsVoiceQuality": "enhanced",
                 "matchedGeometryEffectEnabled": false,
                 "performanceMode": "auto"
             ] as [String: Any]
@@ -563,6 +567,47 @@ enum AppSettings {
             switch self {
             case .random: "shuffle"
             case .sequential: "list.bullet"
+            }
+        }
+    }
+
+    /// Voice quality preference for TTS
+    ///
+    /// **Options:**
+    /// - `.premium`: Highest quality neural voices (~100MB+ download)
+    /// - `.enhanced`: High quality voices (~50MB download)
+    /// - `.default`: Basic pre-installed voices (no download)
+    ///
+    /// **Compatibility:**
+    /// - Premium: iOS 16.0+ (iPhone 12 and later supported)
+    /// - Enhanced: iOS 9.0+
+    /// - Default: iOS 9.0+
+    enum VoiceQuality: String, CaseIterable, Sendable {
+        case premium
+        case enhanced
+        case `default`
+
+        var displayName: String {
+            switch self {
+            case .premium: "Premium"
+            case .enhanced: "Enhanced"
+            case .default: "Default"
+            }
+        }
+
+        var description: String {
+            switch self {
+            case .premium: "Highest quality neural voices (~100MB)"
+            case .enhanced: "High quality voices (~50MB)"
+            case .default: "Basic pre-installed voices"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .premium: "star.fill"
+            case .enhanced: "waveform"
+            case .default: "speaker.wave.2"
             }
         }
     }
