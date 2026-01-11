@@ -116,3 +116,4 @@ iOSInjectionProject/
 # CI/CD log files (should be artifacts, not committed)
 logs.log
 *.log
+TestResults.xcresult/

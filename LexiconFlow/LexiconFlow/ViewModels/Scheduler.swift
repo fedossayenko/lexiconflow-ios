@@ -152,26 +152,35 @@ final class Scheduler {
             let states = try modelContext.fetch(stateDescriptor)
 
             // Convert to cards and filter by deck and card type in-memory
-            let cards = states.compactMap { state -> Flashcard? in
+            // Use early exit with reserveCapacity for performance optimization
+            var result: [Flashcard] = []
+            result.reserveCapacity(limit)
+
+            for state in states {
                 guard let card = state.card else {
                     self.logger.warning("FSRSState with nil card relationship detected")
-                    return nil
+                    continue
                 }
 
                 // Filter by deck in-memory
                 if let deckID, card.deck?.id != deckID {
-                    return nil
+                    continue
                 }
 
                 // Filter by card type based on study direction
                 if !self.matchesStudyDirection(card.cardType, studyDirection) {
-                    return nil
+                    continue
                 }
 
-                return card
+                result.append(card)
+
+                // Early exit when limit reached
+                if result.count >= limit {
+                    break
+                }
             }
 
-            return Array(cards.prefix(limit))
+            return result
         } catch {
             Analytics.trackError("fetch_due_cards", error: error)
             self.logger.error("Error fetching due cards: \(error)")

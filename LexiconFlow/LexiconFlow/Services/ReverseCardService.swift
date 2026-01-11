@@ -70,22 +70,34 @@ final class ReverseCardService {
         }
 
         var generatedCount = 0
+        var errorCount = 0
 
         for flashcard in eligibleFlashcards {
-            // Skip if already has a reverse card
-            if try self.hasReverseCard(for: flashcard, context: context) {
-                self.logger.debug("Reverse card already exists for '\(flashcard.word)'")
-                continue
-            }
+            do {
+                // Skip if already has a reverse card
+                if try self.hasReverseCard(for: flashcard, context: context) {
+                    self.logger.debug("Reverse card already exists for '\(flashcard.word)'")
+                    continue
+                }
 
-            // Create reverse card
-            guard let reverseCard = createReverseCard(from: flashcard, context: context) else {
-                self.logger.warning("Failed to create reverse card for '\(flashcard.word)'")
-                continue
+                // Create reverse card
+                guard let reverseCard = createReverseCard(from: flashcard, context: context) else {
+                    self.logger.warning("Failed to create reverse card for '\(flashcard.word)'")
+                    continue
+                }
+                context.insert(reverseCard)
+                generatedCount += 1
+                self.logger.debug("Generated reverse card for '\(flashcard.word)'")
+            } catch {
+                errorCount += 1
+                self.logger.error("Failed to check/create reverse card for '\(flashcard.word)': \(error)")
+                // Continue processing other cards
             }
-            context.insert(reverseCard)
-            generatedCount += 1
-            self.logger.debug("Generated reverse card for '\(flashcard.word)'")
+        }
+
+        // Log summary if there were errors
+        if errorCount > 0 {
+            self.logger.warning("Completed with \(generatedCount) successes, \(errorCount) errors")
         }
 
         // Save all changes

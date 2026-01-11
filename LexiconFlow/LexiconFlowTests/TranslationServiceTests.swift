@@ -24,10 +24,8 @@ import Testing
 struct TranslationServiceTests {
     /// Environment variable to disable network-dependent tests
     /// Set LEXICONFLOW_SKIP_NETWORK_TESTS=1 to skip tests requiring API calls
-    /// Note: nonisolated to allow access from Sendable closure in .disabled()
-    private nonisolated(unsafe) static var shouldSkipNetworkTests: Bool {
-        ProcessInfo.processInfo.environment["LEXICONFLOW_SKIP_NETWORK_TESTS"] == "1"
-    }
+    /// Note: Lazy static initializer is immutable and Sendable-safe
+    private static let shouldSkipNetworkTests: Bool = ProcessInfo.processInfo.environment["LEXICONFLOW_SKIP_NETWORK_TESTS"] == "1"
 
     // MARK: - Singleton Tests
 
