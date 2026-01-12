@@ -1198,7 +1198,7 @@ final class Scheduler {
     /// Check if a card type matches the current study direction setting
     ///
     /// **Filtering Logic:**
-    /// - `.recognitionOnly`: Forward cards only (cardTypeRaw == "forward" OR nil)
+    /// - `.recognitionOnly`: Forward and audio-only cards (cardTypeRaw == "forward" OR "audio" OR nil)
     /// - `.productionOnly`: Reverse cards only (cardTypeRaw == "reverse")
     /// - `.both`: All cards (no filtering)
     ///
@@ -1208,16 +1208,18 @@ final class Scheduler {
     /// - Returns: True if the card should be included in the study session
     /// Internal for testability
     func matchesStudyDirection(_ cardType: CardType, _ direction: AppSettings.StudyDirection) -> Bool {
-        switch direction {
-        case .recognitionOnly:
-            // Only forward cards (nil defaults to forward for backward compatibility)
-            cardType == .forward
-        case .productionOnly:
-            // Only reverse cards
-            cardType == .reverse
-        case .both:
-            // All cards included
+        switch (cardType, direction) {
+        case (.forward, .recognitionOnly), (.audio, .recognitionOnly):
+            // Forward and audio cards are recognition modes
             true
+        case (.reverse, .productionOnly):
+            // Reverse cards are production mode
+            true
+        case (_, .both):
+            // All cards included when study direction is "both"
+            true
+        default:
+            false
         }
     }
 }

@@ -89,7 +89,7 @@ struct SettingsView: View {
                         HStack {
                             Label("Translation", systemImage: "character.book.closed")
                             Spacer()
-                            Text("Z.ai API")
+                            Text("API")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }

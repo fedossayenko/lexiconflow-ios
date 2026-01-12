@@ -8,6 +8,11 @@
 import SwiftUI
 
 struct AppearanceSettingsView: View {
+    // MARK: - State
+
+    @State private var matchedGeometryEnabled: Bool = AppSettings.matchedGeometryEffectEnabled
+    @State private var performanceMode: AppSettings.PerformanceMode = AppSettings.performanceMode
+
     // MARK: - UI Constants
 
     /// Percentage display constants
@@ -187,6 +192,92 @@ struct AppearanceSettingsView: View {
                 .padding(.vertical, 8)
             } header: {
                 Text("Preview")
+            }
+
+            // Matched Geometry Effect Toggle
+            Section {
+                Toggle(isOn: self.$matchedGeometryEnabled) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Matched Geometry Effects")
+                            .font(.body)
+                        Text("Smooth element transitions between views")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityLabel("Enable matched geometry effects")
+                .onChange(of: self.matchedGeometryEnabled) { _, newValue in
+                    AppSettings.matchedGeometryEffectEnabled = newValue
+                }
+            } header: {
+                Text("Advanced Effects")
+            } footer: {
+                Text("Disable for better performance on older devices.")
+            }
+
+            // Performance Mode Picker
+            Section {
+                Picker("Performance Mode", selection: self.$performanceMode) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "cpu")
+                                .foregroundStyle(.secondary)
+                            Text("Auto")
+                                .font(.body)
+                        }
+                        Text("Device-based automatic optimization")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .tag(AppSettings.PerformanceMode.auto)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "paintbrush.fill")
+                                .foregroundStyle(.secondary)
+                            Text("Full Effects")
+                                .font(.body)
+                        }
+                        Text("All visual effects enabled")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .tag(AppSettings.PerformanceMode.full)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "tortoise.fill")
+                                .foregroundStyle(.secondary)
+                            Text("Reduced")
+                                .font(.body)
+                        }
+                        Text("Reduce transparency and blur")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .tag(AppSettings.PerformanceMode.reduced)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "hare.fill")
+                                .foregroundStyle(.secondary)
+                            Text("Minimal")
+                                .font(.body)
+                        }
+                        Text("Disable animations and effects")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .tag(AppSettings.PerformanceMode.minimal)
+                }
+                .accessibilityLabel("Performance mode")
+                .onChange(of: self.performanceMode) { _, newValue in
+                    AppSettings.performanceMode = newValue
+                }
+            } header: {
+                Text("Performance Mode")
+            } footer: {
+                Text("Reduce visual effects for better battery life on older devices.")
             }
         }
         .navigationTitle("Appearance")

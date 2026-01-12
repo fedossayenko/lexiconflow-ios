@@ -94,10 +94,10 @@ enum AppSettings {
 
     /// Whether AI-powered sentence generation is enabled
     ///
-    /// **Note**: This is an optional cloud feature that requires an API key.
-    /// Disabled by default. Can be enabled in future "Premium" tier.
+    /// **Note**: Uses on-device Foundation Models (iOS 26+) by default, no API key required.
+    /// Falls back to cloud API if API key is configured.
     /// When disabled, flashcards work normally but without example sentences.
-    @AppStorage("sentenceGenerationEnabled") static var isSentenceGenerationEnabled: Bool = false
+    @AppStorage("sentenceGenerationEnabled") static var isSentenceGenerationEnabled: Bool = true
 
     /// AI source preference for sentence generation
     ///
@@ -121,6 +121,12 @@ enum AppSettings {
     ///
     /// **Default:** Recognition-only mode for new users
     @AppStorage("studyDirection") static var studyDirection: StudyDirection = .recognitionOnly
+
+    /// Whether to include audio-only cards in study sessions
+    ///
+    /// **Purpose:** Enables audio-only listening comprehension cards
+    /// **Default:** `false` (disabled by default until user creates audio-only cards)
+    @AppStorage("includeAudioOnlyCards") static var includeAudioOnlyCards: Bool = false
 
     /// Supported translation languages for on-device translation (24 languages supported by iOS Translation framework)
     static let supportedLanguages: [(code: String, name: String)] = [

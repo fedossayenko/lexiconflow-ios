@@ -319,9 +319,10 @@ actor SentenceGenerationService {
         let response = try await session.respond(to: prompt)
 
         // Decode from response text
-        // Note: Assuming .text or similar property exists, or custom string interpolation
-        // Standard LanguageModelSession.Response<String> usually exposes the value directly or via property
-        return try self.decodeJSONResponseSynchronously(from: String(describing: response))
+        // LanguageModelSession.Response<String> has a `content` property that returns the generated text
+        // Reference: https://developer.apple.com/documentation/foundationmodels/languagemodelsession/response
+        let responseText = response.content
+        return try self.decodeJSONResponseSynchronously(from: responseText)
     }
 
     /// Generate sentences using cloud API (Z.ai)
