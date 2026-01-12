@@ -23,7 +23,8 @@ xcodebuild build -project LexiconFlow.xcodeproj -scheme LexiconFlow \
 # Test all (serialized for shared container)
 xcodebuild test -project LexiconFlow.xcodeproj -scheme LexiconFlow \
   -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2' \
-  -only-testing:LexiconFlowTests -parallel-testing-enabled NO
+  -only-testing:LexiconFlowTests -parallel-testing-enabled NO \
+  -resultBundlePath /tmp/lexiconflow-test-results.xcresult
 
 # Resolve dependencies
 xcodebuild -resolvePackageDependencies
