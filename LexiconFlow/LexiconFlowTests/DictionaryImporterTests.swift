@@ -501,6 +501,60 @@ struct DictionaryImporterTests {
         #expect(importer.detectFormat(from: textURL) == .txt)
     }
 
+    // MARK: - File Validation Tests
+
+    @Test("validateFileURL rejects .apkg files")
+    func rejectsApkgFiles() throws {
+        let content = "Anki package content"
+        let fileURL = try createTestFile(content: content, extension: "apkg")
+
+        let container = self.createTestContainer()
+        let importer = DictionaryImporter(modelContext: container.mainContext)
+
+        let format = importer.detectFormat(from: fileURL)
+
+        // .apkg should not be recognized (defaults to TXT or returns unknown)
+        #expect(format != .apkg)
+    }
+
+    @Test("detectFormat accepts only CSV, JSON, TXT files")
+    func acceptsValidExtensions() throws {
+        let container = self.createTestContainer()
+        let importer = DictionaryImporter(modelContext: container.mainContext)
+
+        // Test CSV
+        let csvURL = try createTestFile(content: "word,def", extension: "csv")
+        #expect(importer.detectFormat(from: csvURL) == .csv)
+
+        // Test JSON
+        let jsonURL = try createTestFile(content: "[]", extension: "json")
+        #expect(importer.detectFormat(from: jsonURL) == .json)
+
+        // Test TXT
+        let txtURL = try createTestFile(content: "word", extension: "txt")
+        #expect(importer.detectFormat(from: txtURL) == .txt)
+
+        // Test TEXT (alternative to TXT)
+        let textURL = try createTestFile(content: "word", extension: "text")
+        #expect(importer.detectFormat(from: textURL) == .txt)
+    }
+
+    @Test("allowedExtensions does not include apkg")
+    func allowedExtensionsExcludesApkg() {
+        let allFormats = DictionaryImporter.ImportFormat.allCases
+        var allExtensions: [String] = []
+
+        for format in allFormats {
+            allExtensions.append(contentsOf: format.fileExtensions)
+        }
+
+        #expect(!allExtensions.contains("apkg"))
+        #expect(allExtensions.contains("csv"))
+        #expect(allExtensions.contains("json"))
+        #expect(allExtensions.contains("txt"))
+        #expect(allExtensions.contains("text"))
+    }
+
     // MARK: - Error Handling Tests
 
     @Test("ImportError provides localizedDescription")

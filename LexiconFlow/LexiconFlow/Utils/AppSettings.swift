@@ -411,9 +411,19 @@ enum AppSettings {
         var displayName: String {
             switch self {
             case .auto: "Auto"
-            case .full: "Full"
+            case .full: "Full Effects"
             case .reduced: "Reduced"
             case .minimal: "Minimal"
+            }
+        }
+
+        /// SF Symbol icon name for performance mode
+        var iconName: String {
+            switch self {
+            case .auto: "cpu"
+            case .full: "paintbrush.fill"
+            case .reduced: "tortoise.fill"
+            case .minimal: "hare.fill"
             }
         }
 

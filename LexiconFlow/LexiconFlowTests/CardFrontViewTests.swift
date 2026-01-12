@@ -184,4 +184,77 @@ struct CardFrontViewTests {
 
         #expect(card.cardType.iconName == "arrow.left")
     }
+
+    // MARK: - Audio-Only Card Tests
+
+    @Test("isAudioOnly returns true for audio cards")
+    func isAudioOnlyTrue() throws {
+        let card = self.createFlashcard(word: "test", translation: "тест", cardType: .audio)
+        let view = CardFrontView(card: card)
+
+        #expect(view.isAudioOnly == true)
+    }
+
+    @Test("isAudioOnly returns false for forward cards")
+    func isAudioOnlyFalseForward() throws {
+        let card = self.createFlashcard(word: "test", translation: "тест", cardType: .forward)
+        let view = CardFrontView(card: card)
+
+        #expect(view.isAudioOnly == false)
+    }
+
+    @Test("isAudioOnly returns false for reverse cards")
+    func isAudioOnlyFalseReverse() throws {
+        let card = self.createFlashcard(word: "test", translation: "тест", cardType: .reverse)
+        let view = CardFrontView(card: card)
+
+        #expect(view.isAudioOnly == false)
+    }
+
+    @Test("displayWord returns word for audio cards")
+    func displayWordForAudio() throws {
+        let card = self.createFlashcard(word: "ephemeral", translation: "эфемерный", cardType: .audio)
+        let view = CardFrontView(card: card)
+
+        #expect(view.displayWord == "ephemeral")
+    }
+
+    @Test("shouldShowPhonetic returns false for audio cards")
+    func shouldShowPhoneticFalseForAudio() throws {
+        let card = self.createFlashcard(word: "test", translation: "тест", phonetic: "/test/", cardType: .audio)
+        let view = CardFrontView(card: card)
+
+        #expect(view.shouldShowPhonetic == false)
+    }
+
+    @Test("cardTypeColor returns purple for audio cards")
+    func cardTypeColorForAudio() throws {
+        let card = self.createFlashcard(cardType: .audio)
+        let view = CardFrontView(card: card)
+
+        // Verify method is callable (Color comparison not supported in tests)
+        let color = view.cardTypeColor(for: .audio)
+        #expect(color != Color.clear)
+    }
+
+    @Test("Audio card displays correct displayName")
+    func audioDisplayName() throws {
+        let card = self.createFlashcard(cardType: .audio)
+
+        #expect(card.cardType.displayName == "Audio-Only")
+    }
+
+    @Test("Audio card displays correct iconName")
+    func audioIconName() throws {
+        let card = self.createFlashcard(cardType: .audio)
+
+        #expect(card.cardType.iconName == "speaker.wave.2")
+    }
+
+    @Test("Audio card displays correct arrowSymbol")
+    func audioArrowSymbol() throws {
+        let card = self.createFlashcard(cardType: .audio)
+
+        #expect(card.cardType.arrowSymbol == "🔊")
+    }
 }

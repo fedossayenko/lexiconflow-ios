@@ -218,57 +218,10 @@ struct AppearanceSettingsView: View {
             // Performance Mode Picker
             Section {
                 Picker("Performance Mode", selection: self.$performanceMode) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "cpu")
-                                .foregroundStyle(.secondary)
-                            Text("Auto")
-                                .font(.body)
-                        }
-                        Text("Device-based automatic optimization")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    ForEach(AppSettings.PerformanceMode.allCases, id: \.self) { mode in
+                        Label(mode.displayName, systemImage: mode.iconName)
+                            .tag(mode)
                     }
-                    .tag(AppSettings.PerformanceMode.auto)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "paintbrush.fill")
-                                .foregroundStyle(.secondary)
-                            Text("Full Effects")
-                                .font(.body)
-                        }
-                        Text("All visual effects enabled")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .tag(AppSettings.PerformanceMode.full)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "tortoise.fill")
-                                .foregroundStyle(.secondary)
-                            Text("Reduced")
-                                .font(.body)
-                        }
-                        Text("Reduce transparency and blur")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .tag(AppSettings.PerformanceMode.reduced)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "hare.fill")
-                                .foregroundStyle(.secondary)
-                            Text("Minimal")
-                                .font(.body)
-                        }
-                        Text("Disable animations and effects")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .tag(AppSettings.PerformanceMode.minimal)
                 }
                 .accessibilityLabel("Performance mode")
                 .onChange(of: self.performanceMode) { _, newValue in

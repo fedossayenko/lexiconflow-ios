@@ -1831,4 +1831,91 @@ struct SwiftDataRollbackTests {
         // Reset
         AppSettings.studyDirection = .recognitionOnly
     }
+
+    // MARK: - Audio Card Study Direction Tests
+
+    @Test("Scheduler: audio cards match recognitionOnly mode")
+    func audioMatchesRecognitionOnly() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        #expect(scheduler.matchesStudyDirection(.audio, .recognitionOnly))
+    }
+
+    @Test("Scheduler: audio cards do not match productionOnly mode")
+    func audioDoesNotMatchProductionOnly() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        #expect(scheduler.matchesStudyDirection(.audio, .productionOnly) == false)
+    }
+
+    @Test("Scheduler: audio cards match both mode")
+    func audioMatchesBothMode() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        #expect(scheduler.matchesStudyDirection(.audio, .both))
+    }
+
+    @Test("Scheduler: all card types match both mode")
+    func allCardTypesMatchBoth() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        #expect(scheduler.matchesStudyDirection(.forward, .both))
+        #expect(scheduler.matchesStudyDirection(.reverse, .both))
+        #expect(scheduler.matchesStudyDirection(.audio, .both))
+    }
+
+    @Test("Scheduler: recognitionOnly includes forward and audio, excludes reverse")
+    func recognitionOnlyCombination() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        #expect(scheduler.matchesStudyDirection(.forward, .recognitionOnly))
+        #expect(scheduler.matchesStudyDirection(.audio, .recognitionOnly))
+        #expect(scheduler.matchesStudyDirection(.reverse, .recognitionOnly) == false)
+    }
+
+    @Test("Scheduler: productionOnly includes reverse, excludes forward and audio")
+    func productionOnlyCombination() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        #expect(scheduler.matchesStudyDirection(.reverse, .productionOnly))
+        #expect(scheduler.matchesStudyDirection(.forward, .productionOnly) == false)
+        #expect(scheduler.matchesStudyDirection(.audio, .productionOnly) == false)
+    }
+
+    @Test("Scheduler: complete CardType × StudyDirection matrix coverage")
+    func completeMatrixCoverage() async throws {
+        let context = self.freshContext()
+        try context.clearAll()
+        let scheduler = Scheduler(modelContext: context)
+
+        let cardTypes: [CardType] = [.forward, .reverse, .audio]
+        let directions: [AppSettings.StudyDirection] = [.recognitionOnly, .productionOnly, .both]
+
+        // Expected results matrix
+        let expectedResults: [CardType: [AppSettings.StudyDirection: Bool]] = [
+            .forward: [.recognitionOnly: true, .productionOnly: false, .both: true],
+            .reverse: [.recognitionOnly: false, .productionOnly: true, .both: true],
+            .audio: [.recognitionOnly: true, .productionOnly: false, .both: true]
+        ]
+
+        for cardType in cardTypes {
+            for direction in directions {
+                let result = scheduler.matchesStudyDirection(cardType, direction)
+                let expected = expectedResults[cardType]![direction]!
+                #expect(result == expected, "\(cardType) × \(direction) should be \(expected)")
+            }
+        }
+    }
 }

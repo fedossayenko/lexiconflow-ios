@@ -59,32 +59,19 @@ class SpeechService {
 
     // MARK: - Public API
 
-    /// Speak text with current settings
+    /// Speak text with optional language override
     ///
     /// **Parameters:**
     ///   - text: The text to speak
-    ///
-    /// **Behavior:**
-    ///   - Checks `AppSettings.ttsEnabled` before speaking
-    ///   - Uses configured voice, rate, and pitch from AppSettings
-    ///   - Stops any ongoing speech before starting new speech
-    ///   - Configures audio session on first call
-    func speak(_ text: String) {
-        self.speak(text, language: nil)
-    }
-
-    /// Speak text with specific language
-    ///
-    /// **Parameters:**
-    ///   - text: The text to speak
-    ///   - language: BCP 47 language code (e.g., "en-US", "ru-RU"). If nil, uses AppSettings.ttsVoiceLanguage
+    ///   - language: Optional BCP 47 language code (e.g., "en-US", "ru-RU").
+    ///                If nil, uses AppSettings.ttsVoiceLanguage
     ///
     /// **Behavior:**
     ///   - Checks `AppSettings.ttsEnabled` before speaking
     ///   - Uses specified language or falls back to configured voice
     ///   - Stops any ongoing speech before starting new speech
     ///   - Configures audio session on first call
-    func speak(_ text: String, language: String?) {
+    func speak(_ text: String, language: String? = nil) {
         // Check if TTS is enabled
         guard AppSettings.ttsEnabled else {
             self.logger.debug("TTS disabled, skipping speech")

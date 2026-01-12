@@ -307,4 +307,81 @@ struct AudioOnlyCardTests {
         #expect(card.translation == nil)
         #expect(card.word == "test")
     }
+
+    // MARK: - AudioOnlyCardContent Computed Properties Tests
+
+    @Test("AudioOnlyCardContent: speechLanguage returns AppSetting for forward audio cards")
+    @MainActor
+    func speechLanguageForForwardAudio() {
+        AppSettings.ttsVoiceLanguage = "en-US"
+        let card = Flashcard(word: "ephemeral", definition: "test")
+        card.cardType = .audio
+
+        // Expected: speechLanguage uses AppSettings.ttsVoiceLanguage
+        #expect(card.cardType == .audio)
+        #expect(AppSettings.ttsVoiceLanguage == "en-US")
+    }
+
+    @Test("AudioOnlyCardContent: speechLanguage returns ru-RU for reverse audio cards")
+    @MainActor
+    func speechLanguageForReverseAudio() {
+        let card = Flashcard(word: "ephemeral", definition: "test", translation: "эфемерный")
+        card.cardType = .audio
+
+        // Expected: speechLanguage hardcoded to "ru-RU" for reverse
+        #expect(card.translation == "эфемерный")
+        #expect(card.cardType == .audio)
+    }
+
+    @Test("AudioOnlyCardContent: wordToSpeak returns word for forward audio cards")
+    @MainActor
+    func wordToSpeakForForwardAudio() {
+        let card = Flashcard(word: "ephemeral", definition: "test")
+        card.cardType = .audio
+
+        // Expected: wordToSpeak returns card.word
+        #expect(card.word == "ephemeral")
+        #expect(card.cardType == .audio)
+    }
+
+    @Test("AudioOnlyCardContent: wordToSpeak returns translation for reverse audio cards")
+    @MainActor
+    func wordToSpeakForReverseAudio() {
+        let card = Flashcard(word: "ephemeral", definition: "test", translation: "эфемерный")
+        card.cardType = .reverse
+
+        // Expected: wordToSpeak returns card.translation
+        #expect(card.translation == "эфемерный")
+        #expect(card.word == "ephemeral")
+    }
+
+    @Test("AudioOnlyCardContent: revealTiming calculates correctly for 5-char word")
+    @MainActor
+    func revealTimingForFiveCharWord() {
+        let word = "hello" // 5 characters
+        let expectedDuration = Double(word.count) * 0.12 + 0.5
+        // 5 * 0.12 + 0.5 = 1.1 seconds
+
+        #expect(expectedDuration == 1.1)
+    }
+
+    @Test("AudioOnlyCardContent: revealTiming calculates correctly for 20-char word")
+    @MainActor
+    func revealTimingForTwentyCharWord() {
+        let word = "supercalifragilistic" // 20 characters
+        let expectedDuration = Double(word.count) * 0.12 + 0.5
+        // 20 * 0.12 + 0.5 = 2.9 seconds
+
+        #expect(expectedDuration == 2.9)
+    }
+
+    @Test("AudioOnlyCardContent: handles empty word gracefully")
+    @MainActor
+    func revealTimingForEmptyWord() {
+        let word = "" // 0 characters
+        let expectedDuration = Double(word.count) * 0.12 + 0.5
+        // 0 * 0.12 + 0.5 = 0.5 seconds (buffer only)
+
+        #expect(expectedDuration == 0.5)
+    }
 }

@@ -18,6 +18,18 @@ import SwiftUI
 /// 3. Text fades in after audio completes
 /// 4. User can rate their recall
 struct AudioOnlyCardContent: View {
+    // MARK: - TTS Timing Constants
+
+    /// Time (seconds) per character for TTS duration estimation
+    /// Based on average speech rate of ~130-150 words per minute
+    private static let secondsPerCharacter: Double = 0.12
+
+    /// Buffer time (seconds) added to TTS duration for natural pause
+    /// Accounts for voice pauses and synthesis latency
+    private static let bufferSeconds: Double = 0.5
+
+    // MARK: - Properties
+
     let card: Flashcard
     @State private var revealText = false
     @State private var isSpeaking = false
@@ -122,8 +134,8 @@ struct AudioOnlyCardContent: View {
         self.isSpeaking = true
         SpeechService.shared.speak(self.wordToSpeak, language: self.speechLanguage)
 
-        // Calculate duration and reveal text (roughly 0.12s per character + 0.5s buffer)
-        let duration = Double(wordToSpeak.count) * 0.12 + 0.5
+        // Calculate duration and reveal text (TTS timing constants)
+        let duration = Double(self.wordToSpeak.count) * Self.secondsPerCharacter + Self.bufferSeconds
 
         Task {
             try? await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))

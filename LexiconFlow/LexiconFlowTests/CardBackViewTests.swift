@@ -165,4 +165,49 @@ struct CardBackViewTests {
         #expect(view.frontWordReminder == "hello")
         #expect(view.answerWord == nil)
     }
+
+    // MARK: - Audio-Only Card Tests
+
+    @Test("frontWordReminder returns word for audio cards")
+    func frontWordForAudio() throws {
+        let card = self.createFlashcard(word: "ephemeral", translation: "эфемерный", cardType: .audio)
+        let view = CardBackView(card: card)
+
+        #expect(view.frontWordReminder == "ephemeral")
+    }
+
+    @Test("answerWord returns translation for audio cards")
+    func answerWordForAudio() throws {
+        let card = self.createFlashcard(word: "ephemeral", translation: "эфемерный", cardType: .audio)
+        let view = CardBackView(card: card)
+
+        #expect(view.answerWord == "эфемерный")
+    }
+
+    @Test("answerLabel returns Translation for audio cards")
+    func answerLabelForAudio() throws {
+        let card = self.createFlashcard(word: "test", translation: "тест", cardType: .audio)
+        let view = CardBackView(card: card)
+
+        #expect(view.answerLabel == "Translation")
+    }
+
+    @Test("cardTypeColor returns purple for audio cards")
+    func cardTypeColorForAudio() throws {
+        let card = self.createFlashcard(cardType: .audio)
+        let view = CardBackView(card: card)
+
+        // Verify method is callable (Color comparison not supported in tests)
+        let color = view.cardTypeColor(for: .audio)
+        #expect(color != Color.clear)
+    }
+
+    @Test("Audio card with nil translation falls back to word")
+    func audioCardNilTranslation() throws {
+        let card = self.createFlashcard(word: "ephemeral", translation: nil, cardType: .audio)
+        let view = CardBackView(card: card)
+
+        #expect(view.frontWordReminder == "ephemeral")
+        #expect(view.answerWord == nil)
+    }
 }
