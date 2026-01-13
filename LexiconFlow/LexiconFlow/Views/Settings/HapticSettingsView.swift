@@ -28,6 +28,14 @@ struct HapticSettingsView: View {
         )
     }
 
+    /// Binding to AppSettings.streakChimesEnabled following centralized pattern
+    private var streakChimesBinding: Binding<Bool> {
+        Binding(
+            get: { AppSettings.streakChimesEnabled },
+            set: { AppSettings.streakChimesEnabled = $0 }
+        )
+    }
+
     var body: some View {
         Form {
             Section {
@@ -58,6 +66,24 @@ struct HapticSettingsView: View {
                 .buttonStyle(.borderedProminent)
                 .accessibilityLabel("Test haptic feedback")
                 .disabled(self.isTesting)
+            }
+
+            // Streak Chimes
+            Section {
+                Toggle(isOn: self.streakChimesBinding) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Streak Chimes")
+                            .font(.body)
+                        Text("Plays harmonic chimes at streak milestones (3, 7, 14, 30, 60, 90, 100, 365 days)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityLabel("Enable streak chimes")
+            } header: {
+                Text("Streak Milestones")
+            } footer: {
+                Text("Celebratory audio feedback when you achieve study streak milestones.")
             }
         }
         .navigationTitle("Haptic Feedback")

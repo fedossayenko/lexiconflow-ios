@@ -187,11 +187,18 @@ enum CardType: String, Codable, Sendable {
 
 ### Audio Card (Listening)
 
-**Front**: Spoken Russian (no text initially)
-**Back**: Russian word + English meaning
-**Status**: Planned
+**Front**: Spoken word (no text initially)
+**Back**: Word + meaning
+**Status**: ✅ Implemented (January 2026)
 
 **Pedagogical Purpose**: Pure listening comprehension, prevent visual crutch
+
+**Implementation**:
+- Component: `AudioOnlyContentView.swift`
+- Timing Formula: `duration = characterCount * 0.12 + 0.5` seconds
+- Language-Aware TTS: Uses AppSettings for forward, target language for reverse
+
+**Reference**: `docs/AUDIO_ONLY_CARDS.md`
 
 ### Cloze Card (Context)
 

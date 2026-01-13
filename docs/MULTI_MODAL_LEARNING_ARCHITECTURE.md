@@ -70,6 +70,13 @@ Text(card.word)
 - TTS timing options: On View, On Flip, Manual
 - AVSpeechSynthesizer with voice quality fallback
 - Background-safe audio playback
+- **Audio-Only Cards** (NEW): Hide text during TTS, reveal after completion
+
+**Audio-Only Card Flow**:
+1. Card appears with speaker icon (no text)
+2. TTS speaks word
+3. Text fades in after audio (0.12s/char + 0.5s buffer)
+4. User rates recall
 
 **Pedagogical Rationale**: Auditory reinforcement creates phonological representations in the brain's temporal lobe (Wernicke's area). This strengthens sound-symbol correspondence and supports pronunciation learning.
 
@@ -78,6 +85,7 @@ Text(card.word)
 2. **Phoneme Discrimination**: Accent-specific variations
 3. **Listening Comprehension**: Auditory processing practice
 4. **Reading Fluency**: Sound-symbol correspondence
+5. **Pure Auditory Focus**: Audio-only cards prevent visual crutch
 
 **Technical Details**:
 ```swift
@@ -87,6 +95,8 @@ utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
 utterance.rate = 0.5  // Adjustable
 synthesizer.speak(utterance)
 ```
+
+**Reference**: `docs/AUDIO_ONLY_CARDS.md`
 
 ---
 

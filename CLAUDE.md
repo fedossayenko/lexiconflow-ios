@@ -23,7 +23,8 @@ xcodebuild build -project LexiconFlow.xcodeproj -scheme LexiconFlow \
 # Test all (serialized for shared container)
 xcodebuild test -project LexiconFlow.xcodeproj -scheme LexiconFlow \
   -destination 'platform=iOS Simulator,name=iPhone 16e,OS=26.2' \
-  -only-testing:LexiconFlowTests -parallel-testing-enabled NO
+  -only-testing:LexiconFlowTests -parallel-testing-enabled NO \
+  -resultBundlePath /tmp/lexiconflow-test-results.xcresult
 
 # Resolve dependencies
 xcodebuild -resolvePackageDependencies
@@ -367,90 +368,191 @@ struct FlashcardView: View {
 
 ---
 
-### 10. Bidirectional Learning Pattern (Planned - Phase 5)
+### 10. Bidirectional Learning Pattern
 
-**Description**: Support Recognition (L2→L1) and Production (L1→L2) learning modes through Note/Card schema separation.
+**Description**: Support Recognition (L2→L1) and Production (L1→L2) learning modes through CardType enumeration.
+
+**Card Types Implemented**:
+- `.forward` - Recognition mode (English→Russian)
+- `.reverse` - Production mode (Russian→English)
+- `.audio` - Audio-only listening comprehension (✅ Implemented)
 
 **Data Model**:
 ```swift
-@Model
-final class Note {
-    var id: UUID
-    var word: String           // Vocabulary item (language-agnostic)
-    var definition: String
-    var phonetic: String?
-    @Relationship(deleteRule: .cascade) var cards: [Card] = []
-}
-
-@Model
-final class Card {
-    var id: UUID
-    var cardType: CardType    // .forward, .reverse, .audio, .cloze
-    var isActive: Bool
-    @Relationship var note: Note?
-    @Relationship var fsrsState: FSRSState?
-}
-
-enum CardType: String, Codable {
-    case forward    // L2→L1: Recognition
-    case reverse    // L1→L2: Production
-    case audio      // Audio-only
-    case cloze      // Cloze deletion
+enum CardType: String, Codable, Sendable {
+    case forward    // Recognition mode (L2→L1)
+    case reverse    // Production mode (L1→L2)
+    case audio      // Audio-only listening comprehension (✅ Implemented)
+    case cloze      // Cloze deletion (planned)
 }
 ```
 
 **Direction-Aware Rendering**:
 ```swift
-struct FlashcardView: View {
-    @Bindable var card: Card
+struct CardFrontView: View {
+    let card: Flashcard
+    var isAudioOnly: Bool {
+        card.cardType == .audio
+    }
 
     var body: some View {
-        switch card.cardType {
-        case .forward:
-            // Show English word, user recalls Russian
-            if let note = card.note {
-                Text(note.word)  // English
-            }
-
-        case .reverse:
-            // Show Russian translation, user recalls English
-            if let note = card.note {
-                Text(note.translation ?? "")  // Russian
-            }
-
-        case .audio:
-            // Audio-only: Play TTS, no text initially
-            Image(systemName: "speaker.wave.3.fill")
-
-        case .cloze:
-            // Sentence with missing word
-            Text(card.clozeTemplate ?? "")
+        if isAudioOnly {
+            AudioOnlyCardContent(card: card)
+        } else {
+            // Standard content for forward/reverse
+            standardCardContent
         }
     }
 }
 ```
 
-**Sibling Interference Prevention**:
+**Scheduler Filtering**:
 ```swift
-actor SiblingInterferenceService {
-    func burySiblings(reviewedCard: Card, reviewedInterval: Double, context: ModelContext) async throws {
-        guard let note = reviewedCard.note,
-              let siblings = note.cards.filter({ $0.id != reviewedCard.id }) else { return }
-
-        // Bury siblings with 10-20% fuzz
-        let fuzzPercentage = 0.15 + Double.random(in: -0.05...0.05)
-        let fuzzDays = reviewedInterval * fuzzPercentage
-
-        for sibling in siblings {
-            sibling.fsrsState?.buriedUntil = Date().addingTimeInterval(fuzzDays * 86400)
-        }
-
-        try context.save()
+func matchesStudyDirection(_ cardType: CardType, _ direction: StudyDirection) -> Bool {
+    switch (cardType, direction) {
+    case (.forward, .recognitionOnly), (.audio, .recognitionOnly):
+        true  // Audio cards are recognition mode
+    case (.reverse, .productionOnly):
+        true
+    case (_, .both):
+        true
+    default:
+        false
     }
 }
 ```
 
 **Reference**: `docs/BIDIRECTIONAL_LEARNING_STRATEGY.md`
+
+---
+
+### 11. Audio-Only Learning Pattern
+
+**Description**: Audio-only flashcards that train listening comprehension without visual support, using delayed text reveal to prevent visual crutch during audio playback.
+
+**When to Use**:
+- Listening comprehension practice
+- Auditory processing training
+- Phonetic discrimination exercises
+- Advanced learners seeking auditory immersion
+
+**Usage**:
+```swift
+struct AudioOnlyCardContent: View {
+    let card: Flashcard
+    @State private var revealText = false
+    @State private var isSpeaking = false
+
+    var body: some View {
+        VStack(spacing: 30) {
+            // Card type badge (purple for audio)
+            HStack(spacing: 6) {
+                Image(systemName: card.cardType.iconName)
+                Text(card.cardType.displayName)
+            }
+            .foregroundStyle(.purple)
+
+            // Animated speaker icon
+            Image(systemName: isSpeaking ? "speaker.wave.3.fill" : "speaker.wave.2.fill")
+                .symbolEffect(.pulse, options: .repeating, isActive: isSpeaking)
+
+            // Text reveals after audio completes
+            if revealText {
+                Text(wordToSpeak)
+                    .transition(.opacity.combined(with: .scale))
+            }
+        }
+        .onAppear {
+            playAudio() // Auto-play on appear
+        }
+    }
+
+    private func playAudio() {
+        guard AppSettings.ttsEnabled else {
+            revealText = true
+            return
+        }
+
+        isSpeaking = true
+        SpeechService.shared.speak(wordToSpeak, language: speechLanguage)
+
+        // Calculate duration and reveal text
+        let duration = Double(wordToSpeak.count) * 0.12 + 0.5
+        Task {
+            try? await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
+            await MainActor.run {
+                withAnimation {
+                    revealText = true
+                    isSpeaking = false
+                }
+            }
+        }
+    }
+}
+```
+
+**Pedagogical Benefits**:
+- **Auditory Cortex**: Heschl's gyrus activation for phonological processing
+- **Wernicke's Area**: Comprehension of spoken language
+- **Phonological Loop**: Baddeley's working memory model for auditory rehearsal
+- **Prevents Visual Crutch**: No text during playback forces auditory focus
+
+**Reference**: `docs/AUDIO_ONLY_CARDS.md`
+
+**Rationale**: Audio-only cards provide pure listening comprehension training by hiding text during TTS playback. The delayed reveal prevents learners from relying on visual processing, strengthening auditory pathways in the brain.
+
+---
+
+### 12. Streak Milestone Celebration Pattern
+
+**Description**: Celebratory audio feedback at study streak milestones to reinforce positive learning habits through gamification.
+
+**When to Use**:
+- Reinforcing daily study habits
+- Celebrating user milestones
+- Providing audio feedback for achievements
+
+**Usage**:
+```swift
+@MainActor
+final class StreakChimeService: Sendable {
+    static let shared = StreakChimeService()
+
+    private let milestoneDays: Set<Int> = [3, 7, 14, 30, 60, 90, 100, 365]
+
+    func playStreakChime(for streak: Int) async {
+        guard AppSettings.streakChimesEnabled else { return }
+        guard milestoneDays.contains(streak) else { return }
+
+        await playHarmonicChime(streak: streak)
+    }
+
+    private func playHarmonicChime(streak: Int) async {
+        // Try milestone-specific sound file
+        let soundFileName = "streak_chime_\(streak)"
+        guard let soundURL = Bundle.main.url(forResource: soundFileName, withExtension: "wav") else {
+            // Fallback to system sound
+            AudioServicesPlaySystemSound(1020) // Sherlock sound
+            return
+        }
+
+        // Play custom sound
+        audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
+        audioPlayer?.play()
+    }
+}
+```
+
+**Milestones**: 3, 7, 14, 30, 60, 90, 100, 365 days
+
+**Behavioral Psychology**:
+- **Dopamine Release**: Audio rewards trigger positive reinforcement
+- **Habit Formation**: Variable interval reinforcement schedule
+- **Achievement Recognition**: Celebrates progress, boosts motivation
+
+**Reference**: `LexiconFlow/LexiconFlow/Services/StreakChimeService.swift`
+
+**Rationale**: Audio celebration at milestone streaks leverages operant conditioning to reinforce daily study habits. The variable interval schedule (unpredictable milestone timing) creates stronger habit formation than fixed rewards.
 
 ---
 

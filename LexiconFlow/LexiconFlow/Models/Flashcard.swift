@@ -194,11 +194,15 @@ enum CardType: String, Codable, Sendable {
     /// Reverse card: Russian→English (Production mode)
     case reverse
 
+    /// Audio-only card: Listening comprehension without visual support
+    case audio
+
     /// Display name for UI
     var displayName: String {
         switch self {
         case .forward: "Recognition"
         case .reverse: "Production"
+        case .audio: "Audio-Only"
         }
     }
 
@@ -207,6 +211,7 @@ enum CardType: String, Codable, Sendable {
         switch self {
         case .forward: "arrow.right"
         case .reverse: "arrow.left"
+        case .audio: "speaker.wave.2"
         }
     }
 
@@ -215,6 +220,7 @@ enum CardType: String, Codable, Sendable {
         switch self {
         case .forward: "→"
         case .reverse: "←"
+        case .audio: "🔊"
         }
     }
 }

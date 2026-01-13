@@ -11,6 +11,7 @@ struct AISettingsView: View {
     // MARK: - State
 
     @State private var aiSourcePreference: AppSettings.AISource = .onDevice
+    @State private var sentenceGenerationEnabled: Bool = AppSettings.isSentenceGenerationEnabled
 
     // MARK: - Body
 
@@ -82,6 +83,27 @@ struct AISettingsView: View {
                 Text("Sentence Generation")
             } footer: {
                 Text("Choose how sentences are generated for your vocabulary cards")
+            }
+
+            // Sentence Generation Toggle
+            Section {
+                Toggle(isOn: self.$sentenceGenerationEnabled) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Generate Example Sentences")
+                            .font(.body)
+                        Text("AI generates contextual sentences for vocabulary cards")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityLabel("Enable sentence generation")
+                .onChange(of: self.sentenceGenerationEnabled) { _, newValue in
+                    AppSettings.isSentenceGenerationEnabled = newValue
+                }
+            } header: {
+                Text("Sentence Generation")
+            } footer: {
+                Text("When enabled, example sentences are generated using your selected AI source.")
             }
 
             // Cloud API Configuration

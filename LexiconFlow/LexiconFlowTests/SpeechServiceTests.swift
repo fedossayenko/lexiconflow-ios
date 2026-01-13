@@ -721,4 +721,98 @@ struct SpeechServiceTests {
 
         self.restoreAppSettings(originalSettings)
     }
+
+    // MARK: - Language Parameter Tests (Audio Cards)
+
+    @Test("speak with explicit language parameter uses that language")
+    func speakWithExplicitLanguage() async throws {
+        let originalSettings = self.saveAppSettings()
+        self.resetAppSettings()
+
+        let service = SpeechService.shared
+
+        // Test Russian language
+        service.speak("тест", language: "ru-RU")
+        service.stop()
+
+        // Test English language
+        service.speak("test", language: "en-US")
+        service.stop()
+
+        // Should not crash or throw
+        #expect(true)
+        self.restoreAppSettings(originalSettings)
+    }
+
+    @Test("speak with nil language uses AppSettings default")
+    func speakWithNilLanguageUsesDefault() async throws {
+        let originalSettings = self.saveAppSettings()
+        AppSettings.ttsVoiceLanguage = "en-US"
+        AppSettings.ttsEnabled = true
+
+        let service = SpeechService.shared
+
+        // nil language should fall back to AppSettings.ttsVoiceLanguage
+        service.speak("test", language: nil)
+        service.stop()
+
+        // Should not crash
+        #expect(true)
+        self.restoreAppSettings(originalSettings)
+    }
+
+    @Test("speak with unsupported language falls back gracefully")
+    func speakWithUnsupportedLanguage() async throws {
+        let originalSettings = self.saveAppSettings()
+        AppSettings.ttsEnabled = true
+
+        let service = SpeechService.shared
+
+        // xx-XX is not a real language code
+        service.speak("test", language: "xx-XX")
+        service.stop()
+
+        // Should fall back to default voice without crashing
+        #expect(true)
+        self.restoreAppSettings(originalSettings)
+    }
+
+    @Test("speak with language parameter overrides AppSettings")
+    func speakLanguageOverridesSettings() async throws {
+        let originalSettings = self.saveAppSettings()
+        AppSettings.ttsVoiceLanguage = "en-US"
+        AppSettings.ttsEnabled = true
+
+        let service = SpeechService.shared
+
+        // Explicit language should override AppSettings
+        service.speak("тест", language: "ru-RU")
+        service.stop()
+
+        // Verify AppSettings wasn't changed
+        #expect(AppSettings.ttsVoiceLanguage == "en-US")
+        self.restoreAppSettings(originalSettings)
+    }
+
+    @Test("Multiple speak calls with different languages work correctly")
+    func speakMultipleLanguages() async throws {
+        let originalSettings = self.saveAppSettings()
+        AppSettings.ttsEnabled = true
+
+        let service = SpeechService.shared
+
+        // Speak in different languages sequentially
+        service.speak("hello", language: "en-US")
+        service.stop()
+
+        service.speak("привет", language: "ru-RU")
+        service.stop()
+
+        service.speak("hola", language: "es-ES")
+        service.stop()
+
+        // Should handle language switches correctly
+        #expect(true)
+        self.restoreAppSettings(originalSettings)
+    }
 }

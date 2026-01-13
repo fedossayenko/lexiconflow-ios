@@ -16,12 +16,15 @@ struct CardFrontView: View {
     /// The word to display based on card type
     /// - Forward (Recognition): English word
     /// - Reverse (Production): Russian translation
+    /// - Audio (Audio-Only): English word (hidden initially)
     var displayWord: String {
         switch self.card.cardType {
         case .forward:
             self.card.word
         case .reverse:
             self.card.translation ?? self.card.word
+        case .audio:
+            self.card.word
         }
     }
 
@@ -35,7 +38,23 @@ struct CardFrontView: View {
         self.card.cardType == .forward && self.card.phonetic != nil
     }
 
+    /// Whether to show audio-only content
+    var isAudioOnly: Bool {
+        self.card.cardType == .audio
+    }
+
     var body: some View {
+        if self.isAudioOnly {
+            AudioOnlyCardContent(card: self.card)
+        } else {
+            self.standardCardContent
+        }
+    }
+
+    // MARK: - Standard Card Content
+
+    /// Standard card content for forward and reverse cards
+    private var standardCardContent: some View {
         VStack(spacing: 24) {
             Spacer()
 
@@ -116,7 +135,10 @@ struct CardFrontView: View {
     /// - Reverse cards: Speak Russian translation
     private func speakWord() {
         self.isSpeaking = true
-        SpeechService.shared.speak(self.displayWord)
+
+        // Detect language for reverse cards (Russian)
+        let language = self.card.cardType == .reverse ? "ru-RU" : nil
+        SpeechService.shared.speak(self.displayWord, language: language)
 
         // Reset after estimated duration (roughly 0.1s per character)
         let estimatedDuration = Double(displayWord.count) * 0.1
@@ -138,6 +160,8 @@ struct CardFrontView: View {
             .blue
         case .reverse:
             .orange
+        case .audio:
+            .purple
         }
     }
 }

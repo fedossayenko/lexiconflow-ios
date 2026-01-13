@@ -13,6 +13,8 @@ struct StudySettingsView: View {
     @State private var studyLimit: Int = AppSettings.studyLimit
     @State private var studyMode: String = AppSettings.defaultStudyMode
     @State private var dailyGoal: Int = AppSettings.dailyGoal
+    @State private var studyDirection: AppSettings.StudyDirection = AppSettings.studyDirection
+    @State private var includeAudioOnly: Bool = AppSettings.includeAudioOnlyCards
 
     @Environment(\.modelContext) private var modelContext
 
@@ -70,6 +72,47 @@ struct StudySettingsView: View {
                 Text("Study Mode")
             } footer: {
                 Text("Learn New: Study cards you haven't seen before\nScheduled: Review cards due based on FSRS algorithm")
+            }
+
+            // Study Direction (Bidirectional Learning)
+            Section {
+                Picker("Study Direction", selection: self.$studyDirection) {
+                    ForEach(AppSettings.StudyDirection.allCases, id: \.rawValue) { direction in
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 8) {
+                                Image(systemName: direction.icon)
+                                    .foregroundStyle(.secondary)
+                                Text(direction.displayName)
+                                    .font(.body)
+                            }
+                            Text(direction.description)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .tag(direction.rawValue)
+                    }
+                }
+                .accessibilityLabel("Study direction")
+                .onChange(of: self.studyDirection) { _, newValue in
+                    AppSettings.studyDirection = newValue
+                }
+            } header: {
+                Text("Learning Direction")
+            } footer: {
+                Text("Recognition: English→Russian (forward cards)\nProduction: Russian→English (reverse cards)\nBoth: Mixed session for balanced proficiency")
+            }
+
+            // Card Types
+            Section {
+                Toggle("Include Audio-Only Cards", isOn: self.$includeAudioOnly)
+                    .accessibilityLabel("Include audio-only cards")
+                    .onChange(of: self.includeAudioOnly) { _, newValue in
+                        AppSettings.includeAudioOnlyCards = newValue
+                    }
+            } header: {
+                Text("Card Types")
+            } footer: {
+                Text("Audio-only cards train listening comprehension without visual support. Requires text-to-speech enabled.")
             }
         }
         .navigationTitle("Study Settings")

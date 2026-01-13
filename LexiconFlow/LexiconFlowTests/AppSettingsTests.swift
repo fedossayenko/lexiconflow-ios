@@ -915,4 +915,75 @@ struct AppSettingsTests {
         #expect(allCases.contains(.productionOnly))
         #expect(allCases.contains(.both))
     }
+
+    // MARK: - Audio-Only Cards Settings Tests
+
+    @Test("AppSettings: includeAudioOnlyCards defaults to false")
+    @MainActor
+    func includeAudioOnlyCardsDefault() throws {
+        // Reset to default
+        AppSettings.includeAudioOnlyCards = false
+        #expect(AppSettings.includeAudioOnlyCards == false)
+    }
+
+    @Test("AppSettings: includeAudioOnlyCards can be enabled")
+    @MainActor
+    func includeAudioOnlyCardsCanBeEnabled() throws {
+        AppSettings.includeAudioOnlyCards = true
+        #expect(AppSettings.includeAudioOnlyCards == true)
+
+        // Reset to default
+        AppSettings.includeAudioOnlyCards = false
+    }
+
+    @Test("AppSettings: includeAudioOnlyCards persists across changes")
+    @MainActor
+    func includeAudioOnlyCardsPersists() throws {
+        // Set to true
+        AppSettings.includeAudioOnlyCards = true
+        #expect(AppSettings.includeAudioOnlyCards == true)
+
+        // Modify other setting
+        AppSettings.studyDirection = .both
+
+        // Verify audio setting persisted
+        #expect(AppSettings.includeAudioOnlyCards == true)
+
+        // Reset to default
+        AppSettings.includeAudioOnlyCards = false
+    }
+
+    @Test("AppSettings: includeAudioOnlyCards type is Bool")
+    @MainActor
+    func includeAudioOnlyCardsType() throws {
+        AppSettings.includeAudioOnlyCards = true
+        let value = AppSettings.includeAudioOnlyCards
+
+        #expect(type(of: value) == Bool.self)
+        #expect(value == true)
+
+        // Reset to default
+        AppSettings.includeAudioOnlyCards = false
+    }
+
+    @Test("AppSettings: includeAudioOnlyCards is independent of other settings")
+    @MainActor
+    func includeAudioOnlyCardsIndependent() throws {
+        // Set audio-only cards
+        AppSettings.includeAudioOnlyCards = true
+
+        // Change multiple other settings
+        AppSettings.studyDirection = .productionOnly
+        AppSettings.ttsEnabled = false
+        AppSettings.studyLimit = 50
+
+        // Verify audio-only setting unchanged
+        #expect(AppSettings.includeAudioOnlyCards == true)
+
+        // Reset all to defaults
+        AppSettings.includeAudioOnlyCards = false
+        AppSettings.studyDirection = .recognitionOnly
+        AppSettings.ttsEnabled = true
+        AppSettings.studyLimit = 20
+    }
 }

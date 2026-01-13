@@ -59,17 +59,19 @@ class SpeechService {
 
     // MARK: - Public API
 
-    /// Speak text with current settings
+    /// Speak text with optional language override
     ///
     /// **Parameters:**
     ///   - text: The text to speak
+    ///   - language: Optional BCP 47 language code (e.g., "en-US", "ru-RU").
+    ///                If nil, uses AppSettings.ttsVoiceLanguage
     ///
     /// **Behavior:**
     ///   - Checks `AppSettings.ttsEnabled` before speaking
-    ///   - Uses configured voice, rate, and pitch from AppSettings
+    ///   - Uses specified language or falls back to configured voice
     ///   - Stops any ongoing speech before starting new speech
     ///   - Configures audio session on first call
-    func speak(_ text: String) {
+    func speak(_ text: String, language: String? = nil) {
         // Check if TTS is enabled
         guard AppSettings.ttsEnabled else {
             self.logger.debug("TTS disabled, skipping speech")
@@ -97,12 +99,13 @@ class SpeechService {
         let utterance = AVSpeechUtterance(string: trimmedText)
 
         // Configure voice
-        if let voice = voiceForLanguage(AppSettings.ttsVoiceLanguage) {
+        let targetLanguage = language ?? AppSettings.ttsVoiceLanguage
+        if let voice = voiceForLanguage(targetLanguage) {
             utterance.voice = voice
         } else {
             // Fallback to default voice
-            self.logger.warning("Voice not found for '\(AppSettings.ttsVoiceLanguage)', using default")
-            utterance.voice = AVSpeechSynthesisVoice(language: AppSettings.ttsVoiceLanguage)
+            self.logger.warning("Voice not found for '\(targetLanguage)', using default")
+            utterance.voice = AVSpeechSynthesisVoice(language: targetLanguage)
         }
 
         // Configure rate (0.0 to 1.0, where 0.5 is default)

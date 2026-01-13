@@ -218,7 +218,7 @@ final class DictionaryImporter {
         }
 
         // 4. Validate file extension (whitelist)
-        let allowedExtensions = ["csv", "json", "txt", "text", "apkg"]
+        let allowedExtensions = ["csv", "json", "txt", "text"]
         let fileExtension = url.pathExtension.lowercased()
         guard allowedExtensions.contains(fileExtension) else {
             throw ImportError(

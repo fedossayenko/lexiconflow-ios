@@ -338,10 +338,25 @@ class AudioSessionManager {
 
 ### Visual Impairments
 
-**Audio-First Mode** (Planned):
-- Front: Spoken word (no text)
+**Audio-Only Cards** (Implemented):
+- **Status**: Implemented January 2026
+- **Component**: `AudioOnlyContentView.swift`
+- Front: Speaker icon (no text)
 - Back: Word + meaning
-- Benefit: Pure listening comprehension
+- Benefit: Pure listening comprehension, delayed text reveal
+
+**User Flow**:
+1. Card appears with animated speaker icon
+2. TTS speaks word
+3. Text fades in after audio (0.12s/char + 0.5s)
+4. User rates recall
+
+**Benefits**:
+- Forces auditory focus (no text during playback)
+- Delayed reveal prevents cheating
+- Strengthens phonological loop
+
+**Reference**: `docs/AUDIO_ONLY_CARDS.md`
 
 ### VoiceOver Integration
 

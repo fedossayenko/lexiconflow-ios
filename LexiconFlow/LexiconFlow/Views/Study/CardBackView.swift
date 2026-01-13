@@ -28,9 +28,10 @@ struct CardBackView: View {
     /// The word shown on the front (reminder)
     /// - Forward (Recognition): English word
     /// - Reverse (Production): Russian translation
+    /// - Audio (Audio-Only): English word
     var frontWordReminder: String {
         switch self.card.cardType {
-        case .forward:
+        case .forward, .audio:
             self.card.word
         case .reverse:
             self.card.translation ?? self.card.word
@@ -40,9 +41,10 @@ struct CardBackView: View {
     /// The answer word (what user should recall)
     /// - Forward (Recognition): Russian translation
     /// - Reverse (Production): English word
+    /// - Audio (Audio-Only): Russian translation (same as forward)
     var answerWord: String? {
         switch self.card.cardType {
-        case .forward:
+        case .forward, .audio:
             self.card.translation
         case .reverse:
             self.card.word
@@ -52,7 +54,7 @@ struct CardBackView: View {
     /// Label for the answer section
     var answerLabel: String {
         switch self.card.cardType {
-        case .forward:
+        case .forward, .audio:
             "Translation"
         case .reverse:
             "Word"
@@ -309,6 +311,8 @@ struct CardBackView: View {
             .blue
         case .reverse:
             .orange
+        case .audio:
+            .purple
         }
     }
 }

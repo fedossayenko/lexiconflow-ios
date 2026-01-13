@@ -8,6 +8,11 @@
 import SwiftUI
 
 struct AppearanceSettingsView: View {
+    // MARK: - State
+
+    @State private var matchedGeometryEnabled: Bool = AppSettings.matchedGeometryEffectEnabled
+    @State private var performanceMode: AppSettings.PerformanceMode = AppSettings.performanceMode
+
     // MARK: - UI Constants
 
     /// Percentage display constants
@@ -187,6 +192,45 @@ struct AppearanceSettingsView: View {
                 .padding(.vertical, 8)
             } header: {
                 Text("Preview")
+            }
+
+            // Matched Geometry Effect Toggle
+            Section {
+                Toggle(isOn: self.$matchedGeometryEnabled) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Matched Geometry Effects")
+                            .font(.body)
+                        Text("Smooth element transitions between views")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityLabel("Enable matched geometry effects")
+                .onChange(of: self.matchedGeometryEnabled) { _, newValue in
+                    AppSettings.matchedGeometryEffectEnabled = newValue
+                }
+            } header: {
+                Text("Advanced Effects")
+            } footer: {
+                Text("Disable for better performance on older devices.")
+            }
+
+            // Performance Mode Picker
+            Section {
+                Picker("Performance Mode", selection: self.$performanceMode) {
+                    ForEach(AppSettings.PerformanceMode.allCases, id: \.self) { mode in
+                        Label(mode.displayName, systemImage: mode.iconName)
+                            .tag(mode)
+                    }
+                }
+                .accessibilityLabel("Performance mode")
+                .onChange(of: self.performanceMode) { _, newValue in
+                    AppSettings.performanceMode = newValue
+                }
+            } header: {
+                Text("Performance Mode")
+            } footer: {
+                Text("Reduce visual effects for better battery life on older devices.")
             }
         }
         .navigationTitle("Appearance")
