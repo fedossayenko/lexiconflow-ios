@@ -513,8 +513,8 @@ struct DictionaryImporterTests {
 
         let format = importer.detectFormat(from: fileURL)
 
-        // .apkg should not be recognized (defaults to TXT or returns unknown)
-        #expect(format != .apkg)
+        // .apkg should not be recognized (returns nil since not supported)
+        #expect(format == nil)
     }
 
     @Test("detectFormat accepts only CSV, JSON, TXT files")

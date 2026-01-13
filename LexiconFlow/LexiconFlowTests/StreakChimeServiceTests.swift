@@ -20,12 +20,12 @@ import Testing
 struct StreakChimeServiceTests {
     // MARK: - Test Helpers
 
-    private func saveAppSettings() -> (enabled: Bool) {
-        (enabled: AppSettings.streakChimesEnabled)
+    private func saveAppSettings() -> Bool {
+        AppSettings.streakChimesEnabled
     }
 
-    private func restoreAppSettings(_ settings: (enabled: Bool)) {
-        AppSettings.streakChimesEnabled = settings.enabled
+    private func restoreAppSettings(_ enabled: Bool) {
+        AppSettings.streakChimesEnabled = enabled
     }
 
     // MARK: - AppSettings Integration Tests

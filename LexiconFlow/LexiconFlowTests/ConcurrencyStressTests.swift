@@ -83,9 +83,10 @@ struct ConcurrencyStressTests {
     // MARK: - Actor Isolation Tests
 
     @Test("Concurrent FSRS review processing maintains consistency")
+    @MainActor
     func concurrentFSRSProcessing() async throws {
         // Create a test flashcard
-        let flashcard = try await createTestFlashcard(in: freshContext())
+        let flashcard = createTestFlashcard(in: freshContext())
 
         // Track results
         let results = LockedArray<FSRSReviewResult>()
@@ -115,9 +116,12 @@ struct ConcurrencyStressTests {
         // Verify consistency: all results should have valid state
         let array = await results.array
         for result in array {
-            #expect(result.stability > 0, "Stability should be positive")
-            #expect(result.difficulty > 0, "Difficulty should be positive")
-            #expect(result.dueDate > Date(), "Due date should be in the future")
+            let stability = result.stability
+            let difficulty = result.difficulty
+            let dueDate = result.dueDate
+            #expect(stability > 0, "Stability should be positive")
+            #expect(difficulty > 0, "Difficulty should be positive")
+            #expect(dueDate > Date(), "Due date should be in the future")
         }
     }
 
@@ -167,9 +171,10 @@ struct ConcurrencyStressTests {
     // MARK: - Sendable Tests
 
     @Test("DTOs are Sendable across actor boundaries")
+    @MainActor
     func sendableDTOs() async throws {
         // Create test flashcard
-        let flashcard = await createTestFlashcard(in: freshContext())
+        let flashcard = createTestFlashcard(in: freshContext())
 
         // Get DTO from actor
         let dto = try await FSRSWrapper.shared.processReview(
@@ -178,9 +183,12 @@ struct ConcurrencyStressTests {
         )
 
         // Verify DTO properties are accessible (Sendable check is at compile time)
-        #expect(dto.stability > 0)
-        #expect(dto.difficulty > 0)
-        #expect(dto.dueDate > Date())
+        let stability = dto.stability
+        let difficulty = dto.difficulty
+        let dueDate = dto.dueDate
+        #expect(stability > 0)
+        #expect(difficulty > 0)
+        #expect(dueDate > Date())
     }
 
     // MARK: - Concurrent Translation Tests
