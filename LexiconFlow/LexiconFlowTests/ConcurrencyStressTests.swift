@@ -86,7 +86,7 @@ struct ConcurrencyStressTests {
     @MainActor
     func concurrentFSRSProcessing() async throws {
         // Create a test flashcard
-        let flashcard = createTestFlashcard(in: freshContext())
+        let flashcard = self.createTestFlashcard(in: self.freshContext())
 
         // Track results
         let results = LockedArray<FSRSReviewResult>()
@@ -174,7 +174,7 @@ struct ConcurrencyStressTests {
     @MainActor
     func sendableDTOs() async throws {
         // Create test flashcard
-        let flashcard = createTestFlashcard(in: freshContext())
+        let flashcard = self.createTestFlashcard(in: self.freshContext())
 
         // Get DTO from actor
         let dto = try await FSRSWrapper.shared.processReview(
