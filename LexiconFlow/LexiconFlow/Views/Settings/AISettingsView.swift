@@ -10,79 +10,47 @@ import SwiftUI
 struct AISettingsView: View {
     // MARK: - State
 
-    @State private var aiSourcePreference: AppSettings.AISource = .onDevice
     @State private var sentenceGenerationEnabled: Bool = AppSettings.isSentenceGenerationEnabled
+    @State private var cloudStatus: CloudConnectionStatus = .checking
+
+    enum CloudConnectionStatus {
+        case checking
+        case connected
+        case error(String)
+    }
 
     // MARK: - Body
 
     var body: some View {
         Form {
-            // AI Source Selection
+            // Cloud Status Section (NEW)
             Section {
-                Picker("AI Source", selection: self.$aiSourcePreference) {
-                    ForEach(AppSettings.AISource.allCases, id: \.self) { source in
-                        HStack(spacing: 12) {
-                            Image(systemName: source.icon)
-                                .foregroundStyle(.secondary)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(source.displayName)
-                                Text(source.description)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .tag(source)
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
-                .pickerStyle(.inline)
-                .accessibilityLabel("AI source preference")
-                .onChange(of: self.aiSourcePreference) { _, newValue in
-                    AppSettings.aiSourcePreference = newValue
-                }
+                HStack(spacing: 12) {
+                    Image(systemName: self.statusIcon)
+                        .foregroundStyle(self.statusColor)
+                        .font(.title2)
 
-                // AI Source Description
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "info.circle.fill")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text("How AI Sources Work")
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Cloud Services")
                             .font(.subheadline)
                             .fontWeight(.medium)
+
+                        Text(self.statusMessage)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
 
-                    Text("When you select an AI source, the app will use it for sentence generation. If the preferred source is unavailable, it automatically falls back to the next best option.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Spacer()
 
-                    VStack(alignment: .leading, spacing: 6) {
-                        self.aiSourceDescriptionRow(
-                            icon: "cpu",
-                            title: "On-Device AI",
-                            description: "Uses Apple's Foundation Models (iOS 26+). Private, offline-capable."
-                        )
-                        self.aiSourceDescriptionRow(
-                            icon: "arrow.down",
-                            description: "Falls back to Cloud API if unavailable."
-                        )
-                        self.aiSourceDescriptionRow(
-                            icon: "cloud",
-                            title: "Cloud API",
-                            description: "Uses Z.ai API. Requires API key and internet connection."
-                        )
-                        self.aiSourceDescriptionRow(
-                            icon: "arrow.down",
-                            description: "Falls back to static sentences if no API key."
-                        )
+                    if case .checking = self.cloudStatus {
+                        ProgressView()
+                            .scaleEffect(0.7)
                     }
-                    .padding(.top, 4)
                 }
-                .padding(.vertical, 8)
             } header: {
-                Text("Sentence Generation")
+                Text("Connection Status")
             } footer: {
-                Text("Choose how sentences are generated for your vocabulary cards")
+                Text("AI services are provided by Firebase Cloud Functions with automatic provider routing (Gemini 2.5 Flash, Zhipu GLM-4.7)")
             }
 
             // Sentence Generation Toggle
@@ -103,75 +71,61 @@ struct AISettingsView: View {
             } header: {
                 Text("Sentence Generation")
             } footer: {
-                Text("When enabled, example sentences are generated using your selected AI source.")
-            }
-
-            // Cloud API Configuration
-            Section {
-                HStack(spacing: 6) {
-                    Image(systemName: "key.fill")
-                        .foregroundStyle(.secondary)
-                    Text("Cloud API Key")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-
-                    Spacer()
-
-                    // Show API key status inline
-                    Group {
-                        if KeychainManager.hasAPIKey() {
-                            HStack(spacing: 4) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.caption)
-                                    .foregroundStyle(.green)
-                                Text("Configured")
-                                    .font(.caption)
-                                    .foregroundStyle(.green)
-                            }
-                        } else {
-                            HStack(spacing: 4) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.caption)
-                                    .foregroundStyle(.orange)
-                                Text("Not Set")
-                                    .font(.caption)
-                                    .foregroundStyle(.orange)
-                            }
-                        }
-                    }
-                }
-            } header: {
-                Text("Cloud Configuration")
-            } footer: {
-                Text("API key configuration will be available in a future update")
+                Text("When enabled, example sentences are generated using AI. Powered by Gemini 2.5 Flash and Zhipu GLM-4.7.")
             }
         }
         .navigationTitle("AI Settings")
-        .onAppear {
-            // Sync state with AppSettings on view appear
-            self.aiSourcePreference = AppSettings.aiSourcePreference
+        .task {
+            await self.checkCloudStatus()
         }
     }
 
-    // MARK: - Helper Views
+    // MARK: - Computed Properties
 
-    private func aiSourceDescriptionRow(icon: String, title: String? = nil, description: String) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Image(systemName: icon)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .padding(.top, 2)
+    private var statusIcon: String {
+        switch self.cloudStatus {
+        case .checking:
+            "arrow.triangle.2.circlepath"
+        case .connected:
+            "checkmark.circle.fill"
+        case .error:
+            "exclamationmark.triangle.fill"
+        }
+    }
 
-            VStack(alignment: .leading, spacing: 2) {
-                if let title {
-                    Text(title)
-                        .font(.caption)
-                        .fontWeight(.medium)
-                }
-                Text(description)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+    private var statusColor: Color {
+        switch self.cloudStatus {
+        case .checking:
+            .blue
+        case .connected:
+            .green
+        case .error:
+            .orange
+        }
+    }
+
+    private var statusMessage: String {
+        switch self.cloudStatus {
+        case .checking:
+            "Checking connection..."
+        case .connected:
+            "Connected to Firebase"
+        case let .error(message):
+            message
+        }
+    }
+
+    // MARK: - Methods
+
+    private func checkCloudStatus() async {
+        self.cloudStatus = .checking
+
+        do {
+            // Test Firebase connection
+            _ = try await FirebaseService.shared.signInAnonymously()
+            self.cloudStatus = .connected
+        } catch {
+            self.cloudStatus = .error(error.localizedDescription)
         }
     }
 }

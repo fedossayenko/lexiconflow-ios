@@ -19,7 +19,7 @@ import SwiftData
 /// This service provides CRUD operations for managing orphaned cards,
 /// including fetching, reassigning to decks, and bulk deletion.
 @MainActor
-final class OrphanedCardsService: Sendable {
+final class OrphanedCardsService {
     /// Shared singleton instance for app-wide access
     static let shared = OrphanedCardsService()
 

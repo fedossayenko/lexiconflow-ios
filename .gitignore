@@ -117,3 +117,18 @@ iOSInjectionProject/
 logs.log
 *.log
 TestResults.xcresult/
+
+# Firebase / Cloud Functions
+cloud/functions/node_modules/
+cloud/functions/.firebase/
+cloud/functions/firestore-debug.log
+cloud/functions/ui-debug.log
+cloud/*-debug.log
+cloud/firestore-startup.log
+cloud/ui-startup.log
+*.firebase/
+
+# TypeScript build output
+*.js.map
+*.d.ts.map
+cloud/functions/lib/

@@ -18,33 +18,6 @@ enum AppSettings {
 
     // MARK: - Types
 
-    /// AI source preference for sentence generation
-    enum AISource: String, CaseIterable, Sendable {
-        case onDevice
-        case cloud
-
-        var displayName: String {
-            switch self {
-            case .onDevice: "On-Device AI"
-            case .cloud: "Cloud API"
-            }
-        }
-
-        var description: String {
-            switch self {
-            case .onDevice: "Private, offline-capable (iOS 26+)"
-            case .cloud: "Requires API key and internet"
-            }
-        }
-
-        var icon: String {
-            switch self {
-            case .onDevice: "cpu"
-            case .cloud: "cloud"
-            }
-        }
-    }
-
     /// Study direction for bidirectional learning
     enum StudyDirection: String, CaseIterable, Sendable {
         case recognitionOnly // Forward cards only (English→Russian)
@@ -94,21 +67,10 @@ enum AppSettings {
 
     /// Whether AI-powered sentence generation is enabled
     ///
-    /// **Note**: Uses on-device Foundation Models (iOS 26+) by default, no API key required.
-    /// Falls back to cloud API if API key is configured.
+    /// **Note**: AI routing is now handled server-side by Firebase Cloud Functions.
+    /// No client-side API key management required.
     /// When disabled, flashcards work normally but without example sentences.
     @AppStorage("sentenceGenerationEnabled") static var isSentenceGenerationEnabled: Bool = true
-
-    /// AI source preference for sentence generation
-    ///
-    /// **Options:**
-    /// - `.onDevice`: Use Apple's Foundation Models framework (iOS 26+, private)
-    /// - `.cloud`: Use Z.ai API (requires API key, network connection)
-    ///
-    /// **Behavior:**
-    /// - When `.onDevice`: Falls back to `.cloud` if Foundation Models unavailable
-    /// - When `.cloud`: Falls back to static sentences if no API key
-    @AppStorage("aiSourcePreference") static var aiSourcePreference: AISource = .onDevice
 
     // MARK: - Bidirectional Learning Settings
 
@@ -506,7 +468,6 @@ enum AppSettings {
                 "translationSourceLanguage": "en",
                 "translationTargetLanguage": "ru",
                 "sentenceGenerationEnabled": false,
-                "aiSourcePreference": "onDevice",
                 "hapticEnabled": true,
                 "audioEnabled": true,
                 "streakChimesEnabled": true,
