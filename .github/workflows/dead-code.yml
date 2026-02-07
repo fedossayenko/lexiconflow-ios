@@ -1,8 +1,6 @@
 name: Dead Code Detection
 
 on:
-  schedule:
-    - cron: '0 0 * * 0'  # Weekly on Sunday at midnight UTC
   workflow_dispatch:      # Allow manual trigger
 
 jobs:
