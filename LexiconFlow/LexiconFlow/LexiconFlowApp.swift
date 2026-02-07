@@ -18,6 +18,17 @@ final class EmptyModel {
 
 @main
 struct LexiconFlowApp: App {
+    /// Initialize Firebase SDK when app launches
+    ///
+    /// **Must happen before any Firebase operations**:
+    /// - Configures Firebase Core
+    /// - Sets up App Check (debug/production)
+    /// - Initializes Functions client
+    init() {
+        // Configure Firebase SDK early (before any SwiftUI views)
+        FirebaseService.shared.configure()
+    }
+
     /// Pre-initialized empty container for absolute worst case fallback
     /// This is used when even runtime container creation fails
     ///

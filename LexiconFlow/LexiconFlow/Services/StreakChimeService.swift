@@ -13,7 +13,7 @@ import OSLog
 /// **Milestones:** 3, 7, 14, 30, 60, 90, 100, 365 days
 /// **Audio Format:** WAV files bundled in app or system sounds as fallback
 @MainActor
-final class StreakChimeService: Sendable {
+final class StreakChimeService {
     /// Shared singleton instance
     static let shared = StreakChimeService()
 

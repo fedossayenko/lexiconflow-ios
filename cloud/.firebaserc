@@ -1,0 +1,12 @@
+{
+  "projects": {
+    "default": "lexiconflow-cloud"
+  },
+  "targets": {
+    "lexiconflow-cloud": {
+      "hosting": {
+        "target": "lexiconflow-ios"
+      }
+    }
+  }
+}

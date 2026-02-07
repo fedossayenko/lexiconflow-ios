@@ -34,7 +34,7 @@ import OSLog
 /// - Deleting a deck
 /// - Editing deck contents
 @MainActor
-final class DeckStatisticsCache: Sendable {
+final class DeckStatisticsCache {
     /// Shared singleton instance for app-wide cache access
     static let shared = DeckStatisticsCache()
 
